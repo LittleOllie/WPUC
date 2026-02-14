@@ -594,7 +594,9 @@ function draw(){
     const scale = Math.max(w / bgImg.width, h / bgImg.height);
     const dw = bgImg.width * scale;
     const dh = bgImg.height * scale;
-    const x = (w - dw) / 2;
+    const isMobile = w <= 768;
+    // On mobile, shift background right so "Under Construction" sign is more centered (60% = slight right bias)
+    const x = isMobile ? (w / 2) - (dw * 0.6) : (w - dw) / 2;
     const y = (h - dh) / 2;
     ctx.globalAlpha = 1;
     ctx.drawImage(bgImg, x, y, dw, dh);
