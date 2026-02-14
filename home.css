@@ -1,0 +1,132 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.sky {
+    width: 100vw;
+    min-height: 100vh;          /* change from height to min-height */
+    background-image: url("assets/websitebg.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+
+/* LOGO POSITION – 2x size with subtle float */
+.logo {
+    position: absolute;
+    top: 18%;
+    left: 35%;
+    transform: translate(-50%, -50%);
+    width: 72vw;
+    max-width: 1120px;
+    min-width: 400px;
+    animation: logoFloat 3s ease-in-out infinite;
+}
+
+
+/* CRANE HOOK POSITION */
+.hook {
+    position: absolute;
+    top: -10px;
+    right: 8%;
+    width: 14vw;
+    max-width: 220px;
+    min-width: 120px;
+    transform-origin: top center;
+    animation: swing 4s ease-in-out infinite alternate;
+}
+
+/* ENTER BUTTON – bottom right */
+.button-area {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+}
+
+#enterBtn {
+    background: #ffdd33;
+    border: none;
+    padding: 18px 48px;
+    font-size: 22px;
+    font-weight: bold;
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #d4b300;
+    transition: transform 0.2s ease;
+}
+
+#enterBtn:hover {
+    transform: scale(1.06);
+}
+
+/* Swing animation */
+@keyframes swing {
+    0% { transform: rotate(-4deg); }
+    100% { transform: rotate(4deg); }
+}
+
+/* Logo gentle float */
+@keyframes logoFloat {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+    50% { transform: translate(-50%, -50%) translateY(-10px); }
+}
+/* =================================
+   DESKTOP DEFAULT STYLES
+================================= */
+
+
+/* Logo */
+.logo {
+    top: 18%;
+    left: 45%;
+    width: 960px;
+    max-width: 80vw;
+    transform: translate(-50%, -50%);
+}
+
+/* Crane Hook */
+.hook {
+    right: 8%;
+    width: 240px;
+}
+
+/* Button Area */
+.button-area {
+    bottom: 32px;
+    right: 32px;
+}
+
+
+/* =================================
+   MOBILE STYLES
+================================= */
+
+@media (max-width: 768px) {
+
+    .logo {
+        top: 22%;
+        left: 50%;
+        width: 90vw;
+        max-width: 520px;
+        transform: translate(-50%, -50%);
+    }
+
+    .hook {
+        right: 5%;
+        width: 28vw;
+    }
+
+    .button-area {
+        bottom: 24px;
+        right: 24px;
+    }
+
+    #enterBtn {
+        font-size: 18px;
+        padding: 14px 32px;
+    }
+}

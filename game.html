@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>One Button Hero — Web</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <canvas id="game"></canvas>
+  <img src="assets/cranehook.png" class="game-hook" alt="" />
+
+
+  <!-- HUD Elements -->
+  <div class="hud">
+    <div id="scorePill" class="hud-pill hud-score" aria-label="Score"></div>
+    <div id="shardsPill" class="hud-pill hud-shards" aria-label="Shards"></div>
+    <div id="multPill" class="hud-pill hud-mult" aria-label="Multiplier"></div>
+  </div>
+
+  <!-- Start Overlay -->
+  <div id="overlay">
+    <h1>ONE BUTTON HERO</h1>
+    <p>Hold to Glide • Release to Jump</p>
+    <button id="startBtn">Start</button>
+    <button id="menuLeaderboardBtn" type="button" class="btn-leaderboard-small">🏆 Leaderboard</button>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="gameOver" class="hidden">
+    <h1>GAME OVER</h1>
+    <p id="finalLine"></p>
+
+    <div class="leaderboard-panel">
+      <h2>Top 10</h2>
+      <div id="leaderboard" class="leaderboard-list"></div>
+    </div>
+
+    <div class="submit-section">
+      <input type="text" id="playerName" placeholder="Your name" maxlength="15" />
+      <div class="button-group">
+        <button id="saveNameBtn">Save Name</button>
+      </div>
+      <p id="submitMsg"></p>
+    </div>
+
+    <button id="openLeaderboardBtn" type="button" class="btn-leaderboard">🏆 Leaderboard</button>
+    <button id="restartBtn">Play Again</button>
+  </div>
+
+  <!-- Keep Pushing popup (score < 500 or not Top 10) -->
+  <div id="keepPushingPopup" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card modal-card-lo keep-pushing-card">
+      <h2>Keep Pushing!</h2>
+      <p id="keepPushingMessage" class="keep-pushing-message">Score 500+ to enter the Global Leaderboard!</p>
+      <button id="keepPushingPlayAgainBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <!-- Leaderboard popup (view or qualified submit) -->
+  <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true">
+    <div class="leaderboard-card">
+      <h2>🌍 GLOBAL LEADERBOARD</h2>
+      <div id="leaderboardList" class="leaderboard-list-popup"></div>
+      <div id="leaderboardSubmitSection" class="leaderboard-submit-section hidden">
+        <p class="leaderboard-submit-heading">🔥 You Made The Top 10!</p>
+        <p id="leaderboardPlacedRank" class="leaderboard-placed-rank">You placed #1!</p>
+        <input type="text" id="leaderboardNameInput" placeholder="Your name" maxlength="15" autocomplete="nickname" />
+        <div class="leaderboard-submit-actions">
+          <button id="leaderboardSubmitScoreBtn" type="button" class="btn-lo-yellow">SUBMIT SCORE</button>
+          <button id="leaderboardPlayAgainBtn" type="button" class="btn-lo-secondary">PLAY AGAIN</button>
+        </div>
+        <p id="leaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
+      </div>
+      <button id="closeLeaderboardBtn" type="button" class="btn-lo-yellow">Close</button>
+    </div>
+  </div>
+
+  <!-- Name modal (first time only) -->
+  <div id="nameModal" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card modal-card-lo name-modal-card">
+      <h2>Enter your name</h2>
+      <p class="modal-hint">Saved locally — we won't ask again.</p>
+      <input type="text" id="nameModalInput" placeholder="Name" maxlength="15" autocomplete="nickname" />
+      <button id="nameModalSave" type="button" class="btn-lo-yellow">Save</button>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
