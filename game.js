@@ -59,7 +59,7 @@ function loadImage(name){
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = `assets/${name}.png`;
+    img.src = `assets/${name}.webp`;
   });
 }
 
@@ -622,7 +622,7 @@ function draw(){
     }
   }
 
-  // hazards (cone.png): size matches original (22/26); draw matches collision
+  // hazards (cone.webp): size matches original (22/26); draw matches collision
   const coneImg = assets.images.get("cone");
   for (const hz of state.hazards){
     if (coneImg){
