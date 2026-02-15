@@ -96,8 +96,7 @@ function rectsIntersect(a,b){
 // ---- Engine (ported) ----
 // Original platform/hazard sizes so sprites match original gameplay scale
 const ORIGINAL_PLATFORM_HEIGHT = 22;
-const ORIGINAL_HAZARD_GROUND_SIZE = 26;   // draw size for cone sprite
-const HAZARD_COLLISION_SIZE = 18;        // smaller hitbox so collision matches visible cone
+const ORIGINAL_HAZARD_GROUND_SIZE = 26;   // slightly bigger cones
 const ORIGINAL_HAZARD_CEILING_SIZE = 32;
 const LEDGE1_FIT_HEIGHT_MULT = 3;        // ledge1 drawn 3x (50% bigger than 2x) taller than other ledges
 const SURFACE_COLLISION_HEIGHT = 1; // thin strip so feet align with visible ledge top
@@ -181,8 +180,7 @@ function resetWorldOnly(){
     moveSpeed: 0,
     phase: 0,
     ledgeIndex: startLedgeIndex,
-    ledge4Double: startLedgeIndex === 3 && Math.random() < 0.5,
-    ledge1DoubleMirror: startLedgeIndex === 0 && Math.random() < 0.5
+    ledge4Double: startLedgeIndex === 3 && Math.random() < 0.5
   });
 
   ensureContent();
@@ -254,19 +252,10 @@ function showKeepPushingPopup(message) {
   keepPushingPopup.setAttribute("aria-hidden", "false");
 }
 
-function hideLeaderboardOverlay() {
-  if (!leaderboardOverlay) return;
-  if (document.activeElement && leaderboardOverlay.contains(document.activeElement)) {
-    document.activeElement.blur();
-  }
-  leaderboardOverlay.classList.add("hidden");
-  leaderboardOverlay.setAttribute("aria-hidden", "true");
-}
-
 function doPlayAgain() {
   if (gameOver) gameOver.classList.add("hidden");
   if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
-  hideLeaderboardOverlay();
+  if (leaderboardOverlay) leaderboardOverlay.classList.add("hidden");
   submitMsg.textContent = "";
   resetAll();
   state.bgIndex = (state.bgIndex + 1) % assets.bgs.length;
@@ -402,8 +391,7 @@ function generateChunk(startX){
     moveSpeed: 0,
     phase: 0,
     ledgeIndex,
-    ledge4Double: ledgeIndex === 3 && Math.random() < 0.5,   // ledge4 sometimes 2 in a row
-    ledge1DoubleMirror: ledgeIndex === 0 && Math.random() < 0.5   // ledge1 sometimes doubled, second half mirrored
+    ledge4Double: ledgeIndex === 3 && Math.random() < 0.5   // ledge4 sometimes 2 in a row
   };
   if (isMoving){
     p.moveAmp = rand(18,44);
@@ -457,8 +445,7 @@ function getLedgeGeometry(p){
   const fitH = ledgeName === "ledge1"
     ? ORIGINAL_PLATFORM_HEIGHT * LEDGE1_FIT_HEIGHT_MULT
     : ORIGINAL_PLATFORM_HEIGHT;
-  const isDouble = ledgeName === "ledge2" || (ledgeName === "ledge4" && p.ledge4Double) || (ledgeName === "ledge1" && p.ledge1DoubleMirror);
-  const mirrorSecond = ledgeName === "ledge1" && p.ledge1DoubleMirror;
+  const isDouble = ledgeName === "ledge2" || (ledgeName === "ledge4" && p.ledge4Double);
   const scale = isDouble
     ? Math.min(p.w / (2 * nw), fitH / nh)
     : Math.min(p.w / nw, fitH / nh);
@@ -466,7 +453,7 @@ function getLedgeGeometry(p){
   const dh = nh * scale;
   const totalW = isDouble ? dw * 2 : dw;
   const drawX = p.x + (p.w - totalW) / 2;
-  return { drawX, totalW, dw, dh, ledgeName, ledgeImg, isDouble, mirrorSecond };
+  return { drawX, totalW, dw, dh, ledgeName, ledgeImg, isDouble };
 }
 
 function resolvePlatformCollisions(){
@@ -525,8 +512,7 @@ function checkShardCollisions(){
 function checkHazardCollisions(){
   const pr = { x:state.player.x, y:state.player.y, w:TUNE.playerSize.w, h:TUNE.playerSize.h };
   for (const h of state.hazards){
-    const pad = (h.size - HAZARD_COLLISION_SIZE) / 2;
-    const hr = { x: h.x + pad, y: h.y + pad, w: HAZARD_COLLISION_SIZE, h: HAZARD_COLLISION_SIZE };
+    const hr = { x:h.x, y:h.y, w:h.size, h:h.size };
     if (rectsIntersect(pr, hr)){
       endRun();
       return;
@@ -608,9 +594,7 @@ function draw(){
     const scale = Math.max(w / bgImg.width, h / bgImg.height);
     const dw = bgImg.width * scale;
     const dh = bgImg.height * scale;
-    const isMobile = w <= 768;
-    // On mobile, shift background right so "Under Construction" sign is more centered (60% = slight right bias)
-    const x = isMobile ? (w / 2) - (dw * 0.6) : (w - dw) / 2;
+    const x = (w - dw) / 2;
     const y = (h - dh) / 2;
     ctx.globalAlpha = 1;
     ctx.drawImage(bgImg, x, y, dw, dh);
@@ -626,15 +610,7 @@ function draw(){
       const drawY = p.y;
       if (geo.isDouble) {
         ctx.drawImage(geo.ledgeImg, geo.drawX, drawY, geo.dw, geo.dh);
-        if (geo.mirrorSecond) {
-          ctx.save();
-          ctx.translate(geo.drawX + geo.dw * 2, drawY);
-          ctx.scale(-1, 1);
-          ctx.drawImage(geo.ledgeImg, 0, 0, geo.dw, geo.dh);
-          ctx.restore();
-        } else {
-          ctx.drawImage(geo.ledgeImg, geo.drawX + geo.dw, drawY, geo.dw, geo.dh);
-        }
+        ctx.drawImage(geo.ledgeImg, geo.drawX + geo.dw, drawY, geo.dw, geo.dh);
       } else {
         ctx.drawImage(geo.ledgeImg, geo.drawX, drawY, geo.dw, geo.dh);
       }
@@ -800,7 +776,7 @@ window.addEventListener("keyup", (e) => {
 startBtn.addEventListener("click", () => {
   overlay.classList.add("hidden");
   gameOver.classList.add("hidden");
-  hideLeaderboardOverlay();
+  if (leaderboardOverlay) leaderboardOverlay.classList.add("hidden");
   if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
   resetAll();
   state.bgIndex = (state.bgIndex + 1) % assets.bgs.length;
@@ -841,11 +817,7 @@ if (leaderboardSubmitScoreBtn) {
     try {
       const sc = Math.floor(state.score);
       await submitScore(name, sc);
-      // Delay so Firestore write is visible before refetch
-      await new Promise((r) => setTimeout(r, 800));
-      const rows = await getTopScores();
-      renderLeaderboardPopup(rows);
-      renderTop10(null, rows);
+      await getTopScores().then(rows => renderLeaderboardPopup(rows));
       burstSubmissionConfetti();
       if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "Submitted! 🎉";
     } catch (err) {
@@ -858,7 +830,7 @@ if (leaderboardSubmitScoreBtn) {
 
 if (leaderboardPlayAgainBtn) {
   leaderboardPlayAgainBtn.addEventListener("click", () => {
-    hideLeaderboardOverlay();
+    if (leaderboardOverlay) leaderboardOverlay.classList.add("hidden");
     leaderboardSubmitSection.classList.add("hidden");
     if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
     doPlayAgain();
@@ -909,7 +881,10 @@ async function openLeaderboardPopup() {
 
 if (closeLeaderboardBtn) {
   closeLeaderboardBtn.addEventListener("click", () => {
-    hideLeaderboardOverlay();
+    if (leaderboardOverlay) {
+      leaderboardOverlay.classList.add("hidden");
+      leaderboardOverlay.setAttribute("aria-hidden", "true");
+    }
     if (leaderboardSubmitSection) leaderboardSubmitSection.classList.add("hidden");
     if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
   });

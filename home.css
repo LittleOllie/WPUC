@@ -107,15 +107,8 @@ body {
 
 @media (max-width: 768px) {
 
-    /* Use phone-specific background on mobile */
-    .sky {
-        background-image: url("assets/iphonebg.webp");
-        background-position: 58% center;
-    }
-
-    /* Logo under crane hook, lifted slightly */
     .logo {
-        top: 30%;
+        top: 22%;
         left: 50%;
         width: 90vw;
         max-width: 520px;
@@ -127,17 +120,13 @@ body {
         width: 28vw;
     }
 
-    /* Enter button centered on mobile */
     .button-area {
-        left: 50%;
-        right: auto;
         bottom: 24px;
-        transform: translateX(-50%);
+        right: 24px;
     }
 
     #enterBtn {
         font-size: 18px;
         padding: 14px 32px;
-        white-space: nowrap;
     }
 }
