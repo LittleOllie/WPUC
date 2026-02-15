@@ -21,6 +21,7 @@ const howToPlayOverlay = document.getElementById("howToPlayOverlay");
 const howToPlayGotIt = document.getElementById("howToPlayGotIt");
 
 const startBtn = document.getElementById("startBtn");
+const rulesBtn = document.getElementById("rulesBtn");
 const restartBtn = document.getElementById("restartBtn");
 const saveNameBtn = document.getElementById("saveNameBtn");
 const playerNameInput = document.getElementById("playerName");
@@ -153,6 +154,7 @@ const state = {
   platforms: [],
   hazards: [],
   shardItems: [],
+  overlayShownAt: 0,
   confetti: [],
 
   // input
@@ -230,7 +232,8 @@ function endRun(){
     burstConfetti();
   }
 
-  // show game over overlay
+  // show game over overlay (guard so first tap isn't treated as button click)
+  state.overlayShownAt = Date.now();
   overlay.classList.add("hidden");
   gameOver.classList.remove("hidden");
 
@@ -243,16 +246,14 @@ function handleLeaderboard(score) {
     return;
   }
   checkLeaderboard(score).then((result) => {
-    if (result.qualifies && result.rank != null) {
-      openLeaderboardWithSubmit(result.rank);
-    } else {
-      showKeepPushingPopup("So close! Keep climbing!");
-    }
+    const rank = result.qualifies && result.rank != null ? result.rank : null;
+    openLeaderboardWithSubmit(rank);
   });
 }
 
 function showKeepPushingPopup(message) {
   if (!keepPushingPopup || !keepPushingMessage) return;
+  state.overlayShownAt = Date.now();
   keepPushingMessage.textContent = message;
   keepPushingPopup.classList.remove("hidden");
   keepPushingPopup.setAttribute("aria-hidden", "false");
@@ -267,7 +268,10 @@ function hideLeaderboardOverlay() {
   leaderboardOverlay.setAttribute("aria-hidden", "true");
 }
 
+const OVERLAY_GUARD_MS = 500;
+
 function doPlayAgain() {
+  if (state.overlayShownAt && (Date.now() - state.overlayShownAt) < OVERLAY_GUARD_MS) return;
   if (gameOver) gameOver.classList.add("hidden");
   if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
   hideLeaderboardOverlay();
@@ -279,10 +283,11 @@ function doPlayAgain() {
 
 async function openLeaderboardWithSubmit(rank) {
   if (!leaderboardOverlay || !leaderboardSubmitSection) return;
+  state.overlayShownAt = Date.now();
   leaderboardSubmitSection.classList.remove("hidden");
   const finalScore = Math.floor(state.score);
   if (leaderboardYourScore) leaderboardYourScore.textContent = `Your score: ${finalScore.toLocaleString()}`;
-  if (leaderboardPlacedRank) leaderboardPlacedRank.textContent = `You placed #${rank}!`;
+  if (leaderboardPlacedRank) leaderboardPlacedRank.textContent = rank != null ? `You placed #${rank}!` : "Add your score to the leaderboard!";
   if (closeLeaderboardBtn) closeLeaderboardBtn.classList.add("hidden");
   if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "";
   if (leaderboardNameInput) {
@@ -769,7 +774,7 @@ window.addEventListener("pointerdown", (e) => {
   // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
   const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden"));
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
   
   // Don't handle game input if clicking on input/button or if overlays are visible
   if (!isInputOrButton && !overlaysVisible) {
@@ -781,7 +786,7 @@ window.addEventListener("pointerup", (e) => {
   // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
   const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden"));
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
   
   // Don't handle game input if clicking on input/button or if overlays are visible
   if (!isInputOrButton && !overlaysVisible) {
@@ -790,20 +795,23 @@ window.addEventListener("pointerup", (e) => {
   }
 }, { passive:false });
 window.addEventListener("keydown", (e) => {
-  if (e.code === "Space"){
-    e.preventDefault();
-    onPressStart();
-  }
+  if (e.code !== "Space") return;
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
+  if (overlaysVisible) return;
+  e.preventDefault();
+  onPressStart();
 });
 window.addEventListener("keyup", (e) => {
-  if (e.code === "Space"){
-    e.preventDefault();
-    onPressEnd();
-  }
+  if (e.code !== "Space") return;
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
+  if (overlaysVisible) return;
+  e.preventDefault();
+  onPressEnd();
 });
 
 // ---- UI buttons ----
-startBtn.addEventListener("click", () => {
+startBtn.addEventListener("click", async () => {
+  if (assetsReadyPromise) await assetsReadyPromise;
   overlay.classList.add("hidden");
   gameOver.classList.add("hidden");
   hideLeaderboardOverlay();
@@ -944,42 +952,49 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-// How to play: show only on first visit
+// Rules button: show How to play modal
+if (rulesBtn && howToPlayOverlay) {
+  rulesBtn.addEventListener("click", () => {
+    howToPlayOverlay.classList.remove("hidden");
+    howToPlayOverlay.setAttribute("aria-hidden", "false");
+  });
+}
 if (howToPlayGotIt && howToPlayOverlay) {
   howToPlayGotIt.addEventListener("click", () => {
-    localStorage.setItem("obh_howToPlaySeen", "1");
     howToPlayOverlay.classList.add("hidden");
     howToPlayOverlay.setAttribute("aria-hidden", "true");
-    overlay.classList.remove("hidden");
   });
 }
 
 // ---- Init ----
-(async function init(){
+let assetsReadyPromise = null;
+
+(function init(){
   console.log("🎮 One Button Hero — Initializing...");
   fitCanvas();
-  await loadAssets();
-  console.log("✅ Assets loaded");
 
-  // name preload
-  const nm = getStoredName();
-  if (nm) playerNameInput.value = nm;
-
-  // prep
-  state.bgIndex = Math.floor(Math.random() * assets.bgs.length);
-  resetAll();
-
-  // initial top 10
-  await refreshLeaderboard();
-
-  // First visit: show How to play; otherwise show start overlay
-  const seenHowToPlay = localStorage.getItem("obh_howToPlaySeen");
-  if (!seenHowToPlay && howToPlayOverlay && overlay) {
-    overlay.classList.add("hidden");
-    howToPlayOverlay.classList.remove("hidden");
-    howToPlayOverlay.setAttribute("aria-hidden", "false");
+  // Show start overlay immediately; load assets in background
+  if (howToPlayOverlay) howToPlayOverlay.classList.add("hidden");
+  if (overlay) overlay.classList.remove("hidden");
+  if (startBtn) {
+    startBtn.textContent = "Loading...";
+    startBtn.disabled = true;
   }
 
-  console.log("✅ Game ready");
+  assetsReadyPromise = loadAssets().then(() => {
+    console.log("✅ Assets loaded");
+    if (startBtn) {
+      startBtn.textContent = "Start";
+      startBtn.disabled = false;
+    }
+    const nm = getStoredName();
+    if (nm && playerNameInput) playerNameInput.value = nm;
+    state.bgIndex = Math.floor(Math.random() * assets.bgs.length);
+    resetAll();
+    return refreshLeaderboard();
+  }).then(() => {
+    console.log("✅ Game ready");
+  });
+
   requestAnimationFrame(loop);
 })();

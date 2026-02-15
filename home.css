@@ -69,6 +69,7 @@ html, body {
 }
 
 #enterBtn {
+    font-family: "Fredoka", sans-serif;
     background: #ffdd33;
     border: none;
     padding: 18px 48px;
