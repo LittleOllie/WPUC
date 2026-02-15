@@ -19,6 +19,11 @@
   </div>
   <img src="assets/cranehook.webp" class="game-hook" alt="" />
 
+  <!-- Dedicated Jump button (mobile: jump only here; desktop: Space + click) -->
+  <div class="jump-btn-container" id="jumpBtnContainer" aria-hidden="true">
+    <span class="jump-btn-helper" id="jumpBtnHelper">Tap to jump</span>
+    <button type="button" class="jump-btn" id="jumpBtn" aria-label="Jump">JUMP</button>
+  </div>
 
   <a href="index.html" class="back-to-main" id="backToMainBtn">← Back to main</a>
 
@@ -83,6 +88,7 @@
   <!-- Leaderboard popup (view or qualified submit) -->
   <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true">
     <div class="leaderboard-card">
+      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules">Rules</button>
       <img src="assets/onebuttonherologo.webp" class="leaderboard-logo" alt="One Button Hero" />
       <h2 class="leaderboard-title">Global Leaderboard</h2>
       <div id="leaderboardList" class="leaderboard-list-popup"></div>
@@ -96,6 +102,10 @@
           <button id="leaderboardPlayAgainBtn" type="button" class="btn-lo-secondary">PLAY AGAIN</button>
         </div>
         <p id="leaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
+      </div>
+      <div id="leaderboardPlayAgainOnly" class="leaderboard-play-again-only hidden">
+        <p id="leaderboardYourScoreOnly" class="leaderboard-your-score">Your score: 0</p>
+        <button id="leaderboardPlayAgainOnlyBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
       </div>
       <button id="closeLeaderboardBtn" type="button" class="btn-lo-yellow">Close</button>
     </div>

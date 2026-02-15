@@ -106,7 +106,7 @@ export async function checkLeaderboard(score) {
 }
 
 /**
- * Submits a new score (allows multiple entries with the same name).
+ * Submits a new score. Multiple entries per person allowed; you can submit again every time you get 500+.
  * @param {string} name
  * @param {number} score
  */
@@ -114,12 +114,6 @@ export async function submitScore(name, score) {
   const nm = (name || "").trim().slice(0, MAX_NAME_LEN);
   const sc = Math.floor(Number(score) || 0);
   if (!nm) throw new Error("Name required");
-
-  const lastName = localStorage.getItem("obh_last_submit_name") || "";
-  const lastScore = Number(localStorage.getItem("obh_last_submit_score") || -1);
-  if (nm === lastName && sc === lastScore) {
-    throw new Error("You already submitted this score");
-  }
 
   const now = Date.now();
   const last = Number(localStorage.getItem("obh_last_submit") || 0);
@@ -133,8 +127,6 @@ export async function submitScore(name, score) {
       createdAt: serverTimestamp(),
     });
     localStorage.setItem("obh_last_submit", String(now));
-    localStorage.setItem("obh_last_submit_name", nm);
-    localStorage.setItem("obh_last_submit_score", String(sc));
   } catch (e) {
     console.warn("Leaderboard submit:", e?.message);
     throw e;

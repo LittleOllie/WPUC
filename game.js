@@ -49,6 +49,12 @@ const leaderboardNameInput = document.getElementById("leaderboardNameInput");
 const leaderboardSubmitScoreBtn = document.getElementById("leaderboardSubmitScoreBtn");
 const leaderboardPlayAgainBtn = document.getElementById("leaderboardPlayAgainBtn");
 const leaderboardSubmitMsg = document.getElementById("leaderboardSubmitMsg");
+const leaderboardPlayAgainOnly = document.getElementById("leaderboardPlayAgainOnly");
+const leaderboardYourScoreOnly = document.getElementById("leaderboardYourScoreOnly");
+const leaderboardPlayAgainOnlyBtn = document.getElementById("leaderboardPlayAgainOnlyBtn");
+const jumpBtn = document.getElementById("jumpBtn");
+const jumpBtnContainer = document.getElementById("jumpBtnContainer");
+const jumpBtnHelper = document.getElementById("jumpBtnHelper");
 
 const assets = {
   bgs: ["runnergame"],
@@ -162,7 +168,10 @@ const state = {
   pressStartMs: 0,
 
   // best local
-  bestLocal: Number(localStorage.getItem("obh_best") || 0)
+  bestLocal: Number(localStorage.getItem("obh_best") || 0),
+  isMobile: false,
+  pressingFromJumpBtn: false,
+  jumpHelperTimeoutId: null
 };
 
 function resetWorldOnly(){
@@ -177,19 +186,31 @@ function resetWorldOnly(){
   state.shardItems = [];
 
   const startY = h * 0.65;
-  const startLedgeIndex = Math.floor(Math.random() * 4);
-  state.platforms.push({
-    x: state.player.x - 80,
-    y: startY,
-    w: 340,
-    baseY: startY,
-    moveAmp: 0,
-    moveSpeed: 0,
-    phase: 0,
-    ledgeIndex: startLedgeIndex,
-    ledge4Double: startLedgeIndex === 3 && Math.random() < 0.5,
-    ledge1DoubleMirror: startLedgeIndex === 0 && Math.random() < 0.5
-  });
+  const ledgeW = 220;
+  const ledgeImg = assets.images.get("ledge3");
+  let step = ledgeW;
+  if (ledgeImg) {
+    const nw = ledgeImg.naturalWidth;
+    const nh = ledgeImg.naturalHeight;
+    const fitH = ORIGINAL_PLATFORM_HEIGHT;
+    const scale = Math.min(ledgeW / nw, fitH / nh);
+    step = nw * scale;
+  }
+  const startX = state.player.x - ledgeW * 0.5;
+  for (let i = 0; i < 3; i++) {
+    state.platforms.push({
+      x: Math.round(startX + i * step),
+      y: startY,
+      w: ledgeW,
+      baseY: startY,
+      moveAmp: 0,
+      moveSpeed: 0,
+      phase: 0,
+      ledgeIndex: 2,
+      ledge4Double: false,
+      ledge1DoubleMirror: false
+    });
+  }
 
   ensureContent();
 }
@@ -216,11 +237,25 @@ function startRun(){
   if (state.isRunning) return;
   state.isGameOver = false;
   state.isRunning = true;
+  document.body.dataset.gameActive = "true";
+  if (state.isMobile && jumpBtnHelper) {
+    jumpBtnHelper.classList.remove("fade-out");
+    if (state.jumpHelperTimeoutId) clearTimeout(state.jumpHelperTimeoutId);
+    state.jumpHelperTimeoutId = setTimeout(() => {
+      if (jumpBtnHelper) jumpBtnHelper.classList.add("fade-out");
+      state.jumpHelperTimeoutId = null;
+    }, 3000);
+  }
 }
 
 function endRun(){
   state.isRunning = false;
   state.isGameOver = true;
+  document.body.dataset.gameActive = "";
+  if (state.jumpHelperTimeoutId) {
+    clearTimeout(state.jumpHelperTimeoutId);
+    state.jumpHelperTimeoutId = null;
+  }
 
   const final = Math.floor(state.score);
   finalLine.textContent = `Score: ${final.toLocaleString()} • Best: ${Math.max(state.bestLocal, final).toLocaleString()}`;
@@ -241,14 +276,15 @@ function endRun(){
 }
 
 function handleLeaderboard(score) {
-  if (score < MIN_LEADERBOARD_SCORE) {
-    showKeepPushingPopup("Score 500+ to enter the Global Leaderboard!");
-    return;
+  if (score >= MIN_LEADERBOARD_SCORE) {
+    checkLeaderboard(score).then((result) => {
+      const qualifies = result.qualifies && (result.rank != null);
+      const rank = qualifies ? result.rank : null;
+      openLeaderboardAfterGame(score, qualifies, rank);
+    });
+  } else {
+    openLeaderboardAfterGame(score, false, null);
   }
-  checkLeaderboard(score).then((result) => {
-    const rank = result.qualifies && result.rank != null ? result.rank : null;
-    openLeaderboardWithSubmit(rank);
-  });
 }
 
 function showKeepPushingPopup(message) {
@@ -281,18 +317,28 @@ function doPlayAgain() {
   startRun();
 }
 
-async function openLeaderboardWithSubmit(rank) {
-  if (!leaderboardOverlay || !leaderboardSubmitSection) return;
+/** Opens leaderboard after every game: Top 10 list + submit (if top 10) or just Play Again. */
+async function openLeaderboardAfterGame(score, qualifies, rank) {
+  if (!leaderboardOverlay) return;
   state.overlayShownAt = Date.now();
-  leaderboardSubmitSection.classList.remove("hidden");
-  const finalScore = Math.floor(state.score);
-  if (leaderboardYourScore) leaderboardYourScore.textContent = `Your score: ${finalScore.toLocaleString()}`;
-  if (leaderboardPlacedRank) leaderboardPlacedRank.textContent = rank != null ? `You placed #${rank}!` : "Add your score to the leaderboard!";
+  const finalScore = Math.floor(score);
+
   if (closeLeaderboardBtn) closeLeaderboardBtn.classList.add("hidden");
-  if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "";
-  if (leaderboardNameInput) {
-    leaderboardNameInput.value = getStoredName() || "";
-    leaderboardNameInput.focus();
+
+  if (qualifies && leaderboardSubmitSection) {
+    leaderboardSubmitSection.classList.remove("hidden");
+    if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
+    if (leaderboardYourScore) leaderboardYourScore.textContent = `Your score: ${finalScore.toLocaleString()}`;
+    if (leaderboardPlacedRank) leaderboardPlacedRank.textContent = rank != null ? `You placed #${rank}!` : "Add your score to the leaderboard!";
+    if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "";
+    if (leaderboardNameInput) {
+      leaderboardNameInput.value = getStoredName() || "";
+      leaderboardNameInput.focus();
+    }
+  } else {
+    if (leaderboardSubmitSection) leaderboardSubmitSection.classList.add("hidden");
+    if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.remove("hidden");
+    if (leaderboardYourScoreOnly) leaderboardYourScoreOnly.textContent = `Your score: ${finalScore.toLocaleString()}`;
   }
 
   leaderboardOverlay.classList.remove("hidden");
@@ -433,17 +479,20 @@ function generateChunk(startX){
   }
 
   const hazards = [];
-  const hazardChance = 0.18 + 0.22 * difficulty;
-  if (Math.random() < hazardChance){
-    const hx = p.x + (Math.random()<0.5 ? 10 : (p.w - ORIGINAL_HAZARD_GROUND_SIZE - 10));
-    const hy = p.y - ORIGINAL_HAZARD_GROUND_SIZE;
-    hazards.push({ x:hx, y:hy, size:ORIGINAL_HAZARD_GROUND_SIZE });
-  }
+  const gracePeriod = 2;
+  if (state.elapsed >= gracePeriod) {
+    const hazardChance = 0.18 + 0.22 * difficulty;
+    if (Math.random() < hazardChance){
+      const hx = p.x + (Math.random()<0.5 ? 10 : (p.w - ORIGINAL_HAZARD_GROUND_SIZE - 10));
+      const hy = p.y - ORIGINAL_HAZARD_GROUND_SIZE;
+      hazards.push({ x:hx, y:hy, size:ORIGINAL_HAZARD_GROUND_SIZE });
+    }
 
-  if (pattern === 2 && difficulty > 0.2){
-    const ceilingY = p.y - 140;
-    if (ceilingY > 70){
-      hazards.push({ x: p.x + p.w * 0.45 - ORIGINAL_HAZARD_CEILING_SIZE / 2, y: ceilingY, size: ORIGINAL_HAZARD_CEILING_SIZE });
+    if (pattern === 2 && difficulty > 0.2){
+      const ceilingY = p.y - 140;
+      if (ceilingY > 70){
+        hazards.push({ x: p.x + p.w * 0.45 - ORIGINAL_HAZARD_CEILING_SIZE / 2, y: ceilingY, size: ORIGINAL_HAZARD_CEILING_SIZE });
+      }
     }
   }
 
@@ -770,41 +819,61 @@ function onPressEnd(){
   state.isPressing = false;
 }
 
+function overlaysVisible(){
+  return !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
+}
+
+function isJumpButtonTarget(target){
+  return target && (target === jumpBtn || target === jumpBtnContainer || (jumpBtnContainer && jumpBtnContainer.contains(target)));
+}
+
 window.addEventListener("pointerdown", (e) => {
-  // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
-  const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
-  
-  // Don't handle game input if clicking on input/button or if overlays are visible
-  if (!isInputOrButton && !overlaysVisible) {
+  const isInputOrButton = target.tagName === "INPUT" || target.tagName === "BUTTON";
+  if (overlaysVisible()) return;
+
+  if (state.isMobile) {
+    if (isJumpButtonTarget(target)) {
+      e.preventDefault();
+      state.pressingFromJumpBtn = true;
+      onPressStart();
+    }
+    return;
+  }
+  if (!isInputOrButton || isJumpButtonTarget(target)) {
     e.preventDefault();
     onPressStart();
   }
-}, { passive:false });
+}, { passive: false });
+
 window.addEventListener("pointerup", (e) => {
-  // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
-  const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
-  
-  // Don't handle game input if clicking on input/button or if overlays are visible
-  if (!isInputOrButton && !overlaysVisible) {
+  const isInputOrButton = target.tagName === "INPUT" || target.tagName === "BUTTON";
+  if (overlaysVisible()) return;
+
+  if (state.isMobile) {
+    if (state.pressingFromJumpBtn) {
+      e.preventDefault();
+      onPressEnd();
+    }
+    state.pressingFromJumpBtn = false;
+    return;
+  }
+  if (!isInputOrButton || isJumpButtonTarget(target)) {
     e.preventDefault();
     onPressEnd();
   }
-}, { passive:false });
+}, { passive: false });
+
 window.addEventListener("keydown", (e) => {
   if (e.code !== "Space") return;
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
-  if (overlaysVisible) return;
+  if (overlaysVisible()) return;
   e.preventDefault();
   onPressStart();
 });
 window.addEventListener("keyup", (e) => {
   if (e.code !== "Space") return;
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
-  if (overlaysVisible) return;
+  if (overlaysVisible()) return;
   e.preventDefault();
   onPressEnd();
 });
@@ -880,6 +949,16 @@ if (leaderboardPlayAgainBtn) {
   leaderboardPlayAgainBtn.addEventListener("click", () => {
     hideLeaderboardOverlay();
     leaderboardSubmitSection.classList.add("hidden");
+    if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
+    if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
+    doPlayAgain();
+  });
+}
+
+if (leaderboardPlayAgainOnlyBtn) {
+  leaderboardPlayAgainOnlyBtn.addEventListener("click", () => {
+    hideLeaderboardOverlay();
+    if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
     if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
     doPlayAgain();
   });
@@ -916,6 +995,7 @@ async function refreshLeaderboard() {
 async function openLeaderboardPopup() {
   if (!leaderboardOverlay) return;
   if (leaderboardSubmitSection) leaderboardSubmitSection.classList.add("hidden");
+  if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
   if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
   leaderboardOverlay.classList.remove("hidden");
   leaderboardOverlay.setAttribute("aria-hidden", "false");
@@ -931,7 +1011,7 @@ if (closeLeaderboardBtn) {
   closeLeaderboardBtn.addEventListener("click", () => {
     hideLeaderboardOverlay();
     if (leaderboardSubmitSection) leaderboardSubmitSection.classList.add("hidden");
-    if (closeLeaderboardBtn) closeLeaderboardBtn.classList.remove("hidden");
+    if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
   });
 }
 if (openLeaderboardBtn) openLeaderboardBtn.addEventListener("click", () => openLeaderboardPopup());
@@ -953,11 +1033,18 @@ function loop(t){
 }
 
 // Rules button: show How to play modal
-if (rulesBtn && howToPlayOverlay) {
-  rulesBtn.addEventListener("click", () => {
+function showRulesOverlay() {
+  if (howToPlayOverlay) {
     howToPlayOverlay.classList.remove("hidden");
     howToPlayOverlay.setAttribute("aria-hidden", "false");
-  });
+  }
+}
+if (rulesBtn && howToPlayOverlay) {
+  rulesBtn.addEventListener("click", showRulesOverlay);
+}
+const leaderboardRulesBtn = document.getElementById("leaderboardRulesBtn");
+if (leaderboardRulesBtn && howToPlayOverlay) {
+  leaderboardRulesBtn.addEventListener("click", showRulesOverlay);
 }
 if (howToPlayGotIt && howToPlayOverlay) {
   howToPlayGotIt.addEventListener("click", () => {
@@ -971,6 +1058,8 @@ let assetsReadyPromise = null;
 
 (function init(){
   console.log("🎮 One Button Hero — Initializing...");
+  state.isMobile = window.matchMedia("(pointer: coarse)").matches;
+  document.body.dataset.mobile = state.isMobile ? "true" : "";
   fitCanvas();
 
   // Show start overlay immediately; load assets in background
