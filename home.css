@@ -1,23 +1,42 @@
-body {
+html, body {
     margin: 0;
+    padding: 0;
     overflow: hidden;
     font-family: Arial, sans-serif;
+    width: 100%;
+    height: 100%;
 }
 
 .sky {
-    width: 100vw;
-    min-height: 100vh;          /* change from height to min-height */
-    background-image: url("assets/websitebg.webp");
+    width: 100%;
+    min-height: 100vh;
+    background-image: url("assets/mainbg.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     position: relative;
+    box-sizing: border-box;
 }
 
+/* Clouds – move left across screen, wrap from right when off left (all pages) */
+.cloud {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+.cloud-1 { top: 4%;  left: 100%; width: 36vw;  max-width: 400px; animation: cloudMoveLeft 52s linear infinite; animation-delay: 0s;   }
+.cloud-2 { top: 8%;  left: 100%; width: 28vw;  max-width: 320px; animation: cloudMoveLeft 58s linear infinite; animation-delay: -15s; }
+.cloud-3 { top: 2%;  left: 100%; width: 32vw;  max-width: 360px; animation: cloudMoveLeft 48s linear infinite; animation-delay: -28s; }
 
-/* LOGO POSITION – 2x size with subtle float */
+@keyframes cloudMoveLeft {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-140vw); }
+}
+
+/* LOGO POSITION – 2x size with subtle float (above clouds) */
 .logo {
     position: absolute;
+    z-index: 1;
     top: 18%;
     left: 35%;
     transform: translate(-50%, -50%);
@@ -28,9 +47,10 @@ body {
 }
 
 
-/* CRANE HOOK POSITION */
+/* CRANE HOOK POSITION (above clouds) */
 .hook {
     position: absolute;
+    z-index: 1;
     top: -10px;
     right: 8%;
     width: 14vw;
@@ -40,9 +60,10 @@ body {
     animation: swing 4s ease-in-out infinite alternate;
 }
 
-/* ENTER BUTTON – bottom right */
+/* ENTER BUTTON – bottom right (above clouds) */
 .button-area {
     position: absolute;
+    z-index: 1;
     bottom: 40px;
     right: 40px;
 }
@@ -107,26 +128,53 @@ body {
 
 @media (max-width: 768px) {
 
+    /* Fill viewport on iPhone – avoid white bars and cut-off */
+    html, body {
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+    .sky {
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: 100%;
+        background-image: url("assets/iphonemainbg.webp");
+        background-size: cover;
+        background-position: 58% center;
+    }
+
+    /* Clouds at slightly different levels, all moving left (same as desktop) */
+    .cloud-1 { top: 2%;  left: 100%; width: 44vw;  animation: cloudMoveLeft 50s linear infinite; animation-delay: 0s;   }
+    .cloud-2 { top: 10%; left: 100%; width: 40vw;  animation: cloudMoveLeft 55s linear infinite; animation-delay: -18s; }
+    .cloud-3 { top: 5%;  left: 100%; width: 48vw;  animation: cloudMoveLeft 48s linear infinite; animation-delay: -30s; }
+
+    /* Logo under crane hook – no min-width so it fits narrow viewports */
     .logo {
-        top: 22%;
+        top: 30%;
         left: 50%;
         width: 90vw;
         max-width: 520px;
+        min-width: 0;
         transform: translate(-50%, -50%);
     }
 
+    /* Crane hook – smaller so it fits on screen, inset from edge */
     .hook {
-        right: 5%;
-        width: 28vw;
+        right: 4%;
+        width: 24vw;
+        max-width: 100px;
     }
 
+    /* Enter button centered, near bottom of viewport */
     .button-area {
+        left: 50%;
+        right: auto;
         bottom: 24px;
-        right: 24px;
+        transform: translateX(-50%);
     }
 
     #enterBtn {
         font-size: 18px;
         padding: 14px 32px;
+        white-space: nowrap;
     }
 }

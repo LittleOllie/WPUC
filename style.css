@@ -14,6 +14,28 @@ html, body {
     height: 100vh;
   }
 
+  /* Cloud layer – top 1/3 to 1/2, behind crane hook */
+  .game-cloud-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .game-cloud {
+    position: absolute;
+    animation: cloudMoveLeft 50s linear infinite;
+  }
+  .game-cloud-1 { top: 6%;  left: 100%; width: 40vw;  max-width: 360px; animation: cloudMoveLeft 52s linear infinite; animation-delay: 0s;   }
+  .game-cloud-2 { top: 12%; left: 100%; width: 32vw;  max-width: 280px; animation: cloudMoveLeft 58s linear infinite; animation-delay: -18s; }
+  .game-cloud-3 { top: 3%;  left: 100%; width: 36vw;  max-width: 320px; animation: cloudMoveLeft 46s linear infinite; animation-delay: -32s; }
+  @keyframes cloudMoveLeft {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-140vw); }
+  }
+
   /* Crane hook – match home page exactly (position, size, swing) */
   .game-hook {
     position: fixed;

@@ -132,6 +132,7 @@ export async function submitScore(name, score) {
       const oldScore = Math.floor(Number(docSnap.data().score) || 0);
       if (sc <= oldScore) return;
       await updateDoc(doc(db, SCORES_COL, docSnap.id), {
+        name: nm,
         score: sc,
         createdAt: serverTimestamp(),
       });
