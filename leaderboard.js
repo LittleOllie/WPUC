@@ -1,4 +1,3 @@
-// leaderboard.js – Global Top 10 (Firestore: single collection "scores")
 import { db } from "./firebase.js";
 import {
   collection,
@@ -12,47 +11,24 @@ import {
 
 const STORAGE_KEY = "loPlayerName";
 const MAX_NAME_LEN = 15;
-const SUBMIT_COOLDOWN_MS = 3000;
-
-/** Minimum score required to qualify for the global leaderboard. */
 export const MIN_LEADERBOARD_SCORE = 500;
 
-let nameModalResolve = null;
+const SCORES_COL = "scores";
 
-// ---------- Player name (one time only, localStorage) ----------
+/**
+ * This prevents duplicate submission during a single game run.
+ * Must be reset when a new run starts.
+ */
+let hasSubmittedThisRun = false;
 
-export function getPlayerName() {
-  const stored = (localStorage.getItem(STORAGE_KEY) || "").trim().slice(0, MAX_NAME_LEN);
-  if (stored) return Promise.resolve(stored);
-
-  const modal = document.getElementById("nameModal");
-  const input = document.getElementById("nameModalInput");
-  if (!modal || !input) return Promise.resolve("Player");
-
-  modal.classList.remove("hidden");
-  input.value = "";
-  input.focus();
-
-  return new Promise((resolve) => {
-    nameModalResolve = resolve;
-  });
-}
-
-export function submitNameModal(name) {
-  const n = (name || "").trim().slice(0, MAX_NAME_LEN);
-  if (n) localStorage.setItem(STORAGE_KEY, n);
-
-  const modal = document.getElementById("nameModal");
-  if (modal) modal.classList.add("hidden");
-
-  if (nameModalResolve) {
-    nameModalResolve(n || localStorage.getItem(STORAGE_KEY) || "Player");
-    nameModalResolve = null;
-  }
-}
+/* --------------------------------------------------
+   PLAYER NAME (stored once in localStorage)
+-------------------------------------------------- */
 
 export function getStoredName() {
-  return (localStorage.getItem(STORAGE_KEY) || "").trim().slice(0, MAX_NAME_LEN);
+  return (localStorage.getItem(STORAGE_KEY) || "")
+    .trim()
+    .slice(0, MAX_NAME_LEN);
 }
 
 export function setStoredName(name) {
@@ -60,14 +36,10 @@ export function setStoredName(name) {
   if (n) localStorage.setItem(STORAGE_KEY, n);
 }
 
-// ---------- Firestore: single collection "scores" ----------
+/* --------------------------------------------------
+   LEADERBOARD FETCH
+-------------------------------------------------- */
 
-const SCORES_COL = "scores";
-
-/**
- * Fetches global Top 10 (all players).
- * @returns {Promise<Array<{ id: string, name: string, score: number, createdAt: any }>>}
- */
 export async function getTopScores() {
   try {
     const q = query(
@@ -83,21 +55,23 @@ export async function getTopScores() {
   }
 }
 
-/**
- * Returns whether score qualifies for Top 10 and optional rank.
- * @param {number} score
- * @returns {Promise<{ qualifies: boolean, rank?: number }>}
- */
 export async function checkLeaderboard(score) {
   try {
     const top = await getTopScores();
     const num = top.length;
-    const lowest = num > 0 ? Math.min(...top.map((r) => Number(r.score) || 0)) : 0;
 
-    if (num < 10 || score > lowest) {
-      const rank = top.filter((r) => (Number(r.score) || 0) > score).length + 1;
+    if (num < 10) {
+      return { qualifies: true, rank: num + 1 };
+    }
+
+    const lowest = Math.min(...top.map((r) => Number(r.score) || 0));
+
+    if (score > lowest) {
+      const rank =
+        top.filter((r) => (Number(r.score) || 0) > score).length + 1;
       return { qualifies: true, rank };
     }
+
     return { qualifies: false };
   } catch (e) {
     console.warn("Leaderboard check:", e?.message);
@@ -105,60 +79,71 @@ export async function checkLeaderboard(score) {
   }
 }
 
-/**
- * Submits a new score. Multiple entries per person allowed; you can submit again every time you get 500+.
- * @param {string} name
- * @param {number} score
- */
+/* --------------------------------------------------
+   SUBMIT SCORE (clean + safe)
+-------------------------------------------------- */
+
 export async function submitScore(name, score) {
+  if (hasSubmittedThisRun) {
+    throw new Error("Score already submitted this run");
+  }
+
   const nm = (name || "").trim().slice(0, MAX_NAME_LEN);
   const sc = Math.floor(Number(score) || 0);
-  if (!nm) throw new Error("Name required");
 
-  const now = Date.now();
-  const last = Number(localStorage.getItem("obh_last_submit") || 0);
-  if (now - last < SUBMIT_COOLDOWN_MS) throw new Error("Wait a moment before submitting again");
+  if (!nm) throw new Error("Name required");
+  if (sc < MIN_LEADERBOARD_SCORE)
+    throw new Error("Score does not meet minimum");
+
+  hasSubmittedThisRun = true;
 
   try {
-    const col = collection(db, SCORES_COL);
-    await addDoc(col, {
+    await addDoc(collection(db, SCORES_COL), {
       name: nm,
       score: sc,
       createdAt: serverTimestamp(),
     });
-    localStorage.setItem("obh_last_submit", String(now));
   } catch (e) {
+    hasSubmittedThisRun = false; // allow retry if error
     console.warn("Leaderboard submit:", e?.message);
     throw e;
   }
 }
 
-/**
- * Renders Top 10 into #leaderboardList (popup). Format: #1 NAME SCORE. rank-gold/silver/bronze, staggered fade-in.
- * @param {Array<{ name: string, score: number }>} rows
- */
+/* --------------------------------------------------
+   RESET SUBMISSION LOCK (call on new run)
+-------------------------------------------------- */
+
+export function resetSubmissionLock() {
+  hasSubmittedThisRun = false;
+}
+
+/* --------------------------------------------------
+   RENDER POPUP LEADERBOARD
+-------------------------------------------------- */
+
 export function renderLeaderboardPopup(rows) {
   const el = document.getElementById("leaderboardList");
   if (!el) return;
 
   el.innerHTML = "";
-  el.classList.remove("leaderboard-visible");
   const rankClasses = ["rank-gold", "rank-silver", "rank-bronze"];
+  const medals = ["🥇", "🥈", "🥉"];
 
   rows.forEach((r, i) => {
     const row = document.createElement("div");
     row.className = "leaderboard-popup-row";
     if (rankClasses[i]) row.classList.add(rankClasses[i]);
-    row.style.animationDelay = `${i * 0.06}s`;
 
     const rank = document.createElement("span");
     rank.className = "leaderboard-popup-rank";
-    const popupMedals = ["🥇", "🥈", "🥉"];
-    rank.textContent = popupMedals[i] ?? `#${i + 1}`;
+    rank.textContent = medals[i] ?? `#${i + 1}`;
 
     const name = document.createElement("span");
     name.className = "leaderboard-popup-name";
-    const nameText = (r.name || "Player").slice(0, MAX_NAME_LEN).toUpperCase();
+    const nameText = (r.name || "Player")
+      .slice(0, MAX_NAME_LEN)
+      .toUpperCase();
     name.textContent = i === 0 ? `👑 ${nameText}` : nameText;
 
     const score = document.createElement("span");
@@ -170,44 +155,4 @@ export function renderLeaderboardPopup(rows) {
     row.appendChild(score);
     el.appendChild(row);
   });
-
-  el.classList.add("leaderboard-visible");
-}
-
-/**
- * Renders Top 10 into #leaderboard (game over panel). Kept for inline list.
- */
-export function renderTop10(listEl, rows) {
-  const el = listEl || document.getElementById("leaderboard");
-  if (!el) return;
-
-  el.innerHTML = "";
-  const medals = ["🥇", "🥈", "🥉"];
-  rows.forEach((r, i) => {
-    const row = document.createElement("div");
-    row.className = "leaderboard-row";
-    if (i === 0) row.classList.add("gold");
-    else if (i === 1) row.classList.add("silver");
-    else if (i === 2) row.classList.add("bronze");
-
-    const rank = document.createElement("span");
-    rank.className = "leaderboard-rank";
-    rank.textContent = medals[i] ?? `#${i + 1}`;
-
-    const name = document.createElement("span");
-    name.className = "leaderboard-name";
-    const nameText = (r.name || "Player").slice(0, MAX_NAME_LEN);
-    name.textContent = i === 0 ? `👑 ${nameText}` : nameText;
-
-    const score = document.createElement("span");
-    score.className = "leaderboard-score";
-    score.textContent = Math.floor(Number(r.score) || 0).toLocaleString();
-
-    row.appendChild(rank);
-    row.appendChild(name);
-    row.appendChild(score);
-    el.appendChild(row);
-  });
-
-  el.classList.add("leaderboard-visible");
 }
