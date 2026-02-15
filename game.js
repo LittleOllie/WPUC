@@ -40,6 +40,7 @@ const menuLeaderboardBtn = document.getElementById("menuLeaderboardBtn");
 const keepPushingPopup = document.getElementById("keepPushingPopup");
 const keepPushingMessage = document.getElementById("keepPushingMessage");
 const keepPushingPlayAgainBtn = document.getElementById("keepPushingPlayAgainBtn");
+const keepPushingLeaderboardBtn = document.getElementById("keepPushingLeaderboardBtn");
 const leaderboardSubmitSection = document.getElementById("leaderboardSubmitSection");
 const leaderboardPlacedRank = document.getElementById("leaderboardPlacedRank");
 const leaderboardYourScore = document.getElementById("leaderboardYourScore");
@@ -828,6 +829,12 @@ if (keepPushingPlayAgainBtn) {
   keepPushingPlayAgainBtn.addEventListener("click", () => {
     if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
     doPlayAgain();
+  });
+}
+if (keepPushingLeaderboardBtn) {
+  keepPushingLeaderboardBtn.addEventListener("click", () => {
+    if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
+    openLeaderboardPopup();
   });
 }
 

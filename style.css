@@ -177,7 +177,6 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -187,9 +186,25 @@ html, body {
     padding: 20px;
     box-sizing: border-box;
   }
+  #overlay {
+    background: rgba(76, 111, 255, 0.92);
+  }
+  #gameOver {
+    background: rgba(0, 0, 0, 0.85);
+  }
 
   #overlay.hidden, #gameOver.hidden {
     display: none;
+  }
+
+  #overlay #startBtn {
+    background: var(--lo-yellow);
+    color: #1a1a2e;
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--lo-yellow-dark), 0 6px 20px rgba(255, 221, 85, 0.4);
+  }
+  #overlay #startBtn:hover {
+    box-shadow: 0 5px 0 var(--lo-yellow-dark), 0 8px 24px rgba(255, 221, 85, 0.5);
   }
 
   .game-title-logo {
@@ -765,6 +780,24 @@ html, body {
     font-size: 18px;
     font-weight: 800;
     letter-spacing: 0.04em;
+  }
+  .btn-leaderboard-keep-pushing {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.25);
+    color: #1a1a2e;
+    border: 2px solid rgba(26, 26, 46, 0.3);
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-leaderboard-keep-pushing:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(26, 26, 46, 0.4);
   }
 
   /* Leaderboard submit section (only when qualified) */
