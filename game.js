@@ -17,6 +17,8 @@ const ctx = canvas.getContext("2d");
 
 const overlay = document.getElementById("overlay");
 const gameOver = document.getElementById("gameOver");
+const howToPlayOverlay = document.getElementById("howToPlayOverlay");
+const howToPlayGotIt = document.getElementById("howToPlayGotIt");
 
 const startBtn = document.getElementById("startBtn");
 const restartBtn = document.getElementById("restartBtn");
@@ -40,6 +42,7 @@ const keepPushingMessage = document.getElementById("keepPushingMessage");
 const keepPushingPlayAgainBtn = document.getElementById("keepPushingPlayAgainBtn");
 const leaderboardSubmitSection = document.getElementById("leaderboardSubmitSection");
 const leaderboardPlacedRank = document.getElementById("leaderboardPlacedRank");
+const leaderboardYourScore = document.getElementById("leaderboardYourScore");
 const leaderboardNameInput = document.getElementById("leaderboardNameInput");
 const leaderboardSubmitScoreBtn = document.getElementById("leaderboardSubmitScoreBtn");
 const leaderboardPlayAgainBtn = document.getElementById("leaderboardPlayAgainBtn");
@@ -276,6 +279,8 @@ function doPlayAgain() {
 async function openLeaderboardWithSubmit(rank) {
   if (!leaderboardOverlay || !leaderboardSubmitSection) return;
   leaderboardSubmitSection.classList.remove("hidden");
+  const finalScore = Math.floor(state.score);
+  if (leaderboardYourScore) leaderboardYourScore.textContent = `Your score: ${finalScore.toLocaleString()}`;
   if (leaderboardPlacedRank) leaderboardPlacedRank.textContent = `You placed #${rank}!`;
   if (closeLeaderboardBtn) closeLeaderboardBtn.classList.add("hidden");
   if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "";
@@ -763,7 +768,7 @@ window.addEventListener("pointerdown", (e) => {
   // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
   const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden");
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden"));
   
   // Don't handle game input if clicking on input/button or if overlays are visible
   if (!isInputOrButton && !overlaysVisible) {
@@ -775,7 +780,7 @@ window.addEventListener("pointerup", (e) => {
   // Only handle game input when game is running and not clicking on interactive elements
   const target = e.target;
   const isInputOrButton = target.tagName === 'INPUT' || target.tagName === 'BUTTON';
-  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden");
+  const overlaysVisible = !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden"));
   
   // Don't handle game input if clicking on input/button or if overlays are visible
   if (!isInputOrButton && !overlaysVisible) {
@@ -932,6 +937,16 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
+// How to play: show only on first visit
+if (howToPlayGotIt && howToPlayOverlay) {
+  howToPlayGotIt.addEventListener("click", () => {
+    localStorage.setItem("obh_howToPlaySeen", "1");
+    howToPlayOverlay.classList.add("hidden");
+    howToPlayOverlay.setAttribute("aria-hidden", "true");
+    overlay.classList.remove("hidden");
+  });
+}
+
 // ---- Init ----
 (async function init(){
   console.log("🎮 One Button Hero — Initializing...");
@@ -949,7 +964,15 @@ function loop(t){
 
   // initial top 10
   await refreshLeaderboard();
-  console.log("✅ Game ready");
 
+  // First visit: show How to play; otherwise show start overlay
+  const seenHowToPlay = localStorage.getItem("obh_howToPlaySeen");
+  if (!seenHowToPlay && howToPlayOverlay && overlay) {
+    overlay.classList.add("hidden");
+    howToPlayOverlay.classList.remove("hidden");
+    howToPlayOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  console.log("✅ Game ready");
   requestAnimationFrame(loop);
 })();

@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>One Button Hero — Web</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -17,17 +20,34 @@
   <img src="assets/cranehook.webp" class="game-hook" alt="" />
 
 
+  <a href="index.html" class="back-to-main" id="backToMainBtn">← Back to main</a>
+
   <!-- HUD Elements -->
   <div class="hud">
     <div id="scorePill" class="hud-pill hud-score" aria-label="Score"></div>
-    <div id="shardsPill" class="hud-pill hud-shards" aria-label="Shards"></div>
+    <div id="shardsPill" class="hud-pill hud-shards" aria-label="Golden bolts"></div>
     <div id="multPill" class="hud-pill hud-mult" aria-label="Multiplier"></div>
+  </div>
+
+  <!-- How to play (first start only) -->
+  <div id="howToPlayOverlay" class="how-to-play-overlay hidden" aria-hidden="true">
+    <div class="how-to-play-card">
+      <h2>How to play</h2>
+      <ul>
+        <li><strong>Press</strong> the button to jump</li>
+        <li><strong>Hold</strong> to glide forward</li>
+        <li>You can <strong>double jump</strong></li>
+        <li>Avoid the <strong>cones</strong> or it’s game over</li>
+        <li>Collect <strong>golden bolts</strong> to build your multiplier</li>
+      </ul>
+      <button id="howToPlayGotIt" type="button" class="btn-lo-yellow">Got it</button>
+    </div>
   </div>
 
   <!-- Start Overlay -->
   <div id="overlay">
-    <h1>ONE BUTTON HERO</h1>
-    <p>Hold to Glide • Release to Jump</p>
+    <img src="assets/onebuttonherologo.webp" class="game-title-logo" alt="One Button Hero" />
+    <p class="overlay-tagline">Press to Jump • Hold to Glide • Double jump!</p>
     <button id="startBtn">Start</button>
     <button id="menuLeaderboardBtn" type="button" class="btn-leaderboard-small">🏆 Leaderboard</button>
   </div>
@@ -66,10 +86,12 @@
   <!-- Leaderboard popup (view or qualified submit) -->
   <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true">
     <div class="leaderboard-card">
-      <h2>🌍 GLOBAL LEADERBOARD</h2>
+      <img src="assets/onebuttonherologo.webp" class="leaderboard-logo" alt="One Button Hero" />
+      <h2 class="leaderboard-title">Global Leaderboard</h2>
       <div id="leaderboardList" class="leaderboard-list-popup"></div>
       <div id="leaderboardSubmitSection" class="leaderboard-submit-section hidden">
         <p class="leaderboard-submit-heading">🔥 You Made The Top 10!</p>
+        <p id="leaderboardYourScore" class="leaderboard-your-score">Your score: 0</p>
         <p id="leaderboardPlacedRank" class="leaderboard-placed-rank">You placed #1!</p>
         <input type="text" id="leaderboardNameInput" placeholder="Your name" maxlength="15" autocomplete="nickname" />
         <div class="leaderboard-submit-actions">

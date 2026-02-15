@@ -2,14 +2,11 @@
 import { db } from "./firebase.js";
 import {
   collection,
-  doc,
   addDoc,
   getDocs,
-  updateDoc,
   query,
   orderBy,
   limit,
-  where,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -109,7 +106,7 @@ export async function checkLeaderboard(score) {
 }
 
 /**
- * Submits or updates player's score. Keeps only best score per name.
+ * Submits a new score (allows multiple entries with the same name).
  * @param {string} name
  * @param {number} score
  */
@@ -118,33 +115,26 @@ export async function submitScore(name, score) {
   const sc = Math.floor(Number(score) || 0);
   if (!nm) throw new Error("Name required");
 
+  const lastName = localStorage.getItem("obh_last_submit_name") || "";
+  const lastScore = Number(localStorage.getItem("obh_last_submit_score") || -1);
+  if (nm === lastName && sc === lastScore) {
+    throw new Error("You already submitted this score");
+  }
+
   const now = Date.now();
   const last = Number(localStorage.getItem("obh_last_submit") || 0);
   if (now - last < SUBMIT_COOLDOWN_MS) throw new Error("Wait a moment before submitting again");
 
   try {
     const col = collection(db, SCORES_COL);
-    const q = query(col, where("name", "==", nm), limit(1));
-    const existing = await getDocs(q);
-
-    if (!existing.empty) {
-      const docSnap = existing.docs[0];
-      const oldScore = Math.floor(Number(docSnap.data().score) || 0);
-      if (sc <= oldScore) return;
-      await updateDoc(doc(db, SCORES_COL, docSnap.id), {
-        name: nm,
-        score: sc,
-        createdAt: serverTimestamp(),
-      });
-    } else {
-      await addDoc(col, {
-        name: nm,
-        score: sc,
-        createdAt: serverTimestamp(),
-      });
-    }
-
+    await addDoc(col, {
+      name: nm,
+      score: sc,
+      createdAt: serverTimestamp(),
+    });
     localStorage.setItem("obh_last_submit", String(now));
+    localStorage.setItem("obh_last_submit_name", nm);
+    localStorage.setItem("obh_last_submit_score", String(sc));
   } catch (e) {
     console.warn("Leaderboard submit:", e?.message);
     throw e;
@@ -171,7 +161,8 @@ export function renderLeaderboardPopup(rows) {
 
     const rank = document.createElement("span");
     rank.className = "leaderboard-popup-rank";
-    rank.textContent = `#${i + 1}`;
+    const popupMedals = ["🥇", "🥈", "🥉"];
+    rank.textContent = popupMedals[i] ?? `#${i + 1}`;
 
     const name = document.createElement("span");
     name.className = "leaderboard-popup-name";
@@ -213,7 +204,8 @@ export function renderTop10(listEl, rows) {
 
     const name = document.createElement("span");
     name.className = "leaderboard-name";
-    name.textContent = (r.name || "Player").slice(0, MAX_NAME_LEN);
+    const nameText = (r.name || "Player").slice(0, MAX_NAME_LEN);
+    name.textContent = i === 0 ? `👑 ${nameText}` : nameText;
 
     const score = document.createElement("span");
     score.className = "leaderboard-score";
