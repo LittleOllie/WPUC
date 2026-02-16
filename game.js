@@ -171,7 +171,8 @@ const state = {
   bestLocal: Number(localStorage.getItem("obh_best") || 0),
   isMobile: false,
   pressingFromJumpBtn: false,
-  jumpHelperTimeoutId: null
+  jumpHelperTimeoutId: null,
+  hasSubmittedThisRound: false
 };
 
 function resetWorldOnly(){
@@ -221,6 +222,7 @@ function resetAll(){
   state.multiplier = 1;
   state.multiplierMeter = 0.2;
   state.elapsed = 0;
+  state.hasSubmittedThisRound = false;
   state.animationTime = 0;
   state.pressedGlide = false;
   state.jumpCount = 0;
@@ -326,6 +328,7 @@ async function openLeaderboardAfterGame(score, qualifies, rank) {
   if (closeLeaderboardBtn) closeLeaderboardBtn.classList.add("hidden");
 
   if (qualifies && leaderboardSubmitSection) {
+    state.hasSubmittedThisRound = false;
     leaderboardSubmitSection.classList.remove("hidden");
     if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.add("hidden");
     if (leaderboardYourScore) leaderboardYourScore.textContent = `Your score: ${finalScore.toLocaleString()}`;
@@ -335,6 +338,8 @@ async function openLeaderboardAfterGame(score, qualifies, rank) {
       leaderboardNameInput.value = getStoredName() || "";
       leaderboardNameInput.focus();
     }
+    if (leaderboardSubmitScoreBtn) leaderboardSubmitScoreBtn.disabled = false;
+    if (leaderboardPlayAgainBtn) leaderboardPlayAgainBtn.disabled = false;
   } else {
     if (leaderboardSubmitSection) leaderboardSubmitSection.classList.add("hidden");
     if (leaderboardPlayAgainOnly) leaderboardPlayAgainOnly.classList.remove("hidden");
@@ -775,6 +780,24 @@ function draw(){
     state.lastHudMult = state.multiplier;
     setTimeout(() => multPill.classList.remove("mult-high"), 650);
   }
+
+  const multiplierBarFill = document.getElementById("multiplierBarFill");
+  if (multiplierBarFill) {
+    const pct = Math.max(0, Math.min(1, state.multiplierMeter));
+    multiplierBarFill.style.width = (pct * 100) + "%";
+    if (pct < 0.4) {
+      multiplierBarFill.style.background = "#4C6FFF";
+    } else if (pct < 0.7) {
+      multiplierBarFill.style.background = "#FFDD55";
+    } else {
+      multiplierBarFill.style.background = "#FF9A00";
+    }
+    if (pct >= 0.95) {
+      multiplierBarFill.style.boxShadow = "0 0 8px rgba(255, 170, 0, 0.7)";
+    } else {
+      multiplierBarFill.style.boxShadow = "";
+    }
+  }
 }
 
 function roundRectFill(x,y,w,h,r,fill){
@@ -915,9 +938,10 @@ if (keepPushingLeaderboardBtn) {
   });
 }
 
-// Leaderboard overlay: submit score (when qualified)
+// Leaderboard overlay: submit score (when qualified) – one submit per game over
 if (leaderboardSubmitScoreBtn) {
   leaderboardSubmitScoreBtn.addEventListener("click", async () => {
+    if (state.hasSubmittedThisRound) return;
     const name = (leaderboardNameInput && leaderboardNameInput.value || "").trim().slice(0, 15);
     if (!name) {
       if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "Enter your name";
@@ -930,6 +954,7 @@ if (leaderboardSubmitScoreBtn) {
     try {
       const sc = Math.floor(state.score);
       await submitScore(name, sc);
+      state.hasSubmittedThisRound = true;
       // Delay so Firestore write is visible before refetch
       await new Promise((r) => setTimeout(r, 800));
       const rows = await getTopScores();
@@ -939,9 +964,9 @@ if (leaderboardSubmitScoreBtn) {
       if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "Submitted! 🎉";
     } catch (err) {
       if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = err?.message || "Could not submit";
+      leaderboardSubmitScoreBtn.disabled = false;
+      leaderboardPlayAgainBtn.disabled = false;
     }
-    leaderboardSubmitScoreBtn.disabled = false;
-    leaderboardPlayAgainBtn.disabled = false;
   });
 }
 

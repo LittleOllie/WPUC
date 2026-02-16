@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Share List – Little Ollie</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="share.css" />
+
+</head>
+<body>
+
+<div class="container">
+  <h1>📋 Share Your List</h1>
+  
+  <div class="section">
+    <h2>Create List</h2>
+    <div class="input-group">
+      <input type="text" id="listItemInput" placeholder="Add an item..." maxlength="100" />
+      <button id="addItemBtn" type="button">Add</button>
+    </div>
+    <ul id="listItems"></ul>
+    <button id="shareBtn" type="button" class="btn-share" disabled>Generate Share Link</button>
+  </div>
+
+  <div id="shareSection" class="section hidden">
+    <h2>Share Your List</h2>
+    <div class="share-options">
+      <div class="qr-container">
+        <div id="qrcode"></div>
+        <p class="hint">Scan with your phone camera</p>
+      </div>
+      <div class="url-container">
+        <label>Shareable URL:</label>
+        <div class="url-box">
+          <input type="text" id="shareUrl" readonly />
+          <button id="copyUrlBtn" type="button" class="btn-copy">Copy</button>
+        </div>
+        <p class="hint">Send this link to your friend</p>
+      </div>
+    </div>
+    <button id="newListBtn" type="button" class="btn-new">Create New List</button>
+  </div>
+
+  <div id="viewSection" class="section hidden">
+    <h2>Shared List</h2>
+    <ul id="viewListItems"></ul>
+    <button id="backBtn" type="button" class="btn-back">← Back</button>
+  </div>
+
+  <div class="footer">
+    <a href="index.html" class="back-link">← Back to Home</a>
+  </div>
+</div>
+
+<script src="share.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,251 @@
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Fredoka", sans-serif;
+  background: linear-gradient(180deg, #6DE0FF 0%, #4C6FFF 100%);
+  min-height: 100vh;
+  color: #1a1a2e;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 32px 0;
+  color: #1a1a2e;
+}
+
+h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.section.hidden {
+  display: none;
+}
+
+.input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#listItemInput {
+  flex: 1;
+  padding: 12px 16px;
+  font-family: "Fredoka", sans-serif;
+  font-size: 16px;
+  border: 2px solid rgba(26, 26, 46, 0.2);
+  border-radius: 12px;
+  outline: none;
+}
+
+#listItemInput:focus {
+  border-color: #FFDD55;
+  box-shadow: 0 0 0 3px rgba(255, 221, 85, 0.3);
+}
+
+#addItemBtn {
+  font-family: "Fredoka", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 24px;
+  background: #FFDD55;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #d4b300;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+#addItemBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #d4b300;
+}
+
+#addItemBtn:active {
+  transform: scale(0.98);
+}
+
+#listItems, #viewListItems {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+#listItems li, #viewListItems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(26, 26, 46, 0.1);
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+#listItems li .remove-btn {
+  background: rgba(255, 100, 100, 0.9);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: "Fredoka", sans-serif;
+}
+
+.btn-share, .btn-new, .btn-back {
+  font-family: "Fredoka", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 14px 28px;
+  background: #FFDD55;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #d4b300, 0 6px 20px rgba(255, 221, 85, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.btn-share:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-share:not(:disabled):hover, .btn-new:hover, .btn-back:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #d4b300, 0 8px 24px rgba(255, 221, 85, 0.5);
+}
+
+.share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.qr-container {
+  text-align: center;
+}
+
+#qrcode {
+  display: inline-block;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.url-container {
+  width: 100%;
+}
+
+.url-container label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.url-box {
+  display: flex;
+  gap: 8px;
+}
+
+#shareUrl {
+  flex: 1;
+  padding: 12px 16px;
+  font-family: "Fredoka", sans-serif;
+  font-size: 14px;
+  border: 2px solid rgba(26, 26, 46, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1a1a2e;
+  word-break: break-all;
+}
+
+.btn-copy {
+  font-family: "Fredoka", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 20px;
+  background: #4C6FFF;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.btn-copy:hover {
+  background: #3a5aee;
+}
+
+.hint {
+  font-size: 12px;
+  color: rgba(26, 26, 46, 0.6);
+  margin: 8px 0 0 0;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.back-link {
+  color: rgba(26, 26, 46, 0.8);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.back-link:hover {
+  color: #1a1a2e;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  h1 {
+    font-size: 28px;
+  }
+  
+  .share-options {
+    gap: 20px;
+  }
+  
+  #qrcode {
+    padding: 12px;
+  }
+}
