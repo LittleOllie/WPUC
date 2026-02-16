@@ -10,7 +10,6 @@ import {
   renderTop10,
   renderLeaderboardPopup,
   MIN_LEADERBOARD_SCORE,
-  resetSubmissionLock   // 👈 ADD THIS
 } from "./leaderboard.js";
 
 const canvas = document.getElementById("game");
@@ -217,7 +216,6 @@ function resetWorldOnly(){
 }
 
 function resetAll(){
-  resetSubmissionLock();   // 👈 ADD THIS FIRST LINE
   state.score = 0;
   state.shards = 0;
   state.multiplier = 1;
