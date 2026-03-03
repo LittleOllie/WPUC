@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>One Button Hero — Web</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <canvas id="game"></canvas>
+  <div class="game-cloud-layer" aria-hidden="true">
+    <img src="assets/cloud1.webp" class="game-cloud game-cloud-1" alt="" />
+    <img src="assets/cloud2.webp" class="game-cloud game-cloud-2" alt="" />
+    <img src="assets/cloud3.webp" class="game-cloud game-cloud-3" alt="" />
+  </div>
+  <img src="assets/cranehook.webp" class="game-hook" alt="" />
+
+  <!-- Dedicated Jump button (mobile: jump only here; desktop: Space + click) -->
+  <div class="jump-btn-container" id="jumpBtnContainer" aria-hidden="true">
+    <span class="jump-btn-helper" id="jumpBtnHelper">Tap to jump</span>
+    <button type="button" class="jump-btn" id="jumpBtn" aria-label="Jump">JUMP</button>
+  </div>
+
+  <a href="index.html" class="back-to-main" id="backToMainBtn">← Back to main</a>
+
+  <!-- HUD Elements -->
+  <div class="hud">
+    <div id="scorePill" class="hud-pill hud-score" aria-label="Score"></div>
+    <div id="shardsPill" class="hud-pill hud-shards" aria-label="Golden bolts"></div>
+    <div id="multPill" class="hud-pill hud-mult" aria-label="Multiplier"></div>
+    <div id="multiplierBarWrapper">
+      <div id="multiplierBarFill"></div>
+    </div>
+  </div>
+
+  <!-- How to play (first start only) -->
+  <div id="howToPlayOverlay" class="how-to-play-overlay hidden" aria-hidden="true">
+    <div class="how-to-play-card">
+      <h2>How to play</h2>
+      <ul>
+        <li><strong>Press</strong> the button to jump</li>
+        <li><strong>Hold</strong> to glide forward</li>
+        <li>You can <strong>double jump</strong></li>
+        <li>Avoid the <strong>cones</strong> or it’s game over</li>
+        <li>Collect <strong>golden bolts</strong> to build your multiplier</li>
+      </ul>
+      <button id="howToPlayGotIt" type="button" class="btn-lo-yellow">Got it</button>
+    </div>
+  </div>
+
+  <!-- Start Overlay -->
+  <div id="overlay">
+    <img src="assets/onebuttonherologo.webp" class="game-title-logo" alt="One Button Hero" />
+    <p class="overlay-tagline">Press to Jump • Hold to Glide • Double jump!</p>
+    <button id="startBtn">Start</button>
+    <button id="rulesBtn" type="button" class="btn-rules">Rules</button>
+    <button id="menuLeaderboardBtn" type="button" class="btn-leaderboard-small">🏆 Leaderboard</button>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="gameOver" class="hidden">
+    <h1>GAME OVER</h1>
+    <p id="finalLine"></p>
+
+    <div class="submit-section">
+      <input type="text" id="playerName" placeholder="Your name" maxlength="15" />
+      <div class="button-group">
+        <button id="saveNameBtn">Save Name</button>
+      </div>
+      <p id="submitMsg"></p>
+    </div>
+
+    <button id="restartBtn">Play Again</button>
+    <button id="openLeaderboardBtn" type="button" class="btn-leaderboard">🏆 Leaderboard</button>
+  </div>
+
+  <!-- Keep Pushing popup (score < 500 or not Top 10) -->
+  <div id="keepPushingPopup" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card modal-card-lo keep-pushing-card">
+      <h2>Keep Pushing!</h2>
+      <p id="keepPushingMessage" class="keep-pushing-message">Score 500+ to enter the Global Leaderboard!</p>
+      <button id="keepPushingPlayAgainBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
+      <button id="keepPushingLeaderboardBtn" type="button" class="btn-leaderboard-keep-pushing">🏆 View Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- Leaderboard popup (view or qualified submit) -->
+  <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true">
+    <div class="leaderboard-card">
+      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules">Rules</button>
+      <img src="assets/onebuttonherologo.webp" class="leaderboard-logo" alt="One Button Hero" />
+      <h2 class="leaderboard-title">Global Leaderboard</h2>
+      <div id="leaderboardList" class="leaderboard-list-popup"></div>
+      <div id="leaderboardSubmitSection" class="leaderboard-submit-section hidden">
+        <p class="leaderboard-submit-heading">🔥 You Made The Top 10!</p>
+        <p id="leaderboardYourScore" class="leaderboard-your-score">Your score: 0</p>
+        <p id="leaderboardPlacedRank" class="leaderboard-placed-rank">You placed #1!</p>
+        <input type="text" id="leaderboardNameInput" placeholder="Your name" maxlength="15" autocomplete="nickname" />
+        <div class="leaderboard-submit-actions">
+          <button id="leaderboardSubmitScoreBtn" type="button" class="btn-lo-yellow">SUBMIT SCORE</button>
+          <button id="leaderboardPlayAgainBtn" type="button" class="btn-lo-secondary">PLAY AGAIN</button>
+        </div>
+        <p id="leaderboardSubmitMsg" class="leaderboardSubmitMsg"></p>
+      </div>
+      <div id="leaderboardPlayAgainOnly" class="leaderboard-play-again-only hidden">
+        <p id="leaderboardYourScoreOnly" class="leaderboard-your-score">Your score: 0</p>
+        <button id="leaderboardPlayAgainOnlyBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
+      </div>
+      <button id="closeLeaderboardBtn" type="button" class="btn-lo-yellow">Close</button>
+    </div>
+  </div>
+
+  <!-- Name modal (first time only) -->
+  <div id="nameModal" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card modal-card-lo name-modal-card">
+      <h2>Enter your name</h2>
+      <p class="modal-hint">Saved locally — we won't ask again.</p>
+      <input type="text" id="nameModalInput" placeholder="Name" maxlength="15" autocomplete="nickname" />
+      <button id="nameModalSave" type="button" class="btn-lo-yellow">Save</button>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
