@@ -16,10 +16,13 @@
 <body class="body-with-bottom-nav">
   <script>try{document.body.classList.toggle("dark-mode",localStorage.getItem("motivation-in-motion-dark-mode")==="true");}catch(e){}</script>
   <main class="app-shell">
+    <header class="app-branding">
+      <h1 class="app-title">Motivation in Motion</h1>
+      <p class="app-powered-by">Powered by Little Ollie Labs</p>
+    </header>
     <header class="top-header">
       <div id="dashboardAvatar" class="avatar avatar--lg" aria-hidden="true"></div>
       <div>
-        <p class="eyebrow">Motivation in Motion</p>
         <h1 id="welcomeMessage">Welcome 👋</h1>
       </div>
       <button id="logoutBtn" class="button-secondary">Logout</button>
@@ -59,6 +62,8 @@
       <div id="dashboardGroupsList" class="dashboard-groups-list"></div>
       <a href="groups.html" class="link-view-all">View All Groups</a>
     </section>
+
+    <footer class="app-footer">© 2026 Little Ollie Labs</footer>
   </main>
 
   <nav class="bottom-nav" aria-label="Main">
