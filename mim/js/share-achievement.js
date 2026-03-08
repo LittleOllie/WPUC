@@ -45,25 +45,28 @@ function populateShareCard(data) {
   const dateEl = document.getElementById("shareCardDate");
   const streakEl = document.getElementById("shareCardStreak");
 
-  // Avatar — slightly larger PFP
+  // Avatar — fixed 80x80 to prevent flash/layout shift
   if (avatarEl) {
     avatarEl.textContent = "";
     avatarEl.className = "avatar share-card-avatar";
-    avatarEl.style.width = "180px";
-    avatarEl.style.height = "180px";
-    avatarEl.style.fontSize = "64px";
+    avatarEl.style.width = "80px";
+    avatarEl.style.height = "80px";
+    avatarEl.style.fontSize = "32px";
     const initial = (name || "?").trim().charAt(0).toUpperCase();
     if (photoURL) {
       const img = document.createElement("img");
       img.crossOrigin = "anonymous";
-      img.src = photoURL;
       img.alt = name;
-      img.className = "avatar-img";
+      img.className = "avatar-img share-card-avatar-img";
       img.onerror = () => {
         avatarEl.textContent = initial;
       };
+      img.onload = () => {
+        avatarEl.classList.add("avatar--img");
+      };
+      img.src = photoURL;
       avatarEl.appendChild(img);
-      avatarEl.classList.add("avatar--img");
+      if (img.complete) avatarEl.classList.add("avatar--img");
     } else {
       avatarEl.textContent = initial;
     }
@@ -89,7 +92,31 @@ function populateShareCard(data) {
 }
 
 /**
+ * Wait for all images and fonts in the share card to be ready.
+ */
+async function waitForShareCardReady() {
+  const card = document.getElementById("shareCard");
+  if (!card) return;
+
+  const imgPromises = Array.from(card.querySelectorAll("img")).map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+  });
+
+  const fontsReady = document.fonts?.ready
+    ? document.fonts.ready
+    : Promise.resolve();
+
+  await Promise.all([...imgPromises, fontsReady]);
+  await new Promise((r) => setTimeout(r, 50));
+}
+
+/**
  * Generate JPG from share card using html2canvas.
+ * Waits for images and fonts to load before capturing.
  * @returns {Promise<string>} Data URL (image/jpeg)
  */
 async function generateShareImageDataUrl() {
@@ -98,6 +125,8 @@ async function generateShareImageDataUrl() {
 
   const html2canvas = window.html2canvas;
   if (!html2canvas) throw new Error("html2canvas not loaded");
+
+  await waitForShareCardReady();
 
   const canvas = await html2canvas(card, {
     scale: 1,

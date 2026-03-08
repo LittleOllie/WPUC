@@ -1,19 +1,26 @@
 :root {
-  /* Design system — Little Ollie blue/yellow (light, subtle) */
-  --primary: #5B9BF5;
-  --primary-hover: #3B82F6;
+  /* MIM icon palette — blue (top-left) to yellow (bottom-right), 135deg */
+  --mim-blue: #4a90e2;
+  --mim-blue-light: #a5d7f7;
+  --mim-blue-pale: #e8f4ff;
+  --mim-yellow: #fdd835;
+  --mim-yellow-mid: #fbc02d;
+  --mim-yellow-light: #fff9c4;
+  --mim-yellow-pale: #fffde7;
+  --primary: #4a90e2;
+  --primary-hover: #3b7dd4;
   --success: #1DB954;
-  --warning: #F59E0B;
-  --bg-main: #F8FAFF;
-  --bg-card: #FFFEF9;
-  --border-light: #E8EFFF;
+  --warning: #fbc02d;
+  --bg-main: #f0f5ff;
+  --bg-card: #ffffff;
+  --border-light: #e3eeff;
   --text-main: #0F172A;
   --text-primary: #0F172A;
   --text-secondary: #64748B;
-  --lo-blue: #3B82F6;
-  --lo-yellow: #FACC15;
+  --lo-blue: #4a90e2;
+  --lo-yellow: #fdd835;
   --border-color: var(--border-light);
-  --shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  --shadow: 0 6px 18px rgba(74, 144, 226, 0.08);
   --radius: 14px;
   /* Spacing scale */
   --space-8: 8px;
@@ -29,8 +36,10 @@
 }
 
 body.dark-mode {
-  --primary: #FC4C02;
-  --primary-hover: #E04502;
+  --primary: #5ba3f7;
+  --primary-hover: #7bb8ff;
+  --mim-blue: #5ba3f7;
+  --mim-yellow: #fdd835;
   --bg-main: #0F172A;
   --bg-card: #1E293B;
   --border-light: #334155;
@@ -44,6 +53,16 @@ body.dark-mode {
   --muted: var(--text-secondary);
   --secondary: #334155;
 }
+body.dark-mode {
+  background: #0F172A !important;
+}
+body.dark-mode .app-branding {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d2a1a 100%) !important;
+}
+body.dark-mode .card {
+  background: #1E293B !important;
+  border-color: #334155;
+}
 
 * {
   box-sizing: border-box;
@@ -52,8 +71,10 @@ body.dark-mode {
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background: var(--bg-main);
+  background: linear-gradient(135deg, #e8f4ff 0%, #fff8e0 50%, #f5f9ff 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
+  min-height: 100vh;
 }
 
 .auth-body {
@@ -61,7 +82,8 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, rgba(250, 204, 21, 0.04) 40%, var(--bg-main) 100%);
+  background: linear-gradient(135deg, #e0efff 0%, #fff8e0 50%, #f5f9ff 100%);
+  background-attachment: fixed;
 }
 
 .auth-container,
@@ -75,12 +97,13 @@ body {
   padding: var(--space-24) var(--space-16) var(--space-32);
 }
 
-/* App branding header — Motivation in Motion + Powered by Little Ollie Labs */
+/* App branding header — MIM icon gradient: blue → yellow at 135deg */
 .app-branding {
-  background: linear-gradient(120deg, rgba(59, 130, 246, 0.06), rgba(250, 204, 21, 0.06));
+  background: linear-gradient(135deg, #d4e8ff 0%, #fff4b8 100%);
   margin: calc(-1 * var(--space-24)) calc(-1 * var(--space-16)) var(--space-24);
   padding: var(--space-24) var(--space-16) var(--space-16);
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.15);
 }
 
 .app-branding .app-title {
@@ -143,16 +166,16 @@ body {
 }
 
 .card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  border: 1px solid var(--border-light);
+  background: linear-gradient(145deg, #ffffff 0%, #fefcf6 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(74, 144, 226, 0.15);
   padding: 16px;
   margin-bottom: var(--space-16);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.1);
 }
 body.dark-mode .card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
@@ -348,7 +371,7 @@ h1 {
 .progress-bar {
   width: 100%;
   height: 10px;
-  background: #eceff3;
+  background: var(--mim-blue-pale);
   border-radius: 999px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -356,7 +379,7 @@ h1 {
 
 .progress-fill {
   height: 100%;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--mim-blue) 0%, var(--mim-yellow) 100%);
   border-radius: 999px;
 }
 
@@ -388,8 +411,11 @@ h1 {
   font-weight: 500;
 }
 
+a.button-primary,
 a.button-secondary {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
   text-align: center;
 }
@@ -1068,12 +1094,12 @@ body.dark-mode .identity-popup {
 }
 .role-badge--owner,
 .badge-owner {
-  background: #F59E0B;
-  color: white;
+  background: var(--mim-yellow-mid);
+  color: #0f172a;
 }
 .role-badge--admin,
 .badge-admin {
-  background: #3B82F6;
+  background: var(--mim-blue);
   color: white;
 }
 .role-badge--member,
@@ -1638,8 +1664,9 @@ body.dark-mode .identity-popup {
   max-width: 320px;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 12px;
-  background: var(--bg-main);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #d4e8ff 0%, #fffde7 100%);
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1656,49 +1683,67 @@ body.dark-mode .identity-popup {
   width: 100%;
 }
 
-/* Share card — 1080x1080 for html2canvas, Apple Fitness / Strava style */
+/* Share card — 1080x1080, MIM icon palette: 135deg blue→yellow (explicit hex for html2canvas) */
 .share-card {
   width: 1080px;
   height: 1080px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #e9f1ff 0%, #fff7cc 100%);
+  background: linear-gradient(135deg, #d4e8ff 0%, #fff4b8 50%, #fffde7 100%) !important;
   border-radius: 36px;
-  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12px 40px rgba(74, 144, 226, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 56px 72px;
+  gap: 40px;
   box-sizing: border-box;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  position: relative;
+}
+.share-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 50%,
+    rgba(255, 249, 196, 0.2) 75%,
+    transparent 100%);
+  pointer-events: none;
 }
 
 .share-card-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 24px;
-  margin-bottom: 48px;
 }
 
 .share-card-avatar {
-  width: 180px !important;
-  height: 180px !important;
-  min-width: 180px;
-  min-height: 180px;
-  font-size: 64px !important;
+  width: 80px !important;
+  height: 80px !important;
+  min-width: 80px;
+  min-height: 80px;
+  font-size: 32px !important;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
 }
 
+.share-card-avatar-img,
 .share-card-avatar.avatar--img img {
-  width: 100%;
-  height: 100%;
+  width: 80px !important;
+  height: 80px !important;
   object-fit: cover;
+  border-radius: 50%;
 }
 
 .share-card-name {
-  font-size: 44px;
+  font-size: 42px;
   font-weight: 500;
   color: #0f172a;
   margin: 0;
@@ -1707,23 +1752,25 @@ body.dark-mode .identity-popup {
 }
 
 .share-card-middle {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 40px;
   text-align: center;
 }
 
 .share-card-icon {
-  font-size: 72px;
+  font-size: 64px;
   line-height: 1;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .share-card-badge {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: #0f172a;
@@ -1731,56 +1778,60 @@ body.dark-mode .identity-popup {
 }
 
 .share-card-headline {
-  font-size: 64px;
+  font-size: 96px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
   line-height: 1.1;
+  max-width: 80%;
+  text-align: center;
 }
 
 .share-card-progress {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 500;
   color: #475569;
   margin: 0;
 }
 
 .share-card-date {
-  font-size: 28px;
+  font-size: 36px;
   color: #64748b;
   margin: 0;
 }
 
 .share-card-streak {
-  font-size: 32px;
+  font-size: 48px;
   font-weight: 600;
-  color: #3b82f6;
+  color: var(--mim-blue);
   margin: 0;
 }
 
 .share-card-bottom {
+  position: relative;
+  z-index: 1;
   margin-top: auto;
-  padding-top: 36px;
+  padding-top: 0;
   text-align: center;
 }
 
 .share-card-brand {
-  font-size: 26px;
+  font-size: 32px;
   font-weight: 600;
   color: #0f172a;
   margin: 0 0 4px;
 }
 
 .share-card-hashtag {
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 500;
   color: #64748b;
   margin: 0 0 6px;
 }
 
 .share-card-powered {
-  font-size: 18px;
-  color: #94a3b8;
+  font-size: 32px;
+  color: #64748b;
   margin: 0;
 }
 
