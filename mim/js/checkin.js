@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   addDoc,
+  deleteDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase-init.js";
@@ -294,32 +295,70 @@ function init() {
       console.log("[Streak] User doc updated");
       updateStreakUI(newStreak);
       updateShieldsUI(streakShields);
-      await writeToGroupFeeds(null, newStreak);
+      await writeToGroupFeeds(null, null, false, newStreak);
     } catch (err) {
       console.error("[Streak] updateStreakIfNeeded error", err);
     }
   }
 
-  async function writeToGroupFeeds(habitsCount, streakCount) {
+  function getHabitActivityId(uid, habitId, dateId) {
+    return `habit_${uid}_${habitId}_${dateId}`;
+  }
+
+  async function writeHabitActivityToGroup(habitId, habitName, gid, userName, photoURL) {
+    const today = getTodayId();
+    const activityId = getHabitActivityId(currentUser.uid, habitId, today);
+    const activityRef = doc(db, "groups", gid, "activity", activityId);
+    const existing = await getDoc(activityRef);
+    if (existing.exists()) return;
+    await setDoc(activityRef, {
+      type: "habit",
+      createdBy: currentUser.uid,
+      habitId,
+      habitName: habitName || "Habit",
+      date: today,
+      userName,
+      photoURL: photoURL || null,
+      likes: [],
+      likesCount: 0,
+      createdAt: serverTimestamp(),
+    });
+  }
+
+  async function removeHabitActivityFromGroup(habitId, gid) {
+    const today = getTodayId();
+    const activityId = getHabitActivityId(currentUser.uid, habitId, today);
+    const activityRef = doc(db, "groups", gid, "activity", activityId);
+    const existing = await getDoc(activityRef);
+    if (existing.exists()) await deleteDoc(activityRef);
+  }
+
+  async function writeToGroupFeeds(habitId, habitName, isAdding, streakCount) {
     if (!currentUser) return;
     try {
       const data = await getAuthState().getUserProfile();
       const groupIds = (data && data.groupIds) || [];
-      const userName = (data && data.name) || currentUser.displayName || currentUser.email || "Someone";
+      const userName = (data && data.name) || data?.displayName || currentUser.displayName || currentUser.email || "Someone";
+      const photoURL = data?.photoURL || null;
       if (groupIds.length === 0) return;
       const weekStart = getWeekStart();
       const today = getTodayId();
-      await Promise.all(
-        groupIds.map(async (gid) => {
-          if (habitsCount != null && habitsCount > 0) {
-            await addDoc(collection(db, "groups", gid, "activity"), {
-              type: "habits",
-              userName,
-              message: "completed habits",
-              count: habitsCount,
-              createdAt: serverTimestamp(),
-              createdBy: currentUser.uid,
-            });
+
+      if (habitId && habitName !== undefined) {
+        if (isAdding) {
+          await Promise.all(
+            groupIds.map((gid) => writeHabitActivityToGroup(habitId, habitName, gid, userName, photoURL))
+          );
+        } else {
+          await Promise.all(
+            groupIds.map((gid) => removeHabitActivityFromGroup(habitId, gid))
+          );
+        }
+      }
+
+      if (habitId && isAdding) {
+        await Promise.all(
+          groupIds.map(async (gid) => {
             const statsRef = doc(db, "groups", gid, "memberStats", currentUser.uid);
             const statsSnap = await getDoc(statsRef);
             const prev = statsSnap.exists() ? statsSnap.data() : {};
@@ -329,19 +368,24 @@ function init() {
               ? (prev.checkinsThisWeek || 0) + 1
               : alreadyCountedToday ? (prev.checkinsThisWeek || 0) : 1;
             await setDoc(statsRef, { weekStart, checkinsThisWeek: newCount, lastUpdatedDate: today }, { merge: true });
-          }
-          if (streakCount != null && streakCount > 0) {
-            await addDoc(collection(db, "groups", gid, "activity"), {
+          })
+        );
+      }
+
+      if (streakCount != null && streakCount > 0) {
+        await Promise.all(
+          groupIds.map((gid) =>
+            addDoc(collection(db, "groups", gid, "activity"), {
               type: "streak",
               userName,
               message: "hit a streak",
               count: streakCount,
               createdAt: serverTimestamp(),
               createdBy: currentUser.uid,
-            });
-          }
-        })
-      );
+            })
+          )
+        );
+      }
     } catch (err) {
       console.error("[Checkin] writeToGroupFeeds error", err);
     }
@@ -404,11 +448,10 @@ function init() {
     updateProgressText();
     await updateStreakIfNeeded();
     await loadAndRenderWeeklyChain();
-    const sharedCount = completedIds.filter((id) => {
-      const h = habits.find((x) => x.id === id);
-      return h && h.shareWithGroups;
-    }).length;
-    if (e.target.checked && sharedCount > 0) await writeToGroupFeeds(sharedCount, null);
+    const habit = habits.find((h) => h.id === id);
+    if (habit && habit.shareWithGroups) {
+      await writeToGroupFeeds(id, habit.name, e.target.checked, null);
+    }
   });
 
   const shareBtn = document.getElementById("shareAchievementBtn");

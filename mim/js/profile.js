@@ -11,6 +11,8 @@ import {
   getDocs,
   updateDoc,
   serverTimestamp,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
 import { renderAvatar, escapeHtml, showToast } from "./utils.js";
@@ -330,14 +332,26 @@ function init() {
 
     let sharedHabits = [];
     try {
-      const habitsSnap = await getDocs(collection(db, "users", uid, "habits"));
+      const habitsRef = collection(db, "users", uid, "habits");
+      const habitsQuery = query(habitsRef, where("shareWithGroups", "==", true));
+      const habitsSnap = await getDocs(habitsQuery);
       habitsSnap.forEach((d) => {
         const h = d.data();
-        const shareWithGroups = h.shareWithGroups === true;
-        if (shareWithGroups) sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
+        sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
       });
     } catch (err) {
       console.error("[Profile] load habits error", err);
+      try {
+        const habitsSnap = await getDocs(collection(db, "users", uid, "habits"));
+        habitsSnap.forEach((d) => {
+          const h = d.data();
+          if (h.shareWithGroups === true || h.isShared === true) {
+            sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
+          }
+        });
+      } catch (fallbackErr) {
+        console.error("[Profile] habits fallback error", fallbackErr);
+      }
     }
 
     let completedToday = [];

@@ -45,13 +45,13 @@ function populateShareCard(data) {
   const dateEl = document.getElementById("shareCardDate");
   const streakEl = document.getElementById("shareCardStreak");
 
-  // Avatar — fixed 80x80 to prevent flash/layout shift
+  // Avatar — fixed 320x320 to prevent flash/layout shift
   if (avatarEl) {
     avatarEl.textContent = "";
     avatarEl.className = "avatar share-card-avatar";
-    avatarEl.style.width = "80px";
-    avatarEl.style.height = "80px";
-    avatarEl.style.fontSize = "32px";
+    avatarEl.style.width = "320px";
+    avatarEl.style.height = "320px";
+    avatarEl.style.fontSize = "128px";
     const initial = (name || "?").trim().charAt(0).toUpperCase();
     if (photoURL) {
       const img = document.createElement("img");
