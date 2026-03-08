@@ -5,7 +5,7 @@
  */
 import { showToast } from "./utils.js";
 
-const FILENAME = "mim-achievement.jpg";
+const FILENAME = "mim-achievement.png";
 const CARD_SIZE = 1080;
 
 /** Modal open state — always false on page load */
@@ -45,13 +45,13 @@ function populateShareCard(data) {
   const dateEl = document.getElementById("shareCardDate");
   const streakEl = document.getElementById("shareCardStreak");
 
-  // Avatar — fixed 320x320 to prevent flash/layout shift
+  // Avatar — 192x192 (2x) for share card
   if (avatarEl) {
     avatarEl.textContent = "";
     avatarEl.className = "avatar share-card-avatar";
-    avatarEl.style.width = "320px";
-    avatarEl.style.height = "320px";
-    avatarEl.style.fontSize = "128px";
+    avatarEl.style.width = "192px";
+    avatarEl.style.height = "192px";
+    avatarEl.style.fontSize = "96px";
     const initial = (name || "?").trim().charAt(0).toUpperCase();
     if (photoURL) {
       const img = document.createElement("img");
@@ -79,7 +79,7 @@ function populateShareCard(data) {
   if (progressEl) {
     progressEl.textContent = total > 0
       ? allDone
-        ? `${completed} / ${total} Habits Finished Today`
+        ? `${completed} / ${total} Habits Finished`
         : `${completed} / ${total} Habits Finished`
       : "";
     progressEl.hidden = total === 0;
@@ -116,7 +116,8 @@ async function waitForShareCardReady() {
 
 /**
  * Generate JPG from share card using html2canvas.
- * Waits for images and fonts to load before capturing.
+ * Clones the card and renders off-screen at full 1080x1080 so the export is square
+ * and not affected by the modal's scaled preview.
  * @returns {Promise<string>} Data URL (image/jpeg)
  */
 async function generateShareImageDataUrl() {
@@ -128,17 +129,35 @@ async function generateShareImageDataUrl() {
 
   await waitForShareCardReady();
 
-  const canvas = await html2canvas(card, {
-    scale: 1,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-    width: CARD_SIZE,
-    height: CARD_SIZE,
-  });
+  // Clone card and render off-screen at full 1080x1080 (avoids parent transform/overflow)
+  const clone = card.cloneNode(true);
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText =
+    "position:fixed;left:-9999px;top:0;width:1080px;height:1080px;z-index:-1;pointer-events:none;";
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+  await new Promise((r) => setTimeout(r, 100)); // Allow clone to layout
 
-  return canvas.toDataURL("image/jpeg", 0.9);
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+      width: CARD_SIZE,
+      height: CARD_SIZE,
+    });
+    // Scale 2 gives higher-res capture; draw to 1080x1080 for output
+    const out = document.createElement("canvas");
+    out.width = CARD_SIZE;
+    out.height = CARD_SIZE;
+    const ctx = out.getContext("2d");
+    ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, CARD_SIZE, CARD_SIZE);
+    return out.toDataURL("image/png");
+  } finally {
+    document.body.removeChild(wrapper);
+  }
 }
 
 function downloadImage(dataUrl) {
@@ -153,7 +172,8 @@ async function copyImageToClipboard(dataUrl) {
   try {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    await navigator.clipboard.write([new ClipboardItem({ "image/jpeg": blob })]);
+    const type = blob.type || "image/png";
+    await navigator.clipboard.write([new ClipboardItem({ [type]: blob })]);
     return true;
   } catch {
     return false;

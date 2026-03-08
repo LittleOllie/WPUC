@@ -1699,7 +1699,10 @@ body.dark-mode .identity-popup {
 .share-card {
   width: 1080px;
   height: 1080px;
+  min-width: 1080px;
+  min-height: 1080px;
   flex-shrink: 0;
+  aspect-ratio: 1;
   background: linear-gradient(135deg, #d4e8ff 0%, #fff4b8 50%, #fffde7 100%) !important;
   border-radius: 36px;
   box-shadow: 0 12px 40px rgba(74, 144, 226, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -1707,8 +1710,7 @@ body.dark-mode .identity-popup {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 64px;
-  gap: 24px;
+  padding: 56px;
   box-sizing: border-box;
   font-family: 'Plus Jakarta Sans', sans-serif;
   position: relative;
@@ -1727,22 +1729,48 @@ body.dark-mode .identity-popup {
   pointer-events: none;
 }
 
-.share-card-top {
+.share-card-inner {
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 64px 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.share-card-header {
+  font-size: 66px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0;
+  flex-shrink: 0;
+  width: 95%;
+  max-width: 1026px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.share-card-top {
   display: flex;
   align-items: center;
-  gap: 32px;
-  flex: 0 0 auto;
-  max-width: 100%;
+  justify-content: center;
+  gap: 24px;
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .share-card-avatar {
-  width: 320px !important;
-  height: 320px !important;
-  min-width: 320px;
-  min-height: 320px;
-  font-size: 128px !important;
+  width: 192px !important;
+  height: 192px !important;
+  min-width: 192px;
+  min-height: 192px;
+  font-size: 96px !important;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -1751,8 +1779,8 @@ body.dark-mode .identity-popup {
 
 .share-card-avatar-img,
 .share-card-avatar.avatar--img img {
-  width: 320px !important;
-  height: 320px !important;
+  width: 192px !important;
+  height: 192px !important;
   object-fit: cover;
   border-radius: 50%;
   display: block;
@@ -1760,97 +1788,103 @@ body.dark-mode .identity-popup {
 
 .share-card-name {
   font-size: 96px;
-  font-weight: 500;
+  font-weight: 600;
   color: #0f172a;
   margin: 0;
-  text-align: left;
+  text-align: center;
   line-height: 1.15;
-  max-width: 560px;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .share-card-middle {
-  position: relative;
-  z-index: 1;
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 8px;
   text-align: center;
+  width: 100%;
 }
 
 .share-card-icon {
-  font-size: 56px;
+  font-size: 96px;
   line-height: 1;
   margin: 0;
 }
 
 .share-card-badge {
-  font-size: 28px;
+  font-size: 48px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #0f172a;
-  margin: 0;
-}
-
-.share-card-headline {
-  font-size: 72px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  line-height: 1.1;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.share-card-progress {
-  font-size: 48px;
-  font-weight: 500;
-  color: #475569;
-  margin: 0;
-}
-
-.share-card-date {
-  font-size: 36px;
   color: #64748b;
   margin: 0;
 }
 
+.share-card-headline {
+  font-size: 96px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 8px 0 0;
+  line-height: 1.1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.share-card-progress {
+  font-size: 68px;
+  font-weight: 500;
+  color: #475569;
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.share-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.share-card-date {
+  font-size: 52px;
+  color: #64748b;
+  margin: 0;
+  text-align: center;
+}
+
 .share-card-streak {
-  font-size: 48px;
+  font-size: 56px;
+  text-align: center;
   font-weight: 600;
   color: var(--mim-blue);
   margin: 0;
 }
 
-.share-card-bottom {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-  padding-top: 0;
+.share-card-footer {
   text-align: center;
-}
-
-.share-card-brand {
-  font-size: 32px;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0 0 4px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .share-card-hashtag {
-  font-size: 32px;
+  font-size: 44px;
   font-weight: 500;
   color: #64748b;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
 .share-card-powered {
-  font-size: 32px;
-  color: #64748b;
+  font-size: 40px;
+  color: #94a3b8;
   margin: 0;
 }
 
