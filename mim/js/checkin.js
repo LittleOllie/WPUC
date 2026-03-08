@@ -417,7 +417,10 @@ function init() {
       try {
         shareBtn.disabled = true;
         const profile = await getAuthState().getUserProfile();
-        await shareAchievement(profile || {});
+        await shareAchievement(profile || {}, {
+          completedCount: completedIds.length,
+          totalCount: habits.length,
+        });
       } catch (err) {
         console.error("[Checkin] Share error", err);
       } finally {

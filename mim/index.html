@@ -88,20 +88,30 @@
       });
     })();
   </script>
-  <!-- Share Achievement modal -->
-  <div id="shareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" aria-hidden="true">
+  <!-- Share Achievement modal - hidden by default, only shown when Share Achievement clicked -->
+  <div id="shareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" aria-hidden="true" hidden>
     <div class="share-modal-backdrop" id="shareModalBackdrop"></div>
     <div class="share-modal-content">
       <h2 id="shareModalTitle" class="share-modal-title">Share Your Achievement</h2>
       <div class="share-card-preview">
         <div id="shareCard" class="share-card">
-          <div id="shareCardAvatar" class="share-card-avatar"></div>
-          <p id="shareCardName" class="share-card-name"></p>
-          <p id="shareCardMessage" class="share-card-message">Completed all habits today</p>
-          <p id="shareCardStreak" class="share-card-streak"></p>
-          <p id="shareCardDate" class="share-card-date"></p>
-          <p class="share-card-brand">Motivation in Motion</p>
-          <p class="share-card-powered">Powered by Little Ollie Labs</p>
+          <div class="share-card-top">
+            <div id="shareCardAvatar" class="share-card-avatar"></div>
+            <p id="shareCardName" class="share-card-name"></p>
+          </div>
+          <div class="share-card-middle">
+            <p id="shareCardIcon" class="share-card-icon">🔥</p>
+            <p id="shareCardBadge" class="share-card-badge">DAILY WIN</p>
+            <p id="shareCardHeadline" class="share-card-headline">All Habits Complete</p>
+            <p id="shareCardProgress" class="share-card-progress">2 / 2 Habits Finished</p>
+            <p id="shareCardDate" class="share-card-date">Mar 8, 2026</p>
+            <p id="shareCardStreak" class="share-card-streak" hidden></p>
+          </div>
+          <div class="share-card-bottom">
+            <p class="share-card-brand">Motivation In Motion</p>
+            <p class="share-card-hashtag">#MotivationInMotion</p>
+            <p class="share-card-powered">Powered by Little Ollie Labs</p>
+          </div>
         </div>
       </div>
       <div class="share-modal-actions">
