@@ -4,8 +4,9 @@
  * No localStorage/sessionStorage — state is in-memory only.
  */
 import { showToast } from "./utils.js";
+import { populateAchievementCard, generateShareImage } from "./share-card.js";
 
-const FILENAME = "mim-achievement.png";
+const FILENAME = "mim-achievement.jpg";
 const CARD_SIZE = 1080;
 
 /** Modal open state — always false on page load */
@@ -172,7 +173,7 @@ async function copyImageToClipboard(dataUrl) {
   try {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const type = blob.type || "image/png";
+    const type = blob.type || "image/jpeg";
     await navigator.clipboard.write([new ClipboardItem({ [type]: blob })]);
     return true;
   } catch {
@@ -225,7 +226,7 @@ function initModalListeners() {
     try {
       saveBtn.disabled = true;
       saveBtn.textContent = "Saving...";
-      const dataUrl = await generateShareImageDataUrl();
+      const dataUrl = await generateShareImage("shareCard");
       downloadImage(dataUrl);
       showToast("Image saved to device");
       saveBtn.textContent = "Save Image";
@@ -243,7 +244,7 @@ function initModalListeners() {
     try {
       copyBtn.disabled = true;
       copyBtn.textContent = "Copying...";
-      const dataUrl = await generateShareImageDataUrl();
+      const dataUrl = await generateShareImage("shareCard");
       const copied = await copyImageToClipboard(dataUrl);
       if (copied) {
         showToast("Image copied to clipboard");
@@ -255,7 +256,7 @@ function initModalListeners() {
     } catch (err) {
       console.error("[Share] Copy error:", err);
       try {
-        const dataUrl = await generateShareImageDataUrl();
+        const dataUrl = await generateShareImage("shareCard");
         downloadImage(dataUrl);
         showToast("Image saved to device");
       } catch {
@@ -296,7 +297,7 @@ export function openShareModal(data = {}) {
   const modal = document.getElementById("shareModal");
   if (!modal) return;
 
-  populateShareCard(data);
+  populateAchievementCard(data);
 
   modal.hidden = false;
   modal.setAttribute("aria-hidden", "false");

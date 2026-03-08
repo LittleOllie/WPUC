@@ -11,11 +11,13 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
 import { escapeHtml, escapeAttr, showToast } from "./utils.js";
 
 let currentUser = null;
+let habitsUnsubscribe = null;
 
 function getHabitsRef() {
   if (!currentUser) return null;
@@ -77,15 +79,20 @@ function init() {
         habitList.innerHTML = '<p class="habits-empty">No habits yet. Add one below.</p>';
         return;
       }
-      snapshot.forEach((docItem) => {
+      const docs = snapshot.docs.slice().sort((a, b) => {
+        const ta = a.data().createdAt?.toMillis?.() ?? 0;
+        const tb = b.data().createdAt?.toMillis?.() ?? 0;
+        return ta - tb;
+      });
+      docs.forEach((docItem) => {
         const habit = docItem.data();
         const name = habit.name || "Unnamed";
-        const shareWithGroups = habit.shareWithGroups === true;
+        const isShared = habit.isShared === true;
         const card = document.createElement("div");
         card.className = "habit-card";
         card.dataset.habitId = docItem.id;
-        card.dataset.shareWithGroups = shareWithGroups ? "true" : "false";
-        const shareBadge = shareWithGroups ? '<span class="habit-shared-badge" aria-label="Shared with groups">👥</span>' : "";
+        card.dataset.isShared = isShared ? "true" : "false";
+        const shareBadge = isShared ? '<span class="habit-shared-badge" aria-label="Shared with groups">👥</span>' : "";
         card.innerHTML =
           `<span class="habit-card-name">${escapeHtml(name)}${shareBadge}</span>` +
           `<div class="habit-card-actions">` +
@@ -101,7 +108,7 @@ function init() {
     }
   }
 
-  function handleAddHabit(e) {
+  async function handleAddHabit(e) {
     if (e) e.preventDefault();
     const name = (newHabitInput && newHabitInput.value) ? newHabitInput.value.trim() : "";
     if (!name) {
@@ -122,30 +129,29 @@ function init() {
     console.log("[Habits] Add habit event: submitting", name);
     addHabitBtn.disabled = true;
     clearError();
-    const shareWithGroups = document.getElementById("newHabitShare")?.checked === true;
+    const isShared = document.getElementById("newHabitShare")?.checked === true;
     addHabitBtn.textContent = "Saving...";
-    addDoc(habitsRef, {
-      name,
-      shareWithGroups: !!shareWithGroups,
-      createdAt: serverTimestamp(),
-    })
-      .then((ref) => {
-        console.log("[Habits] Firestore write success: habit added with id", ref.id);
-        showToast("Habit saved ✓");
-        if (newHabitInput) newHabitInput.value = "";
-        const shareCheckbox = document.getElementById("newHabitShare");
-        if (shareCheckbox) shareCheckbox.checked = false;
-        return loadHabits();
-      })
-      .catch((err) => {
-        console.error("[Habits] Firestore write error", err.code || err.message, err);
-        showError(err.message || "Could not add habit. Check console and Firestore rules.");
-        addHabitBtn.textContent = "Add Habit";
-      })
-      .finally(() => {
-        addHabitBtn.disabled = false;
-        addHabitBtn.textContent = "Add Habit";
+    try {
+      const ref = await addDoc(habitsRef, {
+        name,
+        createdAt: serverTimestamp(),
+        completedDates: [],
+        isShared: !!isShared,
+        source: "manual",
       });
+      console.log("[Habits] Firestore write success: habit added with id", ref.id);
+      showToast("Habit saved ✓");
+      if (newHabitInput) newHabitInput.value = "";
+      const shareCheckbox = document.getElementById("newHabitShare");
+      if (shareCheckbox) shareCheckbox.checked = false;
+      await loadHabits();
+    } catch (err) {
+      console.error("[Habits] Firestore write error", err.code || err.message, err);
+      showError(err.message || "Could not add habit. Check console and Firestore rules.");
+    } finally {
+      addHabitBtn.disabled = false;
+      addHabitBtn.textContent = "Add Habit";
+    }
   }
 
   addHabitBtn.addEventListener("click", (e) => {
@@ -171,7 +177,7 @@ function init() {
       const nameEl = card.querySelector(".habit-card-name");
       const rawText = nameEl ? nameEl.textContent : "";
       const currentName = rawText.replace(/\s*👥\s*$/, "").trim();
-      const currentShare = card.dataset.shareWithGroups === "true";
+      const currentShare = card.dataset.isShared === "true";
       if (!habitId || !currentUser) return;
       card.dataset.habitId = habitId;
       card.classList.add("habit-card--editing");
@@ -203,7 +209,7 @@ function init() {
       const input = card.querySelector(".habit-card-input");
       const shareInput = card.querySelector(".habit-card-share-input");
       const newName = input ? input.value.trim() : "";
-      const shareWithGroups = shareInput ? shareInput.checked : false;
+      const isShared = shareInput ? shareInput.checked : false;
       if (!habitId || !currentUser) return;
       if (!newName) {
         showError("Please enter a habit name.");
@@ -213,7 +219,7 @@ function init() {
       saveBtn.textContent = "Saving...";
       saveBtn.disabled = true;
       try {
-        await updateDoc(habitRef, { name: newName, shareWithGroups: !!shareWithGroups });
+        await updateDoc(habitRef, { name: newName, isShared: !!isShared, shareWithGroups: !!isShared });
         console.log("[Habits] Habit updated:", habitId);
         showToast("Habit updated ✓");
         loadHabits();
@@ -258,9 +264,31 @@ function init() {
       return;
     }
     currentUser = user;
+    if (habitsUnsubscribe) {
+      habitsUnsubscribe();
+      habitsUnsubscribe = null;
+    }
+    const habitsRef = getHabitsRef();
+    if (habitsRef) {
+      habitsUnsubscribe = onSnapshot(habitsRef, () => {
+        loadHabits();
+      }, (err) => {
+        console.error("[Habits] onSnapshot error:", err);
+        loadHabits();
+      });
+    }
     console.log("[Habits] Auth state: user loaded", user.uid);
     loadHabits();
   });
+
+  try {
+    const bc = new BroadcastChannel("mim-habits-changed");
+    bc.onmessage = () => {
+      if (currentUser) loadHabits();
+    };
+  } catch (e) {
+    /* BroadcastChannel not supported */
+  }
 }
 
 if (document.readyState === "loading") {

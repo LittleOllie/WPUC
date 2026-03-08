@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Challenges — Motivation in Motion</title>
+  <link rel="icon" href="icons/mim.jpg" type="image/jpeg" sizes="any" />
+  <link rel="apple-touch-icon" href="icons/mim.jpg" />
+  <meta property="og:image" content="icons/mim.jpg" />
+  <meta property="og:title" content="Motivation in Motion" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="body-with-bottom-nav">
+  <script>try{document.body.classList.toggle("dark-mode",localStorage.getItem("motivation-in-motion-dark-mode")==="true");}catch(e){}</script>
+  <main class="app-shell">
+    <header class="app-branding">
+      <h1 class="app-title">Motivation in Motion</h1>
+      <p class="app-powered-by">Powered by Little Ollie Labs</p>
+    </header>
+    <header class="top-header">
+      <h1>Challenges</h1>
+      <a href="index.html" class="button-secondary">Back</a>
+    </header>
+
+    <section class="card challenges-section">
+      <h2 class="card-label">Active Challenges</h2>
+      <div id="activeChallengesList" class="challenge-list" aria-live="polite">
+        <p class="challenges-empty">Loading…</p>
+      </div>
+    </section>
+
+    <section class="card challenges-section">
+      <h2 class="card-label">Completed Challenges</h2>
+      <div id="completedChallengesList" class="challenge-list" aria-live="polite">
+        <p class="challenges-empty">None yet.</p>
+      </div>
+    </section>
+
+    <section class="card challenges-section">
+      <h2 class="card-label">Challenge Library</h2>
+      <p class="muted-text" style="margin: 0 0 16px;">Start a challenge to add the habit to your list and track your progress.</p>
+      <div id="challengeLibraryList" class="challenge-library-list" aria-live="polite">
+        <p class="challenges-empty">Loading…</p>
+      </div>
+    </section>
+
+    <footer class="app-footer">© 2026 Little Ollie Labs</footer>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main">
+    <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>
+    <a href="habits.html" class="bottom-nav-item" data-page="habits"><span>🧠</span><span>Habits</span></a>
+    <a href="challenges.html" class="bottom-nav-item bottom-nav-item--active" data-page="challenges"><span>🎯</span><span>Challenges</span></a>
+    <a href="badges.html" class="bottom-nav-item" data-page="badges"><span>🏆</span><span>Badges</span></a>
+    <a href="groups.html" class="bottom-nav-item" data-page="groups"><span>👥</span><span>Groups</span></a>
+    <a href="profile.html" class="bottom-nav-item" data-page="profile"><span>👤</span><span>Profile</span></a>
+    <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
+  </nav>
+  <script>
+    (function () {
+      var path = window.location.pathname || '';
+      var page = 'home';
+      if (path.indexOf('habits') !== -1) page = 'habits';
+      else if (path.indexOf('challenges') !== -1) page = 'challenges';
+      else if (path.indexOf('badges') !== -1) page = 'badges';
+      else if (path.indexOf('groups') !== -1 && path.indexOf('group.html') === -1) page = 'groups';
+      else if (path.indexOf('group.html') !== -1) page = 'groups';
+      else if (path.indexOf('profile') !== -1) page = 'profile';
+      else if (path.indexOf('settings') !== -1) page = 'settings';
+      document.querySelectorAll('.bottom-nav-item').forEach(function (a) {
+        a.classList.toggle('bottom-nav-item--active', a.getAttribute('data-page') === page);
+      });
+    })();
+  </script>
+
+  <!-- Challenge completion popup: Keep Habit or Remove Habit -->
+  <div id="challengeCompletePopup" class="badge-unlock-popup challenge-complete-popup" role="alert" aria-live="polite" hidden>
+    <div class="badge-unlock-content">
+      <p class="badge-unlock-title">Challenge Complete 🎉</p>
+      <p id="challengeCompleteIcon" class="badge-unlock-icon"></p>
+      <p id="challengeCompleteName" class="badge-unlock-name"></p>
+      <p id="challengeCompleteSubtitle" class="challenge-complete-subtitle"></p>
+      <div class="badge-unlock-actions">
+        <button type="button" id="challengeCompleteKeepBtn" class="button-primary">Keep Habit</button>
+        <button type="button" id="challengeCompleteRemoveBtn" class="button-secondary">Remove Habit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenge share modal -->
+  <div id="challengeShareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="challengeShareModalTitle" aria-hidden="true" hidden>
+    <div class="share-modal-backdrop" id="challengeShareModalBackdrop"></div>
+    <div class="share-modal-content">
+      <h2 id="challengeShareModalTitle" class="share-modal-title">Share Challenge</h2>
+      <div class="share-card-preview">
+        <div id="challengeShareCard" class="share-card">
+          <div class="share-card-inner">
+            <p class="share-card-brand share-card-header">Motivation In Motion</p>
+            <div class="share-card-top">
+              <div id="challengeShareCardAvatar" class="share-card-avatar"></div>
+              <p id="challengeShareCardName" class="share-card-name"></p>
+            </div>
+            <div class="share-card-middle">
+              <p id="challengeShareCardIcon" class="share-card-icon">🏅</p>
+              <p id="challengeShareCardBadge" class="share-card-badge">CHALLENGE COMPLETED</p>
+              <p id="challengeShareCardHeadline" class="share-card-headline">Challenge Name</p>
+              <p id="challengeShareCardSubtitle" class="share-card-progress">7 Days Hydrated</p>
+            </div>
+            <div class="share-card-footer">
+              <p class="share-card-hashtag">#MotivationInMotion</p>
+              <p class="share-card-powered">Powered by Little Ollie Labs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="share-modal-actions">
+        <button type="button" id="challengeShareSaveBtn" class="button-primary">Save Image</button>
+        <button type="button" id="challengeShareCopyBtn" class="button-secondary">Copy Image</button>
+        <button type="button" id="challengeShareCloseBtn" class="button-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script type="module" src="js/challenges.js"></script>
+</body>
+</html>

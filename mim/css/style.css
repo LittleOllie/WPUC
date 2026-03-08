@@ -561,6 +561,287 @@ a.button-secondary {
   margin-bottom: 12px;
 }
 
+/* Badges / Goals */
+.badges-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+}
+
+.badge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.badge-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.badge-card--locked {
+  opacity: 0.65;
+  filter: saturate(0.7);
+}
+
+.badge-card--unlocked {
+  border-color: rgba(74, 144, 226, 0.3);
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);
+}
+
+.badge-card--unlocked:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
+}
+
+.badge-card-icon {
+  font-size: 48px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 56px;
+  text-align: center;
+}
+
+.badge-card--unlocked .badge-card-icon {
+  filter: none;
+}
+
+.badge-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge-card-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.badge-card-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.badge-card-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.badge-progress-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+.badge-card-progress-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.badge-share-btn {
+  margin-top: 4px;
+}
+
+/* Challenges */
+.challenges-empty {
+  text-align: center;
+  padding: 16px;
+  color: var(--text-secondary);
+}
+
+.challenge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+
+.challenge-card--active {
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+.challenge-card--completed {
+  background: rgba(29, 185, 84, 0.08);
+  border-color: rgba(29, 185, 84, 0.3);
+}
+
+.challenge-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.challenge-card-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.challenge-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.challenge-completed-badge {
+  color: var(--success);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.challenge-card-progress {
+  margin-top: 4px;
+}
+
+.challenge-progress-bar {
+  margin-bottom: 4px;
+}
+
+.challenge-progress-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.challenge-completed-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.challenge-card-actions {
+  margin-top: 4px;
+}
+
+.challenge-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-library-card {
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+}
+
+.challenge-library-card-header {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.challenge-library-icon {
+  font-size: 40px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.challenge-library-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.challenge-library-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.challenge-library-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
+
+.challenge-library-habit {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.challenge-start-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Badge unlock popup */
+.badge-unlock-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+}
+.badge-unlock-popup[hidden] {
+  display: none !important;
+}
+
+.badge-unlock-content {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.badge-unlock-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.badge-unlock-icon {
+  font-size: 64px;
+  margin: 8px 0;
+  line-height: 1;
+}
+
+.badge-unlock-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0 0 20px;
+}
+
+.badge-unlock-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -19,6 +19,28 @@ service cloud.firestore {
         allow read: if request.auth != null;
         allow write: if request.auth != null && request.auth.uid == userId;
       }
+      // Badge progress: owner only
+      match /badgeProgress/{badgeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      // Active challenges: owner only
+      match /activeChallenges/{challengeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      // Completed challenges: owner only
+      match /completedChallenges/{challengeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    // Challenge definitions (optional; app also has built-in defaults)
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // Badge definitions (optional; app also has built-in defaults)
+    match /badges/{badgeId} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
     match /groups/{groupId} {
       allow create: if request.auth != null;

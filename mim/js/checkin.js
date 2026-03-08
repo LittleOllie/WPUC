@@ -12,15 +12,20 @@ import {
   addDoc,
   deleteDoc,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase-init.js";
 import { escapeHtml, escapeAttr, getWeekStart } from "./utils.js";
 import { subscribeAuth, getAuthState } from "./auth-state.js";
 import { shareAchievement } from "./share-achievement.js";
+import { updateBadgeProgress } from "./badge-progress.js";
+import { showBadgeUnlockPopup } from "./badge-unlock.js";
+import { updateChallengeProgress } from "./challenge-progress.js";
 
 let currentUser = null;
 let habits = [];
 let completedIds = [];
+let habitsUnsubscribe = null;
 /** Whether we have already shown confetti for today (from checkin doc). */
 let celebrationShownToday = false;
 
@@ -105,24 +110,26 @@ function updateProgressText() {
   const progressFillEl = document.getElementById("progressFill");
   const completeMsgEl = document.getElementById("todayCompleteMessage");
   const total = habits.length;
-  const done = completedIds.length;
-  const percent = total ? Math.round((done / total) * 100) : 0;
+  const completedHabitsToday = habits.filter((h) => completedIds.includes(h.id)).length;
+  const percent = total ? Math.round((completedHabitsToday / total) * 100) : 0;
+
+  console.log("[Checkin] Total habits:", total, "Completed habits today:", completedHabitsToday);
 
   if (progressTextEl) {
     progressTextEl.textContent = total
-      ? `${done} / ${total} habits completed`
+      ? `${completedHabitsToday} / ${total} habits completed`
       : "Add habits to track your progress.";
   }
   if (progressFillEl) {
     progressFillEl.style.width = percent + "%";
   }
   if (completeMsgEl) {
-    const allDone = total > 0 && done === total;
+    const allDone = total > 0 && completedHabitsToday === total;
     completeMsgEl.textContent = "All habits completed today 🎉";
     completeMsgEl.hidden = !allDone;
   }
   const shareBtn = document.getElementById("shareAchievementBtn");
-  if (shareBtn) shareBtn.hidden = !(total > 0 && done === total);
+  if (shareBtn) shareBtn.hidden = !(total > 0 && completedHabitsToday === total);
 }
 
 /** Load last 7 days and render weekly chain. Filled if checkin exists and habitsCompleted.length > 0. */
@@ -203,7 +210,14 @@ function init() {
       const snapshot = await getDocs(ref);
       habits = [];
       snapshot.forEach((d) => {
-        habits.push({ id: d.id, ...d.data(), shareWithGroups: d.data().shareWithGroups === true });
+        const data = d.data();
+        const shareWithGroups = data.shareWithGroups === true || data.isShared === true;
+        habits.push({ id: d.id, ...data, shareWithGroups });
+      });
+      habits.sort((a, b) => {
+        const ta = a.createdAt?.toMillis?.() ?? 0;
+        const tb = b.createdAt?.toMillis?.() ?? 0;
+        return ta - tb;
       });
       console.log("[Checkin] Habits loaded:", habits.length);
     } catch (err) {
@@ -219,8 +233,12 @@ function init() {
     try {
       const snap = await getDoc(ref);
       const data = snap.exists() ? snap.data() : {};
-      completedIds = Array.isArray(data.habitsCompleted) ? data.habitsCompleted : [];
+      const rawCompleted = Array.isArray(data.habitsCompleted) ? data.habitsCompleted : [];
+      completedIds = rawCompleted.filter((id) => habits.some((h) => h.id === id));
       celebrationShownToday = data.celebrationShown === true;
+      if (rawCompleted.length !== completedIds.length) {
+        console.log("[Checkin] Sanitized completedIds: removed", rawCompleted.length - completedIds.length, "stale entries");
+      }
       console.log("[Checkin] Checkins loaded:", completedIds.length, "completed", "celebrationShown:", celebrationShownToday);
     } catch (err) {
       console.error("[Checkin] loadCheckin error", err);
@@ -429,15 +447,17 @@ function init() {
     }
     const ref = getCheckinRef();
     if (!ref) return;
+    const sanitizedCompleted = completedIds.filter((id) => habits.some((h) => h.id === id));
     const totalHabits = habits.length;
-    const completedHabits = completedIds.length;
+    const completedHabits = sanitizedCompleted.length;
     const fullCompletion = totalHabits > 0 && completedHabits === totalHabits;
     try {
-      const payload = { habitsCompleted: completedIds };
+      const payload = { habitsCompleted: sanitizedCompleted };
       if (fullCompletion) {
         payload.celebrationShown = true;
       }
       await setDoc(ref, payload);
+      completedIds = sanitizedCompleted;
       console.log("[Checkin] Checkbox saved:", id, e.target.checked);
       if (fullCompletion) {
         triggerConfetti();
@@ -452,6 +472,17 @@ function init() {
     if (habit && habit.shareWithGroups) {
       await writeToGroupFeeds(id, habit.name, e.target.checked, null);
     }
+    // Update badge progress when habits change
+    const newlyUnlocked = await updateBadgeProgress(currentUser.uid);
+    if (newlyUnlocked) {
+      const profile = await getAuthState().getUserProfile();
+      showBadgeUnlockPopup(newlyUnlocked, profile || {});
+    }
+    // Update challenge progress when habit is checked
+    if (e.target.checked) {
+      const habit = habits.find((h) => h.id === id);
+      if (habit) await updateChallengeProgress(currentUser.uid, habit);
+    }
   });
 
   const shareBtn = document.getElementById("shareAchievementBtn");
@@ -460,8 +491,9 @@ function init() {
       try {
         shareBtn.disabled = true;
         const profile = await getAuthState().getUserProfile();
+        const completedCount = habits.filter((h) => completedIds.includes(h.id)).length;
         await shareAchievement(profile || {}, {
-          completedCount: completedIds.length,
+          completedCount,
           totalCount: habits.length,
         });
       } catch (err) {
@@ -478,6 +510,21 @@ function init() {
       return;
     }
     currentUser = user;
+    if (habitsUnsubscribe) {
+      habitsUnsubscribe();
+      habitsUnsubscribe = null;
+    }
+    const habitsRef = getHabitsRef();
+    if (habitsRef) {
+      habitsUnsubscribe = onSnapshot(habitsRef, async () => {
+        await loadHabits();
+        render();
+      }, async (err) => {
+        console.error("[Checkin] habits onSnapshot error:", err);
+        await loadHabits();
+        render();
+      });
+    }
     console.log("[Checkin] Auth loaded:", user.uid);
     if (todayHabitsEl) todayHabitsEl.innerHTML = "<p class=\"today-habits-empty\">Loading…</p>";
     await loadHabits();
@@ -485,6 +532,18 @@ function init() {
     await loadAndRenderWeeklyChain();
     render();
   });
+
+  try {
+    const bc = new BroadcastChannel("mim-habits-changed");
+    bc.onmessage = async () => {
+      if (currentUser && typeof loadHabits === "function") {
+        await loadHabits();
+        render();
+      }
+    };
+  } catch (e) {
+    /* BroadcastChannel not supported */
+  }
 }
 
 if (document.readyState === "loading") {

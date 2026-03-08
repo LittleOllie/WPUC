@@ -70,6 +70,8 @@
   <nav class="bottom-nav" aria-label="Main">
     <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>
     <a href="habits.html" class="bottom-nav-item" data-page="habits"><span>🧠</span><span>Habits</span></a>
+    <a href="challenges.html" class="bottom-nav-item" data-page="challenges"><span>🎯</span><span>Challenges</span></a>
+    <a href="badges.html" class="bottom-nav-item" data-page="badges"><span>🏆</span><span>Badges</span></a>
     <a href="groups.html" class="bottom-nav-item" data-page="groups"><span>👥</span><span>Groups</span></a>
     <a href="profile.html" class="bottom-nav-item" data-page="profile"><span>👤</span><span>Profile</span></a>
     <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
@@ -79,6 +81,8 @@
       var path = window.location.pathname || '';
       var page = 'home';
       if (path.indexOf('habits') !== -1) page = 'habits';
+      else if (path.indexOf('challenges') !== -1) page = 'challenges';
+      else if (path.indexOf('badges') !== -1) page = 'badges';
       else if (path.indexOf('groups') !== -1 && path.indexOf('group.html') === -1) page = 'groups';
       else if (path.indexOf('group.html') !== -1) page = 'groups';
       else if (path.indexOf('profile') !== -1) page = 'profile';
@@ -122,6 +126,101 @@
         <button type="button" id="shareModalSaveBtn" class="button-primary">Save Image</button>
         <button type="button" id="shareModalCopyBtn" class="button-secondary">Copy Image</button>
         <button type="button" id="shareModalCloseBtn" class="button-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badge unlock popup (shown when user unlocks a badge) -->
+  <div id="badgeUnlockPopup" class="badge-unlock-popup" role="alert" aria-live="polite" hidden>
+    <div class="badge-unlock-content">
+      <p class="badge-unlock-title">Badge Unlocked</p>
+      <p id="badgeUnlockIcon" class="badge-unlock-icon"></p>
+      <p id="badgeUnlockName" class="badge-unlock-name"></p>
+      <div class="badge-unlock-actions">
+        <button type="button" id="badgeUnlockShareBtn" class="button-primary">Share</button>
+        <button type="button" id="badgeUnlockCloseBtn" class="button-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenge completion popup: Keep Habit or Remove Habit -->
+  <div id="challengeCompletePopup" class="badge-unlock-popup challenge-complete-popup" role="alert" aria-live="polite" hidden>
+    <div class="badge-unlock-content">
+      <p class="badge-unlock-title">Challenge Complete 🎉</p>
+      <p id="challengeCompleteIcon" class="badge-unlock-icon"></p>
+      <p id="challengeCompleteName" class="badge-unlock-name"></p>
+      <p id="challengeCompleteSubtitle" class="challenge-complete-subtitle"></p>
+      <div class="badge-unlock-actions">
+        <button type="button" id="challengeCompleteKeepBtn" class="button-primary">Keep Habit</button>
+        <button type="button" id="challengeCompleteRemoveBtn" class="button-secondary">Remove Habit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenge share modal -->
+  <div id="challengeShareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="challengeShareModalTitle" aria-hidden="true" hidden>
+    <div class="share-modal-backdrop" id="challengeShareModalBackdrop"></div>
+    <div class="share-modal-content">
+      <h2 id="challengeShareModalTitle" class="share-modal-title">Share Challenge</h2>
+      <div class="share-card-preview">
+        <div id="challengeShareCard" class="share-card">
+          <div class="share-card-inner">
+            <p class="share-card-brand share-card-header">Motivation In Motion</p>
+            <div class="share-card-top">
+              <div id="challengeShareCardAvatar" class="share-card-avatar"></div>
+              <p id="challengeShareCardName" class="share-card-name"></p>
+            </div>
+            <div class="share-card-middle">
+              <p id="challengeShareCardIcon" class="share-card-icon">🏅</p>
+              <p id="challengeShareCardBadge" class="share-card-badge">CHALLENGE COMPLETED</p>
+              <p id="challengeShareCardHeadline" class="share-card-headline">Challenge Name</p>
+              <p id="challengeShareCardSubtitle" class="share-card-progress">7 Days Hydrated</p>
+            </div>
+            <div class="share-card-footer">
+              <p class="share-card-hashtag">#MotivationInMotion</p>
+              <p class="share-card-powered">Powered by Little Ollie Labs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="share-modal-actions">
+        <button type="button" id="challengeShareSaveBtn" class="button-primary">Save Image</button>
+        <button type="button" id="challengeShareCopyBtn" class="button-secondary">Copy Image</button>
+        <button type="button" id="challengeShareCloseBtn" class="button-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badge share modal -->
+  <div id="badgeShareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="badgeShareModalTitle" aria-hidden="true" hidden>
+    <div class="share-modal-backdrop" id="badgeShareModalBackdrop"></div>
+    <div class="share-modal-content">
+      <h2 id="badgeShareModalTitle" class="share-modal-title">Share Badge</h2>
+      <div class="share-card-preview">
+        <div id="badgeShareCard" class="share-card">
+          <div class="share-card-inner">
+            <p class="share-card-brand share-card-header">Motivation In Motion</p>
+            <div class="share-card-top">
+              <div id="badgeShareCardAvatar" class="share-card-avatar"></div>
+              <p id="badgeShareCardName" class="share-card-name"></p>
+            </div>
+            <div class="share-card-middle">
+              <p id="badgeShareCardIcon" class="share-card-icon">🏅</p>
+              <p id="badgeShareCardBadge" class="share-card-badge">BADGE UNLOCKED</p>
+              <p id="badgeShareCardHeadline" class="share-card-headline">Badge Name</p>
+              <p id="badgeShareCardSubtitle" class="share-card-progress" hidden>Description</p>
+            </div>
+            <div class="share-card-footer">
+              <p class="share-card-hashtag">#MotivationInMotion</p>
+              <p class="share-card-powered">Powered by Little Ollie Labs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="share-modal-actions">
+        <button type="button" id="badgeShareSaveBtn" class="button-primary">Save Image</button>
+        <button type="button" id="badgeShareCopyBtn" class="button-secondary">Copy Image</button>
+        <button type="button" id="badgeShareCloseBtn" class="button-secondary">Close</button>
       </div>
     </div>
   </div>
