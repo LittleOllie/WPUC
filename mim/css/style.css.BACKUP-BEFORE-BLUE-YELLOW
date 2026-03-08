@@ -1,0 +1,17 @@
+========================================
+BACKUP: Revert instructions
+========================================
+Full backup saved as: css/style.BACKUP-full-copy.css
+
+To undo the blue/yellow changes:
+
+  cp css/style.BACKUP-full-copy.css css/style.css
+
+Or manually restore these :root values (light mode):
+  --primary: #FC4C02
+  --primary-hover: #E04502
+  --bg-main: #F8FAFC
+  --bg-card: #FFFFFF
+  --border-light: #E2E8F0
+And restore button-secondary to white/border style.
+========================================

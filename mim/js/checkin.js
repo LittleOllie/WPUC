@@ -199,7 +199,7 @@ function init() {
       const snapshot = await getDocs(ref);
       habits = [];
       snapshot.forEach((d) => {
-        habits.push({ id: d.id, ...d.data() });
+        habits.push({ id: d.id, ...d.data(), shareWithGroups: d.data().shareWithGroups === true });
       });
       console.log("[Checkin] Habits loaded:", habits.length);
     } catch (err) {
@@ -375,7 +375,7 @@ function init() {
       if (!completedIds.includes(id)) completedIds.push(id);
       const habit = habits.find((h) => h.id === id);
       showIdentityReinforcement(habit ? habit.identity : null);
-      if (habit && habit.identity) writeIdentityToGroupFeeds(habit.identity);
+      if (habit && habit.identity && habit.shareWithGroups) writeIdentityToGroupFeeds(habit.identity);
       if (completedIds.length === 1) showDailyWin();
     } else {
       completedIds = completedIds.filter((x) => x !== id);
@@ -401,7 +401,11 @@ function init() {
     updateProgressText();
     await updateStreakIfNeeded();
     await loadAndRenderWeeklyChain();
-    if (e.target.checked && completedIds.length === 1) await writeToGroupFeeds(1, null);
+    const sharedCount = completedIds.filter((id) => {
+      const h = habits.find((x) => x.id === id);
+      return h && h.shareWithGroups;
+    }).length;
+    if (e.target.checked && sharedCount > 0) await writeToGroupFeeds(sharedCount, null);
   });
 
   subscribeAuth(async (user) => {

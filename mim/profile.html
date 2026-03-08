@@ -24,13 +24,36 @@
       <p class="app-powered-by">Powered by Little Ollie Labs</p>
     </header>
     <header class="top-header">
-      <h1>Profile</h1>
-      <a href="index.html" class="button-secondary">Back</a>
+      <h1 id="profilePageTitle">Profile</h1>
+      <a id="profileBackLink" href="index.html" class="button-secondary">Back</a>
     </header>
 
     <div id="profileError" class="groups-error" hidden></div>
 
-    <section class="card profile-card">
+    <!-- VIEW MODE: when viewing another user's profile (profile.html?uid=xxx) -->
+    <div id="profileViewMode" class="profile-view-mode" hidden>
+      <section class="card member-profile-card">
+        <div id="profileViewAvatar" class="avatar avatar--lg" aria-hidden="true"></div>
+        <h2 id="profileViewName" class="member-name"></h2>
+        <p id="profileViewStreak" class="profile-view-streak muted-text"></p>
+      </section>
+      <section class="card" id="profileViewSocial" hidden>
+        <h3 class="card-label">Connect</h3>
+        <div id="profileViewSocialLinks"></div>
+      </section>
+      <section class="card" id="profileViewHabits" hidden>
+        <h3 class="card-label">Shared Habits Today</h3>
+        <ul id="profileViewHabitsList" class="profile-shared-habits"></ul>
+      </section>
+      <section class="card" id="profileViewHistory" hidden>
+        <h3 class="card-label">Recent Days</h3>
+        <div id="profileViewDayNav" class="profile-day-nav"></div>
+        <ul id="profileViewDayHabits" class="profile-shared-habits"></ul>
+      </section>
+    </div>
+
+    <!-- EDIT MODE: own profile -->
+    <section class="card profile-card" id="profileEditMode">
 
       <!-- PROFILE PHOTO -->
       <div class="profile-photo-wrap">
@@ -89,8 +112,27 @@
           placeholder="https://..."
         />
 
+        <label>Twitter / X Handle</label>
+        <input
+          type="text"
+          id="profileTwitter"
+          class="input-field"
+          placeholder="@username"
+          autocomplete="off"
+        />
+
+        <label>Discord Handle</label>
+        <input
+          type="text"
+          id="profileDiscord"
+          class="input-field"
+          placeholder="username"
+          autocomplete="off"
+        />
+
         <button
           type="submit"
+          id="saveProfileBtn"
           class="button-primary full-width"
         >
           Save Profile

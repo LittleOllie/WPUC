@@ -1,17 +1,26 @@
 /**
- * Profile page: upload photo via ImgBB, edit displayName, bio, location, website.
- * users/{uid}: displayName, bio, location, website, photoURL, updatedAt
+ * Profile page: upload photo via ImgBB, edit displayName, bio, location, website, twitterHandle, discordHandle.
+ * users/{uid}: displayName, bio, location, website, twitterHandle, discordHandle, photoURL, updatedAt
+ * View mode: profile.html?uid={userId}&groupId={groupId} (groupId optional, for back link)
  */
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   updateDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { renderAvatar } from "./utils.js";
+import { renderAvatar, escapeHtml } from "./utils.js";
 import { IMGBB_API_KEY } from "./firebase-config.js";
+
+function getDateId(daysAgo) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - daysAgo);
+  return d.toISOString().split("T")[0];
+}
 
 const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
@@ -192,14 +201,6 @@ function init() {
     });
   }
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = "login.html";
-      return;
-    }
-    loadProfile(user.uid);
-  });
-
   profileForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
@@ -209,6 +210,8 @@ function init() {
     const bio = (document.getElementById("profileBio")?.value || "").trim();
     const location = (document.getElementById("profileLocation")?.value || "").trim();
     const website = (document.getElementById("profileWebsite")?.value || "").trim();
+    const twitterHandle = (document.getElementById("profileTwitter")?.value || "").trim();
+    const discordHandle = (document.getElementById("profileDiscord")?.value || "").trim();
     if (saveProfileBtn) saveProfileBtn.disabled = true;
     try {
       await updateDoc(doc(db, "users", uid), {
@@ -217,6 +220,8 @@ function init() {
         bio: bio || null,
         location: location || null,
         website: website || null,
+        twitterHandle: twitterHandle || null,
+        discordHandle: discordHandle || null,
         updatedAt: serverTimestamp(),
       });
       const currentPhotoURL = profilePhoto.querySelector("img")?.getAttribute("src") || null;
@@ -238,12 +243,138 @@ function init() {
       document.getElementById("profileBio").value = data.bio ?? "";
       document.getElementById("profileLocation").value = data.location ?? "";
       document.getElementById("profileWebsite").value = data.website ?? "";
+      document.getElementById("profileTwitter").value = data.twitterHandle ?? "";
+      document.getElementById("profileDiscord").value = data.discordHandle ?? "";
       renderAvatar(profilePhoto, data.photoURL || null, name, "lg");
     } catch (err) {
       console.error("[Profile] Load error", err);
       showError("Could not load profile.");
     }
   }
+
+  async function loadProfileView(uid, groupId) {
+    const viewMode = document.getElementById("profileViewMode");
+    const editMode = document.getElementById("profileEditMode");
+    const backLink = document.getElementById("profileBackLink");
+    const pageTitle = document.getElementById("profilePageTitle");
+    if (!viewMode || !editMode) return;
+    viewMode.hidden = false;
+    editMode.hidden = true;
+    if (backLink) backLink.href = groupId ? "group.html?id=" + encodeURIComponent(groupId) : "groups.html";
+    if (pageTitle) pageTitle.textContent = "Profile";
+
+    try {
+      const userSnap = await getDoc(doc(db, "users", uid));
+      if (!userSnap.exists()) {
+        showError("Profile not found.");
+        return;
+      }
+      const user = userSnap.data();
+      const name = user.displayName || user.name || user.email || "Member";
+      const currentStreak = Number(user.currentStreak) || 0;
+      const longestStreak = Number(user.longestStreak) || 0;
+
+      const avatarEl = document.getElementById("profileViewAvatar");
+      const nameEl = document.getElementById("profileViewName");
+      const streakEl = document.getElementById("profileViewStreak");
+      if (avatarEl) renderAvatar(avatarEl, user.photoURL || null, name, "lg");
+      if (nameEl) nameEl.textContent = name;
+      if (streakEl) streakEl.textContent = "Current Streak: " + currentStreak + " day" + (currentStreak !== 1 ? "s" : "") + " • Longest: " + longestStreak + " day" + (longestStreak !== 1 ? "s" : "");
+
+      const socialLinks = [];
+      const website = (user.website || "").trim();
+      if (website && (website.startsWith("http://") || website.startsWith("https://"))) {
+        socialLinks.push({ label: "Website", href: website, text: website });
+      }
+      if (user.twitterHandle) {
+        const handle = String(user.twitterHandle).replace(/^@/, "");
+        socialLinks.push({ label: "Twitter / X", href: "https://twitter.com/" + encodeURIComponent(handle), text: "@" + handle });
+      }
+      if (user.discordHandle) socialLinks.push({ label: "Discord", href: null, text: user.discordHandle });
+      const socialSection = document.getElementById("profileViewSocial");
+      const socialContainer = document.getElementById("profileViewSocialLinks");
+      if (socialLinks.length > 0 && socialSection && socialContainer) {
+        socialSection.hidden = false;
+        socialContainer.innerHTML = socialLinks.map((s) =>
+          s.href
+            ? `<a href="${escapeHtml(s.href)}" target="_blank" rel="noopener" class="profile-social-link">${escapeHtml(s.label)}: ${escapeHtml(s.text)}</a>`
+            : `<span class="profile-social-link profile-social-link--text">${escapeHtml(s.label)}: ${escapeHtml(s.text)}</span>`
+        ).join("");
+      } else if (socialSection) socialSection.hidden = true;
+
+      const habitsSnap = await getDocs(collection(db, "users", uid, "habits"));
+      const sharedHabits = [];
+      habitsSnap.forEach((d) => {
+        const h = d.data();
+        if (h.shareWithGroups === true) sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
+      });
+      const todayId = getDateId(0);
+      const todaySnap = await getDoc(doc(db, "users", uid, "checkins", todayId));
+      const todayData = todaySnap.exists() ? todaySnap.data() : {};
+      const completedToday = Array.isArray(todayData.habitsCompleted) ? todayData.habitsCompleted : [];
+
+      const habitsSection = document.getElementById("profileViewHabits");
+      const habitsList = document.getElementById("profileViewHabitsList");
+      if (sharedHabits.length > 0 && habitsSection && habitsList) {
+        habitsSection.hidden = false;
+        habitsList.innerHTML = sharedHabits.map((h) => {
+          const done = completedToday.includes(h.id);
+          return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
+        }).join("");
+      } else if (habitsSection) habitsSection.hidden = true;
+
+      const historySection = document.getElementById("profileViewHistory");
+      const dayNav = document.getElementById("profileViewDayNav");
+      const dayHabits = document.getElementById("profileViewDayHabits");
+      if (sharedHabits.length > 0 && historySection && dayNav && dayHabits) {
+        historySection.hidden = false;
+        const dayLabels = ["Today", "Yesterday", "2 Days Ago", "3 Days Ago"];
+        dayNav.innerHTML = dayLabels.map((_, i) => {
+          const dateId = getDateId(i);
+          return `<button type="button" class="profile-day-btn" data-days="${i}">${dayLabels[i]}</button>`;
+        }).join("");
+        const dayBtns = dayNav.querySelectorAll(".profile-day-btn");
+        let selectedDay = 0;
+        async function renderDay(daysAgo) {
+          selectedDay = daysAgo;
+          dayBtns.forEach((b) => b.classList.toggle("profile-day-btn--active", Number(b.dataset.days) === daysAgo));
+          const dateId = getDateId(daysAgo);
+          const snap = await getDoc(doc(db, "users", uid, "checkins", dateId));
+          const snapData = snap.exists() ? snap.data() : {};
+          const completed = Array.isArray(snapData.habitsCompleted) ? snapData.habitsCompleted : [];
+          dayHabits.innerHTML = sharedHabits.map((h) => {
+            const done = completed.includes(h.id);
+            return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
+          }).join("");
+        }
+        await renderDay(0);
+        dayBtns.forEach((btn) => btn.addEventListener("click", () => renderDay(Number(btn.dataset.days))));
+      } else if (historySection) historySection.hidden = true;
+    } catch (err) {
+      console.error("[Profile] loadProfileView error", err);
+      showError("Could not load profile.");
+    }
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const viewUid = params.get("uid");
+  const groupId = params.get("groupId") || "";
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+    if (viewUid && viewUid !== user.uid) {
+      loadProfileView(viewUid, groupId);
+    } else {
+      document.getElementById("profileViewMode").hidden = true;
+      document.getElementById("profileEditMode").hidden = false;
+      const backLink = document.getElementById("profileBackLink");
+      if (backLink) backLink.href = "index.html";
+      loadProfile(user.uid);
+    }
+  });
 }
 
 if (document.readyState === "loading") {

@@ -4,6 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Member — Motivation in Motion</title>
+  <script>
+    (function(){
+      var p = new URLSearchParams(window.location.search);
+      var uid = p.get("uid");
+      var groupId = p.get("groupId") || "";
+      if (uid) {
+        var url = "profile.html?uid=" + encodeURIComponent(uid);
+        if (groupId) url += "&groupId=" + encodeURIComponent(groupId);
+        window.location.replace(url);
+      }
+    })();
+  </script>
   <link rel="icon" href="icons/mim.jpg" type="image/jpeg" sizes="any" />
   <link rel="apple-touch-icon" href="icons/mim.jpg" />
   <meta property="og:image" content="icons/mim.jpg" />

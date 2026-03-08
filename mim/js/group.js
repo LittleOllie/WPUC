@@ -394,7 +394,7 @@ async function loadGroup() {
     const li = document.createElement("li");
     li.className = "group-member-item";
     const avatarLink = document.createElement("a");
-    avatarLink.href = "member.html?uid=" + encodeURIComponent(m.id) + "&groupId=" + encodeURIComponent(currentGroupId);
+    avatarLink.href = "profile.html?uid=" + encodeURIComponent(m.id) + "&groupId=" + encodeURIComponent(currentGroupId);
     avatarLink.className = "group-member-avatar-link";
     avatarLink.setAttribute("aria-label", "View " + name + " profile");
     const avatar = document.createElement("div");
@@ -403,7 +403,7 @@ async function loadGroup() {
     const nameSpan = document.createElement("span");
     nameSpan.className = "group-member-name";
     const memberLink = document.createElement("a");
-    memberLink.href = "member.html?uid=" + encodeURIComponent(m.id) + "&groupId=" + encodeURIComponent(currentGroupId);
+    memberLink.href = "profile.html?uid=" + encodeURIComponent(m.id) + "&groupId=" + encodeURIComponent(currentGroupId);
     memberLink.className = "group-member-link";
     memberLink.textContent = name;
     const badgeSpan = document.createElement("span");
@@ -466,7 +466,7 @@ async function loadGroup() {
     const rank = document.createElement("span");
     rank.className = "leaderboard-rank";
     rank.textContent = String(i + 1);
-    const profileUrl = "member.html?uid=" + encodeURIComponent(entry.id) + "&groupId=" + encodeURIComponent(currentGroupId);
+    const profileUrl = "profile.html?uid=" + encodeURIComponent(entry.id) + "&groupId=" + encodeURIComponent(currentGroupId);
     const avatarLink = document.createElement("a");
     avatarLink.href = profileUrl;
     avatarLink.className = "group-member-avatar-link";
@@ -514,7 +514,7 @@ function renderActivityItem(a, activityEl) {
   nameSpan.className = "group-activity-user";
   if (uid && currentGroupId) {
     const nameLink = document.createElement("a");
-    nameLink.href = "member.html?uid=" + encodeURIComponent(uid) + "&groupId=" + encodeURIComponent(currentGroupId);
+    nameLink.href = "profile.html?uid=" + encodeURIComponent(uid) + "&groupId=" + encodeURIComponent(currentGroupId);
     nameLink.className = "group-activity-user-link";
     nameLink.style.color = color;
     nameLink.textContent = userName + " ";

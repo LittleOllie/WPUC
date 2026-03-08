@@ -80,11 +80,14 @@ function init() {
       snapshot.forEach((docItem) => {
         const habit = docItem.data();
         const name = habit.name || "Unnamed";
+        const shareWithGroups = habit.shareWithGroups === true;
         const card = document.createElement("div");
         card.className = "habit-card";
         card.dataset.habitId = docItem.id;
+        card.dataset.shareWithGroups = shareWithGroups ? "true" : "false";
+        const shareBadge = shareWithGroups ? '<span class="habit-shared-badge" aria-label="Shared with groups">👥</span>' : "";
         card.innerHTML =
-          `<span class="habit-card-name">${escapeHtml(name)}</span>` +
+          `<span class="habit-card-name">${escapeHtml(name)}${shareBadge}</span>` +
           `<div class="habit-card-actions">` +
           `<button type="button" data-id="${escapeAttr(docItem.id)}" class="habit-card-edit" aria-label="Edit habit">Edit</button>` +
           `<button type="button" data-id="${escapeAttr(docItem.id)}" class="habit-card-delete" aria-label="Delete habit">Delete</button>` +
@@ -119,13 +122,17 @@ function init() {
     console.log("[Habits] Add habit event: submitting", name);
     addHabitBtn.disabled = true;
     clearError();
+    const shareWithGroups = document.getElementById("newHabitShare")?.checked === true;
     addDoc(habitsRef, {
       name,
+      shareWithGroups: !!shareWithGroups,
       createdAt: serverTimestamp(),
     })
       .then((ref) => {
         console.log("[Habits] Firestore write success: habit added with id", ref.id);
         if (newHabitInput) newHabitInput.value = "";
+        const shareCheckbox = document.getElementById("newHabitShare");
+        if (shareCheckbox) shareCheckbox.checked = false;
         return loadHabits();
       })
       .catch((err) => {
@@ -153,17 +160,23 @@ function init() {
     const card = e.target.closest(".habit-card");
     if (!card) return;
 
-    const editBtn = e.target.closest(".habit-card-edit");
+      const editBtn = e.target.closest(".habit-card-edit");
     if (editBtn) {
       e.preventDefault();
       const habitId = editBtn.dataset.id;
       const nameEl = card.querySelector(".habit-card-name");
-      const currentName = nameEl ? nameEl.textContent : "";
+      const rawText = nameEl ? nameEl.textContent : "";
+      const currentName = rawText.replace(/\s*👥\s*$/, "").trim();
+      const currentShare = card.dataset.shareWithGroups === "true";
       if (!habitId || !currentUser) return;
       card.dataset.habitId = habitId;
       card.classList.add("habit-card--editing");
       card.innerHTML =
         `<input type="text" class="habit-card-input input-field" value="${escapeAttr(currentName)}" maxlength="100" placeholder="Habit name" />` +
+        `<label class="habit-share-wrap habit-share-wrap--edit">` +
+        `<input type="checkbox" class="habit-share-input habit-card-share-input" ${currentShare ? "checked" : ""} />` +
+        `<span class="habit-share-label">Share this habit with groups</span>` +
+        `</label>` +
         `<div class="habit-card-actions">` +
         `<button type="button" class="habit-card-save">Save</button>` +
         `<button type="button" class="habit-card-cancel">Cancel</button>`;
@@ -184,7 +197,9 @@ function init() {
       e.preventDefault();
       const habitId = card.dataset.habitId;
       const input = card.querySelector(".habit-card-input");
+      const shareInput = card.querySelector(".habit-card-share-input");
       const newName = input ? input.value.trim() : "";
+      const shareWithGroups = shareInput ? shareInput.checked : false;
       if (!habitId || !currentUser) return;
       if (!newName) {
         showError("Please enter a habit name.");
@@ -192,7 +207,7 @@ function init() {
       }
       const habitRef = doc(db, "users", currentUser.uid, "habits", habitId);
       try {
-        await updateDoc(habitRef, { name: newName });
+        await updateDoc(habitRef, { name: newName, shareWithGroups: !!shareWithGroups });
         console.log("[Habits] Habit updated:", habitId);
         loadHabits();
       } catch (err) {
