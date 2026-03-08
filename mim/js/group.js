@@ -19,7 +19,7 @@ import {
   addDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { getJoinUrl, generateJoinCode, joinCodeExpiresAt, getWeekStart, escapeHtml, escapeAttr, renderAvatar } from "./utils.js";
+import { getJoinUrl, generateJoinCode, joinCodeExpiresAt, getWeekStart, escapeHtml, escapeAttr, renderAvatar, showToast } from "./utils.js";
 import { IMGBB_API_KEY } from "./firebase-config.js";
 
 const IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload";
@@ -220,6 +220,7 @@ function init() {
       const photoURL = await uploadGroupPhotoToImgBB(file);
       await updateDoc(doc(db, "groups", currentGroupId), { photoURL, updatedAt: serverTimestamp() });
       currentGroup = { ...currentGroup, photoURL };
+      showToast("Group photo updated ✓");
       const groupAvatarEl = document.getElementById("groupAvatar");
       if (groupAvatarEl) renderAvatar(groupAvatarEl, photoURL, currentGroup.name || "Group", "lg");
     } catch (err) {
@@ -236,6 +237,7 @@ function init() {
       currentGroup = { ...currentGroup, name: name.trim() };
       document.getElementById("groupTitle").textContent = name.trim();
       document.getElementById("groupName").textContent = name.trim();
+      showToast("Group settings updated ✓");
     } catch (err) {
       showError(err.message || "Could not update name.");
     }
@@ -254,6 +256,7 @@ function init() {
         descEl.textContent = value || "";
         descEl.style.display = value ? "" : "none";
       }
+      showToast("Group settings updated ✓");
     } catch (err) {
       showError(err.message || "Could not update description.");
     }
@@ -267,7 +270,7 @@ function init() {
     await updateDoc(groupRef, { joinCode: newCode, joinCodeExpires: newExpires });
     currentGroup = { ...currentGroup, joinCode: newCode, joinCodeExpires: newExpires };
     document.getElementById("groupJoinCode").textContent = newCode;
-    showError(""); // clear any message
+    showToast("Join code regenerated ✓");
   });
 
   document.getElementById("deleteGroupBtn")?.addEventListener("click", async () => {

@@ -55,6 +55,31 @@ export function getJoinUrl(code) {
  * @param {string} name - Display name for initial/alt
  * @param {string} [size='lg'] - 'sm' or 'lg' for avatar--sm / avatar--lg
  */
+let toastTimeout = null;
+
+/**
+ * Show a temporary toast notification. Auto-hides after 2 seconds.
+ * @param {string} message - e.g. "Saved successfully ✓"
+ */
+export function showToast(message) {
+  if (toastTimeout) clearTimeout(toastTimeout);
+  let el = document.getElementById("app-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "app-toast";
+    el.className = "app-toast";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.add("app-toast--visible");
+  toastTimeout = setTimeout(() => {
+    el.classList.remove("app-toast--visible");
+    toastTimeout = null;
+  }, 2000);
+}
+
 export function renderAvatar(container, photoURL, name, size = "lg") {
   if (!container) return;
   const displayName = (name || "").trim() || "?";

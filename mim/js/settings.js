@@ -9,6 +9,7 @@ import {
   deleteUser,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { auth } from "./firebase-init.js";
+import { showToast } from "./utils.js";
 
 const DARK_MODE_KEY = "motivation-in-motion-dark-mode";
 
@@ -37,6 +38,7 @@ function initDarkMode() {
       const value = toggle.checked;
       localStorage.setItem(DARK_MODE_KEY, value ? "true" : "false");
       document.body.classList.toggle("dark-mode", value);
+      showToast("Settings saved ✓");
     });
   }
   document.body.classList.toggle("dark-mode", dark);
@@ -68,22 +70,29 @@ function init() {
         return;
       }
       const btn = document.getElementById("changePasswordBtn");
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+      }
       try {
         const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
         await reauthenticateWithCredential(auth.currentUser, credential);
         await updatePassword(auth.currentUser, newPassword);
-        showError(""); // clear
+        clearError();
         changePasswordForm.reset();
-        if (btn) btn.disabled = false;
-        alert("Password updated successfully.");
+        showToast("Password updated ✓");
       } catch (err) {
         if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
           showError("Current password is incorrect.");
         } else {
           showError(err.message || "Could not change password.");
         }
-        if (btn) btn.disabled = false;
+      } finally {
+        const btn = document.getElementById("changePasswordBtn");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Change password";
+        }
       }
     });
   }

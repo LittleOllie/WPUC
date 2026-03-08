@@ -1532,6 +1532,10 @@ body.dark-mode .identity-popup {
   margin: 8px 0 0;
   font-size: 14px;
 }
+.profile-view-habits-subtitle {
+  margin: -4px 0 12px;
+  font-size: 13px;
+}
 .profile-social-link {
   display: block;
   margin-bottom: 8px;
@@ -1584,6 +1588,185 @@ body.dark-mode .identity-popup {
 .profile-day-btn--active {
   background: var(--primary);
   color: white;
+}
+
+/* Share achievement modal */
+.share-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.share-modal[hidden] {
+  display: none !important;
+}
+.share-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  cursor: pointer;
+}
+.share-modal-content {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  max-height: min(calc(100vh - 48px), calc(100dvh - 48px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.share-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+.share-card-preview {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.share-card-preview .share-card {
+  transform: scale(var(--share-preview-scale, 0.296));
+  transform-origin: center center;
+}
+.share-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Share card — 1080x1080 for html2canvas, LO blue/yellow theme */
+.share-card {
+  width: 1080px;
+  height: 1080px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #f8faff 0%, #fefce8 50%, #fff8e7 100%);
+  border: 3px solid #e8eeff;
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.15);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.share-card-avatar {
+  width: 200px !important;
+  height: 200px !important;
+  font-size: 72px !important;
+  margin-bottom: 32px;
+}
+
+.share-card-name {
+  font-size: 52px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+.share-card-message {
+  font-size: 42px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+.share-card-streak {
+  font-size: 36px;
+  font-weight: 600;
+  color: #3b82f6;
+  margin: 0 0 16px;
+}
+
+.share-card-date {
+  font-size: 28px;
+  color: #64748b;
+  margin: 0 0 48px;
+}
+
+.share-card-brand {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.share-card-powered {
+  font-size: 20px;
+  color: #64748b;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .share-modal {
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  .share-modal-content {
+    padding: 20px;
+    max-height: min(calc(100vh - 24px), calc(100dvh - 24px));
+  }
+  .share-card-preview {
+    max-width: 280px;
+  }
+  .share-card-preview .share-card {
+    --share-preview-scale: 0.259;
+  }
+}
+
+/* Toast notification */
+.app-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  padding: 12px 20px;
+  background: var(--text-primary);
+  color: var(--bg-card);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
+}
+.app-toast--visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+@media (max-width: 480px) {
+  .app-toast {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    max-width: calc(100vw - 32px);
+  }
 }
 
 /* Footer */

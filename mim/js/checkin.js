@@ -15,6 +15,7 @@ import {
 import { db } from "./firebase-init.js";
 import { escapeHtml, escapeAttr, getWeekStart } from "./utils.js";
 import { subscribeAuth, getAuthState } from "./auth-state.js";
+import { shareAchievement } from "./share-achievement.js";
 
 let currentUser = null;
 let habits = [];
@@ -119,6 +120,8 @@ function updateProgressText() {
     completeMsgEl.textContent = "All habits completed today 🎉";
     completeMsgEl.hidden = !allDone;
   }
+  const shareBtn = document.getElementById("shareAchievementBtn");
+  if (shareBtn) shareBtn.hidden = !(total > 0 && done === total);
 }
 
 /** Load last 7 days and render weekly chain. Filled if checkin exists and habitsCompleted.length > 0. */
@@ -407,6 +410,21 @@ function init() {
     }).length;
     if (e.target.checked && sharedCount > 0) await writeToGroupFeeds(sharedCount, null);
   });
+
+  const shareBtn = document.getElementById("shareAchievementBtn");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", async () => {
+      try {
+        shareBtn.disabled = true;
+        const profile = await getAuthState().getUserProfile();
+        await shareAchievement(profile || {});
+      } catch (err) {
+        console.error("[Checkin] Share error", err);
+      } finally {
+        shareBtn.disabled = false;
+      }
+    });
+  }
 
   subscribeAuth(async (user) => {
     if (!user) {

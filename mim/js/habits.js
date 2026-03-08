@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { escapeHtml, escapeAttr } from "./utils.js";
+import { escapeHtml, escapeAttr, showToast } from "./utils.js";
 
 let currentUser = null;
 
@@ -123,6 +123,7 @@ function init() {
     addHabitBtn.disabled = true;
     clearError();
     const shareWithGroups = document.getElementById("newHabitShare")?.checked === true;
+    addHabitBtn.textContent = "Saving...";
     addDoc(habitsRef, {
       name,
       shareWithGroups: !!shareWithGroups,
@@ -130,6 +131,7 @@ function init() {
     })
       .then((ref) => {
         console.log("[Habits] Firestore write success: habit added with id", ref.id);
+        showToast("Habit saved ✓");
         if (newHabitInput) newHabitInput.value = "";
         const shareCheckbox = document.getElementById("newHabitShare");
         if (shareCheckbox) shareCheckbox.checked = false;
@@ -138,9 +140,11 @@ function init() {
       .catch((err) => {
         console.error("[Habits] Firestore write error", err.code || err.message, err);
         showError(err.message || "Could not add habit. Check console and Firestore rules.");
+        addHabitBtn.textContent = "Add Habit";
       })
       .finally(() => {
         addHabitBtn.disabled = false;
+        addHabitBtn.textContent = "Add Habit";
       });
   }
 
@@ -206,13 +210,19 @@ function init() {
         return;
       }
       const habitRef = doc(db, "users", currentUser.uid, "habits", habitId);
+      saveBtn.textContent = "Saving...";
+      saveBtn.disabled = true;
       try {
         await updateDoc(habitRef, { name: newName, shareWithGroups: !!shareWithGroups });
         console.log("[Habits] Habit updated:", habitId);
+        showToast("Habit updated ✓");
         loadHabits();
       } catch (err) {
         console.error("[Habits] updateDoc error", err);
         showError(err.message || "Could not update habit.");
+      } finally {
+        saveBtn.textContent = "Save";
+        saveBtn.disabled = false;
       }
       return;
     }

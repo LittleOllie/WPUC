@@ -53,6 +53,7 @@
       </div>
 
       <p id="todayCompleteMessage" class="today-complete-message" role="status" aria-live="polite" hidden></p>
+      <button type="button" id="shareAchievementBtn" class="button-primary full-width" hidden>Share Achievement</button>
 
       <div id="todayHabits"><p class="today-habits-empty">Loading…</p></div>
       </section>
@@ -87,7 +88,32 @@
       });
     })();
   </script>
+  <!-- Share Achievement modal -->
+  <div id="shareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" aria-hidden="true">
+    <div class="share-modal-backdrop" id="shareModalBackdrop"></div>
+    <div class="share-modal-content">
+      <h2 id="shareModalTitle" class="share-modal-title">Share Your Achievement</h2>
+      <div class="share-card-preview">
+        <div id="shareCard" class="share-card">
+          <div id="shareCardAvatar" class="share-card-avatar"></div>
+          <p id="shareCardName" class="share-card-name"></p>
+          <p id="shareCardMessage" class="share-card-message">Completed all habits today</p>
+          <p id="shareCardStreak" class="share-card-streak"></p>
+          <p id="shareCardDate" class="share-card-date"></p>
+          <p class="share-card-brand">Motivation in Motion</p>
+          <p class="share-card-powered">Powered by Little Ollie Labs</p>
+        </div>
+      </div>
+      <div class="share-modal-actions">
+        <button type="button" id="shareModalSaveBtn" class="button-primary">Save Image</button>
+        <button type="button" id="shareModalCopyBtn" class="button-secondary">Copy Image</button>
+        <button type="button" id="shareModalCloseBtn" class="button-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script type="module" src="js/app.js"></script>
   <script type="module" src="js/checkin.js"></script>
 </body>

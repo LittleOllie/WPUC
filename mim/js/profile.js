@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
-import { renderAvatar, escapeHtml } from "./utils.js";
+import { renderAvatar, escapeHtml, showToast } from "./utils.js";
 import { IMGBB_API_KEY } from "./firebase-config.js";
 
 function getDateId(daysAgo) {
@@ -173,6 +173,11 @@ function init() {
       }
       const previewUrl = URL.createObjectURL(file);
       showPreview(profilePhoto, previewUrl);
+      const origUploadText = uploadBtn?.textContent || "Upload Photo";
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "Uploading...";
+      }
       if (saveProfileBtn) saveProfileBtn.disabled = true;
       try {
         if (!IMGBB_API_KEY || !String(IMGBB_API_KEY).trim()) {
@@ -188,6 +193,7 @@ function init() {
         });
         URL.revokeObjectURL(previewUrl);
         renderAvatar(profilePhoto, photoURL, document.getElementById("profileDisplayName")?.value, "lg");
+        showToast("Profile photo updated ✓");
         console.log("[Profile] Upload complete, avatar refreshed");
       } catch (err) {
         console.error("[Profile] Upload error", err);
@@ -196,6 +202,10 @@ function init() {
         renderAvatar(profilePhoto, null, document.getElementById("profileDisplayName")?.value, "lg");
       } finally {
         if (saveProfileBtn) saveProfileBtn.disabled = false;
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = origUploadText;
+        }
         e.target.value = "";
       }
     });
@@ -212,7 +222,11 @@ function init() {
     const website = (document.getElementById("profileWebsite")?.value || "").trim();
     const twitterHandle = (document.getElementById("profileTwitter")?.value || "").trim();
     const discordHandle = (document.getElementById("profileDiscord")?.value || "").trim();
-    if (saveProfileBtn) saveProfileBtn.disabled = true;
+    const origText = saveProfileBtn?.textContent || "Save Profile";
+    if (saveProfileBtn) {
+      saveProfileBtn.disabled = true;
+      saveProfileBtn.textContent = "Saving...";
+    }
     try {
       await updateDoc(doc(db, "users", uid), {
         displayName: displayName || null,
@@ -226,11 +240,15 @@ function init() {
       });
       const currentPhotoURL = profilePhoto.querySelector("img")?.getAttribute("src") || null;
       renderAvatar(profilePhoto, currentPhotoURL, displayName, "lg");
+      showToast("Profile updated ✓");
     } catch (err) {
       console.error("[Profile] Save error", err);
       showError(err.message || "Could not save profile.");
     } finally {
-      if (saveProfileBtn) saveProfileBtn.disabled = false;
+      if (saveProfileBtn) {
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.textContent = origText;
+      }
     }
   });
 
@@ -262,6 +280,9 @@ function init() {
     editMode.hidden = true;
     if (backLink) backLink.href = groupId ? "group.html?id=" + encodeURIComponent(groupId) : "groups.html";
     if (pageTitle) pageTitle.textContent = "Profile";
+    clearError();
+
+    let user = null;
 
     try {
       const userSnap = await getDoc(doc(db, "users", uid));
@@ -269,7 +290,7 @@ function init() {
         showError("Profile not found.");
         return;
       }
-      const user = userSnap.data();
+      user = userSnap.data();
       const name = user.displayName || user.name || user.email || "Member";
       const currentStreak = Number(user.currentStreak) || 0;
       const longestStreak = Number(user.longestStreak) || 0;
@@ -301,43 +322,62 @@ function init() {
             : `<span class="profile-social-link profile-social-link--text">${escapeHtml(s.label)}: ${escapeHtml(s.text)}</span>`
         ).join("");
       } else if (socialSection) socialSection.hidden = true;
+    } catch (err) {
+      console.error("[Profile] load user error", err);
+      showError("Could not load profile.");
+      return;
+    }
 
+    let sharedHabits = [];
+    try {
       const habitsSnap = await getDocs(collection(db, "users", uid, "habits"));
-      const sharedHabits = [];
       habitsSnap.forEach((d) => {
         const h = d.data();
-        if (h.shareWithGroups === true) sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
+        const shareWithGroups = h.shareWithGroups === true;
+        if (shareWithGroups) sharedHabits.push({ id: d.id, name: h.name || "Unnamed" });
       });
+    } catch (err) {
+      console.error("[Profile] load habits error", err);
+    }
+
+    let completedToday = [];
+    try {
       const todayId = getDateId(0);
       const todaySnap = await getDoc(doc(db, "users", uid, "checkins", todayId));
       const todayData = todaySnap.exists() ? todaySnap.data() : {};
-      const completedToday = Array.isArray(todayData.habitsCompleted) ? todayData.habitsCompleted : [];
+      completedToday = Array.isArray(todayData.habitsCompleted) ? todayData.habitsCompleted : [];
+    } catch (err) {
+      console.error("[Profile] load checkin error", err);
+    }
 
-      const habitsSection = document.getElementById("profileViewHabits");
-      const habitsList = document.getElementById("profileViewHabitsList");
-      if (sharedHabits.length > 0 && habitsSection && habitsList) {
-        habitsSection.hidden = false;
+    const habitsSection = document.getElementById("profileViewHabits");
+    const habitsList = document.getElementById("profileViewHabitsList");
+    if (habitsSection && habitsList) {
+      habitsSection.hidden = false;
+      if (sharedHabits.length > 0) {
         habitsList.innerHTML = sharedHabits.map((h) => {
           const done = completedToday.includes(h.id);
           return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
         }).join("");
-      } else if (habitsSection) habitsSection.hidden = true;
+      } else {
+        habitsList.innerHTML = "<li class=\"profile-habit-item muted-text\">No shared habits</li>";
+      }
+    }
 
-      const historySection = document.getElementById("profileViewHistory");
-      const dayNav = document.getElementById("profileViewDayNav");
-      const dayHabits = document.getElementById("profileViewDayHabits");
-      if (sharedHabits.length > 0 && historySection && dayNav && dayHabits) {
-        historySection.hidden = false;
-        const dayLabels = ["Today", "Yesterday", "2 Days Ago", "3 Days Ago"];
-        dayNav.innerHTML = dayLabels.map((_, i) => {
-          const dateId = getDateId(i);
-          return `<button type="button" class="profile-day-btn" data-days="${i}">${dayLabels[i]}</button>`;
-        }).join("");
-        const dayBtns = dayNav.querySelectorAll(".profile-day-btn");
-        let selectedDay = 0;
-        async function renderDay(daysAgo) {
-          selectedDay = daysAgo;
-          dayBtns.forEach((b) => b.classList.toggle("profile-day-btn--active", Number(b.dataset.days) === daysAgo));
+    const historySection = document.getElementById("profileViewHistory");
+    const dayNav = document.getElementById("profileViewDayNav");
+    const dayHabits = document.getElementById("profileViewDayHabits");
+    if (sharedHabits.length > 0 && historySection && dayNav && dayHabits) {
+      historySection.hidden = false;
+      const dayLabels = ["Yesterday", "2 Days Ago", "3 Days Ago"];
+      const dayOffsets = [1, 2, 3];
+      dayNav.innerHTML = dayOffsets.map((offset, i) =>
+        `<button type="button" class="profile-day-btn" data-days="${offset}">${dayLabels[i]}</button>`
+      ).join("");
+      const dayBtns = dayNav.querySelectorAll(".profile-day-btn");
+      async function renderDay(daysAgo) {
+        dayBtns.forEach((b) => b.classList.toggle("profile-day-btn--active", Number(b.dataset.days) === daysAgo));
+        try {
           const dateId = getDateId(daysAgo);
           const snap = await getDoc(doc(db, "users", uid, "checkins", dateId));
           const snapData = snap.exists() ? snap.data() : {};
@@ -346,13 +386,15 @@ function init() {
             const done = completed.includes(h.id);
             return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
           }).join("");
+        } catch (err) {
+          console.error("[Profile] renderDay error", err);
+          dayHabits.innerHTML = "<li class=\"profile-habit-item muted-text\">Could not load</li>";
         }
-        await renderDay(0);
-        dayBtns.forEach((btn) => btn.addEventListener("click", () => renderDay(Number(btn.dataset.days))));
-      } else if (historySection) historySection.hidden = true;
-    } catch (err) {
-      console.error("[Profile] loadProfileView error", err);
-      showError("Could not load profile.");
+      }
+      await renderDay(1);
+      dayBtns.forEach((btn) => btn.addEventListener("click", () => renderDay(Number(btn.dataset.days))));
+    } else if (historySection) {
+      historySection.hidden = sharedHabits.length === 0;
     }
   }
 
