@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — Motivation in Motion</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="body-with-bottom-nav">
+  <script>try{document.body.classList.toggle("dark-mode",localStorage.getItem("motivation-in-motion-dark-mode")==="true");}catch(e){}</script>
+  <main class="app-shell">
+
+    <header class="top-header">
+      <h1>Profile</h1>
+      <a href="index.html" class="button-secondary">Back</a>
+    </header>
+
+    <div id="profileError" class="groups-error" hidden></div>
+
+    <section class="card profile-card">
+
+      <!-- PROFILE PHOTO -->
+      <div class="profile-photo-wrap">
+
+        <div id="profilePhoto" class="avatar avatar--lg" aria-hidden="true"></div>
+
+        <input
+          type="file"
+          id="photoInput"
+          accept="image/*"
+          class="visually-hidden"
+          aria-label="Choose profile photo"
+        />
+
+        <button
+          type="button"
+          id="uploadPhotoBtn"
+          class="button-secondary"
+        >
+          Upload Photo
+        </button>
+
+      </div>
+
+      <!-- PROFILE FORM -->
+      <form id="profileForm" class="profile-form">
+
+        <label>Name</label>
+        <input
+          type="text"
+          id="profileDisplayName"
+          class="input-field"
+          placeholder="Your name"
+        />
+
+        <label>Bio</label>
+        <textarea
+          id="profileBio"
+          class="input-field profile-textarea"
+          placeholder="A short bio..."
+        ></textarea>
+
+        <label>Location</label>
+        <input
+          type="text"
+          id="profileLocation"
+          class="input-field"
+          placeholder="City or region"
+        />
+
+        <label>Website</label>
+        <input
+          type="url"
+          id="profileWebsite"
+          class="input-field"
+          placeholder="https://..."
+        />
+
+        <button
+          type="submit"
+          class="button-primary full-width"
+        >
+          Save Profile
+        </button>
+
+      </form>
+
+    </section>
+
+  </main>
+
+
+  <!-- BOTTOM NAV -->
+
+  <nav class="bottom-nav" aria-label="Main">
+    <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>
+    <a href="habits.html" class="bottom-nav-item" data-page="habits"><span>🧠</span><span>Habits</span></a>
+    <a href="groups.html" class="bottom-nav-item" data-page="groups"><span>👥</span><span>Groups</span></a>
+    <a href="profile.html" class="bottom-nav-item bottom-nav-item--active" data-page="profile"><span>👤</span><span>Profile</span></a>
+    <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
+  </nav>
+
+  <script type="module" src="js/profile.js"></script>
+
+</body>
+</html>

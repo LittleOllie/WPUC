@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Group — Motivation in Motion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="body-with-bottom-nav">
+  <script>try{document.body.classList.toggle("dark-mode",localStorage.getItem("motivation-in-motion-dark-mode")==="true");}catch(e){}</script>
+  <main class="app-shell">
+    <header class="top-header">
+      <h1 id="groupTitle">Group</h1>
+      <a href="groups.html" class="button-secondary">Back</a>
+    </header>
+
+    <div id="groupError" class="groups-error" role="alert" aria-live="polite" hidden></div>
+
+    <section class="card">
+      <div class="group-header-wrap">
+        <div id="groupAvatar" class="avatar avatar--lg"></div>
+        <div class="group-header-text">
+          <p class="card-label">Group</p>
+          <h2 id="groupName" class="group-name"></h2>
+          <p id="groupDescription" class="group-description muted-text"></p>
+          <p class="muted-text" id="memberCount"></p>
+          <div class="group-actions">
+            <button type="button" id="inviteBtn" class="button-primary">Invite Members</button>
+            <button type="button" id="updateGroupPhotoBtn" class="button-secondary" style="display:none;">Update Group Photo</button>
+          </div>
+          <p class="group-code-line">Join code: <strong id="groupJoinCode"></strong></p>
+        </div>
+      </div>
+      <input type="file" id="groupPhotoInput" accept="image/*" class="visually-hidden" aria-label="Group photo" />
+    </section>
+
+    <nav class="group-tabs" role="tablist" aria-label="Group sections">
+      <button type="button" class="group-tab group-tab--active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+      <button type="button" class="group-tab" data-tab="activity" role="tab" aria-selected="false">Activity</button>
+      <button type="button" class="group-tab" data-tab="members" role="tab" aria-selected="false">Members</button>
+      <button type="button" class="group-tab group-tab--settings" data-tab="settings" role="tab" aria-selected="false" style="display:none;">Settings</button>
+    </nav>
+
+    <div id="tabOverview" class="group-tab-panel" role="tabpanel">
+      <section class="card">
+        <h3 class="card-label">Weekly Leaderboard</h3>
+        <ol id="leaderboardList" class="group-leaderboard"></ol>
+      </section>
+    </div>
+
+    <div id="tabActivity" class="group-tab-panel" role="tabpanel" hidden>
+      <section class="card group-activity-section">
+        <button type="button" class="group-activity-toggle" id="activityToggle" aria-expanded="true" aria-controls="activityContent">
+          <span class="group-activity-toggle-text">Activity</span>
+          <span class="group-activity-toggle-icon" aria-hidden="true">▼</span>
+        </button>
+        <div id="activityContent" class="group-activity-content">
+          <ul id="activityList" class="group-activity-list"></ul>
+          <button type="button" id="activityLoadMore" class="button-secondary full-width" style="display:none;">Load More</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="tabMembers" class="group-tab-panel" role="tabpanel" hidden>
+      <section class="card">
+        <h3 class="card-label">Group Members</h3>
+        <ul id="membersList" class="group-members-list"></ul>
+      </section>
+    </div>
+
+    <div id="tabSettings" class="group-tab-panel" role="tabpanel" hidden>
+      <section class="card">
+        <h3 class="card-label">Group Settings</h3>
+        <p class="muted-text small-text">Only group owners and admins can change these settings.</p>
+        <div class="group-settings-actions">
+          <button type="button" id="updateGroupNameBtn" class="button-secondary">Edit group name</button>
+          <button type="button" id="updateGroupDescriptionBtn" class="button-secondary">Edit group description</button>
+          <button type="button" id="updateGroupPhotoSettingBtn" class="button-secondary">Update group photo</button>
+          <button type="button" id="regenerateCodeSettingBtn" class="button-secondary">Regenerate join code</button>
+          <button type="button" id="deleteGroupBtn" class="button-ghost button-danger" style="display:none;">Delete group</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="inviteModal" class="modal" hidden>
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-content">
+        <h3 class="modal-title">Invite members</h3>
+        <p class="groups-code-line">Code: <strong id="modalJoinCode"></strong> <button type="button" id="regenerateCodeBtn" class="button-secondary button-small">Regenerate</button></p>
+        <p class="groups-expires" id="modalExpires"></p>
+        <div id="modalQrContainer" class="groups-qr-container"></div>
+        <p class="muted-text small-text">Scan to join: <span id="modalJoinUrl" class="groups-join-url"></span></p>
+        <button type="button" id="modalCloseBtn" class="button-secondary full-width">Close</button>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main">
+    <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>
+    <a href="habits.html" class="bottom-nav-item" data-page="habits"><span>🧠</span><span>Habits</span></a>
+    <a href="groups.html" class="bottom-nav-item bottom-nav-item--active" data-page="groups"><span>👥</span><span>Groups</span></a>
+    <a href="profile.html" class="bottom-nav-item" data-page="profile"><span>👤</span><span>Profile</span></a>
+    <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
+  </nav>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="js/group.js"></script>
+</body>
+</html>

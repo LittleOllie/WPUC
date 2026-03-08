@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motivation in Motion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="body-with-bottom-nav">
+  <script>try{document.body.classList.toggle("dark-mode",localStorage.getItem("motivation-in-motion-dark-mode")==="true");}catch(e){}</script>
+  <main class="app-shell">
+    <header class="top-header">
+      <div id="dashboardAvatar" class="avatar avatar--lg" aria-hidden="true"></div>
+      <div>
+        <p class="eyebrow">Motivation in Motion</p>
+        <h1 id="welcomeMessage">Welcome 👋</h1>
+      </div>
+      <button id="logoutBtn" class="button-secondary">Logout</button>
+    </header>
+
+    <section class="card">
+      <p class="card-label">Current Streak</p>
+      <h2 class="streak-text">🔥 <span id="streakCount">0</span> Day Streak</h2>
+      <p class="streak-shields">🛡 Shields: <span id="shieldCount">0</span></p>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 0%;"></div>
+      </div>
+      <p class="muted-text">Next badge: First Step</p>
+    </section>
+    <section class="card">
+      <h3 class="card-label">This Week</h3>
+      <div id="weeklyChain" class="weekly-chain" aria-label="Last 7 days habit chain"></div>
+    </section>
+    <section class="card" id="today">
+      <p class="card-label">Today</p>
+
+      <div class="today-progress-header">
+        <h3 class="today-progress-title">Today's Progress</h3>
+        <p id="progressText" class="today-progress-count"></p>
+      </div>
+      <div class="progress-bar" id="todayProgressBar" aria-hidden="true">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+
+      <p id="todayCompleteMessage" class="today-complete-message" role="status" aria-live="polite" hidden></p>
+
+      <div id="todayHabits"><p class="today-habits-empty">Loading…</p></div>
+      </section>
+
+    <section class="card dashboard-groups-section">
+      <h3 class="card-label">Your Groups</h3>
+      <div id="dashboardGroupsList" class="dashboard-groups-list"></div>
+      <a href="groups.html" class="link-view-all">View All Groups</a>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main">
+    <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>
+    <a href="habits.html" class="bottom-nav-item" data-page="habits"><span>🧠</span><span>Habits</span></a>
+    <a href="groups.html" class="bottom-nav-item" data-page="groups"><span>👥</span><span>Groups</span></a>
+    <a href="profile.html" class="bottom-nav-item" data-page="profile"><span>👤</span><span>Profile</span></a>
+    <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
+  </nav>
+  <script>
+    (function () {
+      var path = window.location.pathname || '';
+      var page = 'home';
+      if (path.indexOf('habits') !== -1) page = 'habits';
+      else if (path.indexOf('groups') !== -1 && path.indexOf('group.html') === -1) page = 'groups';
+      else if (path.indexOf('group.html') !== -1) page = 'groups';
+      else if (path.indexOf('profile') !== -1) page = 'profile';
+      else if (path.indexOf('settings') !== -1) page = 'settings';
+      document.querySelectorAll('.bottom-nav-item').forEach(function (a) {
+        a.classList.toggle('bottom-nav-item--active', a.getAttribute('data-page') === page);
+      });
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/checkin.js"></script>
+</body>
+</html>
