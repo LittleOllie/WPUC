@@ -686,7 +686,6 @@ function init() {
       if (habit.shareWithGroups) {
         await writeToGroupFeeds(id, habit.name, isAdding, null);
       }
-      if (selectedDate === getTodayId()) {
       if (isAdding && habit.source === "groupChallenge") {
         try {
           const pts = await awardGroupChallengePoints(currentUser.uid, habit, selectedDate);
@@ -757,7 +756,6 @@ function init() {
     if (habitsRef) {
       habitsUnsubscribe = onSnapshot(habitsRef, async () => {
         await loadHabits();
-        await loadCheckinForDate(selectedDate);
         renderDaySelector();
         render();
       }, async (err) => {
