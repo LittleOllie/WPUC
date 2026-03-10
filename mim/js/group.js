@@ -25,9 +25,11 @@ import { HABIT_LIBRARY } from "./habitLibrary.js";
 import { IMGBB_API_KEY } from "./firebase-config.js";
 
 let acceptGroupChallengeFn = null;
+let recalculateGroupMemberPointsFn = null;
 try {
   const m = await import("./group-challenges.js");
   acceptGroupChallengeFn = m.acceptGroupChallenge;
+  recalculateGroupMemberPointsFn = m.recalculateGroupMemberPoints;
 } catch (e) {
   console.warn("[Group] group-challenges not available:", e?.message);
 }
@@ -375,6 +377,11 @@ async function loadGroup() {
   myRole = myMemberData.role || (isOwner ? "owner" : "member");
   isAdmin = myRole === "admin" || isOwner;
   if (isOwner) myRole = "owner";
+
+  // Sync points from actual habit completion state (fixes stale points from uncheck)
+  if (recalculateGroupMemberPointsFn) {
+    await recalculateGroupMemberPointsFn(currentUser.uid, currentGroupId).catch(() => {});
+  }
 
   const descEl = document.getElementById("groupDescription");
   if (descEl) {

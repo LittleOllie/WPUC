@@ -20,7 +20,7 @@ import { db } from "./firebase-init.js";
 import { escapeHtml, escapeAttr, getWeekStart, showToast } from "./utils.js";
 import { subscribeAuth, getAuthState } from "./auth-state.js";
 import { shareAchievement } from "./share-achievement.js";
-import { awardGroupChallengePoints } from "./group-challenges.js";
+import { awardGroupChallengePoints, revokeGroupChallengePoints } from "./group-challenges.js";
 
 /** Context-specific prompts for habit notes by habitId from library. */
 const HABIT_NOTE_PROMPTS = {
@@ -686,16 +686,21 @@ function init() {
       if (habit.shareWithGroups) {
         await writeToGroupFeeds(id, habit.name, isAdding, null);
       }
-      if (isAdding && habit.source === "groupChallenge") {
-        try {
+    }
+    if (habit.source === "groupChallenge") {
+      try {
+        if (isAdding && selectedDate === getTodayId()) {
           const pts = await awardGroupChallengePoints(currentUser.uid, habit, selectedDate);
           if (pts > 0) {
             showToast("+" + pts + " pts!");
             showHabitPointsFloat(e.target, pts);
           }
-        } catch (err) {
-          console.error("[Checkin] awardGroupChallengePoints error", err);
+        } else if (!isAdding) {
+          const pts = await revokeGroupChallengePoints(currentUser.uid, habit, selectedDate);
+          if (pts > 0) showToast("-" + pts + " pts");
         }
+      } catch (err) {
+        console.error("[Checkin] groupChallenge points error", err);
       }
     }
     if (isAdding) {
