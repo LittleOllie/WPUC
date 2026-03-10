@@ -355,11 +355,13 @@ function init() {
     }
 
     let completedToday = [];
+    let todayHabitNotes = {};
     try {
       const todayId = getDateId(0);
       const todaySnap = await getDoc(doc(db, "users", uid, "checkins", todayId));
       const todayData = todaySnap.exists() ? todaySnap.data() : {};
       completedToday = Array.isArray(todayData.habitsCompleted) ? todayData.habitsCompleted : [];
+      todayHabitNotes = todayData.habitNotes || {};
     } catch (err) {
       console.error("[Profile] load checkin error", err);
     }
@@ -371,7 +373,8 @@ function init() {
       if (sharedHabits.length > 0) {
         habitsList.innerHTML = sharedHabits.map((h) => {
           const done = completedToday.includes(h.id);
-          return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
+          const note = todayHabitNotes[h.id] || "";
+          return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}${note ? `<span class="profile-habit-note muted-text"> — ${escapeHtml(note)}</span>` : ""}</li>`;
         }).join("");
       } else {
         habitsList.innerHTML = "<li class=\"profile-habit-item muted-text\">No shared habits</li>";
@@ -396,9 +399,11 @@ function init() {
           const snap = await getDoc(doc(db, "users", uid, "checkins", dateId));
           const snapData = snap.exists() ? snap.data() : {};
           const completed = Array.isArray(snapData.habitsCompleted) ? snapData.habitsCompleted : [];
+          const habitNotes = snapData.habitNotes || {};
           dayHabits.innerHTML = sharedHabits.map((h) => {
             const done = completed.includes(h.id);
-            return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}</li>`;
+            const note = habitNotes[h.id] || "";
+            return `<li class="profile-habit-item">${done ? "✓" : "✗"} ${escapeHtml(h.name)}${note ? `<span class="profile-habit-note muted-text"> — ${escapeHtml(note)}</span>` : ""}</li>`;
           }).join("");
         } catch (err) {
           console.error("[Profile] renderDay error", err);

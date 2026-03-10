@@ -1,6 +1,6 @@
 /**
- * Dashboard today's habits: load habits, show checkboxes, track completion in
- * users/{uid}/checkins/{date} with habitsCompleted array.
+ * Dashboard habits: rolling weekly view, day selector, habit completion per date.
+ * Completion stored in habit.completedDates and synced to checkins for streak/badge.
  */
 import {
   collection,
@@ -13,19 +13,36 @@ import {
   deleteDoc,
   serverTimestamp,
   onSnapshot,
+  arrayUnion,
+  arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase-init.js";
-import { escapeHtml, escapeAttr, getWeekStart } from "./utils.js";
+import { escapeHtml, escapeAttr, getWeekStart, showToast } from "./utils.js";
 import { subscribeAuth, getAuthState } from "./auth-state.js";
 import { shareAchievement } from "./share-achievement.js";
-import { updateBadgeProgress } from "./badge-progress.js";
-import { showBadgeUnlockPopup } from "./badge-unlock.js";
-import { updateChallengeProgress } from "./challenge-progress.js";
+import { awardGroupChallengePoints } from "./group-challenges.js";
+
+/** Context-specific prompts for habit notes by habitId from library. */
+const HABIT_NOTE_PROMPTS = {
+  "exercise": "What did you do? (e.g. ran 3 miles, 30 min weights)",
+  "walk": "Where did you walk? How far?",
+  "read": "What book? How many pages?",
+  "sleep-8-hours": "How many hours did you sleep?",
+  "post-progress": "Share your Twitter/X link",
+  "drink-water": "Any notes?",
+  "stretch": "What stretches? How long?",
+  "meditate": "How long? Any notes?",
+  "journal": "Any highlights to remember?",
+  "cold-shower": "How long? Any notes?",
+};
 
 let currentUser = null;
 let habits = [];
-let completedIds = [];
 let habitsUnsubscribe = null;
+/** Currently selected date (YYYY-MM-DD). Default: today. */
+let selectedDate = "";
+/** Checkin data for selected date (habitNotes, etc.) */
+let checkinDataForDate = { habitNotes: {} };
 /** Whether we have already shown confetti for today (from checkin doc). */
 let celebrationShownToday = false;
 
@@ -39,6 +56,37 @@ function getYesterdayId() {
   return d.toISOString().split("T")[0];
 }
 
+function getNotePromptForHabit(habit) {
+  const habitId = habit?.habitId || "";
+  return HABIT_NOTE_PROMPTS[habitId] || "Any notes? (optional)";
+}
+
+async function loadCheckinForDate(dateId) {
+  if (!currentUser || !dateId) return;
+  try {
+    const ref = getCheckinRef(dateId);
+    if (!ref) return;
+    const snap = await getDoc(ref);
+    const data = snap.exists() ? snap.data() : {};
+    checkinDataForDate = { habitNotes: data.habitNotes || {} };
+  } catch (err) {
+    console.error("[Checkin] loadCheckinForDate error", err);
+    checkinDataForDate = { habitNotes: {} };
+  }
+}
+
+/** Show floating "+X" text near habit when challenge points are awarded. Animates up and fades out. */
+function showHabitPointsFloat(checkboxEl, points) {
+  const row = checkboxEl?.closest(".habit-check");
+  if (!row) return;
+  const float = document.createElement("span");
+  float.className = "habit-points-float";
+  float.textContent = "+" + points;
+  row.appendChild(float);
+  requestAnimationFrame(() => float.classList.add("habit-points-float--animate"));
+  setTimeout(() => float.remove(), 1100);
+}
+
 /** Date string YYYY-MM-DD for N days ago (0 = today). */
 function getDateId(daysAgo) {
   const d = new Date();
@@ -46,10 +94,49 @@ function getDateId(daysAgo) {
   return d.toISOString().split("T")[0];
 }
 
+const DAY_NAMES_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+function getDayNameShort(dateId) {
+  const d = new Date(dateId + "T12:00:00Z");
+  return DAY_NAMES_SHORT[d.getUTCDay()];
+}
+
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function getDayName(dateId) {
   const d = new Date(dateId + "T12:00:00Z");
   return DAY_NAMES[d.getUTCDay()];
+}
+
+/** Whether the date is editable (today or up to 3 days in the past). */
+function isDayEditable(dateId) {
+  const today = getTodayId();
+  if (dateId > today) return false;
+  const dToday = new Date(today + "T12:00:00Z").getTime();
+  const dDate = new Date(dateId + "T12:00:00Z").getTime();
+  const daysDiff = Math.floor((dToday - dDate) / (24 * 60 * 60 * 1000));
+  return daysDiff <= 3;
+}
+
+/** Whether the date is in the future. */
+function isDayInFuture(dateId) {
+  return dateId > getTodayId();
+}
+
+/** Habits that existed on the given day. Legacy habits without createdDate count for all days. */
+function getActiveHabitsForDate(dateId) {
+  return habits.filter((h) => {
+    if (!h.createdDate) return true;
+    return h.createdDate <= dateId;
+  });
+}
+
+/** Day status: "complete" | "incomplete" | "future" */
+function getDayStatus(dateId) {
+  if (isDayInFuture(dateId)) return "future";
+  const activeHabits = getActiveHabitsForDate(dateId);
+  const completedForDay = activeHabits.filter((h) => (h.completedDates || []).includes(dateId)).length;
+  const total = activeHabits.length;
+  if (total === 0) return "complete";
+  return completedForDay === total ? "complete" : "incomplete";
 }
 
 function getUserRef() {
@@ -89,9 +176,9 @@ function getHabitsRef() {
   return collection(db, "users", currentUser.uid, "habits");
 }
 
-function getCheckinRef() {
+function getCheckinRef(dateId) {
   if (!currentUser) return null;
-  return doc(db, "users", currentUser.uid, "checkins", getTodayId());
+  return doc(db, "users", currentUser.uid, "checkins", dateId || getTodayId());
 }
 
 /** Trigger confetti when all habits completed (once per day). */
@@ -109,63 +196,88 @@ function updateProgressText() {
   const progressTextEl = document.getElementById("progressText");
   const progressFillEl = document.getElementById("progressFill");
   const completeMsgEl = document.getElementById("todayCompleteMessage");
-  const total = habits.length;
-  const completedHabitsToday = habits.filter((h) => completedIds.includes(h.id)).length;
-  const percent = total ? Math.round((completedHabitsToday / total) * 100) : 0;
+  const activeHabits = getActiveHabitsForDate(selectedDate);
+  const total = activeHabits.length;
+  const completedForSelected = activeHabits.filter((h) => (h.completedDates || []).includes(selectedDate)).length;
+  const percent = total ? Math.round((completedForSelected / total) * 100) : 0;
 
-  console.log("[Checkin] Total habits:", total, "Completed habits today:", completedHabitsToday);
+  console.log("[Checkin] Total habits:", total, "Completed for", selectedDate + ":", completedForSelected);
+
+  const titleEl = document.getElementById("todayProgressTitle");
+  if (titleEl) {
+    if (selectedDate === getTodayId()) {
+      titleEl.textContent = "Today's Progress";
+    } else {
+      const d = new Date(selectedDate + "T12:00:00Z");
+      const options = { month: "short", day: "numeric", year: "numeric" };
+      titleEl.textContent = d.toLocaleDateString(undefined, options) + " Progress";
+    }
+  }
 
   if (progressTextEl) {
     progressTextEl.textContent = total
-      ? `${completedHabitsToday} / ${total} habits completed`
+      ? `${completedForSelected} / ${total} habits completed`
       : "Add habits to track your progress.";
   }
   if (progressFillEl) {
     progressFillEl.style.width = percent + "%";
   }
   if (completeMsgEl) {
-    const allDone = total > 0 && completedHabitsToday === total;
-    completeMsgEl.textContent = "All habits completed today 🎉";
+    const allDone = total > 0 && completedForSelected === total;
+    completeMsgEl.textContent = "All habits completed 🎉";
     completeMsgEl.hidden = !allDone;
   }
   const shareBtn = document.getElementById("shareAchievementBtn");
-  if (shareBtn) shareBtn.hidden = !(total > 0 && completedHabitsToday === total);
+  const isToday = selectedDate === getTodayId();
+  if (shareBtn) shareBtn.hidden = !(total > 0 && completedForSelected === total && isToday);
 }
 
-/** Load last 7 days and render weekly chain. Filled if checkin exists and habitsCompleted.length > 0. */
-async function loadAndRenderWeeklyChain() {
-  const container = document.getElementById("weeklyChain");
-  if (!container || !currentUser) return;
-  const days = [];
+/** Render the rolling weekly day selector. Today on far right. */
+function renderDaySelector() {
+  const container = document.getElementById("weeklyDaySelector");
+  if (!container) return;
+  container.innerHTML = "";
   for (let i = 6; i >= 0; i--) {
     const dateId = getDateId(i);
-    days.push({ dateId, dayName: getDayName(dateId), filled: false });
+    const dayName = getDayNameShort(dateId);
+    const status = getDayStatus(dateId);
+    const editable = isDayEditable(dateId);
+    const future = isDayInFuture(dateId);
+    const isSelected = dateId === selectedDate;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "weekly-day-btn";
+    btn.textContent = dayName;
+    btn.dataset.dateId = dateId;
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+
+    if (status === "complete") btn.classList.add("weekly-day-btn--complete");
+    else if (status === "incomplete") btn.classList.add("weekly-day-btn--incomplete");
+    else if (future) btn.classList.add("weekly-day-btn--future");
+
+    if (isSelected) btn.classList.add("weekly-day-btn--selected");
+
+    if (!editable) {
+      btn.classList.add("weekly-day-btn--locked");
+      btn.setAttribute("data-tooltip", "Past entries older than 3 days cannot be edited.");
+    }
+
+    btn.addEventListener("click", async () => {
+      if (!editable) {
+        showToast("Past entries older than 3 days cannot be edited.");
+        return;
+      }
+      selectedDate = dateId;
+      await loadCheckinForDate(dateId);
+      renderDaySelector();
+      render();
+      updateProgressText();
+    });
+
+    container.appendChild(btn);
   }
-  const checkinRefs = days.map((d) => doc(db, "users", currentUser.uid, "checkins", d.dateId));
-  const snaps = await Promise.all(checkinRefs.map((ref) => getDoc(ref)));
-  snaps.forEach((snap, idx) => {
-    const data = snap.exists() ? snap.data() : {};
-    const completed = Array.isArray(data.habitsCompleted) ? data.habitsCompleted : [];
-    days[idx].filled = completed.length > 0;
-  });
-  container.innerHTML = "";
-  const dayRow = document.createElement("div");
-  dayRow.className = "weekly-chain-row weekly-chain-days";
-  const squareRow = document.createElement("div");
-  squareRow.className = "weekly-chain-row weekly-chain-squares";
-  days.forEach((d) => {
-    const dayCell = document.createElement("span");
-    dayCell.className = "weekly-chain-cell weekly-chain-day";
-    dayCell.textContent = d.dayName;
-    dayRow.appendChild(dayCell);
-    const squareCell = document.createElement("span");
-    squareCell.className = "weekly-chain-cell weekly-chain-square" + (d.filled ? " weekly-chain-square--filled" : "");
-    squareCell.setAttribute("aria-label", d.filled ? `${d.dayName}: completed` : `${d.dayName}: not completed`);
-    squareCell.textContent = d.filled ? "■" : "□";
-    squareRow.appendChild(squareCell);
-  });
-  container.appendChild(dayRow);
-  container.appendChild(squareRow);
 }
 
 function render() {
@@ -178,15 +290,32 @@ function render() {
     updateProgressText();
     return;
   }
-  habits.forEach((habit) => {
-    const checked = completedIds.includes(habit.id);
+  const visibleHabits = habits.filter((h) => {
+    if (!h.createdDate) return true;
+    return h.createdDate <= selectedDate;
+  });
+  const future = isDayInFuture(selectedDate);
+  const editable = isDayEditable(selectedDate);
+  const disableCheckboxes = future || !editable;
+
+  if (visibleHabits.length === 0) {
+    container.innerHTML =
+      '<p class="today-habits-empty">No habits were tracked on this date.</p>';
+    updateProgressText();
+    return;
+  }
+  visibleHabits.forEach((habit) => {
+    const completedDates = habit.completedDates || [];
+    const checked = completedDates.includes(selectedDate);
+    const note = checkinDataForDate?.habitNotes?.[habit.id] || "";
     const row = document.createElement("div");
     row.className = "habit-check";
     row.innerHTML =
       `<label class="habit-check-label">` +
-      `<input type="checkbox" ${checked ? "checked" : ""} data-habit-id="${escapeAttr(habit.id)}" />` +
+      `<input type="checkbox" ${checked ? "checked" : ""} ${disableCheckboxes ? "disabled" : ""} data-habit-id="${escapeAttr(habit.id)}" />` +
       `<span class="habit-check-name">${escapeHtml(habit.name || "Unnamed")}</span>` +
-      `</label>`;
+      `</label>` +
+      (checked && note ? `<p class="habit-check-note muted-text small-text">${escapeHtml(note)}</p>` : "");
     container.appendChild(row);
   });
   updateProgressText();
@@ -202,6 +331,30 @@ function init() {
     return;
   }
 
+  /** Backfill habit.completedDates from checkins (one-time migration). */
+  async function backfillCompletedDatesFromCheckins() {
+    const checkinsRef = collection(db, "users", currentUser.uid, "checkins");
+    const snap = await getDocs(checkinsRef);
+    let migrated = 0;
+    for (const d of snap.docs) {
+      const dateId = d.id;
+      const data = d.data();
+      const completedIds = Array.isArray(data.habitsCompleted) ? data.habitsCompleted : [];
+      for (const habitId of completedIds) {
+        const habit = habits.find((h) => h.id === habitId);
+        if (!habit) continue;
+        const cd = habit.completedDates || [];
+        if (!cd.includes(dateId)) {
+          const habitRef = doc(db, "users", currentUser.uid, "habits", habitId);
+          await updateDoc(habitRef, { completedDates: arrayUnion(dateId) });
+          habit.completedDates = [...cd, dateId];
+          migrated++;
+        }
+      }
+    }
+    if (migrated > 0) console.log("[Checkin] Migrated", migrated, "habit completions from checkins");
+  }
+
   async function loadHabits() {
     const ref = getHabitsRef();
     if (!ref) return;
@@ -212,13 +365,15 @@ function init() {
       snapshot.forEach((d) => {
         const data = d.data();
         const shareWithGroups = data.shareWithGroups === true || data.isShared === true;
-        habits.push({ id: d.id, ...data, shareWithGroups });
+        const completedDates = Array.isArray(data.completedDates) ? [...data.completedDates] : [];
+        habits.push({ id: d.id, ...data, shareWithGroups, completedDates });
       });
       habits.sort((a, b) => {
         const ta = a.createdAt?.toMillis?.() ?? 0;
         const tb = b.createdAt?.toMillis?.() ?? 0;
         return ta - tb;
       });
+      await backfillCompletedDatesFromCheckins();
       console.log("[Checkin] Habits loaded:", habits.length);
     } catch (err) {
       console.error("[Checkin] loadHabits error", err);
@@ -227,29 +382,24 @@ function init() {
   }
 
   async function loadCheckin() {
-    const ref = getCheckinRef();
+    const ref = getCheckinRef(getTodayId());
     if (!ref) return;
-    console.log("[Checkin] Loading checkin for", getTodayId());
     try {
       const snap = await getDoc(ref);
       const data = snap.exists() ? snap.data() : {};
-      const rawCompleted = Array.isArray(data.habitsCompleted) ? data.habitsCompleted : [];
-      completedIds = rawCompleted.filter((id) => habits.some((h) => h.id === id));
       celebrationShownToday = data.celebrationShown === true;
-      if (rawCompleted.length !== completedIds.length) {
-        console.log("[Checkin] Sanitized completedIds: removed", rawCompleted.length - completedIds.length, "stale entries");
-      }
-      console.log("[Checkin] Checkins loaded:", completedIds.length, "completed", "celebrationShown:", celebrationShownToday);
     } catch (err) {
       console.error("[Checkin] loadCheckin error", err);
-      completedIds = [];
       celebrationShownToday = false;
     }
   }
 
-  /** Streak + shields: day counts if habitsCompleted.length > 0. One shield per 7 days. Missed day: use shield or reset. */
+
+  /** Streak + shields: day counts if habits completed for today. One shield per 7 days. Missed day: use shield or reset. */
   async function updateStreakIfNeeded() {
-    if (completedIds.length === 0) return;
+    const todayActiveHabits = getActiveHabitsForDate(getTodayId());
+    const todayCompleted = todayActiveHabits.filter((h) => (h.completedDates || []).includes(getTodayId())).length;
+    if (todayCompleted === 0) return;
     const userRef = getUserRef();
     if (!userRef) return;
     const today = getTodayId();
@@ -323,7 +473,7 @@ function init() {
     return `habit_${uid}_${habitId}_${dateId}`;
   }
 
-  async function writeHabitActivityToGroup(habitId, habitName, gid, userName, photoURL) {
+  async function writeHabitActivityToGroup(habitId, habitName, gid, userName, photoURL, note) {
     const today = getTodayId();
     const activityId = getHabitActivityId(currentUser.uid, habitId, today);
     const activityRef = doc(db, "groups", gid, "activity", activityId);
@@ -337,10 +487,30 @@ function init() {
       date: today,
       userName,
       photoURL: photoURL || null,
+      note: note || null,
       likes: [],
       likesCount: 0,
       createdAt: serverTimestamp(),
     });
+  }
+
+  async function updateHabitActivityNoteInGroups(habitId, dateId, note) {
+    if (!currentUser) return;
+    try {
+      const data = await getAuthState().getUserProfile();
+      const groupIds = (data && data.groupIds) || [];
+      if (groupIds.length === 0) return;
+      const activityId = `habit_${currentUser.uid}_${habitId}_${dateId}`;
+      await Promise.all(
+        groupIds.map(async (gid) => {
+          const activityRef = doc(db, "groups", gid, "activity", activityId);
+          const snap = await getDoc(activityRef);
+          if (snap.exists()) await updateDoc(activityRef, { note: note || null });
+        })
+      );
+    } catch (err) {
+      console.error("[Checkin] updateHabitActivityNoteInGroups error", err);
+    }
   }
 
   async function removeHabitActivityFromGroup(habitId, gid) {
@@ -433,55 +603,122 @@ function init() {
     }
   }
 
+  function showHabitNotesModal(habit, onSave) {
+    const modal = document.getElementById("habitNotesModal");
+    const promptEl = document.getElementById("habitNotesModalPrompt");
+    const inputEl = document.getElementById("habitNotesInput");
+    const titleEl = document.getElementById("habitNotesModalTitle");
+    const skipBtn = document.getElementById("habitNotesSkipBtn");
+    const submitBtn = document.getElementById("habitNotesSubmitBtn");
+    const backdrop = modal?.querySelector(".habit-notes-modal-backdrop");
+    if (!modal || !inputEl) return;
+    if (titleEl) titleEl.textContent = habit?.name || "Add a note";
+    if (promptEl) promptEl.textContent = getNotePromptForHabit(habit);
+    inputEl.value = "";
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    inputEl.focus();
+    const close = () => {
+      modal.hidden = true;
+      modal.setAttribute("aria-hidden", "true");
+    };
+    const handleSave = async () => {
+      const note = (inputEl.value || "").trim();
+      close();
+      if (note && onSave) await onSave(note);
+    };
+    skipBtn?.replaceWith(skipBtn.cloneNode(true));
+    submitBtn?.replaceWith(submitBtn.cloneNode(true));
+    document.getElementById("habitNotesSkipBtn")?.addEventListener("click", close);
+    document.getElementById("habitNotesSubmitBtn")?.addEventListener("click", () => handleSave());
+    backdrop?.addEventListener("click", close);
+  }
+
   todayHabitsEl.addEventListener("change", async (e) => {
     if (e.target.type !== "checkbox" || !e.target.dataset.habitId) return;
+    if (!isDayEditable(selectedDate) || isDayInFuture(selectedDate)) return;
     const id = e.target.dataset.habitId;
-    if (e.target.checked) {
-      if (!completedIds.includes(id)) completedIds.push(id);
-      const habit = habits.find((h) => h.id === id);
-      showIdentityReinforcement(habit ? habit.identity : null);
-      if (habit && habit.identity && habit.shareWithGroups) writeIdentityToGroupFeeds(habit.identity);
-      if (completedIds.length === 1) showDailyWin();
-    } else {
-      completedIds = completedIds.filter((x) => x !== id);
-    }
-    const ref = getCheckinRef();
-    if (!ref) return;
-    const sanitizedCompleted = completedIds.filter((id) => habits.some((h) => h.id === id));
-    const totalHabits = habits.length;
-    const completedHabits = sanitizedCompleted.length;
-    const fullCompletion = totalHabits > 0 && completedHabits === totalHabits;
+    const isAdding = e.target.checked;
+    const habit = habits.find((h) => h.id === id);
+    if (!habit) return;
+
     try {
-      const payload = { habitsCompleted: sanitizedCompleted };
-      if (fullCompletion) {
+      const habitRef = doc(db, "users", currentUser.uid, "habits", id);
+      if (isAdding) {
+        await updateDoc(habitRef, { completedDates: arrayUnion(selectedDate) });
+        habit.completedDates = [...(habit.completedDates || []), selectedDate];
+      } else {
+        await updateDoc(habitRef, { completedDates: arrayRemove(selectedDate) });
+        habit.completedDates = (habit.completedDates || []).filter((d) => d !== selectedDate);
+      }
+
+      const activeHabits = getActiveHabitsForDate(selectedDate);
+      const completedIdsForDate = activeHabits
+        .filter((h) => (h.completedDates || []).includes(selectedDate))
+        .map((h) => h.id);
+      const payload = { habitsCompleted: completedIdsForDate };
+      if (selectedDate === getTodayId() && completedIdsForDate.length === activeHabits.length) {
         payload.celebrationShown = true;
       }
-      await setDoc(ref, payload);
-      completedIds = sanitizedCompleted;
-      console.log("[Checkin] Checkbox saved:", id, e.target.checked);
-      if (fullCompletion) {
-        triggerConfetti();
+      await setDoc(getCheckinRef(selectedDate), payload, { merge: true });
+
+      if (isAdding && selectedDate === getTodayId()) {
+        showIdentityReinforcement(habit.identity || null);
+        if (habit.identity && habit.shareWithGroups) writeIdentityToGroupFeeds(habit.identity);
+        const wasFirst = completedIdsForDate.length === 1;
+        if (wasFirst) showDailyWin();
       }
+
+      const fullCompletion = activeHabits.length > 0 && completedIdsForDate.length === activeHabits.length;
+      if (fullCompletion && selectedDate === getTodayId()) triggerConfetti();
+
+      console.log("[Checkin] Checkbox saved:", id, isAdding, "for", selectedDate);
     } catch (err) {
-      console.error("[Checkin] setDoc checkin error", err);
+      console.error("[Checkin] Checkbox save error", err);
+      return;
     }
+
     updateProgressText();
-    await updateStreakIfNeeded();
-    await loadAndRenderWeeklyChain();
-    const habit = habits.find((h) => h.id === id);
-    if (habit && habit.shareWithGroups) {
-      await writeToGroupFeeds(id, habit.name, e.target.checked, null);
+    renderDaySelector();
+
+    if (selectedDate === getTodayId()) {
+      await updateStreakIfNeeded();
+      if (habit.shareWithGroups) {
+        await writeToGroupFeeds(id, habit.name, isAdding, null);
+      }
+      if (selectedDate === getTodayId()) {
+      if (isAdding && habit.source === "groupChallenge") {
+        try {
+          const pts = await awardGroupChallengePoints(currentUser.uid, habit, selectedDate);
+          if (pts > 0) {
+            showToast("+" + pts + " pts!");
+            showHabitPointsFloat(e.target, pts);
+          }
+        } catch (err) {
+          console.error("[Checkin] awardGroupChallengePoints error", err);
+        }
+      }
     }
-    // Update badge progress when habits change
-    const newlyUnlocked = await updateBadgeProgress(currentUser.uid);
-    if (newlyUnlocked) {
-      const profile = await getAuthState().getUserProfile();
-      showBadgeUnlockPopup(newlyUnlocked, profile || {});
-    }
-    // Update challenge progress when habit is checked
-    if (e.target.checked) {
-      const habit = habits.find((h) => h.id === id);
-      if (habit) await updateChallengeProgress(currentUser.uid, habit);
+    if (isAdding) {
+      showHabitNotesModal(habit, async (note) => {
+        const checkinRef = getCheckinRef(selectedDate);
+        if (!checkinRef) return;
+        const snap = await getDoc(checkinRef);
+        const data = snap.exists() ? snap.data() : {};
+        const habitNotes = { ...(data.habitNotes || {}), [id]: note };
+        await setDoc(checkinRef, { habitNotes }, { merge: true });
+        checkinDataForDate.habitNotes = habitNotes;
+        if (habit.shareWithGroups && selectedDate === getTodayId()) {
+          try {
+            await updateHabitActivityNoteInGroups(id, selectedDate, note);
+          } catch (err) {
+            console.error("[Checkin] updateHabitActivityNoteInGroups error", err);
+          }
+        }
+        await loadCheckinForDate(selectedDate);
+        render();
+        showToast("Note saved");
+      });
     }
   });
 
@@ -491,10 +728,12 @@ function init() {
       try {
         shareBtn.disabled = true;
         const profile = await getAuthState().getUserProfile();
-        const completedCount = habits.filter((h) => completedIds.includes(h.id)).length;
+        const today = getTodayId();
+        const todayActiveHabits = getActiveHabitsForDate(today);
+        const completedCount = todayActiveHabits.filter((h) => (h.completedDates || []).includes(today)).length;
         await shareAchievement(profile || {}, {
           completedCount,
-          totalCount: habits.length,
+          totalCount: todayActiveHabits.length,
         });
       } catch (err) {
         console.error("[Checkin] Share error", err);
@@ -518,6 +757,8 @@ function init() {
     if (habitsRef) {
       habitsUnsubscribe = onSnapshot(habitsRef, async () => {
         await loadHabits();
+        await loadCheckinForDate(selectedDate);
+        renderDaySelector();
         render();
       }, async (err) => {
         console.error("[Checkin] habits onSnapshot error:", err);
@@ -526,18 +767,21 @@ function init() {
       });
     }
     console.log("[Checkin] Auth loaded:", user.uid);
+    selectedDate = getTodayId();
     if (todayHabitsEl) todayHabitsEl.innerHTML = "<p class=\"today-habits-empty\">Loading…</p>";
     await loadHabits();
     await loadCheckin();
-    await loadAndRenderWeeklyChain();
+    await loadCheckinForDate(selectedDate);
+    renderDaySelector();
     render();
   });
 
   try {
     const bc = new BroadcastChannel("mim-habits-changed");
     bc.onmessage = async () => {
-      if (currentUser && typeof loadHabits === "function") {
+      if (currentUser) {
         await loadHabits();
+        renderDaySelector();
         render();
       }
     };

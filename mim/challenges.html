@@ -25,26 +25,8 @@
       <a href="index.html" class="button-secondary">Back</a>
     </header>
 
-    <section class="card challenges-section">
-      <h2 class="card-label">Active Challenges</h2>
-      <div id="activeChallengesList" class="challenge-list" aria-live="polite">
-        <p class="challenges-empty">Loading…</p>
-      </div>
-    </section>
-
-    <section class="card challenges-section">
-      <h2 class="card-label">Completed Challenges</h2>
-      <div id="completedChallengesList" class="challenge-list" aria-live="polite">
-        <p class="challenges-empty">None yet.</p>
-      </div>
-    </section>
-
-    <section class="card challenges-section">
-      <h2 class="card-label">Challenge Library</h2>
-      <p class="muted-text" style="margin: 0 0 16px;">Start a challenge to add the habit to your list and track your progress.</p>
-      <div id="challengeLibraryList" class="challenge-library-list" aria-live="polite">
-        <p class="challenges-empty">Loading…</p>
-      </div>
+    <section class="card">
+      <p class="muted-text">Challenges are temporarily disabled. Return to the <a href="index.html">Dashboard</a> to track your habits.</p>
     </section>
 
     <footer class="app-footer">© 2026 Little Ollie Labs</footer>
@@ -76,56 +58,6 @@
     })();
   </script>
 
-  <!-- Challenge completion popup: Keep Habit or Remove Habit -->
-  <div id="challengeCompletePopup" class="badge-unlock-popup challenge-complete-popup" role="alert" aria-live="polite" hidden>
-    <div class="badge-unlock-content">
-      <p class="badge-unlock-title">Challenge Complete 🎉</p>
-      <p id="challengeCompleteIcon" class="badge-unlock-icon"></p>
-      <p id="challengeCompleteName" class="badge-unlock-name"></p>
-      <p id="challengeCompleteSubtitle" class="challenge-complete-subtitle"></p>
-      <div class="badge-unlock-actions">
-        <button type="button" id="challengeCompleteKeepBtn" class="button-primary">Keep Habit</button>
-        <button type="button" id="challengeCompleteRemoveBtn" class="button-secondary">Remove Habit</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Challenge share modal -->
-  <div id="challengeShareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="challengeShareModalTitle" aria-hidden="true" hidden>
-    <div class="share-modal-backdrop" id="challengeShareModalBackdrop"></div>
-    <div class="share-modal-content">
-      <h2 id="challengeShareModalTitle" class="share-modal-title">Share Challenge</h2>
-      <div class="share-card-preview">
-        <div id="challengeShareCard" class="share-card">
-          <div class="share-card-inner">
-            <p class="share-card-brand share-card-header">Motivation In Motion</p>
-            <div class="share-card-top">
-              <div id="challengeShareCardAvatar" class="share-card-avatar"></div>
-              <p id="challengeShareCardName" class="share-card-name"></p>
-            </div>
-            <div class="share-card-middle">
-              <p id="challengeShareCardIcon" class="share-card-icon">🏅</p>
-              <p id="challengeShareCardBadge" class="share-card-badge">CHALLENGE COMPLETED</p>
-              <p id="challengeShareCardHeadline" class="share-card-headline">Challenge Name</p>
-              <p id="challengeShareCardSubtitle" class="share-card-progress">7 Days Hydrated</p>
-            </div>
-            <div class="share-card-footer">
-              <p class="share-card-hashtag">#MotivationInMotion</p>
-              <p class="share-card-powered">Powered by Little Ollie Labs</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="share-modal-actions">
-        <button type="button" id="challengeShareSaveBtn" class="button-primary">Save Image</button>
-        <button type="button" id="challengeShareCopyBtn" class="button-secondary">Copy Image</button>
-        <button type="button" id="challengeShareCloseBtn" class="button-secondary">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script type="module" src="js/challenges.js"></script>
+  <!-- Challenges temporarily disabled - no challenge logic loaded -->
 </body>
 </html>

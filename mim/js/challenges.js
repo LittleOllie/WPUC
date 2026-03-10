@@ -111,9 +111,11 @@ async function ensureChallengeHabitExists(challenge) {
     return { habitId: existing.id };
   }
 
+  const createdDate = new Date().toISOString().split("T")[0];
   const habitData = {
     name: habitName,
     createdAt: serverTimestamp(),
+    createdDate,
     completedDates: [],
     isShared: true,
     source: "challenge",

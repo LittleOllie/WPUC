@@ -24,11 +24,7 @@
     </header>
 
     <section class="card">
-      <p class="card-label">Goals</p>
-      <p class="muted-text" style="margin: 0 0 16px;">Earn badges by building consistent habits.</p>
-      <div id="badgeList" class="badge-list" aria-live="polite">
-        <p class="badges-empty">Loading…</p>
-      </div>
+      <p class="muted-text">Badges are temporarily disabled. Return to the <a href="index.html">Dashboard</a> to track your habits.</p>
     </section>
 
     <footer class="app-footer">© 2026 Little Ollie Labs</footer>
@@ -44,41 +40,6 @@
     <a href="settings.html" class="bottom-nav-item" data-page="settings"><span>⚙️</span><span>Settings</span></a>
   </nav>
 
-  <!-- Badge share modal (reuses share card structure) -->
-  <div id="badgeShareModal" class="share-modal" role="dialog" aria-modal="true" aria-labelledby="badgeShareModalTitle" aria-hidden="true" hidden>
-    <div class="share-modal-backdrop" id="badgeShareModalBackdrop"></div>
-    <div class="share-modal-content">
-      <h2 id="badgeShareModalTitle" class="share-modal-title">Share Badge</h2>
-      <div class="share-card-preview">
-        <div id="badgeShareCard" class="share-card">
-          <div class="share-card-inner">
-            <p class="share-card-brand share-card-header">Motivation In Motion</p>
-            <div class="share-card-top">
-              <div id="badgeShareCardAvatar" class="share-card-avatar"></div>
-              <p id="badgeShareCardName" class="share-card-name"></p>
-            </div>
-            <div class="share-card-middle">
-              <p id="badgeShareCardIcon" class="share-card-icon">🏅</p>
-              <p id="badgeShareCardBadge" class="share-card-badge">BADGE UNLOCKED</p>
-              <p id="badgeShareCardHeadline" class="share-card-headline">Badge Name</p>
-              <p id="badgeShareCardSubtitle" class="share-card-progress" hidden>Description</p>
-            </div>
-            <div class="share-card-footer">
-              <p class="share-card-hashtag">#MotivationInMotion</p>
-              <p class="share-card-powered">Powered by Little Ollie Labs</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="share-modal-actions">
-        <button type="button" id="badgeShareSaveBtn" class="button-primary">Save Image</button>
-        <button type="button" id="badgeShareCopyBtn" class="button-secondary">Copy Image</button>
-        <button type="button" id="badgeShareCloseBtn" class="button-secondary">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script type="module" src="js/badges.js"></script>
+  <!-- Badges temporarily disabled - no badge logic loaded -->
 </body>
 </html>

@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { auth, db } from "./firebase-init.js";
 import { escapeHtml, escapeAttr, showToast } from "./utils.js";
+import { HABIT_LIBRARY } from "./habitLibrary.js";
 
 let currentUser = null;
 let habitsUnsubscribe = null;
@@ -47,6 +48,12 @@ function init() {
   const addHabitBtn = document.getElementById("addHabitBtn");
   const newHabitInput = document.getElementById("newHabitInput");
   const addHabitForm = document.getElementById("addHabitForm");
+  const addFromLibraryBtn = document.getElementById("addFromLibraryBtn");
+  const createCustomHabitBtn = document.getElementById("createCustomHabitBtn");
+  const habitLibraryModal = document.getElementById("habitLibraryModal");
+  const habitLibraryList = document.getElementById("habitLibraryList");
+  const habitLibraryModalBackdrop = document.getElementById("habitLibraryModalBackdrop");
+  const habitLibraryModalCloseBtn = document.getElementById("habitLibraryModalCloseBtn");
 
   if (!habitList || !addHabitBtn || !newHabitInput) {
     console.error("[Habits] Missing DOM elements", {
@@ -92,6 +99,8 @@ function init() {
         card.className = "habit-card";
         card.dataset.habitId = docItem.id;
         card.dataset.isShared = isShared ? "true" : "false";
+        card.dataset.source = habit.source || "";
+        card.dataset.challengeId = habit.challengeId || "";
         const shareBadge = isShared ? '<span class="habit-shared-badge" aria-label="Shared with groups">👥</span>' : "";
         card.innerHTML =
           `<span class="habit-card-name">${escapeHtml(name)}${shareBadge}</span>` +
@@ -132,9 +141,11 @@ function init() {
     const isShared = document.getElementById("newHabitShare")?.checked === true;
     addHabitBtn.textContent = "Saving...";
     try {
+      const createdDate = new Date().toISOString().split("T")[0];
       const ref = await addDoc(habitsRef, {
         name,
         createdAt: serverTimestamp(),
+        createdDate,
         completedDates: [],
         isShared: !!isShared,
         source: "manual",
@@ -164,6 +175,76 @@ function init() {
       e.preventDefault();
       handleAddHabit(e);
     });
+  }
+
+  if (createCustomHabitBtn && addHabitForm) {
+    createCustomHabitBtn.addEventListener("click", () => {
+      addHabitForm.hidden = false;
+      if (newHabitInput) newHabitInput.focus();
+    });
+  }
+
+  function openHabitLibraryModal() {
+    if (!habitLibraryModal || !habitLibraryList) return;
+    habitLibraryList.innerHTML = "";
+    HABIT_LIBRARY.forEach((habit) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "habit-library-item";
+      btn.innerHTML = `<span class="habit-library-item-icon">${escapeHtml(habit.icon)}</span><span class="habit-library-item-name">${escapeHtml(habit.name)}</span>`;
+      btn.addEventListener("click", () => handleAddLibraryHabit(habit));
+      habitLibraryList.appendChild(btn);
+    });
+    habitLibraryModal.hidden = false;
+    habitLibraryModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeHabitLibraryModal() {
+    if (!habitLibraryModal) return;
+    habitLibraryModal.hidden = true;
+    habitLibraryModal.setAttribute("aria-hidden", "true");
+  }
+
+  async function handleAddLibraryHabit(habit) {
+    if (!currentUser) {
+      showError("Please wait for sign-in to complete.");
+      return;
+    }
+    const habitsRef = getHabitsRef();
+    if (!habitsRef) {
+      showError("Cannot add habit: invalid session.");
+      return;
+    }
+    closeHabitLibraryModal();
+    try {
+      const createdDate = new Date().toISOString().split("T")[0];
+      await addDoc(habitsRef, {
+        name: habit.name,
+        createdAt: serverTimestamp(),
+        createdDate,
+        completedDates: [],
+        isShared: false,
+        source: "library",
+      });
+      showToast("Habit added ✓");
+      await loadHabits();
+      try {
+        new BroadcastChannel("mim-habits-changed").postMessage("changed");
+      } catch (e) {}
+    } catch (err) {
+      console.error("[Habits] Library habit add error", err);
+      showError(err.message || "Could not add habit.");
+    }
+  }
+
+  if (addFromLibraryBtn) {
+    addFromLibraryBtn.addEventListener("click", openHabitLibraryModal);
+  }
+  if (habitLibraryModalBackdrop) {
+    habitLibraryModalBackdrop.addEventListener("click", closeHabitLibraryModal);
+  }
+  if (habitLibraryModalCloseBtn) {
+    habitLibraryModalCloseBtn.addEventListener("click", closeHabitLibraryModal);
   }
 
   habitList.addEventListener("click", async (e) => {
@@ -243,13 +324,51 @@ function init() {
     const deleteBtn = e.target.closest(".habit-card-delete");
     if (deleteBtn) {
       e.preventDefault();
+      const card = deleteBtn.closest(".habit-card");
       const habitId = deleteBtn.dataset.id;
+      const source = (card && card.dataset.source) || "";
+      const challengeId = (card && card.dataset.challengeId) || "";
       if (!habitId || !currentUser) return;
+
+      const isChallengeHabit = source === "challenge";
+      let confirmed = false;
+      if (isChallengeHabit) {
+        const modal = document.getElementById("habitDeleteModal");
+        const msgEl = document.getElementById("habitDeleteModalMessage");
+        const cancelBtn = document.getElementById("habitDeleteModalCancelBtn");
+        const confirmBtn = document.getElementById("habitDeleteModalConfirmBtn");
+        const backdrop = document.getElementById("habitDeleteModalBackdrop");
+        if (!modal || !msgEl || !confirmBtn) return;
+        msgEl.textContent = "This habit is part of an active challenge. Deleting it will reset the challenge.";
+        modal.hidden = false;
+        modal.setAttribute("aria-hidden", "false");
+        confirmed = await new Promise((resolve) => {
+          const cleanup = () => {
+            modal.hidden = true;
+            modal.setAttribute("aria-hidden", "true");
+            cancelBtn?.removeEventListener("click", onCancel);
+            confirmBtn?.removeEventListener("click", onConfirm);
+            backdrop?.removeEventListener("click", onCancel);
+          };
+          const onCancel = () => { cleanup(); resolve(false); };
+          const onConfirm = () => { cleanup(); resolve(true); };
+          cancelBtn?.addEventListener("click", onCancel);
+          confirmBtn?.addEventListener("click", onConfirm);
+          backdrop?.addEventListener("click", onCancel);
+        });
+      } else {
+        confirmed = confirm("Delete this habit?");
+      }
+      if (!confirmed) return;
+
       const habitRef = doc(db, "users", currentUser.uid, "habits", habitId);
       try {
         await deleteDoc(habitRef);
         console.log("[Habits] Habit deleted:", habitId);
         loadHabits();
+        try {
+          new BroadcastChannel("mim-habits-changed").postMessage("changed");
+        } catch (e) {}
       } catch (err) {
         console.error("[Habits] Firestore delete error", err.code || err.message, err);
         showError(err.message || "Could not delete habit.");

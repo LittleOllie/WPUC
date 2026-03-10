@@ -39,13 +39,13 @@
     </section>
     <section class="card">
       <h3 class="card-label">This Week</h3>
-      <div id="weeklyChain" class="weekly-chain" aria-label="Last 7 days habit chain"></div>
+      <div id="weeklyDaySelector" class="weekly-day-selector" role="tablist" aria-label="Select day to view habits"></div>
     </section>
     <section class="card" id="today">
       <p class="card-label">Today</p>
 
       <div class="today-progress-header">
-        <h3 class="today-progress-title">Today's Progress</h3>
+        <h3 id="todayProgressTitle" class="today-progress-title">Today's Progress</h3>
         <p id="progressText" class="today-progress-count"></p>
       </div>
       <div class="progress-bar" id="todayProgressBar" aria-hidden="true">
@@ -57,6 +57,21 @@
 
       <div id="todayHabits"><p class="today-habits-empty">Loading…</p></div>
       </section>
+
+  <!-- Habit notes modal (when checking a habit) -->
+  <div id="habitNotesModal" class="modal habit-notes-modal" role="dialog" aria-modal="true" aria-labelledby="habitNotesModalTitle" aria-hidden="true" hidden>
+    <div class="habit-notes-modal-backdrop"></div>
+    <div class="habit-notes-modal-content">
+      <h2 id="habitNotesModalTitle" class="habit-notes-modal-title">Add a note</h2>
+      <p id="habitNotesModalPrompt" class="habit-notes-modal-prompt muted-text"></p>
+      <label for="habitNotesInput" class="visually-hidden">Note</label>
+      <input type="text" id="habitNotesInput" class="input-field" placeholder="Enter your note..." maxlength="500" />
+      <div class="habit-notes-modal-actions">
+        <button type="button" id="habitNotesSkipBtn" class="button-ghost">Skip</button>
+        <button type="button" id="habitNotesSubmitBtn" class="button-primary">Save</button>
+      </div>
+    </div>
+  </div>
 
     <section class="card dashboard-groups-section">
       <h3 class="card-label">Your Groups</h3>

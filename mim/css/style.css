@@ -557,8 +557,147 @@ a.button-secondary {
   background: var(--primary-hover);
 }
 
+.habits-add-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.habits-add-form.habits-add-form--custom {
+  margin-top: 4px;
+}
+
 .habits-add-form .input-field {
   margin-bottom: 12px;
+}
+
+/* Habit Library modal */
+.habit-library-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.habit-library-modal[hidden] {
+  display: none !important;
+  pointer-events: none;
+}
+
+.habit-library-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.habit-library-modal-content {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.habit-library-modal-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+/* Habit delete confirmation modal */
+.habit-delete-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.habit-delete-modal[hidden] {
+  display: none !important;
+  pointer-events: none;
+}
+
+.habit-delete-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.habit-delete-modal-content {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.habit-delete-modal-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.habit-delete-modal-message {
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.habit-delete-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.habit-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.habit-library-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  width: 100%;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.habit-library-item:hover {
+  background: var(--primary-hover);
+  color: white;
+  border-color: var(--primary-hover);
+}
+
+.habit-library-item-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.habit-library-item-name {
+  flex: 1;
 }
 
 /* Badges / Goals */
@@ -897,6 +1036,7 @@ a.button-secondary {
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--secondary);
+  position: relative;
 }
 
 .habit-check:last-child {
@@ -918,9 +1058,45 @@ a.button-secondary {
   flex-shrink: 0;
 }
 
+.habit-check input[type="checkbox"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.habit-check-label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
 .habit-check-name {
   font-weight: 500;
   color: var(--text);
+}
+
+.habit-check-note {
+  display: block;
+  margin: 4px 0 0 28px;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.habit-points-float {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  pointer-events: none;
+  opacity: 1;
+  transition: transform 1s ease-out, opacity 1s ease-out;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.habit-points-float--animate {
+  transform: translate(-50%, -80px);
+  opacity: 0;
 }
 
 .today-habits-empty {
@@ -1034,6 +1210,12 @@ a.button-secondary {
   color: var(--primary);
 }
 
+/* Challenges and Badges temporarily disabled */
+.bottom-nav-item[data-page="challenges"],
+.bottom-nav-item[data-page="badges"] {
+  display: none !important;
+}
+
 .bottom-nav-item span:first-child {
   font-size: 20px;
   line-height: 1;
@@ -1076,6 +1258,116 @@ a.button-secondary {
 
 .weekly-chain-square--filled {
   color: var(--primary);
+}
+
+/* Weekly day selector — rolling 7 days, today on right */
+.weekly-day-selector {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: var(--space-16);
+}
+
+.weekly-day-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: 2px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.weekly-day-btn:hover:not(.weekly-day-btn--locked) {
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+.weekly-day-btn--selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--mim-blue-pale);
+  color: var(--text-primary);
+}
+
+.weekly-day-btn--complete {
+  background: rgba(29, 185, 84, 0.15);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.weekly-day-btn--complete.weekly-day-btn--selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--mim-blue-pale);
+}
+
+.weekly-day-btn--incomplete {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #dc2626;
+}
+
+.weekly-day-btn--incomplete.weekly-day-btn--selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--mim-blue-pale);
+}
+
+.weekly-day-btn--future {
+  background: var(--secondary);
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.weekly-day-btn--locked {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.weekly-day-btn--locked:hover {
+  opacity: 0.8;
+}
+
+/* Tooltip for locked days */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--text-primary);
+  color: var(--bg-card);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+body.dark-mode [data-tooltip]::after {
+  background: var(--text-primary);
+  color: var(--bg-main);
 }
 
 .identity-popup {
@@ -1533,6 +1825,48 @@ body.dark-mode .identity-popup {
   font-size: 20px;
 }
 
+/* Habit notes modal */
+.habit-notes-modal .habit-notes-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.habit-notes-modal .habit-notes-modal-content {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.habit-notes-modal-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.habit-notes-modal-prompt {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.habit-notes-modal .input-field {
+  margin-bottom: 16px;
+}
+
+.habit-notes-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.profile-habit-note {
+  font-weight: 400;
+}
+
 /* Single group page */
 .group-name {
   margin: 0 0 8px;
@@ -1659,6 +1993,13 @@ body.dark-mode .identity-popup {
   min-width: 0;
 }
 
+.group-activity-habit-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.3;
+  width: 100%;
+}
+
 .group-activity-like-wrap {
   display: inline-flex;
   align-items: center;
@@ -1767,6 +2108,165 @@ body.dark-mode .identity-popup {
 
 .group-leaderboard {
   list-style: none;
+}
+
+.group-challenges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.group-challenge-card {
+  padding: 16px;
+}
+
+.group-challenge-header {
+  margin-bottom: 8px;
+}
+
+.group-challenge-name {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.group-challenge-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.group-challenge-accepted {
+  display: block;
+  margin-top: 8px;
+}
+
+/* Create Challenge modal — match Habit Library layout */
+.create-challenge-modal .modal-content {
+  max-width: 360px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.create-challenge-card {
+  padding: 20px;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+}
+
+.create-challenge-card .card-label {
+  margin-bottom: 12px;
+}
+
+.create-challenge-card .card-label:first-child {
+  margin-top: 0;
+}
+
+.create-challenge-card .input-field {
+  margin-bottom: 12px;
+}
+
+.create-challenge-checkbox-wrap {
+  display: block;
+  margin: 12px 0 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.create-challenge-checkbox-wrap input {
+  margin-right: 8px;
+}
+
+.create-challenge-habits-wrap {
+  margin-top: 16px;
+}
+
+.create-challenge-habits-wrap .card-label {
+  margin-bottom: 8px;
+}
+
+.create-challenge-habits-list {
+  margin-bottom: 12px;
+}
+
+.add-habit-btn {
+  display: block;
+  margin-top: 4px;
+}
+
+.create-challenge-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.challenge-habit-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 8px;
+}
+
+.challenge-habit-select-wrap,
+.challenge-habit-points-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.challenge-habit-select-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.challenge-habit-points-wrap {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.challenge-habit-row .challenge-habit-select,
+.challenge-habit-row .challenge-habit-name {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.challenge-points-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.challenge-habit-row .challenge-habit-points {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.challenge-habit-row .input-field {
+  margin-bottom: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.modal label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.modal label:first-of-type {
+  margin-top: 0;
 }
 
 .button-ghost {

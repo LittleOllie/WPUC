@@ -32,7 +32,16 @@
         <p class="habits-empty">Loading…</p>
       </div>
 
-      <form id="addHabitForm" class="habits-add-form">
+      <div class="habits-add-actions">
+        <button type="button" id="addFromLibraryBtn" class="button-primary">
+          Add from Habit Library
+        </button>
+        <button type="button" id="createCustomHabitBtn" class="button-secondary">
+          Create Custom Habit
+        </button>
+      </div>
+
+      <form id="addHabitForm" class="habits-add-form habits-add-form--custom" hidden>
         <label for="newHabitInput" class="visually-hidden">New habit name</label>
         <input
           id="newHabitInput"
@@ -54,6 +63,29 @@
 
     <footer class="app-footer">© 2026 Little Ollie Labs</footer>
   </main>
+
+  <!-- Delete habit confirmation modal -->
+  <div id="habitDeleteModal" class="habit-delete-modal" role="dialog" aria-modal="true" aria-labelledby="habitDeleteModalTitle" aria-hidden="true" hidden>
+    <div class="habit-delete-modal-backdrop" id="habitDeleteModalBackdrop"></div>
+    <div class="habit-delete-modal-content">
+      <h2 id="habitDeleteModalTitle" class="habit-delete-modal-title">Delete Habit</h2>
+      <p id="habitDeleteModalMessage" class="habit-delete-modal-message"></p>
+      <div class="habit-delete-modal-actions">
+        <button type="button" id="habitDeleteModalCancelBtn" class="button-secondary">Cancel</button>
+        <button type="button" id="habitDeleteModalConfirmBtn" class="button-primary button-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Habit Library modal -->
+  <div id="habitLibraryModal" class="habit-library-modal" role="dialog" aria-modal="true" aria-labelledby="habitLibraryModalTitle" aria-hidden="true" hidden>
+    <div class="habit-library-modal-backdrop" id="habitLibraryModalBackdrop"></div>
+    <div class="habit-library-modal-content">
+      <h2 id="habitLibraryModalTitle" class="habit-library-modal-title">Add from Habit Library</h2>
+      <div id="habitLibraryList" class="habit-library-list"></div>
+      <button type="button" id="habitLibraryModalCloseBtn" class="button-secondary full-width">Cancel</button>
+    </div>
+  </div>
 
   <nav class="bottom-nav" aria-label="Main">
     <a href="index.html" class="bottom-nav-item" data-page="home"><span>🏠</span><span>Dashboard</span></a>

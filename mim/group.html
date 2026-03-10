@@ -47,6 +47,7 @@
 
     <nav class="group-tabs" role="tablist" aria-label="Group sections">
       <button type="button" class="group-tab group-tab--active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+      <button type="button" class="group-tab" data-tab="challenges" role="tab" aria-selected="false">Challenges</button>
       <button type="button" class="group-tab" data-tab="activity" role="tab" aria-selected="false">Activity</button>
       <button type="button" class="group-tab" data-tab="members" role="tab" aria-selected="false">Members</button>
       <button type="button" class="group-tab group-tab--settings" data-tab="settings" role="tab" aria-selected="false" style="display:none;">Settings</button>
@@ -54,8 +55,18 @@
 
     <div id="tabOverview" class="group-tab-panel" role="tabpanel">
       <section class="card">
-        <h3 class="card-label">Weekly Leaderboard</h3>
+        <h3 class="card-label">Leaderboard</h3>
+        <p class="muted-text small-text">Points earned from completing challenge habits on your dashboard.</p>
         <ol id="leaderboardList" class="group-leaderboard"></ol>
+      </section>
+    </div>
+
+    <div id="tabChallenges" class="group-tab-panel" role="tabpanel" hidden>
+      <section class="card">
+        <h3 class="card-label">Group Challenges</h3>
+        <p class="muted-text small-text">Complete challenge habits to earn points.</p>
+        <div id="challengesList" class="group-challenges-list"></div>
+        <button type="button" id="createChallengeBtn" class="button-primary" style="display:none;">Create Challenge</button>
       </section>
     </div>
 
@@ -91,6 +102,29 @@
           <button type="button" id="deleteGroupBtn" class="button-ghost button-danger" style="display:none;">Delete group</button>
         </div>
       </section>
+    </div>
+
+    <div id="createChallengeModal" class="modal create-challenge-modal" hidden>
+      <div class="modal-backdrop" data-close-challenge-modal></div>
+      <div class="modal-content">
+        <div class="card create-challenge-card">
+          <h2 class="card-label">Create Challenge</h2>
+          <label for="challengeNameInput" class="visually-hidden">Challenge name</label>
+          <input type="text" id="challengeNameInput" class="input-field" placeholder="e.g. Hydration Week" maxlength="80" />
+          <label class="create-challenge-checkbox-wrap">
+            <input type="checkbox" id="challengeRequireAccept" checked /> Require members to accept
+          </label>
+          <div id="challengeHabitsContainer" class="create-challenge-habits-wrap">
+            <p class="card-label">Habits</p>
+            <div id="challengeHabitsList" class="create-challenge-habits-list"></div>
+            <button type="button" id="addChallengeHabitBtn" class="button-ghost button-small add-habit-btn">+ Add Habit</button>
+          </div>
+          <div class="create-challenge-actions">
+            <button type="button" id="createChallengeCancelBtn" class="button-ghost">Cancel</button>
+            <button type="button" id="createChallengeSubmitBtn" class="button-primary">Create Challenge</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="inviteModal" class="modal" hidden>
