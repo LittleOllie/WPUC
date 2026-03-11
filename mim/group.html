@@ -56,8 +56,9 @@
     <div id="tabOverview" class="group-tab-panel" role="tabpanel">
       <section class="card">
         <h3 class="card-label">Leaderboard</h3>
-        <p class="muted-text small-text">Points earned from completing challenge habits on your dashboard.</p>
+        <p class="muted-text small-text">Points earned from completing challenge habits on your dashboard. Add habits with "Add Current Habits" on past days, then tick them to add points.</p>
         <ol id="leaderboardList" class="group-leaderboard"></ol>
+        <button type="button" id="syncMyPointsBtn" class="button-ghost button-small" style="margin-top:8px;">Sync my points</button>
       </section>
     </div>
 
@@ -111,6 +112,16 @@
           <h2 class="card-label">Create Challenge</h2>
           <label for="challengeNameInput" class="visually-hidden">Challenge name</label>
           <input type="text" id="challengeNameInput" class="input-field" placeholder="e.g. Hydration Week" maxlength="80" />
+          <div class="create-challenge-dates">
+            <div>
+              <label for="challengeStartDateInput" class="card-label">Start date</label>
+              <input type="date" id="challengeStartDateInput" class="input-field" aria-label="Challenge start date" />
+            </div>
+            <div>
+              <label for="challengeEndDateInput" class="card-label">End date</label>
+              <input type="date" id="challengeEndDateInput" class="input-field" aria-label="Challenge end date" />
+            </div>
+          </div>
           <label class="create-challenge-checkbox-wrap">
             <input type="checkbox" id="challengeRequireAccept" checked /> Require members to accept
           </label>

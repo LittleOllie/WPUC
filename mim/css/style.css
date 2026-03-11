@@ -1310,10 +1310,11 @@ a.button-secondary {
   box-shadow: 0 0 0 2px var(--mim-blue-pale);
 }
 
+/* Part 9: Yellow = partially complete */
 .weekly-day-btn--incomplete {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #dc2626;
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #a16207;
 }
 
 .weekly-day-btn--incomplete.weekly-day-btn--selected {
@@ -1335,6 +1336,106 @@ a.button-secondary {
 
 .weekly-day-btn--locked:hover {
   opacity: 0.8;
+}
+
+.weekly-day-btn--view-only {
+  cursor: pointer;
+}
+
+/* Day selector nav */
+.day-selector-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.day-nav-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+  border: 2px solid var(--primary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.day-nav-arrow:hover:not(:disabled) {
+  background: rgba(var(--primary-rgb, 59, 130, 246), 0.2);
+}
+
+.day-nav-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.day-nav-arrow-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.day-nav-arrow-label {
+  white-space: nowrap;
+}
+
+.day-selector-week-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.selected-date-full {
+  font-size: 14px;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.add-habits-to-past {
+  margin-top: 16px;
+  padding: 16px;
+  border: 2px dashed var(--border-light);
+  border-radius: 10px;
+  background: rgba(var(--primary-rgb, 59, 130, 246), 0.04);
+}
+
+.add-habits-to-past .card-label {
+  margin-bottom: 10px;
+}
+
+.add-habits-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.create-challenge-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.create-challenge-dates .card-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.add-custom-habits-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.add-custom-habit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
 }
 
 /* Tooltip for locked days */

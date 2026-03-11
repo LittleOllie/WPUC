@@ -9,6 +9,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  setDoc,
   arrayUnion,
   arrayRemove,
   serverTimestamp,
@@ -62,9 +63,33 @@ export async function acceptGroupChallenge(uid, groupId, challengeId, habits) {
   return added;
 }
 
+/** Normalize date to YYYY-MM-DD string (handles Firestore Timestamp). */
+function toDateId(val) {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (val && typeof val.toDate === "function") return val.toDate().toISOString().split("T")[0];
+  return String(val).slice(0, 10);
+}
+
+/**
+ * Check if a completion date falls within the challenge's startDate/endDate.
+ * @param {object} challengeData - Challenge document data
+ * @param {string} dateId - YYYY-MM-DD
+ * @returns {boolean}
+ */
+function isDateWithinChallengeRange(challengeData, dateId) {
+  const start = toDateId(challengeData.startDate) || "";
+  const end = toDateId(challengeData.endDate) || "";
+  if (!start && !end) return true;
+  if (start && dateId < start) return false;
+  if (end && dateId > end) return false;
+  return true;
+}
+
 /**
  * Award points when a group challenge habit is completed.
  * Only awards once per habit per date (uses groupChallengeAwardedDates).
+ * Only awards if date is within challenge startDate/endDate (Part 5, 7).
  * @param {string} uid - User ID
  * @param {object} habit - Habit object with id, habitId, source, challengeId, groupId, groupChallengeAwardedDates
  * @param {string} dateId - YYYY-MM-DD
@@ -86,6 +111,8 @@ export async function awardGroupChallengePoints(uid, habit, dateId) {
   if (!challengeSnap.exists()) return 0;
 
   const data = challengeSnap.data();
+  if (!isDateWithinChallengeRange(data, dateId)) return 0;
+
   const habits = data.habits || [];
   const habitDef = habits.find((h) => h.habitId === habitIdForMatch);
   if (!habitDef || typeof habitDef.points !== "number") return 0;
@@ -132,6 +159,8 @@ export async function revokeGroupChallengePoints(uid, habit, dateId) {
   if (!challengeSnap.exists()) return 0;
 
   const data = challengeSnap.data();
+  if (!isDateWithinChallengeRange(data, dateId)) return 0;
+
   const habits = data.habits || [];
   const habitDef = habits.find((h) => h.habitId === habitIdForMatch);
   if (!habitDef || typeof habitDef.points !== "number") return 0;
@@ -170,13 +199,30 @@ export async function recalculateGroupMemberPoints(uid, groupId) {
     .filter((h) => h.source === "groupChallenge" && h.groupId === groupId);
 
   if (groupChallengeHabits.length === 0) {
-    await updateDoc(memberRef, { points: 0 });
+    await setDoc(memberRef, { points: 0 }, { merge: true });
     return 0;
   }
 
+  const checkinsRef = collection(db, "users", uid, "checkins");
+  const checkinsSnap = await getDocs(checkinsRef);
+  const datesFromCheckins = new Map();
+  checkinsSnap.docs.forEach((d) => {
+    const data = d.data();
+    const completed = Array.isArray(data?.habitsCompleted) ? data.habitsCompleted : [];
+    completed.forEach((habitId) => {
+      if (!datesFromCheckins.has(habitId)) datesFromCheckins.set(habitId, new Set());
+      datesFromCheckins.get(habitId).add(d.id);
+    });
+  });
+
   let totalPoints = 0;
   for (const habit of groupChallengeHabits) {
-    const completed = habit.completedDates || [];
+    let completed = habit.completedDates || [];
+    const fromCheckins = datesFromCheckins.get(habit.id);
+    if (fromCheckins && fromCheckins.size > 0) {
+      const merged = new Set([...completed, ...fromCheckins]);
+      completed = [...merged];
+    }
     const awarded = habit.groupChallengeAwardedDates || [];
     const needsSync = awarded.length !== completed.length || completed.some((d) => !awarded.includes(d));
 
@@ -191,20 +237,36 @@ export async function recalculateGroupMemberPoints(uid, groupId) {
     const challengeRef = doc(db, "groups", groupId, "challenges", habit.challengeId);
     const challengeSnap = await getDoc(challengeRef);
     if (!challengeSnap.exists()) continue;
-    const habitDef = (challengeSnap.data().habits || []).find(
+    const challengeData = challengeSnap.data();
+    const habitDef = (challengeData.habits || []).find(
       (h) => h.habitId === (habit.habitId || habit.groupChallengeHabitId)
     );
     if (!habitDef || typeof habitDef.points !== "number") continue;
 
-    totalPoints += completed.length * habitDef.points;
+    // Part 7: Only count completions within challenge startDate/endDate
+    const datesInRange = completed.filter((d) => isDateWithinChallengeRange(challengeData, d));
+    totalPoints += datesInRange.length * habitDef.points;
 
     if (needsSync) {
       const habitRef = doc(db, "users", uid, "habits", habit.id);
-      await updateDoc(habitRef, { groupChallengeAwardedDates: completed });
+      await updateDoc(habitRef, { groupChallengeAwardedDates: datesInRange });
     }
   }
 
-  await updateDoc(memberRef, { points: totalPoints });
+  await setDoc(memberRef, { points: totalPoints }, { merge: true });
   return totalPoints;
+}
+
+/**
+ * Recalculate points for ALL members in a group (e.g. after challenge dates change).
+ * @param {string} groupId - Group ID
+ */
+export async function recalculateAllMembersInGroup(groupId) {
+  if (!groupId) return;
+  const membersRef = collection(db, "groups", groupId, "members");
+  const membersSnap = await getDocs(membersRef);
+  for (const d of membersSnap.docs) {
+    await recalculateGroupMemberPoints(d.id, groupId);
+  }
 }
 

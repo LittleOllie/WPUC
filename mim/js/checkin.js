@@ -21,6 +21,7 @@ import { escapeHtml, escapeAttr, getWeekStart, showToast } from "./utils.js";
 import { subscribeAuth, getAuthState } from "./auth-state.js";
 import { shareAchievement } from "./share-achievement.js";
 import { awardGroupChallengePoints, revokeGroupChallengePoints } from "./group-challenges.js";
+import { writeHabitCompletion, removeHabitCompletion } from "./habit-completions.js";
 
 /** Context-specific prompts for habit notes by habitId from library. */
 const HABIT_NOTE_PROMPTS = {
@@ -39,6 +40,8 @@ const HABIT_NOTE_PROMPTS = {
 let currentUser = null;
 let habits = [];
 let habitsUnsubscribe = null;
+/** Week offset for day selector (0 = this week, 1 = last week, etc.). */
+let daySelectorWeekOffset = 0;
 /** Currently selected date (YYYY-MM-DD). Default: today. */
 let selectedDate = "";
 /** Checkin data for selected date (habitNotes, etc.) */
@@ -68,10 +71,13 @@ async function loadCheckinForDate(dateId) {
     if (!ref) return;
     const snap = await getDoc(ref);
     const data = snap.exists() ? snap.data() : {};
-    checkinDataForDate = { habitNotes: data.habitNotes || {} };
+    checkinDataForDate = {
+      habitNotes: data.habitNotes || {},
+      habitsAddedForDate: Array.isArray(data.habitsAddedForDate) ? data.habitsAddedForDate : [],
+    };
   } catch (err) {
     console.error("[Checkin] loadCheckinForDate error", err);
-    checkinDataForDate = { habitNotes: {} };
+    checkinDataForDate = { habitNotes: {}, habitsAddedForDate: [] };
   }
 }
 
@@ -94,6 +100,12 @@ function getDateId(daysAgo) {
   return d.toISOString().split("T")[0];
 }
 
+/** Date for day index in a week window. weekOffset 0 = today..6 days ago; 1 = 7..13 days ago. */
+function getDateIdInWindow(weekOffset, dayIndex) {
+  const baseDaysAgo = weekOffset * 7;
+  return getDateId(baseDaysAgo + (6 - dayIndex));
+}
+
 const DAY_NAMES_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 function getDayNameShort(dateId) {
   const d = new Date(dateId + "T12:00:00Z");
@@ -105,15 +117,24 @@ function getDayName(dateId) {
   const d = new Date(dateId + "T12:00:00Z");
   return DAY_NAMES[d.getUTCDay()];
 }
+/** Format date as "Monday, 10 March 2026" */
+function formatDateLong(dateId) {
+  const d = new Date(dateId + "T12:00:00Z");
+  const dayName = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getUTCDay()];
+  const day = d.getUTCDate();
+  const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][d.getUTCMonth()];
+  const year = d.getUTCFullYear();
+  return `${dayName}, ${day} ${month} ${year}`;
+}
 
-/** Whether the date is editable (today or up to 3 days in the past). */
+/** Whether the date allows checkbox editing (any past date or today; not future). */
 function isDayEditable(dateId) {
-  const today = getTodayId();
-  if (dateId > today) return false;
-  const dToday = new Date(today + "T12:00:00Z").getTime();
-  const dDate = new Date(dateId + "T12:00:00Z").getTime();
-  const daysDiff = Math.floor((dToday - dDate) / (24 * 60 * 60 * 1000));
-  return daysDiff <= 3;
+  return dateId <= getTodayId();
+}
+
+/** Whether the date is in the past (can use Add Habits buttons). */
+function isDayInPast(dateId) {
+  return dateId < getTodayId();
 }
 
 /** Whether the date is in the future. */
@@ -127,6 +148,20 @@ function getActiveHabitsForDate(dateId) {
     if (!h.createdDate) return true;
     return h.createdDate <= dateId;
   });
+}
+
+/** Update the selected date display (day, month, year). */
+function updateSelectedDateDisplay() {
+  const labelEl = document.getElementById("selectedDateLabel");
+  const fullEl = document.getElementById("selectedDateFull");
+  const titleEl = document.getElementById("todayProgressTitle");
+  const today = getTodayId();
+  if (labelEl) labelEl.textContent = selectedDate === today ? "Today" : getDayName(selectedDate);
+  if (fullEl) {
+    fullEl.textContent = formatDateLong(selectedDate);
+    fullEl.hidden = false;
+  }
+  if (titleEl) titleEl.textContent = selectedDate === today ? "Today's Progress" : `Progress for ${formatDateLong(selectedDate)}`;
 }
 
 /** Day status: "complete" | "incomplete" | "future" */
@@ -232,13 +267,37 @@ function updateProgressText() {
   if (shareBtn) shareBtn.hidden = !(total > 0 && completedForSelected === total && isToday);
 }
 
-/** Render the rolling weekly day selector. Today on far right. */
+/** Render the day selector with week navigation. Part 3: view any date. */
 function renderDaySelector() {
   const container = document.getElementById("weeklyDaySelector");
+  const prevBtn = document.getElementById("daySelectorPrevWeek");
+  const nextBtn = document.getElementById("daySelectorNextWeek");
+  const weekLabel = document.getElementById("daySelectorWeekLabel");
+  const addSection = document.getElementById("addHabitsToPastSection");
+
   if (!container) return;
+
+  const today = getTodayId();
+  const firstDateInWindow = getDateIdInWindow(daySelectorWeekOffset, 0);
+  const lastDateInWindow = getDateIdInWindow(daySelectorWeekOffset, 6);
+
+  if (weekLabel) {
+    if (daySelectorWeekOffset === 0) {
+      weekLabel.textContent = "This week";
+    } else {
+      weekLabel.textContent = `${firstDateInWindow} – ${lastDateInWindow}`;
+    }
+  }
+  if (nextBtn) {
+    nextBtn.disabled = lastDateInWindow >= today;
+  }
+  if (prevBtn) {
+    prevBtn.disabled = false;
+  }
+
   container.innerHTML = "";
-  for (let i = 6; i >= 0; i--) {
-    const dateId = getDateId(i);
+  for (let i = 0; i <= 6; i++) {
+    const dateId = getDateIdInWindow(daySelectorWeekOffset, i);
     const dayName = getDayNameShort(dateId);
     const status = getDayStatus(dateId);
     const editable = isDayEditable(dateId);
@@ -252,6 +311,7 @@ function renderDaySelector() {
     btn.dataset.dateId = dateId;
     btn.setAttribute("role", "tab");
     btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+    btn.setAttribute("data-tooltip", dateId);
 
     if (status === "complete") btn.classList.add("weekly-day-btn--complete");
     else if (status === "incomplete") btn.classList.add("weekly-day-btn--incomplete");
@@ -259,30 +319,33 @@ function renderDaySelector() {
 
     if (isSelected) btn.classList.add("weekly-day-btn--selected");
 
-    if (!editable) {
-      btn.classList.add("weekly-day-btn--locked");
-      btn.setAttribute("data-tooltip", "Past entries older than 3 days cannot be edited.");
+    if (!editable && !future) {
+      btn.classList.add("weekly-day-btn--view-only");
     }
 
     btn.addEventListener("click", async () => {
-      if (!editable) {
-        showToast("Past entries older than 3 days cannot be edited.");
-        return;
-      }
       selectedDate = dateId;
       await loadCheckinForDate(dateId);
       renderDaySelector();
       render();
       updateProgressText();
+      if (addSection) {
+        addSection.hidden = !(isDayInPast(dateId) && dateId <= today);
+      }
     });
 
     container.appendChild(btn);
+  }
+
+  if (addSection) {
+    addSection.hidden = !(isDayInPast(selectedDate) && selectedDate <= today);
   }
 }
 
 function render() {
   const container = document.getElementById("todayHabits");
   if (!container) return;
+  updateSelectedDateDisplay();
   container.innerHTML = "";
   if (!habits.length) {
     container.innerHTML =
@@ -290,9 +353,12 @@ function render() {
     updateProgressText();
     return;
   }
+  const habitsAdded = checkinDataForDate?.habitsAddedForDate || [];
   const visibleHabits = habits.filter((h) => {
-    if (!h.createdDate) return true;
-    return h.createdDate <= selectedDate;
+    const existedOnDate = !h.createdDate || h.createdDate <= selectedDate;
+    const hasCompletionForDate = (h.completedDates || []).includes(selectedDate);
+    const wasAddedForDate = habitsAdded.includes(h.id);
+    return existedOnDate || hasCompletionForDate || wasAddedForDate;
   });
   const future = isDayInFuture(selectedDate);
   const editable = isDayEditable(selectedDate);
@@ -321,6 +387,29 @@ function render() {
   updateProgressText();
 }
 
+/** Add a habit completion for a date (used by Add Current/Custom Habits). Updates habit, checkin, points, habitCompletions. */
+async function addHabitCompletionForDate(habit, dateId) {
+  if (!currentUser || !habit || !dateId || (habit.completedDates || []).includes(dateId)) return;
+  const id = habit.id;
+  const habitRef = doc(db, "users", currentUser.uid, "habits", id);
+  await updateDoc(habitRef, { completedDates: arrayUnion(dateId) });
+  habit.completedDates = [...(habit.completedDates || []), dateId];
+  const checkinRef = getCheckinRef(dateId);
+  if (checkinRef) {
+    const checkinSnap = await getDoc(checkinRef);
+    const existing = (checkinSnap.exists() ? checkinSnap.data().habitsCompleted : []) || [];
+    const completedIdsForDate = existing.includes(id) ? existing : [...existing, id];
+    await setDoc(checkinRef, { habitsCompleted: completedIdsForDate }, { merge: true });
+  }
+  let pts = 0;
+  if (habit.source === "groupChallenge") {
+    pts = await awardGroupChallengePoints(currentUser.uid, habit, dateId);
+  }
+  try {
+    await writeHabitCompletion(currentUser.uid, id, dateId, true, pts, habit.challengeId || null);
+  } catch (e) { /* habitCompletions is secondary */ }
+}
+
 function init() {
   console.log("[Checkin] DOM ready, waiting for auth");
 
@@ -329,6 +418,140 @@ function init() {
   if (!todayHabitsEl) {
     console.warn("[Checkin] #todayHabits not found");
     return;
+  }
+
+  document.getElementById("daySelectorPrevWeek")?.addEventListener("click", () => {
+    daySelectorWeekOffset++;
+    const firstDate = getDateIdInWindow(daySelectorWeekOffset, 6);
+    if (isDayInPast(firstDate) || firstDate === getTodayId()) {
+      selectedDate = firstDate;
+      loadCheckinForDate(selectedDate);
+    }
+    renderDaySelector();
+    render();
+    updateProgressText();
+    const addSection = document.getElementById("addHabitsToPastSection");
+    if (addSection) addSection.hidden = !(isDayInPast(selectedDate));
+  });
+  document.getElementById("daySelectorNextWeek")?.addEventListener("click", () => {
+    if (daySelectorWeekOffset > 0) {
+      daySelectorWeekOffset--;
+      const lastDate = getDateIdInWindow(daySelectorWeekOffset, 0);
+      selectedDate = lastDate;
+      loadCheckinForDate(selectedDate);
+      renderDaySelector();
+      render();
+      updateProgressText();
+      const addSection = document.getElementById("addHabitsToPastSection");
+      if (addSection) addSection.hidden = !(isDayInPast(selectedDate));
+    }
+  });
+
+  document.getElementById("addCurrentHabitsBtn")?.addEventListener("click", async () => {
+    if (!currentUser || !selectedDate) return;
+    if (!isDayInPast(selectedDate)) {
+      showToast("Select a past day first (use ← Prev week, then click a day).");
+      return;
+    }
+    if (habits.length === 0) {
+      showToast("No habits to add. Add habits first.");
+      return;
+    }
+    const habitsAdded = checkinDataForDate?.habitsAddedForDate || [];
+    const toAdd = habits.filter((h) => {
+      const alreadyVisible = !h.createdDate || h.createdDate <= selectedDate || (h.completedDates || []).includes(selectedDate) || habitsAdded.includes(h.id);
+      return !alreadyVisible;
+    });
+    if (toAdd.length === 0) {
+      showToast("All current habits already added for this date. Tick the ones you completed.");
+      return;
+    }
+    const addBtn = document.getElementById("addCurrentHabitsBtn");
+    if (addBtn) addBtn.disabled = true;
+    try {
+      const checkinRef = getCheckinRef(selectedDate);
+      if (!checkinRef) throw new Error("Could not get checkin ref");
+      const existingAdded = habitsAdded;
+      const newIds = toAdd.map((h) => h.id);
+      const merged = [...new Set([...existingAdded, ...newIds])];
+      await setDoc(checkinRef, { habitsAddedForDate: merged }, { merge: true });
+      checkinDataForDate.habitsAddedForDate = merged;
+      showToast(`Added ${toAdd.length} habit(s). Tick the ones you completed for ${formatDateLong(selectedDate)}.`);
+      renderDaySelector();
+      render();
+      updateProgressText();
+    } catch (err) {
+      console.error("[Checkin] addCurrentHabits error", err);
+      showToast("Could not add habits: " + (err?.message || "unknown error"));
+    } finally {
+      if (addBtn) addBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("addCustomHabitsBtn")?.addEventListener("click", () => {
+    if (!currentUser || !selectedDate || !isDayInPast(selectedDate)) return;
+    showAddCustomHabitsModal(selectedDate);
+  });
+
+  let addCustomHabitsModalHandlersAttached = false;
+  function showAddCustomHabitsModal(dateId) {
+    const modal = document.getElementById("addCustomHabitsModal");
+    const dateEl = document.getElementById("addCustomHabitsDate");
+    const listEl = document.getElementById("addCustomHabitsList");
+    const cancelBtn = document.getElementById("addCustomHabitsCancelBtn");
+    const submitBtn = document.getElementById("addCustomHabitsSubmitBtn");
+    if (!modal || !listEl) return;
+    modal.dataset.addCustomDate = dateId;
+    if (dateEl) dateEl.textContent = dateId;
+    listEl.innerHTML = "";
+    const habitsAdded = checkinDataForDate?.habitsAddedForDate || [];
+    const notYetAdded = habits.filter((h) => {
+      const alreadyVisible = !h.createdDate || h.createdDate <= dateId || (h.completedDates || []).includes(dateId) || habitsAdded.includes(h.id);
+      return !alreadyVisible;
+    });
+    if (notYetAdded.length === 0) {
+      listEl.innerHTML = "<p class=\"muted-text\">All habits already added for this date.</p>";
+      if (submitBtn) submitBtn.disabled = true;
+    } else {
+      if (submitBtn) submitBtn.disabled = false;
+      notYetAdded.forEach((h) => {
+        const label = document.createElement("label");
+        label.className = "habit-check-label add-custom-habit-row";
+        label.innerHTML = `<input type="checkbox" data-habit-id="${escapeAttr(h.id)}" /> <span>${escapeHtml(h.name || "Unnamed")}</span>`;
+        listEl.appendChild(label);
+      });
+    }
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    if (!addCustomHabitsModalHandlersAttached) {
+      addCustomHabitsModalHandlersAttached = true;
+      cancelBtn?.addEventListener("click", () => { modal.hidden = true; modal.setAttribute("aria-hidden", "true"); });
+      modal.querySelector("[data-close-add-custom-habits]")?.addEventListener("click", () => { modal.hidden = true; modal.setAttribute("aria-hidden", "true"); });
+      submitBtn?.addEventListener("click", async () => {
+        const date = modal.dataset.addCustomDate;
+        if (!date) return;
+        const checked = listEl.querySelectorAll("input[type=checkbox]:checked");
+        if (checked.length === 0) { showToast("Select at least one habit."); return; }
+        modal.hidden = true;
+        modal.setAttribute("aria-hidden", "true");
+        try {
+          const checkinRef = getCheckinRef(date);
+          if (!checkinRef) throw new Error("Could not get checkin ref");
+          const habitsAdded = checkinDataForDate?.habitsAddedForDate || [];
+          const newIds = Array.from(checked).map((cb) => cb.dataset.habitId).filter(Boolean);
+          const merged = [...new Set([...habitsAdded, ...newIds])];
+          await setDoc(checkinRef, { habitsAddedForDate: merged }, { merge: true });
+          checkinDataForDate.habitsAddedForDate = merged;
+          showToast(`Added ${checked.length} habit(s). Tick the ones you completed.`);
+          renderDaySelector();
+          render();
+          updateProgressText();
+        } catch (err) {
+          console.error("[Checkin] addCustomHabits error", err);
+          showToast("Could not add habits.");
+        }
+      });
+    }
   }
 
   /** Backfill habit.completedDates from checkins (one-time migration). */
@@ -652,12 +875,18 @@ function init() {
         habit.completedDates = (habit.completedDates || []).filter((d) => d !== selectedDate);
       }
 
-      const activeHabits = getActiveHabitsForDate(selectedDate);
-      const completedIdsForDate = activeHabits
+      const completedIdsForDate = habits
         .filter((h) => (h.completedDates || []).includes(selectedDate))
         .map((h) => h.id);
+      const habitsAdded = checkinDataForDate?.habitsAddedForDate || [];
+      const visibleForDate = habits.filter((h) => {
+        const existed = !h.createdDate || h.createdDate <= selectedDate;
+        const hasCompletion = (h.completedDates || []).includes(selectedDate);
+        const wasAdded = habitsAdded.includes(h.id);
+        return existed || hasCompletion || wasAdded;
+      });
       const payload = { habitsCompleted: completedIdsForDate };
-      if (selectedDate === getTodayId() && completedIdsForDate.length === activeHabits.length) {
+      if (selectedDate === getTodayId() && visibleForDate.length > 0 && completedIdsForDate.length === visibleForDate.length) {
         payload.celebrationShown = true;
       }
       await setDoc(getCheckinRef(selectedDate), payload, { merge: true });
@@ -669,7 +898,7 @@ function init() {
         if (wasFirst) showDailyWin();
       }
 
-      const fullCompletion = activeHabits.length > 0 && completedIdsForDate.length === activeHabits.length;
+      const fullCompletion = visibleForDate.length > 0 && completedIdsForDate.length === visibleForDate.length;
       if (fullCompletion && selectedDate === getTodayId()) triggerConfetti();
 
       console.log("[Checkin] Checkbox saved:", id, isAdding, "for", selectedDate);
@@ -687,21 +916,32 @@ function init() {
         await writeToGroupFeeds(id, habit.name, isAdding, null);
       }
     }
+    let challengePoints = 0;
     if (habit.source === "groupChallenge") {
       try {
-        if (isAdding && selectedDate === getTodayId()) {
-          const pts = await awardGroupChallengePoints(currentUser.uid, habit, selectedDate);
-          if (pts > 0) {
-            showToast("+" + pts + " pts!");
-            showHabitPointsFloat(e.target, pts);
+        if (isAdding) {
+          challengePoints = await awardGroupChallengePoints(currentUser.uid, habit, selectedDate);
+          if (challengePoints > 0) {
+            showToast("+" + challengePoints + " pts!");
+            showHabitPointsFloat(e.target, challengePoints);
           }
-        } else if (!isAdding) {
-          const pts = await revokeGroupChallengePoints(currentUser.uid, habit, selectedDate);
-          if (pts > 0) showToast("-" + pts + " pts");
+        } else {
+          challengePoints = await revokeGroupChallengePoints(currentUser.uid, habit, selectedDate);
+          if (challengePoints > 0) showToast("-" + challengePoints + " pts");
         }
       } catch (err) {
         console.error("[Checkin] groupChallenge points error", err);
+        showToast("Points update failed. Try 'Sync my points' in the group.");
       }
+    }
+    try {
+      if (isAdding) {
+        await writeHabitCompletion(currentUser.uid, id, selectedDate, true, challengePoints, habit.challengeId || null);
+      } else {
+        await removeHabitCompletion(currentUser.uid, id, selectedDate);
+      }
+    } catch (err) {
+      console.error("[Checkin] habitCompletions write error", err);
     }
     if (isAdding) {
       showHabitNotesModal(habit, async (note) => {

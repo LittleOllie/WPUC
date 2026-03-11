@@ -96,6 +96,7 @@ function init() {
         name: userName,
         joinedAt: serverTimestamp(),
         role: "owner",
+        points: 0,
       });
       await addDoc(collection(db, "groups", groupId, "activity"), {
         type: "join",
@@ -150,6 +151,7 @@ function init() {
         name: userName,
         joinedAt: serverTimestamp(),
         role: "member",
+        points: 0,
       });
       await addDoc(collection(db, "groups", groupId, "activity"), {
         type: "join",

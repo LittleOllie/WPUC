@@ -31,6 +31,10 @@ service cloud.firestore {
       match /completedChallenges/{challengeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+      // Habit completions (Part 2): per-date completion records
+      match /habitCompletions/{completionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     // Challenge definitions (optional; app also has built-in defaults)
     match /challenges/{challengeId} {

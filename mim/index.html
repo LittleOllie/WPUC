@@ -38,11 +38,30 @@
       <p class="muted-text">Next badge: First Step</p>
     </section>
     <section class="card">
-      <h3 class="card-label">This Week</h3>
+      <h3 class="card-label">Select Day</h3>
+      <div class="day-selector-nav">
+        <button type="button" id="daySelectorPrevWeek" class="day-nav-arrow day-nav-arrow--prev" aria-label="Previous week">
+          <span class="day-nav-arrow-icon">←</span>
+          <span class="day-nav-arrow-label">Prev week</span>
+        </button>
+        <span id="daySelectorWeekLabel" class="day-selector-week-label"></span>
+        <button type="button" id="daySelectorNextWeek" class="day-nav-arrow day-nav-arrow--next" aria-label="Next week">
+          <span class="day-nav-arrow-label">Next week</span>
+          <span class="day-nav-arrow-icon">→</span>
+        </button>
+      </div>
       <div id="weeklyDaySelector" class="weekly-day-selector" role="tablist" aria-label="Select day to view habits"></div>
+      <div id="addHabitsToPastSection" class="add-habits-to-past" hidden>
+        <p class="card-label">Add completions to this date</p>
+        <div class="add-habits-buttons">
+          <button type="button" id="addCurrentHabitsBtn" class="button-secondary button-small">Add Current Habits</button>
+          <button type="button" id="addCustomHabitsBtn" class="button-secondary button-small">Add Custom Habits</button>
+        </div>
+      </div>
     </section>
     <section class="card" id="today">
-      <p class="card-label">Today</p>
+      <p class="card-label"><span id="selectedDateLabel">Today</span></p>
+      <p id="selectedDateFull" class="selected-date-full muted-text" aria-live="polite"></p>
 
       <div class="today-progress-header">
         <h3 id="todayProgressTitle" class="today-progress-title">Today's Progress</h3>
@@ -57,6 +76,20 @@
 
       <div id="todayHabits"><p class="today-habits-empty">Loading…</p></div>
       </section>
+
+  <!-- Add Custom Habits modal (for past days) -->
+  <div id="addCustomHabitsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addCustomHabitsModalTitle" aria-hidden="true" hidden>
+    <div class="modal-backdrop" data-close-add-custom-habits></div>
+    <div class="modal-content">
+      <h2 id="addCustomHabitsModalTitle" class="modal-title">Add habits for <span id="addCustomHabitsDate"></span></h2>
+      <p class="muted-text small-text">Select habits to add. Then tick the ones you completed for that date.</p>
+      <div id="addCustomHabitsList" class="add-custom-habits-list"></div>
+      <div class="habit-notes-modal-actions">
+        <button type="button" id="addCustomHabitsCancelBtn" class="button-ghost">Cancel</button>
+        <button type="button" id="addCustomHabitsSubmitBtn" class="button-primary">Add Selected</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Habit notes modal (when checking a habit) -->
   <div id="habitNotesModal" class="modal habit-notes-modal" role="dialog" aria-modal="true" aria-labelledby="habitNotesModalTitle" aria-hidden="true" hidden>

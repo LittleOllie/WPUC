@@ -26,10 +26,12 @@ import { IMGBB_API_KEY } from "./firebase-config.js";
 
 let acceptGroupChallengeFn = null;
 let recalculateGroupMemberPointsFn = null;
+let recalculateAllMembersInGroupFn = null;
 try {
   const m = await import("./group-challenges.js");
   acceptGroupChallengeFn = m.acceptGroupChallenge;
   recalculateGroupMemberPointsFn = m.recalculateGroupMemberPoints;
+  recalculateAllMembersInGroupFn = m.recalculateAllMembersInGroup;
 } catch (e) {
   console.warn("[Group] group-challenges not available:", e?.message);
 }
@@ -226,6 +228,21 @@ function init() {
 
   const groupPhotoInput = document.getElementById("groupPhotoInput");
   const triggerGroupPhotoInput = () => groupPhotoInput?.click();
+  document.getElementById("syncMyPointsBtn")?.addEventListener("click", async () => {
+    if (!recalculateGroupMemberPointsFn || !currentUser || !currentGroupId) return;
+    const btn = document.getElementById("syncMyPointsBtn");
+    if (btn) btn.disabled = true;
+    try {
+      await recalculateGroupMemberPointsFn(currentUser.uid, currentGroupId);
+      showToast("Points synced!");
+      refreshMembersAndLeaderboard();
+    } catch (err) {
+      showToast("Sync failed: " + (err?.message || "unknown"));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
   document.getElementById("updateGroupPhotoBtn")?.addEventListener("click", triggerGroupPhotoInput);
   document.getElementById("updateGroupPhotoSettingBtn")?.addEventListener("click", triggerGroupPhotoInput);
   groupPhotoInput?.addEventListener("change", async (e) => {
@@ -380,7 +397,9 @@ async function loadGroup() {
 
   // Sync points from actual habit completion state (fixes stale points from uncheck)
   if (recalculateGroupMemberPointsFn) {
-    await recalculateGroupMemberPointsFn(currentUser.uid, currentGroupId).catch(() => {});
+    await recalculateGroupMemberPointsFn(currentUser.uid, currentGroupId).catch((err) => {
+      console.warn("[Group] recalculateGroupMemberPoints error:", err?.message || err);
+    });
   }
 
   const descEl = document.getElementById("groupDescription");
@@ -838,11 +857,16 @@ function initCreateChallengeModal() {
     if (submitBtn) submitBtn.textContent = "Create Challenge";
   };
 
+  const startDateInput = document.getElementById("challengeStartDateInput");
+  const endDateInput = document.getElementById("challengeEndDateInput");
+
   openEditChallengeModalFn = (c) => {
     editingChallengeId = c.id;
     challengeHabits = (c.habits || []).map((h) => ({ habitId: h.habitId || "", points: h.points ?? 1 }));
     if (nameInput) nameInput.value = c.name || "";
     if (requireAcceptCheck) requireAcceptCheck.checked = c.requireAccept !== false;
+    if (startDateInput) startDateInput.value = c.startDate || "";
+    if (endDateInput) endDateInput.value = c.endDate || "";
     if (submitBtn) submitBtn.textContent = "Save Changes";
     renderHabits();
     modal.hidden = false;
@@ -903,6 +927,11 @@ function initCreateChallengeModal() {
     renderHabits();
     if (nameInput) nameInput.value = "";
     if (requireAcceptCheck) requireAcceptCheck.checked = true;
+    const today = new Date().toISOString().split("T")[0];
+    const defaultEnd = new Date();
+    defaultEnd.setDate(defaultEnd.getDate() + 14);
+    if (startDateInput) startDateInput.value = today;
+    if (endDateInput) endDateInput.value = defaultEnd.toISOString().split("T")[0];
     if (submitBtn) submitBtn.textContent = "Create Challenge";
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
@@ -929,6 +958,12 @@ function initCreateChallengeModal() {
       return;
     }
     if (!currentGroupId || !currentUser || (!isOwner && !isAdmin)) return;
+    const startDateStr = (startDateInput?.value || "").trim() || new Date().toISOString().split("T")[0];
+    const endDateStr = (endDateInput?.value || "").trim();
+    if (!endDateStr || endDateStr < startDateStr) {
+      showError("End date must be on or after start date.");
+      return;
+    }
     submitBtn.disabled = true;
     try {
       if (editingChallengeId) {
@@ -936,19 +971,22 @@ function initCreateChallengeModal() {
           name,
           habits,
           requireAccept: requireAcceptCheck?.checked !== false,
+          startDate: startDateStr,
+          endDate: endDateStr,
         });
-        showToast("Challenge updated!");
+        if (recalculateAllMembersInGroupFn) {
+          await recalculateAllMembersInGroupFn(currentGroupId).catch((err) =>
+            console.warn("[Group] recalculateAllMembers error:", err?.message)
+          );
+        }
+        showToast("Challenge updated! Leaderboard recalculated.");
       } else {
-        const today = new Date().toISOString().split("T")[0];
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 14);
-        const endDateStr = endDate.toISOString().split("T")[0];
         await addDoc(collection(db, "groups", currentGroupId, "challenges"), {
           name,
           createdBy: currentUser.uid,
           habits,
           requireAccept: requireAcceptCheck?.checked !== false,
-          startDate: today,
+          startDate: startDateStr,
           endDate: endDateStr,
           status: "active",
         });
