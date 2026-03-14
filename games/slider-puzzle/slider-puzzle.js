@@ -36,6 +36,8 @@
   let gameStarted = false;
   let puzzleImage = null;
   let boardPixelSize = 320;
+  /** Device pixel ratio for crisp canvas on HiDPI/Retina (capped to avoid huge buffers). */
+  let canvasDpr = 1;
 
   function getSolvedState() {
     const n = gridSize * gridSize;
@@ -107,6 +109,11 @@
   function drawBoard() {
     if (!canvas || !tiles.length) return;
     const ctx = canvas.getContext("2d");
+    ctx.save();
+    ctx.setTransform(canvasDpr, 0, 0, canvasDpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
     const n = gridSize * gridSize;
     const cellSize = (boardPixelSize - TILE_GAP * (gridSize + 1)) / gridSize;
     const radius = Math.min(TILE_RADIUS, Math.max(8, cellSize * 0.12));
@@ -200,6 +207,7 @@
         ctx.fillText(String(value), cx, cy);
       }
     }
+    ctx.restore();
   }
 
   function resizeCanvas() {
@@ -209,8 +217,11 @@
     const size = Math.min(rect.width || maxW, maxW);
     if (size <= 0) return;
     boardPixelSize = size;
-    canvas.width = size;
-    canvas.height = size;
+    canvasDpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = size * canvasDpr;
+    canvas.height = size * canvasDpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
     drawBoard();
   }
 

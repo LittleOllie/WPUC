@@ -134,6 +134,8 @@ body {
   width: 100%;
   height: auto;
   max-width: 100%;
+  /* Size set in JS for HiDPI; prevent stretch that would blur tiles */
+  aspect-ratio: 1 / 1;
 }
 
 .buttons-section {
