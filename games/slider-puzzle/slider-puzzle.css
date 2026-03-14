@@ -307,7 +307,7 @@ body {
 .leaderboard-popup-row {
   font-family: "Fredoka", sans-serif;
   display: grid;
-  grid-template-columns: 46px 1fr 70px;
+  grid-template-columns: 46px 1fr 82px;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
@@ -339,7 +339,18 @@ body {
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
-.leaderboard-popup-score { font-variant-numeric: tabular-nums; text-align: right; }
+.leaderboard-popup-score {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  display: block;
+  line-height: 1.35;
+}
+.leaderboard-popup-moves {
+  white-space: nowrap;
+}
+.leaderboard-sec-unit {
+  text-transform: lowercase;
+}
 
 @keyframes lo-scale-in {
   from { opacity: 0; transform: scale(0.9); }

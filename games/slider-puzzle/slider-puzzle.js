@@ -91,6 +91,12 @@
     return m + ":" + (s < 10 ? "0" : "") + s;
   }
 
+  /** Leaderboard display: "0:15s" or "—" (s wrapped so it stays lowercase under uppercase CSS) */
+  function formatTimeForLeaderboard(seconds) {
+    if (seconds == null || typeof seconds !== "number" || isNaN(seconds)) return "—";
+    return formatTime(seconds) + "<span class=\"leaderboard-sec-unit\">s</span>";
+  }
+
   function updateMoves() {
     if (movesEl) movesEl.textContent = "🔄 MOVES: " + moves;
   }
@@ -316,7 +322,7 @@
             nameSpan.textContent = score.playerName || "—";
             var scoreSpan = document.createElement("span");
             scoreSpan.className = "leaderboard-popup-score";
-            scoreSpan.textContent = (score.timeSeconds ?? "—") + "s • " + (score.moves ?? "—") + " moves";
+            scoreSpan.innerHTML = formatTimeForLeaderboard(score.timeSeconds) + "<br><span class=\"leaderboard-popup-moves\">" + (score.moves != null ? score.moves + " moves" : "—") + "</span>";
             row.appendChild(rankSpan);
             row.appendChild(nameSpan);
             row.appendChild(scoreSpan);
@@ -558,7 +564,7 @@
         nameSpan.textContent = score.playerName || "—";
         const scoreSpan = document.createElement("span");
         scoreSpan.className = "leaderboard-popup-score";
-        scoreSpan.textContent = (score.timeSeconds ?? "—") + "s • " + (score.moves ?? "—") + " moves";
+        scoreSpan.innerHTML = formatTimeForLeaderboard(score.timeSeconds) + "<br><span class=\"leaderboard-popup-moves\">" + (score.moves != null ? score.moves + " moves" : "—") + "</span>";
         row.appendChild(rankSpan);
         row.appendChild(nameSpan);
         row.appendChild(scoreSpan);
