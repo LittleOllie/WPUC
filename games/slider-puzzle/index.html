@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Slider Puzzle – LO Arcade</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="slider-puzzle.css" />
+</head>
+<body>
+  <header class="puzzle-header">
+    <img src="assets/slider_header1.png" alt="" class="puzzle-header-img" />
+  </header>
+  <p class="subtitle">Rearrange The Tiles To Complete The Picture.</p>
+
+  <div class="difficulty-row">
+    <label for="difficulty-select">Difficulty:</label>
+    <select id="difficulty-select" aria-label="Difficulty">
+      <option value="3">Easy (3×3)</option>
+      <option value="4">Medium (4×4)</option>
+      <option value="5">Hard (5×5)</option>
+    </select>
+  </div>
+
+  <div class="game-info">
+    <span id="moves-display" class="game-info-pill">🔄 MOVES: 0</span>
+    <span id="timer-display" class="game-info-pill">⏱ TIME: 0:00</span>
+  </div>
+
+  <div class="puzzle-wrap">
+    <div id="puzzle-board-wrap" class="puzzle-board-wrap">
+      <canvas id="puzzle-canvas" width="320" height="320"></canvas>
+    </div>
+  </div>
+
+  <div class="buttons-section">
+    <div class="button-row button-row-images" aria-label="Image options">
+      <button type="button" id="btn-new-image">New Random Image</button>
+      <button type="button" id="uploadImageBtn">Upload Your Own Image</button>
+    </div>
+    <div class="button-row-single">
+      <button type="button" id="leaderboardBtn" class="btn-leaderboard-full">🏆 Leaderboard</button>
+    </div>
+    <div class="button-row-nav">
+      <a href="/games.html" class="btn-back-link">← Back To LO Arcade</a>
+    </div>
+  </div>
+  <input type="file" id="imageUpload" accept="image/*" style="display: none" aria-hidden="true" />
+
+  <div id="leaderboardModal" class="leaderboard-overlay hidden" aria-hidden="true">
+    <div class="leaderboard-card">
+      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules" style="visibility: hidden;">Rules</button>
+      <img src="assets/slider_header1.png" class="leaderboard-logo" alt="Slider Puzzle" />
+      <h2 class="leaderboard-title">Leaderboard</h2>
+      <div class="leaderboard-tabs">
+        <button type="button" data-diff="easy">Easy</button>
+        <button type="button" data-diff="medium">Medium</button>
+        <button type="button" data-diff="hard">Hard</button>
+      </div>
+      <div id="leaderboardList" class="leaderboard-list-popup"></div>
+      <div id="sliderLeaderboardSubmitSection" class="leaderboard-submit-section hidden">
+        <p class="leaderboard-submit-heading">🎉 YOU COMPLETED THE PUZZLE!</p>
+        <p id="sliderLeaderboardYourScore" class="leaderboard-your-score">YOUR TIME: 0:00 • MOVES: 0</p>
+        <input type="text" id="sliderLeaderboardNameInput" placeholder="YOUR NAME" maxlength="30" autocomplete="nickname" />
+        <div class="leaderboard-submit-actions">
+          <button type="button" id="sliderLeaderboardSubmitBtn" class="btn-lo-yellow">SUBMIT SCORE</button>
+          <button type="button" id="sliderLeaderboardPlayAgainBtn" class="btn-lo-secondary">PLAY AGAIN</button>
+        </div>
+        <p id="sliderLeaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
+      </div>
+      <button type="button" id="closeLeaderboard" class="btn-lo-yellow">Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="leaderboard-slider.js"></script>
+  <script defer src="slider-puzzle.js"></script>
+</body>
+</html>
