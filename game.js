@@ -10,7 +10,7 @@ import {
   renderTop10,
   renderLeaderboardPopup,
   MIN_LEADERBOARD_SCORE,
-} from "./leaderboard.js";
+} from "./scripts/leaderboard.js";
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
