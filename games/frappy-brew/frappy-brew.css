@@ -1,0 +1,271 @@
+:root {
+  --lo-blue: #4C6FFF;
+  --lo-yellow: #FFDD55;
+  --lo-bg-top: #6DE0FF;
+  --lo-bg-bottom: #4C6FFF;
+  --lo-blue-start: #6DE0FF;
+  --lo-blue-end: #4C6FFF;
+  --game-aspect: 480 / 640; /* portrait, no stretch */
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Fredoka", sans-serif;
+  /* Fallback: same gradient as One Button Hero / links when image hasn’t loaded */
+  background: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-bg-bottom) 100%);
+  color: #ffffff;
+}
+
+.page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Same full-screen sky background as One Button Hero and links/games */
+.frappy-bg {
+  position: fixed;
+  inset: 0;
+  background-image: url("../../assets/mainbg.webp");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.frappy-bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.45) 50%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+  z-index: 1;
+}
+
+/* Full-screen game layout: viewport fills screen, canvas letterboxed (no stretch) */
+.page-fullscreen {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Canvas wrap: fixed aspect 480:640, fits in viewport — no stretching, letterbox/pillarbox */
+.canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  /* Largest rect with aspect 480/640 that fits in viewport */
+  width: min(100vw, 100vh * 0.75);
+  height: min(100vh, 100vw / 0.75);
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.hud-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: max(12px, env(safe-area-inset-top)) 12px 12px;
+  pointer-events: none;
+}
+
+.hud-overlay .hud-pill {
+  pointer-events: auto;
+}
+
+.btn-back-float {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 25;
+  text-decoration: none;
+  padding: 9px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-back-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
+}
+
+.controls-hint-float {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  z-index: 15;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+
+.hud {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+}
+
+.hud-pill span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.overlay-card {
+  max-width: 360px;
+  width: 90%;
+  background: rgba(0, 0, 0, 0.78);
+  border-radius: 18px;
+  padding: 16px 16px 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+  pointer-events: auto;
+}
+
+.overlay-card .loading-text {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.overlay-card .ready-title,
+.overlay-card .ready-desc {
+  display: none;
+}
+
+.overlay-card h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.overlay-card p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.overlay-card.hidden {
+  display: none;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: none;
+  font-family: "Fredoka", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(180deg, #FFE986 0%, var(--lo-yellow) 90%);
+  color: #1a1a2e;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.02em;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.8);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 480px) {
+  .hud-overlay {
+    gap: 6px;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  .hud-pill {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .controls-hint-float {
+    font-size: 10px;
+  }
+
+  .btn-back-float {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}
+
