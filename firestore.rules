@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public arcade leaderboard: scores only (no auth, localhost/testing)
+    // One Button Hero: public arcade leaderboard (name, score, createdAt)
     match /scores/{scoreId} {
       allow read: if true;
       allow create: if request.resource.data.keys().hasAll(['name', 'score', 'createdAt'])
@@ -17,6 +17,47 @@ service cloud.firestore {
         && request.resource.data.score >= 0
         && request.resource.data.score <= 100000;
       allow delete: if false;
+    }
+
+    // Slider Puzzle: leaderboards per difficulty (playerName, difficulty, timeSeconds, moves, createdAt)
+    match /leaderboards/slider_easy/entries/{entryId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['playerName', 'difficulty', 'timeSeconds', 'moves', 'createdAt'])
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() <= 30
+        && request.resource.data.difficulty == 'easy'
+        && request.resource.data.timeSeconds is number
+        && request.resource.data.timeSeconds >= 0
+        && request.resource.data.moves is number
+        && request.resource.data.moves >= 0
+        && request.resource.data.createdAt is number;
+      allow update, delete: if false;
+    }
+    match /leaderboards/slider_medium/entries/{entryId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['playerName', 'difficulty', 'timeSeconds', 'moves', 'createdAt'])
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() <= 30
+        && request.resource.data.difficulty == 'medium'
+        && request.resource.data.timeSeconds is number
+        && request.resource.data.timeSeconds >= 0
+        && request.resource.data.moves is number
+        && request.resource.data.moves >= 0
+        && request.resource.data.createdAt is number;
+      allow update, delete: if false;
+    }
+    match /leaderboards/slider_hard/entries/{entryId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['playerName', 'difficulty', 'timeSeconds', 'moves', 'createdAt'])
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() <= 30
+        && request.resource.data.difficulty == 'hard'
+        && request.resource.data.timeSeconds is number
+        && request.resource.data.timeSeconds >= 0
+        && request.resource.data.moves is number
+        && request.resource.data.moves >= 0
+        && request.resource.data.createdAt is number;
+      allow update, delete: if false;
     }
   }
 }
