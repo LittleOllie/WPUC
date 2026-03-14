@@ -1,0 +1,12 @@
+/* Global styles – LO Arcade */
+:root {
+  --lo-blue: #4C6FFF;
+  --lo-yellow: #FFDD55;
+  --lo-bg-top: #6DE0FF;
+  --lo-bg-bottom: #4C6FFF;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
