@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  base-uri 'self';
+  object-src 'none';
+
+  img-src
+    'self'
+    data:
+    blob:
+    https://loflexgrid.littleollienft.workers.dev
+    https://nft-cdn.alchemy.com
+    https://cloudflare-ipfs.com
+    https://ipfs.io
+    https://nftstorage.link
+    https://w3s.link
+    https://dweb.link;
+
+  style-src
+    'self'
+    'unsafe-inline'
+    https://fonts.googleapis.com;
+
+  font-src
+    'self'
+    https://fonts.gstatic.com
+    data:;
+
+  script-src
+    'self'
+    'unsafe-inline';
+
+  connect-src
+    'self'
+    http://localhost:3000
+    https://*.alchemy.com
+    https://api.zora.co
+    https://loflexgrid.littleollienft.workers.dev;
+">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Little Ollie Flex Grid</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles/style.css">
+  <!-- Inline styles removed - see src/styles/style.css -->
+</head>
+
+<body>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="lo-orbit-wrap">
+      <div class="lo-orbit-ring"><img src="src/assets/images/LO.png" class="lo-orbit-img" alt="" aria-hidden="true"></div>
+      <div>
+        <div id="loadingOverlayText" class="lo-message"></div>
+        <div id="loadingOverlayProgress" class="lo-progress"></div>
+        <div class="lo-progress-bar-wrap">
+          <div id="loadingOverlayBar" class="lo-progress-bar-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      </div>
+    </div>
+    <div class="lo-spinner" aria-hidden="true"></div>
+  </div>
+  <div class="wrap container">
+
+    <div class="heroHeader">
+      <img src="src/assets/images/dad.png" class="headerLeft" alt="Dad" loading="eager" />
+      <img src="src/assets/images/header.png" class="headerImg" alt="Little Ollie Header" />
+      <img src="src/assets/images/LO.png" class="headerLogo" alt="Little Ollie" />
+    </div>
+
+    <section class="panel" id="setupPanel">
+      <div class="topSection">
+
+        <!-- Add wallet section -->
+        <div class="walletSection">
+          <label class="lbl">Add wallet</label>
+          <div class="walletInputRow">
+            <input
+              id="walletInput"
+              class="input guideGlow"
+              placeholder="Paste wallet address (0x...) then add"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              inputmode="text"
+            />
+            <button id="addWalletBtn" class="btn guideGlow" type="button">
+              ➕ Add wallet
+            </button>
+          </div>
+          <div id="walletList" class="walletList" style="display:none;"></div>
+          <div id="walletEmptyState" class="emptyState">👋 Add your first wallet to get started</div>
+          <div class="hint walletHint">Add multiple wallets, then load them all together.</div>
+        </div>
+
+        <!-- Chain + Grid size (below wallet, side by side) -->
+        <div class="chainGridRow">
+          <div>
+            <label class="lbl">Chain</label>
+            <select id="chainSelect" class="input">
+              <option value="eth" selected>Ethereum</option>
+              <option value="base">Base</option>
+              <option value="polygon">Polygon (Coming Soon)</option>
+              <option value="apechain">ApeChain (Coming Soon)</option>
+              <option value="solana">Solana (Coming Soon)</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Grid size</label>
+            <select id="gridSize" class="input">
+              <option value="auto" selected>Auto (fit selected NFTs)</option>
+              <option value="9">3×3 (9)</option>
+              <option value="16">4×4 (16)</option>
+              <option value="25">5×5 (25)</option>
+              <option value="36">6×6 (36)</option>
+              <option value="49">7×7 (49)</option>
+              <option value="100">10×10 (100)</option>
+              <option value="custom">Custom Rows × Cols…</option>
+            </select>
+          </div>
+        </div>
+        <div id="customGridWrap" style="display:none; margin-top:10px;">
+          <label class="lbl">Custom grid</label>
+          <div class="row two" style="margin:0;">
+            <div>
+              <label class="lbl" style="margin-top:0;">Columns</label>
+              <input id="customCols" class="input" type="number" min="1" max="50" value="6" placeholder="Cols (e.g. 8)" />
+            </div>
+            <div>
+              <label class="lbl" style="margin-top:0;">Rows</label>
+              <input id="customRows" class="input" type="number" min="1" max="50" value="6" placeholder="Rows (e.g. 5)" />
+            </div>
+          </div>
+          <div class="hint">Builds a Rows × Columns grid. Export will match this shape.</div>
+        </div>
+
+      </div>
+
+      <div class="actionRow">
+        <button id="loadBtn" class="btn" type="button" disabled>🔍 Load wallet(s)</button>
+        <button id="buildBtn" class="btn" type="button" disabled>🧩 Build grid</button>
+        <button id="exportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
+        <button id="themeToggle" class="btn" type="button">🌙 Dark Mode</button>
+        <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0; flex-wrap: wrap;">
+        <div id="connectionStatus" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px;">
+          <div id="connectionLight" style="width: 12px; height: 12px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px rgba(244, 67, 54, 0.75);"></div>
+          <span id="connectionText" style="font-size: 13px; font-weight: 700; color: #f44336;">Not Connected</span>
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <div id="status" class="status"></div>
+          <div id="imageProgressBarWrap" style="display:none;">
+            <div id="imageProgressBar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Error Log -->
+      <div id="errorLog" style="display: none; margin-top: 12px; padding: 12px; background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 14px; font-weight: 900; color: #f44336;">⚠️ Error Log</span>
+          <button id="clearErrorLog" style="margin-left: auto; padding: 4px 8px; font-size: 11px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.4); border-radius: 6px; color: #f44336; cursor: pointer;">Clear</button>
+        </div>
+        <div id="errorLogContent" style="max-height: 200px; overflow-y: auto; font-family: 'Monaco', 'Courier New', monospace; font-size: 11px; line-height: 1.6;">
+          <!-- Errors will be added here -->
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="controlsPanel">
+      <label class="lbl">Collections</label>
+      <div class="collectionsCard">
+        <div class="collectionsCardGrid">
+          <div class="collectionsRow">
+            <div class="searchWrap">
+              <input id="collectionSearch" class="input" placeholder="Search collections..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+              <div class="hint">Select collections to include. (Starts unchecked)</div>
+            </div>
+            <div class="collectionsRowBtns">
+              <button class="btn btnSmall" type="button" id="selectAllBtn">✅ Select all</button>
+              <button class="btn btnSmall" type="button" id="selectNoneBtn">🚫 Select none</button>
+            </div>
+          </div>
+          <div class="collectionsRow">
+            <div class="addContractInputWrap" style="min-width:0; flex:1;">
+              <input id="addContractInput" class="input" placeholder="Add missing collection: paste contract (0x...)" style="width:100%;" autocomplete="off" autocapitalize="none" spellcheck="false" />
+              <span id="addContractStatus" class="hint" style="display:block; margin-top:4px;"></span>
+            </div>
+            <button class="btn btnSmall" type="button" id="addContractBtn">➕ Add collection</button>
+          </div>
+        </div>
+
+        <div id="collectionsEmptyState" class="emptyState" style="display:none;">👇 Select collections to build your grid</div>
+        <div id="collectionsList" class="collectionList"></div>
+      </div>
+    </section>
+
+<section class="stageWrap" id="gridPanel">
+      <div id="stage" class="stage">
+        <div class="stageHeader">
+<div id="stageTitle" class="stageTitle">
+  Little Ollie Flex Grid
+  <span class="titleHint">Edit size • Drag to reorder</span>
+</div>
+          <div id="stageMeta" class="stageMeta"></div>
+        </div>
+
+        <div class="gridWrap">
+  <div id="grid" class="grid"></div>
+
+  <!-- ✅ watermark (LIVE) -->
+<img
+  id="wmGrid"
+  class="watermarkGrid"
+  src="src/assets/images/pblo.png"
+  alt="Powered by Little Ollie Studio"
+  style="display:none;"
+/>
+
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Collection search filter (unchanged) -->
+  <script>
+    (function(){
+      const $ = (id)=>document.getElementById(id);
+      const list = $("collectionsList");
+      const search = $("collectionSearch");
+
+      if (search && list){
+        search.addEventListener("input", () => {
+          const q = search.value.trim().toLowerCase();
+          const items = Array.from(list.children);
+          items.forEach(el => {
+            const txt = (el.innerText || "").toLowerCase();
+            el.style.display = (!q || txt.includes(q)) ? "" : "none";
+          });
+        });
+      }
+    })();
+  </script>
+
+  <!-- ✅ always shows/hides custom grid UI correctly -->
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const gridSize = document.getElementById("gridSize");
+      const wrap = document.getElementById("customGridWrap");
+      if(!gridSize || !wrap) return;
+
+      const sync = () => {
+        wrap.style.display = (gridSize.value === "custom") ? "" : "none";
+      };
+      gridSize.addEventListener("change", sync);
+      sync();
+    });
+  </script>
+
+  <!-- ✅ Watermark auto-scale + lock width to 1 tile (fixes overlap into tile #2) -->
+<script>
+  (function(){
+    const key = "lo_theme";
+    const btn = document.getElementById("themeToggle");
+    if(!btn) return;
+
+    const setLabel = () => {
+      btn.textContent = document.body.classList.contains("dark")
+        ? "☀️ Light Mode"
+        : "🌙 Dark Mode";
+    };
+
+    // 1) Load saved theme, otherwise use system preference
+    const saved = localStorage.getItem(key);
+    if(saved === "dark"){
+      document.body.classList.add("dark");
+    }else if(saved === "light"){
+      document.body.classList.remove("dark");
+    }else{
+      // No saved preference -> match device
+      if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.body.classList.add("dark");
+      }
+    }
+    setLabel();
+
+    // 2) Toggle on click + persist
+    btn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+      localStorage.setItem(key, document.body.classList.contains("dark") ? "dark" : "light");
+      setLabel();
+    });
+  })();
+</script>
+ 
+<script type="module" src="src/js/app.js"></script>
+</body>
+</html>

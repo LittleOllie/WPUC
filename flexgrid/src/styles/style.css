@@ -1,0 +1,1084 @@
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    :root{
+      --bg1:#6de0ff; --bg2:#4c6fff;
+      --panel: rgba(0,0,0,.18);
+      --panel2: rgba(0,0,0,.22);
+      --stroke: rgba(255,255,255,.16);
+      --shadow: 0 14px 34px rgba(0,0,0,.35);
+
+      --btnYellow:#ffdd55;
+      --btnYellow2:#ffd22e;
+      --btnText:#222;
+
+      --muted: rgba(255,255,255,.85);
+      --loBlueLine: rgba(109,224,255,0.70);
+
+      /* ✅ Watermark scale (JS updates this) */
+      --wmScale: 1;
+    }
+
+    html,body{ height:100%; margin:0; }
+body{
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: radial-gradient(circle at top, var(--bg1), var(--bg2));
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding: 12px 0 16px;
+  overscroll-behavior:none;
+}
+
+
+    .container{
+      max-width:1100px;
+      margin:0 auto;
+      padding:20px;
+      width:100%;
+      box-sizing:border-box;
+    }
+    .wrap.container{ width:100%; }
+
+    .heroHeader{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      width:100%;
+      margin:0 0 8px;
+      height:130px;
+    }
+    .heroHeader .headerImg{
+      height:100%;
+      width:auto;
+      max-width:55%;
+      display:block;
+      border-radius:14px;
+      filter:drop-shadow(0 12px 24px rgba(0,0,0,.3));
+      object-fit:contain;
+    }
+    .heroHeader .headerLogo,
+    .heroHeader .headerLeft{
+      height:100%;
+      width:auto;
+      min-width:50px;
+      display:block;
+      object-fit:contain;
+      border-radius:14px;
+      flex-shrink:0;
+    }
+    @media (max-width: 520px){
+      .heroHeader{ height:100px; gap:6px; }
+    }
+
+    .panel{
+      width:100%;
+      background: linear-gradient(180deg, var(--panel2), var(--panel));
+      border: 1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 8px 0;
+      backdrop-filter: blur(8px);
+    }
+
+    .lbl{
+      display:block;
+      font-weight: 850;
+      font-size: 12px;
+      letter-spacing:.3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 2px 0 6px;
+    }
+
+    .row{ margin-bottom: 8px; }
+    .topSection{
+      display:flex;
+      flex-direction:column;
+      gap: 20px;
+      margin-bottom: 8px;
+    }
+    .walletInputRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .walletInputRow .input{ flex:1; min-width:0; }
+    .chainGridRow{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 520px){
+      .chainGridRow{ grid-template-columns: 1fr; }
+    }
+    .row.two{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .row.two{ grid-template-columns: 1fr; }
+    }
+
+    .input{
+      width:100%;
+      border-radius: 14px;
+      padding: 12px 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(76,111,255,.20);
+      color:#fff;
+      outline:none;
+      font-size: 14px;
+    }
+    .input::placeholder{ color: rgba(255,255,255,.70); }
+
+    /* ✅ iPhone zoom fix: any input/select under 16px causes Safari zoom on focus */
+    @media (max-width: 900px){
+      .input{ font-size: 16px; }
+    }
+
+    select.input{
+      appearance:none;
+      background-color: rgba(76,111,255,.20);
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(255,255,255,.85) 50%),
+        linear-gradient(135deg, rgba(255,255,255,.85) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(1em + 2px),
+        calc(100% - 13px) calc(1em + 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat:no-repeat;
+      padding-right: 32px;
+    }
+    select.input option{
+      background: #4c6fff;
+      color: #fff;
+    }
+
+    .btn{
+      border:0;
+      border-radius: 15px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: 950;
+      letter-spacing: .2px;
+      background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+      color: var(--btnText);
+      cursor:pointer;
+      box-shadow: 0 10px 18px rgba(0,0,0,.25);
+      transition: transform .06s ease, opacity .15s ease;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    .actions{
+      display:flex;
+      gap:12px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content:space-evenly;
+    }
+    .actionRow{
+      display:flex;
+      justify-content:center;
+      flex-wrap: wrap;
+      gap:12px;
+      margin:16px 0 8px;
+    }
+    .actionRow .btn{
+      flex:1;
+      min-width:120px;
+      padding:14px 16px;
+      font-size:15px;
+    }
+    .collectionsCard{
+      padding:16px;
+      border-radius:16px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      margin-top:8px;
+    }
+    .collectionsCard .collectionsTop{ margin-bottom:8px; }
+    .collectionsCardGrid{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .collectionsRow{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .collectionsRow .searchWrap,
+    .collectionsRow .addContractInputWrap{ flex:1; min-width:180px; }
+    .collectionsRowBtns{
+      display:flex;
+      gap:10px;
+      flex-shrink:0;
+      align-items:center;
+    }
+    .collectionsRow #selectAllBtn,
+    .collectionsRow #selectNoneBtn,
+    .collectionsRow #addContractBtn{ min-width:130px; }
+    @media (max-width: 600px){
+      .collectionsRow{ flex-direction:column; }
+      .collectionsRow .searchWrap,
+      .collectionsRow .addContractInputWrap{ min-width:0; }
+    }
+
+    .status{
+      margin-top: 10px;
+      color: rgba(255,255,255,.95);
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    #imageProgressBarWrap{
+      width:100%;
+      height:10px;
+      background:rgba(255,255,255,0.15);
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:6px;
+    }
+    #imageProgressBar{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#ff4d4d,#ffd84d,#4caf50);
+      border-radius:999px;
+      transition:width 0.3s ease;
+    }
+
+    /* Multi-wallet UI */
+    .walletTools{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      align-items:center;
+      margin-top: 8px;
+    }
+    .walletList{
+      margin-top: 10px;
+      background: rgba(76,111,255,.14);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .walletChip{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      margin-bottom: 8px;
+    }
+    .walletChip:last-child{ margin-bottom:0; }
+    .walletAddr{
+      font-weight: 900;
+      font-size: 13px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .walletMeta{
+      font-size: 12px;
+      opacity: .9;
+    }
+    .chipBtns{ display:flex; gap:8px; flex:0 0 auto; }
+    .btnSmall{
+      border:0;
+      border-radius: 13px;
+      padding: 9px 12px;
+      font-size: 15px;
+      font-weight: 950;
+      background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+      color: var(--btnText);
+      cursor:pointer;
+      box-shadow: 0 10px 18px rgba(0,0,0,.18);
+      white-space: nowrap;
+    }
+
+    /* Collections */
+    .collectionsTop{
+      display:flex;
+      gap:10px;
+      align-items:end;
+      flex-wrap: wrap;
+    }
+    .collectionsTop .searchWrap{
+      flex: 1 1 320px;
+      min-width: 220px;
+    }
+    .collectionsTop .miniBtns{
+      display:flex;
+      gap:10px;
+      flex: 0 0 auto;
+    }
+
+    .collectionList{
+      margin-top: 10px;
+      background: rgba(76,111,255,.14);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+      padding: 10px;
+      max-height: 280px;
+      overflow:auto;
+    }
+    .collectionItem{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      margin-bottom: 8px;
+    }
+    .collectionItem:last-child{ margin-bottom: 0; }
+    .collectionItem input[type="checkbox"]{
+      width:20px; height:20px;
+      accent-color: var(--btnYellow);
+      cursor:pointer;
+      flex: 0 0 auto;
+    }
+    .collectionName{ font-weight: 900; line-height: 1.15; }
+    .collectionCount{ font-size: 12px; opacity: .88; margin-top: 2px; }
+    .hint{ font-size: 12px; opacity:.9; margin-top: 6px; }
+
+    /* Stage */
+    .stageWrap{ margin-top: 8px; }
+    .stage{
+      position:relative;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .stageHeader{
+      padding: 10px 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.12);
+    }
+    .stageTitle{ font-weight: 950; letter-spacing: .2px; }
+    .stageMeta{ font-size: 12px; opacity:.95; text-align:right; }
+
+    /* Grid */
+    .gridWrap{ position: relative; }
+    .grid{
+      display:grid;
+      gap:0 !important;
+      background: rgba(0,0,0,.08);
+    }
+    .tile{
+      position:relative;
+      width:100%;
+      aspect-ratio: 1/1;
+      overflow:hidden;
+      border-radius: 0 !important;
+      background: rgba(0,0,0,.10);
+    }
+    .tile img{
+      width:102%;
+      height:102%;
+      object-fit: cover;
+      display:block;
+      margin:-1%;
+      border-radius: 0 !important;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .fillerText{
+      width:100%; height:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-weight: 950;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,0.92);
+      background: rgba(0,0,0,0.22);
+      font-size: 22px;
+    }
+
+    /* ✅ Watermark */
+.watermarkGrid{
+  position:absolute;
+  left:0;
+  top:0;
+  z-index:9999;
+  pointer-events:none;
+
+  display:block;
+  width: 80px;     /* JS will overwrite */
+  height: auto;
+
+  /* optional: make it crisp */
+  image-rendering: auto;
+}
+
+
+    /* Drag visuals */
+    .tile.dragging{ opacity:.55; }
+    .tile.dropTarget{ outline: 2px solid rgba(255,221,85,0.95); outline-offset:-2px; }
+    .tile:not(.dragging):hover{
+      transform:scale(1.03);
+      transition:transform 0.15s ease;
+    }
+    .tile[data-kind="empty"]{
+      background:#ffffff !important;
+      background-image:none !important;
+      border:2px dashed rgba(0,0,0,0.1);
+    }
+/* ===== BUTTONS UPGRADE (OVERRIDE) ===== */
+.btn, .btnSmall{
+  border: 1px solid rgba(255,255,255,.25);
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  box-shadow:
+    0 10px 18px rgba(0,0,0,.25),
+    inset 0 2px 0 rgba(255,255,255,.35);
+  transform: translateY(0);
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+}
+
+.btn:hover, .btnSmall:hover{
+  filter: brightness(1.05);
+}
+
+.btn:active, .btnSmall:active{
+  transform: translateY(1px) scale(.99);
+  box-shadow:
+    0 8px 14px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+.btn:disabled{
+  opacity: .55;
+  cursor:not-allowed;
+  box-shadow: none;
+  border-color: rgba(255,255,255,.18);
+}
+
+/* Action rows - all buttons same size and style */
+@media (max-width: 520px){
+  .actionRow{ flex-direction: column; align-items: stretch; }
+  .actionRow .btn{ width: 100%; min-width: 0; }
+}
+/* =========================================
+   Collections: compact scroll + nicer rows
+   (CSS-only, does NOT affect JS buttons)
+   ========================================= */
+
+/* Make the collections panel more compact overall */
+#controlsPanel.panel{
+  padding: 12px;
+}
+
+/* Keep the top row (search + buttons) tidy */
+.collectionsTop{
+  align-items: center;
+  gap: 10px;
+}
+
+/* ✅ Scroll menu: smaller height + smoother */
+.collectionList{
+  max-height: 220px;     /* was 280px — makes it compact */
+  overflow: auto;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(76,111,255,.12);
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+/* ✅ Optional: make it 2 columns on desktop so it's more compact */
+@media (min-width: 860px){
+  .collectionList{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .collectionItem{
+    margin-bottom: 0 !important; /* since grid uses gap */
+  }
+}
+
+/* Row styling */
+.collectionItem{
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px;
+}
+
+/* Put name + count on ONE line nicely */
+.collectionItem > div{
+  min-width: 0;
+}
+
+/* Make name and count sit together */
+.collectionName{
+  display: inline;
+  font-weight: 950;
+  font-size: 13px;
+  line-height: 1.15;
+  margin-right: 8px;
+}
+
+/* ✅ Count becomes a pill badge next to name */
+.collectionCount{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.16);
+  opacity: 1; /* override previous opacity */
+  margin-top: 0;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Checkbox: slightly nicer */
+.collectionItem input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+}
+
+/* =========================================
+   Make the lower page keep the “blue vibe”
+   ========================================= */
+
+/* Stage background to match body blue gradient more */
+.stage{
+  background: radial-gradient(circle at top, rgba(109,224,255,.25), rgba(76,111,255,.28)) !important;
+  border-color: rgba(255,255,255,.18);
+}
+
+/* Grid area slightly bluer (instead of grey/black) */
+.grid{
+  background: rgba(76,111,255,.10);
+}
+
+/* Tiles slightly clearer against blue */
+.tile{
+  background: rgba(0,0,0,.12);
+}
+/* ==========================
+   LO FUN HEADINGS
+   ========================== */
+
+h1, h2, .stageTitle{
+  letter-spacing: .5px;
+  text-shadow:
+    0 2px 0 rgba(0,0,0,.35),
+    0 4px 10px rgba(0,0,0,.35);
+}
+
+/* Main page title pop */
+h1{
+  font-size: 26px;
+}
+
+/* Sub headings */
+h2{
+  font-size: 20px;
+}
+
+/* Stage header (grid title) */
+.stageTitle{
+  font-size: 18px;
+}
+/* FORCE Baloo everywhere (wins over earlier rules) */
+html, body, button, input, select, textarea {
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+/* ==========================
+   LO ARCADE MOTION (CSS ONLY)
+   Safe: no functionality changes
+   ========================== */
+
+/* 1) Background shimmer */
+body::before{
+  content:"";
+  position: fixed;
+  inset: -40%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.14), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,.10), transparent 45%),
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,.07) 25%, transparent 50%);
+  filter: blur(20px);
+  opacity: .35;
+  transform: translate3d(0,0,0);
+  animation: loShimmer 10s ease-in-out infinite;
+}
+
+@keyframes loShimmer{
+  0%   { transform: translate(-6%, -4%) rotate(0deg); }
+  50%  { transform: translate(6%, 4%) rotate(8deg); }
+  100% { transform: translate(-6%, -4%) rotate(0deg); }
+}
+
+/* 2) Panels: soft breathing glow */
+.panel{
+  position: relative;
+}
+.panel::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: 18px;
+  pointer-events:none;
+  background: radial-gradient(circle at top, rgba(109,224,255,.25), transparent 55%);
+  opacity:.35;
+  animation: panelGlow 4.5s ease-in-out infinite;
+}
+@keyframes panelGlow{
+  0%,100%{ opacity:.22; }
+  50%    { opacity:.42; }
+}
+
+/* 3) Buttons: gentle sparkle pulse (idle) */
+.btn, .btnSmall{
+  position: relative;
+  overflow: hidden;
+}
+.btn::after, .btnSmall::after{
+  content:"";
+  position:absolute;
+  top:-40%;
+  left:-60%;
+  width: 50%;
+  height: 180%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 50%, transparent 100%);
+  transform: rotate(18deg);
+  opacity: 0;
+animation: none !important;
+  pointer-events:none;
+}
+@keyframes btnSweep{
+  0%,55% { left:-60%; opacity:0; }
+  60%    { opacity:.25; }
+  85%    { left:130%; opacity:.10; }
+  100%   { left:130%; opacity:0; }
+}
+
+/* 4) Stage header “scan” sweep */
+.stageHeader{
+  position: relative;
+  overflow: hidden;
+}
+.stageHeader::after{
+  content:"";
+  position:absolute;
+  inset:-40% -60%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.18) 40%, transparent 70%);
+  transform: rotate(12deg);
+  animation: headerSweep 5.5s ease-in-out infinite;
+  pointer-events:none;
+  opacity:.22;
+}
+@keyframes headerSweep{
+  0%,60% { transform: translateX(-40%) rotate(12deg); opacity:0; }
+  70%    { opacity:.22; }
+  100%   { transform: translateX(40%) rotate(12deg); opacity:0; }
+}
+
+/* ==========================
+   Primary CTA pulse (guides user to next step)
+   ========================== */
+.primaryCTA {
+  animation: pulseCTALight 1.4s ease-in-out infinite;
+}
+body.dark .primaryCTA {
+  animation: pulseCTADark 1.4s ease-in-out infinite;
+}
+@keyframes pulseCTALight {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.3), 0 0 18px rgba(255, 220, 80, 0.65), 0 10px 18px rgba(0,0,0,.25);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 42px rgba(255, 240, 100, 1), 0 10px 18px rgba(0,0,0,.25);
+  }
+}
+@keyframes pulseCTADark {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 1px rgba(0,255,213,.4), 0 0 20px rgba(0, 255, 213, 0.65), 0 10px 18px rgba(0,0,0,.35);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px rgba(0,255,213,.75), 0 0 48px rgba(0, 255, 230, 1), 0 10px 18px rgba(0,0,0,.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .primaryCTA {
+    animation: none;
+    transform: scale(1.03);
+    box-shadow: 0 0 20px rgba(255, 200, 50, 0.65);
+  }
+  body.dark .primaryCTA {
+    box-shadow: 0 0 24px rgba(0, 255, 213, 0.6);
+  }
+}
+
+/* ==========================
+   Button hierarchy
+   ========================== */
+.btnPrimary {
+  min-width: 176px;
+  padding: 15px 20px;
+  font-size: 17px;
+}
+.btnSecondary {
+  padding: 9px 12px;
+  font-size: 13px;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.88);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.btnSecondary:hover {
+  background: rgba(255,255,255,.15);
+}
+body.dark .btnSecondary {
+  background: rgba(0,255,213,.08);
+  border-color: rgba(0,255,213,.25);
+  color: rgba(0,255,213,.95);
+}
+
+/* ==========================
+   Empty states
+   ========================== */
+.emptyState {
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(255,255,255,.9);
+  padding: 14px 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Pulse retry button when images failed */
+.pulseAlert{
+  animation:pulseGlow 1.5s ease-in-out infinite;
+}
+@keyframes pulseGlow{
+  0%,100%{ box-shadow:0 0 0 rgba(255,0,0,0.5); }
+  50%{ box-shadow:0 0 14px rgba(255,0,0,0.85); }
+}
+@media (prefers-reduced-motion: reduce){
+  .pulseAlert{ animation:none; }
+}
+
+/* Smooth transitions (selective for performance) */
+.tile,.btn,.btnSmall,.panel,.heroHeader{
+  transition:transform 0.2s ease,box-shadow 0.2s ease,opacity 0.2s ease,border-color 0.2s ease;
+}
+
+/* Respect reduced motion (important for accessibility) */
+@media (prefers-reduced-motion: reduce){
+  body::before,
+  .panel::after,
+  .btn::after, .btnSmall::after,
+  .stageHeader::after{
+    animation: none !important;
+  }
+}
+/* Bigger collection names (NO layout growth) */
+.collectionName{
+  font-size: 15px !important;   /* was ~13px */
+  line-height: 1.05;            /* tighter so row height stays same */
+  font-weight: 900;
+}
+/* Guided glow (NO pulse) */
+.guideGlow{
+  position: relative;
+  outline: none;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 2px rgba(46, 204, 113, 0.90),
+    0 0 22px rgba(46, 204, 113, 0.65);
+  animation: none !important;
+  pointer-events: auto; /* ✅ allows interaction */
+}
+
+/* Little green dot (NO pulse) */
+.guideGlow::after{
+  content:"";
+  position:absolute;
+  top:-6px; right:-6px;
+  width:12px; height:12px;
+  border-radius:999px;
+  background: rgba(46, 204, 113, 1);
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.85);
+  pointer-events:none; /* ✅ never blocks taps */
+}
+/* ==========================
+   DARK / NEON THEME (toggle)
+   ========================== */
+body.dark{
+  /* Background */
+  --bg1:#05060f;
+  --bg2:#0b0f2a;
+
+  /* Panels */
+  --panel: rgba(0,0,0,.55);
+  --panel2: rgba(0,0,0,.78);
+  --stroke: rgba(0,255,213,.22);
+  --shadow: 0 18px 40px rgba(0,0,0,.55);
+
+  /* Button becomes neon */
+  --btnYellow:#00ffd5;
+  --btnYellow2:#00c2a3;
+  --btnText:#001a14;
+
+  /* Text */
+  --muted: rgba(255,255,255,.78);
+  --loBlueLine: rgba(0,255,213,0.55);
+}
+
+/* Optional: make stage/grid feel more “arcade neon” in dark mode */
+body.dark .stage{
+  background: radial-gradient(circle at top, rgba(0,255,213,.16), rgba(11,15,42,.55)) !important;
+  border-color: rgba(0,255,213,.25) !important;
+}
+
+body.dark .panel{
+  border-color: rgba(0,255,213,.18) !important;
+}
+
+body.dark .btn, body.dark .btnSmall{
+  box-shadow:
+    0 0 0 1px rgba(0,255,213,.35),
+    0 10px 18px rgba(0,0,0,.35),
+    0 0 18px rgba(0,255,213,.28),
+    inset 0 2px 0 rgba(255,255,255,.18);
+}
+/* Dark mode: change the guideGlow from green -> neon cyan */
+body.dark .guideGlow{
+  box-shadow:
+    0 0 0 2px rgba(0,255,213,.95),
+    0 0 26px rgba(0,255,213,.75),
+    0 0 40px rgba(0,255,213,.45);
+}
+/* Dark mode: change the little guide dot colour too */
+body.dark .guideGlow::after{
+  background: rgba(0,255,213,1);
+  box-shadow: 0 0 12px rgba(0,255,213,.9);
+}
+body.dark .tile[data-kind="empty"]{
+  background:rgba(255,255,255,0.08) !important;
+  border-color:rgba(0,255,213,0.2);
+}
+.titleHint{
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px){
+  .titleHint{
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+    white-space: normal;
+    opacity: 0.8;
+  }
+}
+/* ==========================
+   Tabs bar
+   ========================== */
+.tabsBar{
+  display:flex;
+  gap:10px;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+}
+
+.tabBtn{
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 950;
+  cursor: pointer;
+  background: rgba(0,0,0,.18);
+  color: rgba(255,255,255,.92);
+  box-shadow: 0 10px 18px rgba(0,0,0,.15);
+  transition: transform .08s ease, filter .15s ease;
+}
+
+.tabBtn:hover{
+  filter: brightness(1.05);
+}
+
+.tabBtn:active{
+  transform: translateY(1px);
+}
+
+.tabBtn.active{
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText);
+  border-color: rgba(255,255,255,.28);
+}
+/* ==========================
+   TILE PLACEHOLDER (OVERRIDE)
+   Put this at the VERY END of the CSS so it wins.
+   ========================== */
+
+/* Show tile.png by default while loading */
+.tile{
+  background-image: url("../assets/images/tile.png") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Hide the <img> until it successfully loads */
+.tile img{
+  opacity: 0 !important;
+  transition: opacity .15s ease !important;
+}
+
+/* When loaded, remove placeholder + show image */
+.tile.isLoaded{
+  background-image: none !important;
+}
+.tile.isLoaded img{
+  opacity: 1 !important;
+}
+
+/* When missing/failed, keep placeholder */
+.tile.isMissing{
+  background-image: url("../assets/images/tile.png") !important;
+}
+
+  /* ✅ Loading overlay — Little Ollie style */
+  #loadingOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(11,18,32,.75);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    gap:24px;
+    padding:24px;
+  }
+  #loadingOverlay.visible{
+    display:flex;
+  }
+  #loadingOverlay .lo-orbit-wrap{
+    position:relative;
+    width:320px;
+    min-height:220px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #loadingOverlay .lo-orbit-ring{
+    position:absolute;
+    width:210px;
+    height:210px;
+    left:50%;
+    top:50%;
+    margin-left:-105px;
+    margin-top:-105px;
+    animation:loOrbitRing 2.5s linear infinite;
+    pointer-events:none;
+    z-index:0;
+    will-change:transform;
+  }
+  #loadingOverlay .lo-orbit-img{
+    position:absolute;
+    width:104px;
+    height:104px;
+    left:50%;
+    top:0;
+    margin-left:-52px;
+    margin-top:-52px;
+    object-fit:contain;
+    animation:loOrbitImg 2.5s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes loOrbitRing{
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(360deg); }
+  }
+  @keyframes loOrbitImg{
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(-360deg); }
+  }
+  #loadingOverlay .lo-message{
+    position:relative;
+    z-index:2;
+    font-family:"Baloo 2",system-ui,sans-serif;
+    font-size:clamp(18px,4vw,24px);
+    font-weight:800;
+    color:rgba(255,255,255,.95);
+    text-align:center;
+    text-shadow:0 2px 12px rgba(0,0,0,.4);
+    max-width:220px;
+    line-height:1.25;
+  }
+  #loadingOverlay .lo-progress{
+    position:relative;
+    z-index:2;
+    font-family:"Baloo 2",system-ui,sans-serif;
+    font-size:clamp(15px,3vw,18px);
+    font-weight:800;
+    color:rgba(109,224,255,.95);
+    text-align:center;
+    margin-top:10px;
+    min-height:20px;
+  }
+  #loadingOverlay .lo-progress-bar-wrap{
+    width:220px;
+    height:14px;
+    background:rgba(0,0,0,.4);
+    border-radius:999px;
+    overflow:hidden;
+    margin:10px auto 0;
+    border:1px solid rgba(255,255,255,.12);
+  }
+  #loadingOverlay .lo-progress-bar-fill{
+    height:100%;
+    border-radius:999px;
+    width:0%;
+    transition:width .4s ease;
+    background:linear-gradient(90deg,#e53935,#ff9800,#ffeb3b,#4caf50);
+  }
+  #loadingOverlay .lo-spinner{
+    width:44px;
+    height:44px;
+    border:4px solid rgba(255,255,255,.2);
+    border-top-color:#ffd84d;
+    border-radius:50%;
+    animation:loSpin .9s linear infinite;
+    will-change:transform;
+    margin:0 auto 15px;
+  }
+  @keyframes loSpin{
+    to{ transform:rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #loadingOverlay .lo-spinner{ animation:none; opacity:.7; }
+    #loadingOverlay .lo-orbit-ring{ animation:none; }
+    #loadingOverlay .lo-orbit-img{ animation:none; }
+  }
