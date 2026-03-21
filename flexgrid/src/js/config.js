@@ -20,8 +20,8 @@ const WORKER_IMG_PROXY = "https://loflexgrid.littleollienft.workers.dev/img?url=
 const WORKER_CONFIG_ENDPOINT = "https://loflexgrid.littleollienft.workers.dev/api/config/flex-grid";
 
 const FRONTEND_CONFIG = {
-  enabled: true,         // use local API key (overrides worker/config endpoint)
-  alchemyApiKey: "2LxYSccU9cpZLJ3HEjV6Q",
+  enabled: false,        // OFF for production — config must come from backend/Worker
+  alchemyApiKey: "",
   workerUrl: WORKER_IMG_PROXY,
 };
 
@@ -59,7 +59,7 @@ async function loadConfig() {
     };
   }
 
-  // 1) Local backend (dev)
+  // 1) Local backend (dev) — fails silently if unavailable
   if (LOCAL_HOSTS.has(HOSTNAME)) {
     try {
       const cfg = await fetchJsonWithTimeout("http://localhost:3000/api/config/flex-grid", 5000);
@@ -67,10 +67,8 @@ async function loadConfig() {
         console.log("✅ Config loaded from LOCAL backend");
         return cfg;
       }
-      console.warn("⚠️ Local backend returned invalid config:", cfg);
-    } catch (e) {
-      console.warn("⚠️ Local backend config not available:", e?.message || e);
-      // continue to Worker fallback
+    } catch {
+      // Silently fall through to Worker config
     }
   }
 

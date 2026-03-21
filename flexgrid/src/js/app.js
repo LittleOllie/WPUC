@@ -1248,7 +1248,7 @@ async function loadTileImage(tile, img, rawUrl, retryAttempt = 0) {
   tile.dataset.src = primary;
 
   // Strategy 1: Alchemy cached URL (proxy first) — only for valid contract addresses
-  if (contract && tokenId && /^0x[a-f0-9]{40}$/i.test(contract) && tile.dataset.alchemyTried !== "1") {
+  if (contract && tokenId && tokenId !== "null" && /^0x[a-f0-9]{40}$/i.test(contract) && tile.dataset.alchemyTried !== "1") {
     tile.dataset.alchemyTried = "1";
     try {
       const metaUrl = await fetchBestAlchemyImage({ contract, tokenId, host: state.host });
@@ -1643,99 +1643,26 @@ async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize }) {
       break;
     }
 
-    const beforeCount = all.length;
     for (const n of json.ownedNfts || []) {
       try {
-        if (n?.tokenId && n.tokenId !== "null") all.push(n);
+        if (n?.tokenId && n.tokenId !== "null" && String(n.tokenId).trim() !== "") all.push(n);
       } catch (_) {}
     }
-    console.log("LOADED THIS PAGE:", all.length - beforeCount);
 
-    // ✅ SAFE EXIT CONDITIONS — reject pageKeys that may cause Alchemy 400 (e.g. encoded "null" in cursor)
-    if (!isPageKeySafe(json.pageKey)) {
-      console.warn("⚠️ Invalid or unsafe pageKey → stopping safely (prevents 400 on next page)");
-      break;
-    }
-
+    if (!isPageKeySafe(json.pageKey)) break;
     pageKey = json.pageKey;
   }
-
-  console.log("TOTAL NFTS LOADED:", all.length);
 
   return { nfts: all, hit400 };
 }
 
-async function fetchAllContractsForOwner({ wallet, host, chain }) {
-  const all = new Set();
-  const extractContract = (c) => {
-    const addr = (
-      c?.contract?.address ??
-      c?.address ??
-      c?.contractAddress ??
-      c?.tokenAddress ??
-      (typeof c === "string" ? c : null)
-    )
-      ?.toString()
-      ?.trim();
-    if (addr && /^0x[a-f0-9]{40}$/i.test(addr)) all.add(addr.toLowerCase());
-  };
-  const extractFromList = (list) => {
-    if (!Array.isArray(list)) return;
-    for (const c of list) extractContract(c);
-  };
-  const extract = (json, listKeys) => {
-    for (const key of listKeys || ["contracts", "contractAddresses", "collections"]) {
-      extractFromList(json?.[key]);
-      extractFromList(json?.data?.[key]);
-    }
-  };
-
-  for (const ver of ["v3", "v2"]) {
-    const baseUrl = `https://${host}/nft/${ver}/${ALCHEMY_KEY}/getContractsForOwner`;
-    let pageKey = null;
-    const maxPages = 35;
-
-    for (let p = 0; p < maxPages; p++) {
-      const url = new URL(baseUrl);
-      url.searchParams.set("owner", wallet);
-      url.searchParams.set("pageSize", "100");
-      if (pageKey && isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
-
-      const res = await fetch(url.toString());
-      if (!res.ok) break;
-      const json = await res.json().catch(() => ({}));
-      extract(json, ["contracts", "contractAddresses"]);
-
-      if (!isPageKeySafe(json.pageKey)) break;
-      pageKey = json.pageKey;
-    }
-  }
-
-  // Ethereum-only: getCollectionsForOwner can surface collections getContractsForOwner misses (e.g. OGenie)
-  if (chain === "eth" || host?.includes("eth-mainnet")) {
-    const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getCollectionsForOwner`;
-    let pageKey = null;
-    for (let p = 0; p < 35; p++) {
-      const url = new URL(baseUrl);
-      url.searchParams.set("owner", wallet);
-      url.searchParams.set("pageSize", "100");
-      if (pageKey && isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
-
-      const res = await fetch(url.toString());
-      if (!res.ok) break;
-      const json = await res.json().catch(() => ({}));
-      extract(json, ["collections"]);
-
-      if (!isPageKeySafe(json.pageKey)) break;
-      pageKey = json.pageKey;
-    }
-  }
-
-  return [...all];
+function isValidContractAddress(addr) {
+  return typeof addr === "string" && /^0x[a-f0-9]{40}$/i.test(addr.trim());
 }
 
 async function fetchNFTsForContractsBatch({ wallet, host, contractAddresses }) {
-  if (contractAddresses.length === 0) return [];
+  const validAddrs = (contractAddresses || []).filter(isValidContractAddress);
+  if (validAddrs.length === 0) return [];
   const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
   const all = [];
   let pageKey = null;
@@ -1746,13 +1673,13 @@ async function fetchNFTsForContractsBatch({ wallet, host, contractAddresses }) {
     url.searchParams.set("owner", wallet);
     url.searchParams.set("withMetadata", "true");
     url.searchParams.set("pageSize", "100");
-    for (const addr of contractAddresses) url.searchParams.append("contractAddresses[]", addr);
+    for (const addr of validAddrs) url.searchParams.append("contractAddresses[]", addr);
     if (pageKey && isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
 
     const res = await fetch(url.toString());
     if (!res.ok) break;
     const json = await res.json().catch(() => ({}));
-    const nfts = (json.ownedNfts || []).filter((n) => n?.tokenId && n.tokenId !== "null");
+    const nfts = (json.ownedNfts || []).filter((n) => n?.tokenId && n.tokenId !== "null" && String(n.tokenId).trim() !== "");
     all.push(...nfts);
     if (!isPageKeySafe(json.pageKey)) break;
     pageKey = json.pageKey;
@@ -1779,12 +1706,9 @@ async function fetchAlchemyNFTs({ wallet, host }) {
     }
   };
 
-  // Run bulk fetch and contracts list in parallel
+  // Use getNFTsForOwner only (no deprecated getContractsForOwner / getCollectionsForOwner)
   const chain = state.chain || "eth";
-  const [first, contracts] = await Promise.all([
-    fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 25 }),
-    fetchAllContractsForOwner({ wallet, host, chain }),
-  ]);
+  let first = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 25 });
 
   if (first.hit400) {
     setStatus("Retrying…");
@@ -1798,57 +1722,30 @@ async function fetchAlchemyNFTs({ wallet, host }) {
     if (a && /^0x[a-f0-9]{40}$/i.test(a)) haveContracts.add(a);
   }
 
-  // Merge priority contracts (e.g. OGenie) — always try these even if discovery missed them
-  const allContracts = [...new Set([...contracts, ...PRIORITY_CONTRACTS])];
-  const toFetch = allContracts.filter((a) => !haveContracts.has(a));
-
-  if (toFetch.length > 0) {
-    // 1) Fetch priority contracts ONE AT A TIME first (most reliable for OGenie etc.)
-    const priorityToFetch = toFetch.filter((a) => PRIORITY_CONTRACTS.includes(a));
-    for (const addr of priorityToFetch) {
-      setStatus(`Loading priority collection…`);
-      let nfts = await fetchNFTsForContractsBatch({ wallet, host, contractAddresses: [addr] }).catch(() => []);
-      if (nfts.length === 0 && (chain === "eth" || host?.includes("eth"))) {
-        nfts = await fetchNFTsFromZora({ wallet, contractAddress: addr }).catch(() => []);
-      }
-      if (nfts.length > 0) mergeInto(first.nfts, nfts);
+  // Fallback: fetch priority contracts (e.g. OGenie) via getNFTsForOwner with contract filter
+  const toFetch = PRIORITY_CONTRACTS.filter((a) => !haveContracts.has(a));
+  for (const addr of toFetch) {
+    setStatus(`Loading priority collection…`);
+    let nfts = await fetchNFTsForContractsBatch({ wallet, host, contractAddresses: [addr] }).catch(() => []);
+    if (nfts.length === 0 && (chain === "eth" || host?.includes("eth"))) {
+      nfts = await fetchNFTsFromZora({ wallet, contractAddress: addr }).catch(() => []);
     }
-
-    // 2) Fetch remaining contracts in small batches
-    const rest = toFetch.filter((a) => !PRIORITY_CONTRACTS.includes(a));
-    const BATCH_SIZE = 5;
-    const batches = [];
-    for (let i = 0; i < rest.length; i += BATCH_SIZE) {
-      batches.push(rest.slice(i, i + BATCH_SIZE));
-    }
-    const CONCURRENT = 3;
-    let done = 0;
-    const total = rest.length;
-    for (let i = 0; i < batches.length; i += CONCURRENT) {
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      showLoading("🎨 Loading collections…", `${done}/${total} collections • ${pct}%`, pct);
-      setStatus(`Loading collections… ${done}/${total} (${pct}%)`);
-      const group = batches.slice(i, i + CONCURRENT);
-      const results = await Promise.all(
-        group.map((batch) =>
-          fetchNFTsForContractsBatch({ wallet, host, contractAddresses: batch }).catch(() => [])
-        )
-      );
-      for (const nfts of results) {
-        if (nfts.length > 0) mergeInto(first.nfts, nfts);
-      }
-      done += group.reduce((s, b) => s + b.length, 0);
-    }
-    showLoading("🎨 Loading collections…", `${total}/${total} collections • 100%`, 100);
+    if (nfts.length > 0) mergeInto(first.nfts, nfts);
   }
 
   return first.nfts;
 }
 
 async function fetchAlchemyNFTMetadata({ contract, tokenId, host }) {
+  if (!tokenId || tokenId === "null" || String(tokenId).trim() === "") {
+    throw new Error("Invalid tokenId");
+  }
+  if (!contract || !/^0x[a-f0-9]{40}$/i.test(String(contract).trim())) {
+    throw new Error("Invalid contract address");
+  }
   const url = new URL(`https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTMetadata`);
   url.searchParams.set("contractAddress", contract);
-  url.searchParams.set("tokenId", tokenId);
+  url.searchParams.set("tokenId", String(tokenId));
   url.searchParams.set("refreshCache", "false");
 
   const res = await fetch(url.toString());
@@ -1864,10 +1761,11 @@ function groupByCollection(nfts) {
 
   for (const nft of nfts) {
     try {
+    const tokenId = (nft?.tokenId || "").toString();
+    if (!tokenId || tokenId === "null" || tokenId.trim() === "") continue;
+
     const key = getCollectionKey(nft);
     const colName = nft?.contract?.name || nft?.collection?.name || nft?.title || "Unknown Collection";
-
-    const tokenId = (nft?.tokenId || "").toString();
     const name = nft?.name || (tokenId ? `#${tokenId}` : "NFT");
 
     const image =
@@ -2173,6 +2071,10 @@ async function initializeConfig() {
 
     ALCHEMY_KEY = config.alchemyApiKey;
     IMG_PROXY = config.workerUrl;
+
+    if (!ALCHEMY_KEY) {
+      throw new Error("Unable to load configuration. No API key provided. Ensure your Worker supplies alchemyApiKey.");
+    }
     configLoaded = true;
 
     if (window.location.hostname === "localhost") {
