@@ -2,7 +2,7 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
 
-    // ✅ CORS preflight
+    // CORS (lets your website talk to this)
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -13,16 +13,14 @@ export default {
       });
     }
 
-    // ✅ CONFIG ROUTE (THIS FIXES YOUR ISSUE)
+    // CONFIG (THIS is what your app needs)
     if (url.pathname === "/api/config/flex-grid") {
-      const config = {
+      return new Response(JSON.stringify({
         alchemyApiKey: "GYuepn7j7XCslBzxLw05M",
         network: "eth-mainnet",
         ipfsGateway: "https://ipfs.io/ipfs/",
         workerUrl: "https://loflexgrid.littleollienft.workers.dev/img?url="
-      };
-
-      return new Response(JSON.stringify(config), {
+      }), {
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*"
@@ -30,7 +28,7 @@ export default {
       });
     }
 
-    // ✅ IMAGE PROXY
+    // IMAGE PROXY
     if (url.pathname === "/img") {
       const imageUrl = url.searchParams.get("url");
 
@@ -38,11 +36,11 @@ export default {
         return new Response("Missing URL", { status: 400 });
       }
 
-      const response = await fetch(imageUrl);
+      const res = await fetch(imageUrl);
 
-      return new Response(response.body, {
+      return new Response(res.body, {
         headers: {
-          "Content-Type": response.headers.get("Content-Type") || "image/png",
+          "Content-Type": res.headers.get("Content-Type") || "image/png",
           "Access-Control-Allow-Origin": "*"
         }
       });

@@ -1135,6 +1135,10 @@ function buildGrid() {
 
   const nftsWithImages = usedItems.filter((item) => item?.image);
   state.imageLoadState.total = nftsWithImages.length;
+  const noImageCount = usedItems.length - nftsWithImages.length;
+  if (noImageCount > 0) {
+    console.log(`buildGrid: ${noImageCount} tile(s) have no image (using placeholder)`);
+  }
 
   for (let i = 0; i < usedItems.length; i++) grid.appendChild(makeNFTTile(usedItems[i]));
   const remaining = totalSlots - usedItems.length;
@@ -1493,6 +1497,8 @@ async function loadWallets() {
     showLoading("🎨 Sorting your collections...", "", 85);
     const deduped = dedupeNFTs(allNfts);
     const grouped = groupByCollection(deduped);
+    const displayedCount = grouped.reduce((s, c) => s + c.items.length, 0);
+    console.log(`NFT load complete: ${allNfts.length} fetched → ${deduped.length} unique → ${grouped.length} collections → ${displayedCount} displayed`);
 
     showLoading("✨ Almost ready...", "", 100);
     state.collections = grouped;
@@ -1563,33 +1569,35 @@ function getCollectionKey(nft) {
 function dedupeNFTs(nfts) {
   const seen = new Set();
   const out = [];
-  for (const nft of nfts) {
+  let dupes = 0;
+  for (let i = 0; i < nfts.length; i++) {
+    const nft = nfts[i];
+    if (!nft || typeof nft !== "object") continue;
     try {
       const collectionKey = getCollectionKey(nft);
-      const tokenId = (nft?.tokenId || "").toString();
-      const key = `${collectionKey}:${tokenId}`;
-      if (!tokenId || tokenId === "null") continue;
-      if (seen.has(key)) continue;
+      const tokenId = (nft?.tokenId ?? nft?.token_id ?? nft?.id ?? `_${i}`).toString().trim();
+      const safeTokenId = tokenId && tokenId !== "null" ? tokenId : `_${i}`;
+      const key = `${collectionKey}:${safeTokenId}`;
+      if (seen.has(key)) {
+        dupes++;
+        continue;
+      }
       seen.add(key);
       out.push(nft);
-    } catch (_) {}
+    } catch (e) {
+      console.warn("dedupeNFTs: error for NFT, including anyway", e?.message);
+      out.push(nft);
+    }
   }
+  if (dupes > 0) console.log(`dedupeNFTs: ${nfts.length} → ${out.length} unique (${dupes} duplicates)`);
   return out;
 }
 
 function isPageKeySafe(pk) {
-  if (!pk || typeof pk !== "string") return false;
-  if (pk.includes("null")) return false;
-  try {
-    const decoded = decodeURIComponent(pk);
-    if (decoded.includes("null")) return false;
-  } catch (_) {}
-  try {
-    if (/^[A-Za-z0-9+/]+=*$/.test(pk.replace(/\s/g, ""))) {
-      const b64 = atob(pk);
-      if (b64.includes("null")) return false;
-    }
-  } catch (_) {}
+  if (pk == null || pk === "") return false;
+  const s = String(pk).trim();
+  if (!s) return false;
+  if (s.toLowerCase().includes("null")) return false;
   return true;
 }
 
@@ -1598,22 +1606,26 @@ const PRIORITY_CONTRACTS = [
   "0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd", // OGenie NFT
 ].map((a) => a.toLowerCase());
 
-async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize }) {
-  const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
+function nftUniqueKey(nft) {
+  const addr = (nft?.contract?.address || nft?.collection?.address || nft?.contractAddress || "").toLowerCase();
+  const tokenId = (nft?.tokenId ?? nft?.token_id ?? nft?.id ?? "").toString();
+  return `${addr}:${tokenId}`;
+}
 
+async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize = 100, orderBy = null }) {
+  const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
   let pageKey = null;
   let all = [];
   let hit400 = false;
-  const hardCap = 8000; // thorough: capture more collections for large wallets
+  let pageCount = 0;
+  const hardCap = 10000;
 
   while (all.length < hardCap) {
     const url = new URL(baseUrl);
-
     url.searchParams.set("owner", wallet);
     url.searchParams.set("withMetadata", "true");
     url.searchParams.set("pageSize", String(pageSize));
-
-    // ✅ ONLY use pageKey if it passes strict validation (avoids Alchemy "For input string: null" 400)
+    if (orderBy) url.searchParams.set("orderBy", orderBy);
     if (isPageKeySafe(pageKey)) {
       url.searchParams.set("pageKey", pageKey);
     }
@@ -1627,11 +1639,8 @@ async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize }) {
     }
 
     if (!res.ok) {
-      const errorText = await res.text().catch(() => "");
-      console.error("❌ BAD RESPONSE:", res.status, errorText);
-
+      console.error("❌ BAD RESPONSE:", res.status);
       hit400 = true;
-      console.warn("⚠️ Stopping pagination, keeping loaded NFTs");
       break;
     }
 
@@ -1643,17 +1652,38 @@ async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize }) {
       break;
     }
 
-    for (const n of json.ownedNfts || []) {
-      try {
-        if (n?.tokenId && n.tokenId !== "null" && String(n.tokenId).trim() !== "") all.push(n);
-      } catch (_) {}
+    const pageNfts = json.ownedNfts || json.data?.ownedNfts || [];
+    for (const n of pageNfts) {
+      if (n && typeof n === "object") all.push(n);
     }
 
-    if (!isPageKeySafe(json.pageKey)) break;
-    pageKey = json.pageKey;
+    pageCount++;
+    const nextKey = json.pageKey ?? json.nextToken;
+    if (!isPageKeySafe(nextKey)) break;
+    pageKey = nextKey;
   }
 
   return { nfts: all, hit400 };
+}
+
+function mergeNFTsUnique(listA, listB) {
+  const seen = new Set();
+  const out = [];
+  for (const n of listA) {
+    if (!n || typeof n !== "object") continue;
+    const key = nftUniqueKey(n);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(n);
+  }
+  for (const n of listB) {
+    if (!n || typeof n !== "object") continue;
+    const key = nftUniqueKey(n);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(n);
+  }
+  return out;
 }
 
 function isValidContractAddress(addr) {
@@ -1666,58 +1696,74 @@ async function fetchNFTsForContractsBatch({ wallet, host, contractAddresses }) {
   const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
   const all = [];
   let pageKey = null;
-  const maxPages = 15; // thorough: more pages per contract batch
+  let pageCount = 0;
 
-  for (let p = 0; p < maxPages; p++) {
+  while (true) {
     const url = new URL(baseUrl);
     url.searchParams.set("owner", wallet);
     url.searchParams.set("withMetadata", "true");
     url.searchParams.set("pageSize", "100");
     for (const addr of validAddrs) url.searchParams.append("contractAddresses[]", addr);
-    if (pageKey && isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
+    if (isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
 
     const res = await fetch(url.toString());
     if (!res.ok) break;
     const json = await res.json().catch(() => ({}));
-    const nfts = (json.ownedNfts || []).filter((n) => n?.tokenId && n.tokenId !== "null" && String(n.tokenId).trim() !== "");
-    all.push(...nfts);
-    if (!isPageKeySafe(json.pageKey)) break;
-    pageKey = json.pageKey;
+    const nfts = json.ownedNfts || json.data?.ownedNfts || [];
+    for (const n of nfts) {
+      if (n && typeof n === "object") all.push(n);
+    }
+    pageCount++;
+    const nextKey = json.pageKey ?? json.nextToken;
+    if (!isPageKeySafe(nextKey)) break;
+    pageKey = nextKey;
+  }
+
+  if (pageCount > 0 && all.length > 0) {
+    console.log(`NFT batch (${validAddrs.length} contract(s)): ${pageCount} page(s), ${all.length} NFTs`);
   }
   return all;
 }
 
 async function fetchAlchemyNFTs({ wallet, host }) {
   const mergeInto = (target, source) => {
-    const seen = new Set();
-    for (const n of target) {
-      try {
-        seen.add(`${getCollectionKey(n)}:${(n?.tokenId || "").toString()}`);
-      } catch (_) {}
-    }
+    const seen = new Set(target.map((n) => nftUniqueKey(n)));
     for (const n of source) {
-      try {
-        const key = `${getCollectionKey(n)}:${(n?.tokenId || "").toString()}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          target.push(n);
-        }
-      } catch (_) {}
+      const key = nftUniqueKey(n);
+      if (!seen.has(key)) {
+        seen.add(key);
+        target.push(n);
+      }
     }
   };
 
-  // Use getNFTsForOwner only (no deprecated getContractsForOwner / getCollectionsForOwner)
   const chain = state.chain || "eth";
-  let first = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 25 });
 
-  if (first.hit400) {
+  // Call A: default order
+  setStatus("Loading NFTs…");
+  const fetchA = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 100 });
+  console.log(`NFT fetch A (default): ${fetchA.nfts.length} NFTs`);
+
+  // Call B: transferTime order (different ordering can surface different NFTs)
+  const fetchB = await fetchAlchemyNFTsWithPageSize({
+    wallet,
+    host,
+    pageSize: 100,
+    orderBy: (chain === "eth" || host?.includes("eth") || host?.includes("base") || host?.includes("polygon")) ? "transferTime" : null,
+  });
+  console.log(`NFT fetch B (transferTime): ${fetchB.nfts.length} NFTs`);
+
+  const merged = mergeNFTsUnique(fetchA.nfts, fetchB.nfts);
+  console.log(`NFT merged: ${fetchA.nfts.length} + ${fetchB.nfts.length} → ${merged.length} unique`);
+
+  if (fetchA.hit400) {
     setStatus("Retrying…");
-    const retry = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 10 });
-    mergeInto(first.nfts, retry.nfts);
+    const retry = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 50 });
+    mergeInto(merged, retry.nfts);
   }
 
   const haveContracts = new Set();
-  for (const n of first.nfts) {
+  for (const n of merged) {
     const a = (n?.contract?.address || n?.collection?.address || n?.contractAddress || "").toLowerCase();
     if (a && /^0x[a-f0-9]{40}$/i.test(a)) haveContracts.add(a);
   }
@@ -1730,10 +1776,10 @@ async function fetchAlchemyNFTs({ wallet, host }) {
     if (nfts.length === 0 && (chain === "eth" || host?.includes("eth"))) {
       nfts = await fetchNFTsFromZora({ wallet, contractAddress: addr }).catch(() => []);
     }
-    if (nfts.length > 0) mergeInto(first.nfts, nfts);
+    if (nfts.length > 0) mergeInto(merged, nfts);
   }
 
-  return first.nfts;
+  return merged;
 }
 
 async function fetchAlchemyNFTMetadata({ contract, tokenId, host }) {
@@ -1756,56 +1802,89 @@ async function fetchAlchemyNFTMetadata({ contract, tokenId, host }) {
   return json;
 }
 
+const PLACEHOLDER_IMAGE = "";
+
+function extractImage(nft) {
+  const candidates = [
+    nft?.media?.[0]?.gateway,
+    nft?.media?.[0]?.raw,
+    nft?.metadata?.image,
+    nft?.metadata?.image_url,
+    nft?.rawMetadata?.image,
+    nft?.tokenUri?.gateway,
+    nft?.image?.cachedUrl,
+    nft?.image?.pngUrl,
+    nft?.image?.thumbnailUrl,
+    nft?.image?.originalUrl,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) {
+      let url = c.trim();
+      if (url.startsWith("ipfs://")) {
+        url = "https://nftstorage.link/ipfs/" + url.slice(7);
+      }
+      return url;
+    }
+  }
+  return PLACEHOLDER_IMAGE;
+}
+
 function groupByCollection(nfts) {
   const map = new Map();
+  let noImage = 0;
 
-  for (const nft of nfts) {
-    try {
-    const tokenId = (nft?.tokenId || "").toString();
-    if (!tokenId || tokenId === "null" || tokenId.trim() === "") continue;
+  for (let i = 0; i < nfts.length; i++) {
+    const nft = nfts[i];
+    if (!nft || typeof nft !== "object") continue;
 
-    const key = getCollectionKey(nft);
-    const colName = nft?.contract?.name || nft?.collection?.name || nft?.title || "Unknown Collection";
-    const name = nft?.name || (tokenId ? `#${tokenId}` : "NFT");
+    const tokenId = (
+      nft.tokenId ??
+      nft.token_id ??
+      nft.id ??
+      `_${i}`
+    ).toString().trim();
+    const safeTokenId = tokenId && tokenId !== "null" ? tokenId : `_${i}`;
 
-    const image =
-      nft?.image?.cachedUrl ||
-      nft?.image?.pngUrl ||
-      nft?.image?.thumbnailUrl ||
-      nft?.image?.originalUrl ||
-      nft?.rawMetadata?.image ||
-      "";
+    const collectionName =
+      nft.contract?.name ||
+      nft.collection?.name ||
+      nft.contract?.address ||
+      nft.collection?.address ||
+      nft.title ||
+      "Unknown Collection";
+
+    const name = nft.name || (safeTokenId ? `#${safeTokenId}` : "NFT");
+    const image = extractImage(nft);
+    if (!image) noImage++;
 
     const contractAddr = (
-      nft?.contract?.address ||
-      nft?.collection?.address ||
-      nft?.contractAddress ||
+      nft.contract?.address ||
+      nft.collection?.address ||
+      nft.contractAddress ||
       ""
     ).toLowerCase();
 
-    if (!map.has(key)) map.set(key, { key, name: colName, count: 0, items: [] });
-
+    const key = getCollectionKey(nft);
+    if (!map.has(key)) map.set(key, { key, name: collectionName, count: 0, items: [] });
     const entry = map.get(key);
     entry.count++;
-
-    const attributes =
-      nft?.rawMetadata?.attributes ||
-      nft?.rawMetadata?.metadata?.attributes ||
-      nft?.metadata?.attributes ||
-      nft?.contractMetadata?.openSea?.traits ||
-      [];
-
     entry.items.push({
       name,
-      tokenId,
+      tokenId: safeTokenId,
       contract: contractAddr,
-      image,
+      image: image || PLACEHOLDER_IMAGE,
       sourceKey: key,
-      attributes,
+      attributes:
+        nft.rawMetadata?.attributes ||
+        nft.rawMetadata?.metadata?.attributes ||
+        nft.metadata?.attributes ||
+        nft.contractMetadata?.openSea?.traits ||
+        [],
     });
-    } catch (_) {}
   }
 
+  const total = [...map.values()].reduce((s, c) => s + c.items.length, 0);
+  console.log(`groupByCollection: ${nfts.length} fetched → ${total} displayed, ${noImage} without image`);
   return [...map.values()].sort((a, b) => b.count - a.count);
 }
 
