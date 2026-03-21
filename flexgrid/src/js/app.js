@@ -10,6 +10,13 @@
 
 const $ = (id) => document.getElementById(id);
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  const div = document.createElement("div");
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
 // ✅ Global toggle (was incorrectly inside getIpfsPath before)
 const SHOW_ERROR_PANEL = false; // set true only when debugging
 
@@ -65,7 +72,7 @@ function updateGuideGlow() {
 
   const collEmpty = $("collectionsEmptyState");
   if (collEmpty && (controlsVisible || hasLoadedWallets)) {
-    collEmpty.style.display = !hasSelectedCollections && state.collections.length > 0 ? "" : "none";
+    collEmpty.style.display = state.collections.length > 0 ? "" : "none";
   } else if (collEmpty) collEmpty.style.display = "none";
 
   // 1) No wallets yet -> highlight input + add
@@ -277,21 +284,22 @@ function updateErrorLogDisplay() {
   errorLogContent.innerHTML = errorLog.errors
     .map((err) => {
       const contextText = err.context
-        ? ` <span style="opacity: 0.7;">[${err.context}]</span>`
+        ? ` <span style="opacity: 0.7;">[${escapeHtml(err.context)}]</span>`
         : "";
       const stackText =
         err.stack && window.location.hostname === "localhost"
           ? `<div style="margin-top: 4px; padding-left: 12px; opacity: 0.6; font-size: 10px;">${err.stack
               .split("\n")
               .slice(0, 3)
+              .map((line) => escapeHtml(line))
               .join("<br>")}</div>`
           : "";
       return `
       <div style="padding: 6px 0; border-bottom: 1px solid rgba(244, 67, 54, 0.2);">
         <div style="color: #f44336; font-weight: 700;">
-          <span style="opacity: 0.7; font-size: 10px;">[${err.timestamp}]</span>${contextText}
+          <span style="opacity: 0.7; font-size: 10px;">[${escapeHtml(err.timestamp)}]</span>${contextText}
         </div>
-        <div style="margin-top: 2px; color: #ffcdd2;">${err.message}</div>
+        <div style="margin-top: 2px; color: #ffcdd2;">${escapeHtml(err.message)}</div>
         ${stackText}
       </div>
     `;
@@ -607,14 +615,16 @@ function renderCollectionsList() {
   state.collections.forEach((c) => {
     const row = document.createElement("div");
     row.className = "collectionItem";
+    if (state.selectedKeys.has(c.key)) row.classList.add("selected");
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = state.selectedKeys.has(c.key);
-
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) state.selectedKeys.add(c.key);
-      else state.selectedKeys.delete(c.key);
+    row.addEventListener("click", () => {
+      if (state.selectedKeys.has(c.key)) {
+        state.selectedKeys.delete(c.key);
+        row.classList.remove("selected");
+      } else {
+        state.selectedKeys.add(c.key);
+        row.classList.add("selected");
+      }
 
       const buildBtn = $("buildBtn");
       const exportBtn = $("exportBtn");
@@ -636,10 +646,9 @@ function renderCollectionsList() {
     count.textContent = `${c.count} owned`;
 
     label.appendChild(name);
-    label.appendChild(count);
 
-    row.appendChild(checkbox);
     row.appendChild(label);
+    row.appendChild(count);
     wrap.appendChild(row);
   });
 }
@@ -1609,8 +1618,6 @@ async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize }) {
       url.searchParams.set("pageKey", pageKey);
     }
 
-    console.log("REQUEST:", url.toString());
-
     let res;
     try {
       res = await fetch(url.toString());
@@ -2168,11 +2175,9 @@ async function initializeConfig() {
     IMG_PROXY = config.workerUrl;
     configLoaded = true;
 
-    console.log("✅ configLoaded", {
-      configLoaded,
-      hasAlchemyKey: !!ALCHEMY_KEY,
-      IMG_PROXY,
-    });
+    if (window.location.hostname === "localhost") {
+      console.log("Config loaded");
+    }
 
     enableButtons();
     setStatus("Ready! ➕ Add wallet(s) → 🔍 Load → select collections → 🧩 Build → 📸 Export");
@@ -2185,13 +2190,19 @@ async function initializeConfig() {
         <div style="color: #ff6b6b; font-weight: 900; margin-bottom: 8px;">
           ⚠️ Configuration Error
         </div>
-        <div style="margin-bottom: 8px;">
-          ${error.message}
-        </div>
-        <div style="font-size: 12px; opacity: 0.9;">
-          See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.
-        </div>
       `;
+
+      const msg = document.createElement("div");
+      msg.style.marginBottom = "8px";
+      msg.textContent = error.message;
+
+      statusEl.appendChild(msg);
+
+      const hint = document.createElement("div");
+      hint.style.fontSize = "12px";
+      hint.style.opacity = "0.9";
+      hint.innerHTML = "See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.";
+      statusEl.appendChild(hint);
     }
     addError(error, "Config Loading");
 

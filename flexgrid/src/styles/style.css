@@ -17,9 +17,10 @@
       --wmScale: 1;
     }
 
-    html,body{ height:100%; margin:0; }
+    html,body{ height:100%; margin:0; font-size: 17px; }
 body{
   font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 18px;
   background: radial-gradient(circle at top, var(--bg1), var(--bg2));
   color:#fff;
   display:flex;
@@ -85,7 +86,7 @@ body{
     .lbl{
       display:block;
       font-weight: 850;
-      font-size: 12px;
+      font-size: 17px;
       letter-spacing:.3px;
       text-transform: uppercase;
       color: var(--muted);
@@ -130,13 +131,13 @@ body{
       background: rgba(76,111,255,.20);
       color:#fff;
       outline:none;
-      font-size: 14px;
+      font-size: 17px;
     }
     .input::placeholder{ color: rgba(255,255,255,.70); }
 
     /* ✅ iPhone zoom fix: any input/select under 16px causes Safari zoom on focus */
     @media (max-width: 900px){
-      .input{ font-size: 16px; }
+      .input{ font-size: 17px; }
     }
 
     select.input{
@@ -161,7 +162,7 @@ body{
       border:0;
       border-radius: 15px;
       padding: 14px 18px;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 950;
       letter-spacing: .2px;
       background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
@@ -193,7 +194,7 @@ body{
       flex:1;
       min-width:120px;
       padding:14px 16px;
-      font-size:15px;
+      font-size:16px;
     }
     .collectionsCard{
       padding:16px;
@@ -234,7 +235,7 @@ body{
     .status{
       margin-top: 10px;
       color: rgba(255,255,255,.95);
-      font-size: 14px;
+      font-size: 17px;
       white-space: pre-wrap;
     }
     #imageProgressBarWrap{
@@ -280,18 +281,18 @@ body{
       margin-bottom: 8px;
     }
     .walletChip:last-child{ margin-bottom:0; }
-    .walletAddr{
-      font-weight: 900;
-      font-size: 13px;
+.walletAddr{
+  font-weight: 900;
+  font-size: 17px;
       overflow:hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       max-width: 100%;
     }
-    .walletMeta{
-      font-size: 12px;
-      opacity: .9;
-    }
+.walletMeta{
+  font-size: 15px;
+  opacity: .9;
+}
     .chipBtns{ display:flex; gap:8px; flex:0 0 auto; }
     .btnSmall{
       border:0;
@@ -343,15 +344,9 @@ body{
       margin-bottom: 8px;
     }
     .collectionItem:last-child{ margin-bottom: 0; }
-    .collectionItem input[type="checkbox"]{
-      width:20px; height:20px;
-      accent-color: var(--btnYellow);
-      cursor:pointer;
-      flex: 0 0 auto;
-    }
     .collectionName{ font-weight: 900; line-height: 1.15; }
-    .collectionCount{ font-size: 12px; opacity: .88; margin-top: 2px; }
-    .hint{ font-size: 12px; opacity:.9; margin-top: 6px; }
+    .collectionCount{ font-size: 15px; opacity: .88; flex-shrink: 0; margin-left: auto; }
+    .hint{ font-size: 15px; opacity:.9; margin-top: 6px; }
 
     /* Stage */
     .stageWrap{ margin-top: 8px; }
@@ -373,7 +368,7 @@ body{
       background: rgba(0,0,0,.12);
     }
     .stageTitle{ font-weight: 950; letter-spacing: .2px; }
-    .stageMeta{ font-size: 12px; opacity:.95; text-align:right; }
+    .stageMeta{ font-size: 16px; opacity:.95; text-align:right; }
 
     /* Grid */
     .gridWrap{ position: relative; }
@@ -525,34 +520,43 @@ body{
   min-width: 0;
 }
 
-/* Make name and count sit together */
+/* Name on left */
 .collectionName{
-  display: inline;
   font-weight: 950;
-  font-size: 13px;
+  font-size: 18px;
   line-height: 1.15;
-  margin-right: 8px;
 }
 
-/* ✅ Count becomes a pill badge next to name */
+/* ✅ Count pill on the right side */
 .collectionCount{
   display: inline-block;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 900;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(0,0,0,.28);
   border: 1px solid rgba(255,255,255,.16);
   opacity: 1; /* override previous opacity */
-  margin-top: 0;
+  margin-left: auto;
+  flex-shrink: 0;
   vertical-align: middle;
   white-space: nowrap;
 }
 
-/* Checkbox: slightly nicer */
-.collectionItem input[type="checkbox"]{
-  width: 18px;
-  height: 18px;
+/* Collection item: whole box clickable, no checkbox */
+.collectionItem{
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.collectionItem.selected{
+  box-shadow: 0 0 0 2px rgba(109, 224, 255, 0.9), 0 0 24px rgba(109, 224, 255, 0.5);
+  border-color: rgba(109, 224, 255, 0.6);
+  background: rgba(109, 224, 255, 0.12);
+}
+body.dark .collectionItem.selected{
+  box-shadow: 0 0 0 2px rgba(0, 255, 213, 0.95), 0 0 24px rgba(0, 255, 213, 0.55);
+  border-color: rgba(0, 255, 213, 0.5);
+  background: rgba(0, 255, 213, 0.1);
 }
 
 /* =========================================
@@ -597,7 +601,7 @@ h2{
 
 /* Stage header (grid title) */
 .stageTitle{
-  font-size: 18px;
+  font-size: 21px;
 }
 /* FORCE Baloo everywhere (wins over earlier rules) */
 html, body, button, input, select, textarea {
@@ -763,7 +767,7 @@ body.dark .btnSecondary {
    Empty states
    ========================== */
 .emptyState {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   color: rgba(255,255,255,.9);
   padding: 14px 0;
@@ -798,7 +802,7 @@ body.dark .btnSecondary {
 }
 /* Bigger collection names (NO layout growth) */
 .collectionName{
-  font-size: 15px !important;   /* was ~13px */
+  font-size: 18px !important;
   line-height: 1.05;            /* tighter so row height stays same */
   font-weight: 900;
 }
@@ -884,7 +888,7 @@ body.dark .tile[data-kind="empty"]{
 }
 .titleHint{
   margin-left: 10px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   opacity: 0.85;
   white-space: nowrap;
@@ -1001,6 +1005,7 @@ body.dark .tile[data-kind="empty"]{
     margin-left:-105px;
     margin-top:-105px;
     animation:loOrbitRing 2.5s linear infinite;
+    -webkit-animation:loOrbitRing 2.5s linear infinite;
     pointer-events:none;
     z-index:0;
     will-change:transform;
@@ -1015,15 +1020,24 @@ body.dark .tile[data-kind="empty"]{
     margin-top:-52px;
     object-fit:contain;
     animation:loOrbitImg 2.5s linear infinite;
+    -webkit-animation:loOrbitImg 2.5s linear infinite;
     pointer-events:none;
   }
   @keyframes loOrbitRing{
     from{ transform:rotate(0deg); }
     to{ transform:rotate(360deg); }
   }
+  @-webkit-keyframes loOrbitRing{
+    from{ -webkit-transform:rotate(0deg); transform:rotate(0deg); }
+    to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
+  }
   @keyframes loOrbitImg{
     from{ transform:rotate(0deg); }
     to{ transform:rotate(-360deg); }
+  }
+  @-webkit-keyframes loOrbitImg{
+    from{ -webkit-transform:rotate(0deg); transform:rotate(0deg); }
+    to{ -webkit-transform:rotate(-360deg); transform:rotate(-360deg); }
   }
   #loadingOverlay .lo-message{
     position:relative;
@@ -1071,14 +1085,37 @@ body.dark .tile[data-kind="empty"]{
     border-top-color:#ffd84d;
     border-radius:50%;
     animation:loSpin .9s linear infinite;
+    -webkit-animation:loSpin .9s linear infinite;
     will-change:transform;
     margin:0 auto 15px;
   }
   @keyframes loSpin{
     to{ transform:rotate(360deg); }
   }
+  @-webkit-keyframes loSpin{
+    to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
+  }
+  /* Reduced motion: use subtle pulse so loading feedback is still visible */
   @media (prefers-reduced-motion: reduce){
-    #loadingOverlay .lo-spinner{ animation:none; opacity:.7; }
-    #loadingOverlay .lo-orbit-ring{ animation:none; }
-    #loadingOverlay .lo-orbit-img{ animation:none; }
+    #loadingOverlay .lo-spinner{
+      animation:loSpinPulse 1.2s ease-in-out infinite;
+      -webkit-animation:loSpinPulse 1.2s ease-in-out infinite;
+      opacity:1;
+    }
+    #loadingOverlay .lo-orbit-ring{
+      animation:loSpinPulse 1.2s ease-in-out infinite;
+      -webkit-animation:loSpinPulse 1.2s ease-in-out infinite;
+    }
+    #loadingOverlay .lo-orbit-img{
+      animation:none;
+      -webkit-animation:none;
+    }
+  }
+  @keyframes loSpinPulse{
+    0%,100%{ opacity:.6; }
+    50%{ opacity:1; }
+  }
+  @-webkit-keyframes loSpinPulse{
+    0%,100%{ opacity:.6; }
+    50%{ opacity:1; }
   }
