@@ -1,0 +1,6 @@
+name = "loflexgrid"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Deploy to workers.dev subdomain: loflexgrid.littleollienft.workers.dev
+# Run: npx wrangler deploy
