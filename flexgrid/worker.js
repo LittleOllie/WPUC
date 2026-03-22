@@ -11,12 +11,7 @@ const ALCHEMY_HOSTS = {
   polygon: "polygon-mainnet.g.alchemy.com",
 };
 
-const CONFIG = {
-  alchemyApiKey: "2LxYSccU9cpZLJ3HEjV6Q",
-  network: "eth-mainnet",
-  ipfsGateway: "https://ipfs.io/ipfs/",
-  workerUrl: "https://loflexgrid.littleollienft.workers.dev/img?url=",
-};
+const WORKER_URL = "https://loflexgrid.littleollienft.workers.dev";
 
 function corsResponse(body, status = 200, contentType = "application/json") {
   return new Response(body, {
@@ -25,7 +20,7 @@ function corsResponse(body, status = 200, contentType = "application/json") {
   });
 }
 
-async function handleApiNfts(request) {
+async function handleApiNfts(request, apiKey) {
   const url = new URL(request.url);
   const owner = url.searchParams.get("owner");
   const chain = url.searchParams.get("chain") || "eth";
@@ -37,7 +32,6 @@ async function handleApiNfts(request) {
 
   const ownerVal = owner.trim().toLowerCase();
   const host = ALCHEMY_HOSTS[chain] || ALCHEMY_HOSTS.eth;
-  const apiKey = CONFIG.alchemyApiKey;
   const baseUrl = `https://${host}/v2/${apiKey}/getNFTsForOwner`;
   const allNFTs = [];
   let pageKey = null;
@@ -118,7 +112,7 @@ async function handleApiNfts(request) {
   }
 }
 
-async function handleApiNftMetadata(request) {
+async function handleApiNftMetadata(request, apiKey) {
   const url = new URL(request.url);
   const contract = url.searchParams.get("contract");
   const tokenId = url.searchParams.get("tokenId");
@@ -129,7 +123,6 @@ async function handleApiNftMetadata(request) {
   }
 
   const host = ALCHEMY_HOSTS[chain] || ALCHEMY_HOSTS.eth;
-  const apiKey = CONFIG.alchemyApiKey;
   const metaUrl = `https://${host}/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${encodeURIComponent(contract)}&tokenId=${encodeURIComponent(tokenId)}&refreshCache=false`;
 
   try {
@@ -143,8 +136,9 @@ async function handleApiNftMetadata(request) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const apiKey = env.ALCHEMY_API_KEY;
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
@@ -154,15 +148,10 @@ export default {
       url.pathname === "/api/config/flex-grid" || url.pathname === "/api/config/flexgrid";
 
     if (isConfigPath && request.method === "GET") {
-      return corsResponse(JSON.stringify(CONFIG));
-    }
-
-    if (url.pathname === "/api/nfts" && request.method === "GET") {
-      return handleApiNfts(request);
-    }
-
-    if (url.pathname === "/api/nft-metadata" && request.method === "GET") {
-      return handleApiNftMetadata(request);
+      return corsResponse(JSON.stringify({
+        workerUrl: `${WORKER_URL}/img?url=`,
+        network: "eth-mainnet",
+      }));
     }
 
     if (url.pathname === "/img" && request.method === "GET") {
@@ -230,14 +219,21 @@ export default {
         } catch (_) {}
       }
 
-      const placeholderSvg = "<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'><rect fill='#333' width='1' height='1'/></svg>";
-      return new Response(placeholderSvg, {
-        status: 200,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "image/svg+xml",
-        },
-      });
+      // Return 404 so frontend can fall through to direct gateway candidates.
+      // Previously returned 200 with placeholder, causing "success" and never trying direct URLs.
+      return new Response("Image unavailable", { status: 404, headers: CORS });
+    }
+
+    if (!apiKey || typeof apiKey !== "string") {
+      return corsResponse(JSON.stringify({ error: "Server configuration error. Contact site owner." }), 503);
+    }
+
+    if (url.pathname === "/api/nfts" && request.method === "GET") {
+      return handleApiNfts(request, apiKey);
+    }
+
+    if (url.pathname === "/api/nft-metadata" && request.method === "GET") {
+      return handleApiNftMetadata(request, apiKey);
     }
 
     return new Response("Not found", { status: 404, headers: CORS });

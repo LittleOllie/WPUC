@@ -44,10 +44,14 @@ Configuration lives in `src/js/config.js`:
 
 ## Deployment
 
-1. Deploy the entire project folder to any static host (GitHub Pages, Netlify, Vercel, etc.).
-2. Ensure `index.html` is served at the root.
-3. For production, configure the Alchemy API key via a secure backend or Worker endpoint (see `docs/FLEX_GRID_SETUP.md`).
-4. CSP in `index.html` allows required external domains (Alchemy, IPFS, etc.).
+1. Deploy the Worker first (from project root):
+   ```bash
+   npx wrangler deploy
+   npx wrangler secret put ALCHEMY_API_KEY   # Paste your Alchemy API key when prompted
+   ```
+2. Deploy the frontend to any static host (GitHub Pages, Netlify, Vercel, etc.).
+3. Ensure `index.html` is served at the root.
+4. CSP in `index.html` allows required external domains.
 
 ## Docs
 

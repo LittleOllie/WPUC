@@ -1,12 +1,9 @@
 /* Little Ollie Flex Grid (SAFE export for file:// + Multi-Wallet)
-   - GRID loads via Worker proxy + IPFS gateway fallback
-   - Guards against DOUBLE-PROXY
-   - Alchemy metadata fallback per token after image failures
-   - IMPORTANT:
-     - Grid display can fall back to DIRECT urls (for reliability) if Worker fails.
-     - Export stays PROXY-first to keep canvas untainted.
-   - SECURITY: API keys loaded from secure config (see config.js)
+   - GRID loads via Worker proxy — no direct IPFS (avoids CORS/rate limits)
+   - SECURITY: API keys in Worker env only (see config.js)
 */
+import { fetchNFTsFromWorker, fetchNFTsFromZora, WORKER_BASE } from "./api.js";
+
 const DEV = window.location.hostname === "localhost";
 const $ = (id) => document.getElementById(id);
 
@@ -165,7 +162,6 @@ state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
 const EXPORT_WATERMARK_TEXT = "⚡ Powered by Little Ollie";
 
 // Configuration (loaded securely - see loadConfig() below)
-let ALCHEMY_KEY = null;
 let IMG_PROXY = null;
 let configLoaded = false;
 
@@ -176,8 +172,6 @@ const ALCHEMY_HOST = {
   apechain: null,
 };
 
-const WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
-
 // ---------- Build cache-buster (GRID only) ----------
 let BUILD_ID = Date.now();
 
@@ -185,7 +179,7 @@ let BUILD_ID = Date.now();
 const imageCache = new Map();
 
 // ---------- Concurrent load limiter (prevents network overload) ----------
-const MAX_CONCURRENT_LOADS = 6;
+const MAX_CONCURRENT_LOADS = 12;
 let activeLoads = 0;
 const loadQueue = [];
 
@@ -209,43 +203,6 @@ function processQueue() {
     });
 }
 
-// ---------- Image load limiter (prevents Worker/IPFS stampede) ----------
-function createLimiter(max = 3) {
-  let active = 0;
-  const queue = [];
-
-  const next = () => {
-    if (active >= max || queue.length === 0) return;
-    active++;
-
-    const { fn, resolve, reject } = queue.shift();
-    fn()
-      .then(resolve)
-      .catch(reject)
-      .finally(() => {
-        active--;
-        next();
-      });
-  };
-
-  return (fn) =>
-    new Promise((resolve, reject) => {
-      queue.push({ fn, resolve, reject });
-      next();
-    });
-}
-
-// 18 concurrent image loads — faster perceived load; fail-fast timeouts prevent blocking
-let gridImgLimit = createLimiter(18);
-
-// ---------- Image loading tune ----------
-const IMG_LOAD = {
-  gridTimeoutMs: 5000,   // fail fast — 5s so slow gateways don't block
-  gridDirectTimeoutMs: 4000,
-  retriesPerCandidate: 0,
-  backoffMs: 200,
-};
-
 function setImgCORS(imgEl, enabled) {
   try {
     if (!imgEl) return;
@@ -258,42 +215,8 @@ function setImgCORS(imgEl, enabled) {
   } catch (_) {}
 }
 
-// ---------- Timeout wrapper for image loading ----------
 const PLACEHOLDER_DATA_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect fill='%23333' width='1' height='1'/%3E%3C/svg%3E";
 const TILE_PLACEHOLDER_SRC = "src/assets/images/tile.png";
-
-function loadImgWithTimeout(imgEl, src, timeout = 25000) {
-  return Promise.race([
-    new Promise((resolve, reject) => {
-      const clean = () => {
-        imgEl.onload = null;
-        imgEl.onerror = null;
-      };
-      imgEl.onload = () => {
-        clean();
-        resolve(true);
-      };
-      imgEl.onerror = () => {
-        imgEl.src = PLACEHOLDER_DATA_URL;
-        imgEl.onerror = null;
-        clean();
-        reject(new Error("Image failed: " + src));
-      };
-
-      try {
-        imgEl.removeAttribute("src");
-      } catch (e) {}
-      imgEl.src = src;
-    }),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Image load timeout")), timeout)
-    ),
-  ]);
-}
-
-function loadImgWithLimiter(imgEl, src, timeout = 25000) {
-  return gridImgLimit(() => loadImgWithTimeout(imgEl, src, timeout));
-}
 
 // ---------- UI helpers ----------
 const errorLog = {
@@ -576,31 +499,47 @@ function normalizeImageUrl(url) {
   return s;
 }
 
+/** Prefer Worker proxy when available; fallback to direct gateways for reliability. */
+function toProxyUrl(rawUrl) {
+  if (!rawUrl || !IMG_PROXY) return null;
+  if (isAlreadyProxied(rawUrl)) return rawUrl;
+  const normalized = normalizeImageUrl(rawUrl);
+  const urlToProxy = normalized || String(rawUrl).trim();
+  if (!urlToProxy) return null;
+  return IMG_PROXY + encodeURIComponent(urlToProxy);
+}
+
 function safeProxyUrl(src) {
-  if (!src) return "";
-  return normalizeImageUrl(src); // ✅ ALWAYS use direct URL
+  return toProxyUrl(src) || normalizeImageUrl(src) || "";
 }
 
 function gridProxyUrl(src) {
-  return normalizeImageUrl(src); // ✅ no proxy, no cache param
+  if (isAlreadyProxied(src)) return src;
+  return toProxyUrl(src) || normalizeImageUrl(src) || src;
 }
 
+/** Proxy first when available, then direct gateways as fallback. */
 function buildImageCandidates(rawUrl) {
-  const candidates = [];
   const normalized = normalizeImageUrl(rawUrl);
-  if (normalized) candidates.push(normalized);
+  if (!normalized) return [];
+
+  const proxy = toProxyUrl(rawUrl);
+  const candidates = proxy ? [proxy] : [];
+
   const ipfsPath = getIpfsPath(rawUrl);
   if (ipfsPath) {
     candidates.push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
     candidates.push(`https://w3s.link/ipfs/${ipfsPath}`);
     candidates.push(`https://nftstorage.link/ipfs/${ipfsPath}`);
-    candidates.push(`https://gateway.pinata.cloud/ipfs/${ipfsPath}`);
     candidates.push(`https://ipfs.io/ipfs/${ipfsPath}`);
+  } else if (normalized && !candidates.includes(normalized)) {
+    candidates.push(normalized);
   }
+
   return [...new Set(candidates)];
 }
 
-function loadImageWithTimeout(img, src, timeout = 8000) {
+function loadImageWithTimeout(img, src, timeout = 4000) {
   return new Promise((resolve, reject) => {
     const testImg = new Image();
     setImgCORS(testImg, true);
@@ -1026,59 +965,6 @@ function getSortedItemsForGrid(selectedCollections) {
   return all;
 }
 
-/** Fallback: fetch NFTs from Zora API when Alchemy returns nothing (e.g. OGenie) */
-async function fetchNFTsFromZora({ wallet, contractAddress }) {
-  const query = `query($owner: String!, $contract: String!, $after: String) {
-    tokens(
-      networks: [{network: ETHEREUM, chain: MAINNET}]
-      pagination: {limit: 100, after: $after}
-      where: {ownerAddresses: [$owner], collectionAddresses: [$contract]}
-    ) {
-      nodes {
-        token {
-          collectionAddress
-          tokenId
-          name
-          image { url }
-        }
-      }
-      pageInfo { hasNextPage endCursor }
-    }
-  }`;
-  const all = [];
-  let after = null;
-  for (let page = 0; page < 25; page++) {
-    const res = await fetch("https://api.zora.co/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query,
-        variables: { owner: wallet, contract: contractAddress, after },
-      }),
-    });
-    if (!res.ok) break;
-    const json = await res.json().catch(() => ({}));
-    const nodes = json?.data?.tokens?.nodes ?? [];
-    for (const n of nodes) {
-      const t = n?.token;
-      if (!t?.tokenId) continue;
-      const img = t?.image;
-      const imgUrl = typeof img === "object" && img ? img?.url : null;
-      all.push({
-        contract: { address: (t.collectionAddress || contractAddress).toLowerCase(), name: "" },
-        contractAddress: (t.collectionAddress || contractAddress).toLowerCase(),
-        tokenId: String(t.tokenId),
-        name: t?.name || `#${t.tokenId}`,
-        image: imgUrl ? { cachedUrl: imgUrl, originalUrl: imgUrl } : null,
-      });
-    }
-    const hasNext = json?.data?.tokens?.pageInfo?.hasNextPage;
-    if (!hasNext) break;
-    after = json?.data?.tokens?.pageInfo?.endCursor;
-  }
-  return all;
-}
-
 /** Add a collection by contract address (for collections Alchemy's discovery misses, e.g. OGenie) */
 async function addCollectionByContract(contractInput) {
   const addr = (contractInput || "").trim();
@@ -1311,10 +1197,7 @@ function buildGrid() {
       `Little Ollie Flex Grid <span class="titleHint">Edit size • Drag to reorder</span>`;
   }
 
-  if (stageMeta) {
-    stageMeta.textContent =
-      `${state.wallets.length} wallet(s) • ${chosen.length} collection(s) • ${usedItems.length} NFT(s) • grid ${rows}×${cols}`;
-  }
+  if (stageMeta) stageMeta.textContent = "";
 
   const nftsWithImages = usedItems.filter((item) => item?.image);
   state.imageLoadState.total = nftsWithImages.length;
@@ -1481,10 +1364,7 @@ function removeUnloadedAndReshuffle() {
   for (let i = 0; i < fillerCount; i++) grid.appendChild(makeFillerTile());
 
   const stageMeta = $("stageMeta");
-  if (stageMeta) {
-    stageMeta.textContent =
-      `${state.wallets.length} wallet(s) • ${getSelectedCollections().length} collection(s) • ${newItems.length} NFT(s) • grid ${rows}×${cols}`;
-  }
+  if (stageMeta) stageMeta.textContent = "";
 
   requestAnimationFrame(syncWatermarkDOMToOneTile);
   updateImageProgress();
@@ -1600,7 +1480,7 @@ async function loadTileImage(tile, img, rawUrl) {
       setImgCORS(img, true);
       const proxyUrl = gridProxyUrl(url) || url;
       await queueImageLoad(() =>
-        loadImageWithTimeout(img, proxyUrl, 8000)
+        loadImageWithTimeout(img, proxyUrl, 4000)
       );
       imageCache.set(url, url);
       tile.dataset.src = url;
@@ -1627,10 +1507,12 @@ async function loadTileImage(tile, img, rawUrl) {
 function preloadCollection(nfts) {
   const batch = (nfts || []).slice(0, 30);
   for (const nft of batch) {
-    const url = normalizeImageUrl(getImage(nft));
+    const raw = getImage(nft);
+    const url = toProxyUrl(raw) || normalizeImageUrl(raw);
     if (!url) continue;
     if (!imageCache.has(url)) {
       const img = new Image();
+      img.crossOrigin = "anonymous";
       img.src = url;
       imageCache.set(url, url);
     }
@@ -1769,13 +1651,20 @@ async function loadWallets() {
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
 
     const allNfts = [];
-    for (let i = 0; i < state.wallets.length; i++) {
-      const w = state.wallets[i];
-      const walletPct = state.wallets.length > 0 ? Math.round((i / state.wallets.length) * 100) : 0;
-      showLoading("🧺 Gathering your NFTs... This may take a minute.", `Wallet ${i + 1}/${state.wallets.length}`, walletPct);
-      setStatus(`Gathering NFTs… wallet ${i + 1}/${state.wallets.length}. This may take a minute.`);
-      const nfts = await fetchNFTsFromWorker({ wallet: w, chain });
-      allNfts.push(...(nfts || []));
+    const WALLET_BATCH_SIZE = 3;
+    for (let i = 0; i < state.wallets.length; i += WALLET_BATCH_SIZE) {
+      const batch = state.wallets.slice(i, i + WALLET_BATCH_SIZE);
+      const batchNum = Math.floor(i / WALLET_BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(state.wallets.length / WALLET_BATCH_SIZE);
+      const walletPct = state.wallets.length > 0
+        ? Math.round((Math.min(i + WALLET_BATCH_SIZE, state.wallets.length) / state.wallets.length) * 100)
+        : 0;
+      showLoading("🧺 Gathering your NFTs...", `Wallets ${i + 1}-${Math.min(i + WALLET_BATCH_SIZE, state.wallets.length)} of ${state.wallets.length}`, walletPct);
+      setStatus(`Gathering NFTs… batch ${batchNum}/${totalBatches}.`);
+      const results = await Promise.all(
+        batch.map((w) => fetchNFTsFromWorker({ wallet: w, chain }))
+      );
+      results.forEach((nfts) => allNfts.push(...(nfts || [])));
     }
 
     showLoading("🎨 Sorting your collections...", "", 85);
@@ -1948,35 +1837,6 @@ function dedupeNFTs(nfts) {
   }
   if (DEV && dupes > 0) console.log(`dedupeNFTs: ${nfts.length} → ${out.length} unique (${dupes} duplicates)`);
   return out;
-}
-
-async function fetchNFTsFromWorker({ wallet, chain }) {
-  const chainParam = chain || "eth";
-  const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chainParam}`;
-
-  const res = await fetch(url);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error || `NFT fetch failed (${res.status})`);
-  }
-
-  const json = await res.json();
-  const nfts = json.nfts || [];
-
-  if (DEV) console.log("✅ WORKER NFT COUNT", nfts.length);
-  if (DEV) console.log(
-    "✅ WORKER RAW SAMPLE",
-    nfts.slice(0, 10).map((nft) => ({
-      contract: nft?.contract?.address,
-      name: nft?.contract?.name || nft?.collection?.name,
-      tokenType: nft?.tokenType || nft?.id?.tokenMetadata?.tokenType,
-      balance: nft?.balance,
-      tokenId: nft?.tokenId,
-      idTokenId: nft?.id?.tokenId,
-    }))
-  );
-
-  return nfts;
 }
 
 const PLACEHOLDER_IMAGE = "";
@@ -2392,15 +2252,6 @@ function toggleTraitOrderSection() {
   if (selectAllBtn) selectAllBtn.addEventListener("click", () => setAllCollections(true));
   if (selectNoneBtn) selectNoneBtn.addEventListener("click", () => setAllCollections(false));
 
-  const addContractBtn = $("addContractBtn");
-  const addContractInput = $("addContractInput");
-  if (addContractBtn && addContractInput) {
-    addContractBtn.addEventListener("click", () => addCollectionByContract(addContractInput.value?.trim?.()));
-    addContractInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") addCollectionByContract(addContractInput.value?.trim?.());
-    });
-  }
-
   const loadBtn = $("loadBtn");
   if (loadBtn) loadBtn.addEventListener("click", loadWallets);
   const gridBuildBtn = $("gridBuildBtn");
@@ -2489,11 +2340,10 @@ async function initializeConfig() {
     const { loadConfig } = await import("./config.js");
     const config = await loadConfig();
 
-    ALCHEMY_KEY = config.alchemyApiKey;
     IMG_PROXY = config.workerUrl;
 
-    if (!ALCHEMY_KEY) {
-      throw new Error("Unable to load configuration. No API key provided. Ensure your Worker supplies alchemyApiKey.");
+    if (!IMG_PROXY) {
+      throw new Error("Unable to load configuration. Ensure your Worker supplies workerUrl.");
     }
     configLoaded = true;
 

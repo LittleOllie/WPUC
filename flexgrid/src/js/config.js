@@ -21,7 +21,7 @@ async function fetchConfig(url, timeoutMs = 8000) {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    if (json?.alchemyApiKey && json?.workerUrl) return json;
+    if (json?.workerUrl) return json;
     throw new Error("Invalid config shape");
   } finally {
     clearTimeout(t);

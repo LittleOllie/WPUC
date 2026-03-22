@@ -51,6 +51,40 @@
 </head>
 
 <body>
+  <!-- First-visit disclaimer -->
+  <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
+    <div class="disclaimer-modal">
+      <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
+      <div class="disclaimer-content">
+        <h2 class="disclaimer-title">👋 Welcome to Little Ollie Flex Grid!</h2>
+        <p class="disclaimer-text">Unfortunately, not all collections work 100% yet — we're actively looking into compatibility. Please reach out with any issues so we can keep improving this for everyone!</p>
+        <div class="disclaimer-socials">
+          <a href="mailto:Littleollienft@gmail.com" class="disclaimer-link" aria-label="Email us">✉️ Email</a>
+          <a href="https://instagram.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Instagram">📷 Instagram</a>
+          <a href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Twitter / X">🐦 Twitter</a>
+        </div>
+        <button id="disclaimerContinue" class="btn disclaimer-continue" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var KEY = "flexgridDisclaimerAccepted";
+      var overlay = document.getElementById("disclaimerOverlay");
+      var btn = document.getElementById("disclaimerContinue");
+      var isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      if (!isLocalhost && localStorage.getItem(KEY)) {
+        if (overlay) overlay.classList.add("hidden");
+      }
+      if (btn && overlay) {
+        btn.addEventListener("click", function(){
+          if (!isLocalhost) localStorage.setItem(KEY, "1");
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        });
+      }
+    })();
+  </script>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="lo-orbit-wrap">
       <div class="lo-orbit-ring"><img src="src/assets/images/LO.png" class="lo-orbit-img" alt="" aria-hidden="true"></div>
@@ -268,21 +302,6 @@
         });
       }
     })();
-  </script>
-
-  <!-- ✅ always shows/hides custom grid UI correctly -->
-  <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      const gridSize = document.getElementById("gridSize");
-      const wrap = document.getElementById("customGridWrap");
-      if(!gridSize || !wrap) return;
-
-      const sync = () => {
-        wrap.style.display = (gridSize.value === "custom") ? "" : "none";
-      };
-      gridSize.addEventListener("change", sync);
-      sync();
-    });
   </script>
 
   <!-- ✅ Watermark auto-scale + lock width to 1 tile (fixes overlap into tile #2) -->
