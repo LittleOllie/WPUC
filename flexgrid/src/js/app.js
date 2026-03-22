@@ -123,6 +123,7 @@ const state = {
   host: "eth-mainnet.g.alchemy.com",
   walletCollapsed: false,
   collectionsCollapsed: false,
+  traitOrderCollapsed: false,
 };
 state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
 
@@ -704,15 +705,10 @@ function buildTraitsByCollection(collection) {
   const traits = {};
   const nfts = collection.nfts || [];
   for (const nft of nfts) {
-    const attrs =
-      nft.rawMetadata?.attributes ||
-      nft.rawMetadata?.metadata?.attributes ||
-      nft.metadata?.attributes ||
-      [];
-    if (!Array.isArray(attrs)) continue;
+    const attrs = getNFTAttributes(nft);
     for (const a of attrs) {
       const tt = (a?.trait_type || a?.traitType || a?.type || "").toString().trim();
-      const val = (a?.value ?? "").toString().trim();
+      const val = String(a?.value ?? a?.trait_value ?? a?.display_value ?? "").trim();
       if (!tt) continue;
       if (!traits[tt]) traits[tt] = {};
       traits[tt][val] = (traits[tt][val] || 0) + 1;
@@ -721,21 +717,21 @@ function buildTraitsByCollection(collection) {
   return traits;
 }
 
-/** Instant trait sort: update state and re-render grid (no refetch, no Build required). */
+/** Update trait sort state when dropdown changes. User clicks Re-build to apply. */
 function onTraitChange(collectionKey, trait) {
   state.selectedSortByCollection[collectionKey] = trait;
-  updateGrid();
 }
 
 /** Re-render grid using already-loaded NFTs. Instantly reorders when trait changes. */
 function updateGrid() {
   const grid = $("grid");
-  const hasTiles = grid && Array.from(grid.children).some((c) => c.classList.contains("tile") && (c.dataset.kind === "nft" || c.dataset.kind === "missing"));
-  if (hasTiles && state.currentGridItems?.length > 0) {
+  const nftTileCount = grid ? Array.from(grid.children).filter((c) => c.classList.contains("tile") && (c.dataset.kind === "nft" || c.dataset.kind === "missing")).length : 0;
+  const chosen = getSelectedCollections();
+  if (!chosen.length) return;
+  if (nftTileCount > 0) {
     reorderGrid();
   } else {
-    const chosen = getSelectedCollections();
-    if (chosen.length > 0) buildGrid();
+    buildGrid();
   }
 }
 
@@ -780,35 +776,85 @@ function renderTraitFiltersForSelected() {
     const selectedTrait = state.selectedSortByCollection[c.key] || "";
     select.value = selectedTrait;
 
-    select.addEventListener("change", () => {
-      onTraitChange(c.key, select.value || "");
-    });
-
     block.appendChild(nameEl);
     block.appendChild(select);
     container.appendChild(block);
   });
+
+  const rebuildWrap = document.createElement("div");
+  rebuildWrap.className = "collection-trait-control trait-rebuild-wrap";
+  const rebuildBtn = document.createElement("button");
+  rebuildBtn.type = "button";
+  rebuildBtn.className = "btn trait-rebuild-btn";
+  rebuildBtn.textContent = "Re-build";
+  rebuildBtn.title = "Rebuild grid with current trait order";
+  rebuildBtn.addEventListener("click", () => buildGrid());
+  rebuildWrap.appendChild(rebuildBtn);
+  container.appendChild(rebuildWrap);
+}
+
+/** Get attributes array from NFT (handles multiple metadata structures). */
+function getNFTAttributes(nft) {
+  const attrs =
+    nft?.rawMetadata?.attributes ||
+    nft?.rawMetadata?.metadata?.attributes ||
+    nft?.metadata?.attributes ||
+    nft?.contractMetadata?.openSea?.traits ||
+    [];
+  if (Array.isArray(attrs)) return attrs;
+  if (attrs && typeof attrs === "object" && !Array.isArray(attrs)) {
+    return Object.entries(attrs).map(([k, v]) => ({ trait_type: k, value: v }));
+  }
+  return [];
+}
+
+/** Trait name variants for fuzzy matching (e.g. BG → Background). */
+const TRAIT_VARIANTS = {
+  bg: ["bg", "background", "backgrounds", "back", "background color", "base"],
+  background: ["background", "backgrounds", "bg", "back", "background color", "base"],
+  backgrounds: ["backgrounds", "background", "bg", "back", "background color", "base"],
+  "background color": ["background color", "background", "backgrounds", "bg"],
+  base: ["base", "background", "backgrounds", "bg"],
+};
+
+const BACKGROUND_TRAIT_PRIORITY = ["background", "backgrounds", "bg", "background color", "base", "back"];
+
+/** Find the background trait type for a collection (for default sort on first build). */
+function getDefaultBackgroundTrait(traitTypes) {
+  const lower = (traitTypes || []).map((t) => String(t).trim().toLowerCase());
+  for (const want of BACKGROUND_TRAIT_PRIORITY) {
+    const idx = lower.findIndex((t) => t === want || t.includes(want));
+    if (idx >= 0) return traitTypes[idx];
+  }
+  return "";
+}
+
+function getTraitMatchNames(selectedTrait) {
+  const norm = String(selectedTrait || "").trim().toLowerCase();
+  if (!norm) return [];
+  if (TRAIT_VARIANTS[norm]) return TRAIT_VARIANTS[norm];
+  return [norm];
 }
 
 function sortCollection(nfts, trait) {
   if (!trait || !nfts?.length) return nfts || [];
 
+  const matchNames = getTraitMatchNames(trait);
   return [...nfts].sort((a, b) => {
     const getVal = (nft) => {
-      const list =
-        nft?.rawMetadata?.attributes ||
-        nft?.rawMetadata?.metadata?.attributes ||
-        nft?.metadata?.attributes ||
-        [];
-      if (!Array.isArray(list)) return "";
-      const attr = list.find(
-        (x) => (x?.trait_type || x?.traitType || x?.type) === trait
-      );
-      return String(attr?.value ?? "");
+      const list = getNFTAttributes(nft);
+      for (const x of list) {
+        const tt = (x?.trait_type || x?.traitType || x?.type || "").toString().trim().toLowerCase();
+        if (matchNames.includes(tt)) {
+          const val = x?.value ?? x?.trait_value ?? x?.display_value ?? "";
+          return String(val).trim();
+        }
+      }
+      return "";
     };
     const aVal = getVal(a);
     const bVal = getVal(b);
-    return aVal.localeCompare(bVal);
+    return aVal.toLowerCase().localeCompare(bVal.toLowerCase(), undefined, { sensitivity: "base" });
   });
 }
 
@@ -820,7 +866,8 @@ function getSortedItemsForGrid(selectedCollections) {
     const trait = state.selectedSortByCollection[collection.key] || "";
     const sorted = sortCollection(collection.nfts || [], trait);
     for (const nft of sorted) {
-      all.push(nftToGridItem(nft, collection.key));
+      const item = nftToGridItem(nft, collection.key);
+      all.push(item);
     }
   }
   return all;
@@ -1026,6 +1073,15 @@ function buildGrid() {
     return;
   }
 
+  for (const c of chosen) {
+    if (!state.selectedSortByCollection[c.key]) {
+      const traitsByType = buildTraitsByCollection(c);
+      const traitTypes = Object.keys(traitsByType);
+      const bgTrait = getDefaultBackgroundTrait(traitTypes);
+      if (bgTrait) state.selectedSortByCollection[c.key] = bgTrait;
+    }
+  }
+
   let items = flattenItems(chosen);
 
   const HARD_CAP = 400;
@@ -1140,9 +1196,15 @@ function reorderGrid() {
 
   const keyToTile = new Map();
   const usedKeys = new Set();
+  const collKeyNorm = (s) => String(s || "").trim().toLowerCase();
+
   nftTiles.forEach((t) => {
+    const collKey = collKeyNorm(t.dataset.collectionKey);
     const k = (t.dataset.key || "").trim();
-    if (k) {
+    if (!k) return;
+    const composite = `${collKey}::${k}`;
+    keyToTile.set(composite, t);
+    if (!collKey) {
       keyToTile.set(k, t);
       const alt = (t.dataset.contract && t.dataset.tokenId)
         ? `${String(t.dataset.contract).toLowerCase()}:${String(t.dataset.tokenId).trim()}`
@@ -1156,8 +1218,10 @@ function reorderGrid() {
 
   const usedTiles = new Set();
   for (const it of usedItems) {
-    const k = getGridItemKey(it);
-    const t = keyToTile.get(k);
+    const itemKey = getGridItemKey(it);
+    const collKey = collKeyNorm(it?.sourceKey);
+    let t = keyToTile.get(`${collKey}::${itemKey}`);
+    if (!t) t = keyToTile.get(itemKey);
     if (t && !usedTiles.has(t)) {
       usedTiles.add(t);
       grid.appendChild(t);
@@ -2032,6 +2096,15 @@ function toggleCollectionsSection() {
   }
 }
 
+function toggleTraitOrderSection() {
+  state.traitOrderCollapsed = !state.traitOrderCollapsed;
+  const el = $("traitOrderSection");
+  if (el) {
+    if (state.traitOrderCollapsed) el.classList.add("collapsed");
+    else el.classList.remove("collapsed");
+  }
+}
+
 // ---------- Events + Retry ----------
 (function bindEvents() {
   const walletInput = $("walletInput");
@@ -2100,6 +2173,16 @@ function toggleCollectionsSection() {
   const clearErrBtn = $("clearErrorLog");
   if (clearErrBtn) clearErrBtn.addEventListener("click", clearErrorLog);
 
+  const traitControlsContainer = $("collectionTraitControls");
+  if (traitControlsContainer) {
+    traitControlsContainer.addEventListener("change", (e) => {
+      const sel = e.target;
+      if (sel && sel.matches && sel.matches("select.trait-type") && sel.dataset.key) {
+        onTraitChange(sel.dataset.key, sel.value || "");
+      }
+    });
+  }
+
   const walletHeader = $("walletSectionHeader");
   if (walletHeader) {
     walletHeader.addEventListener("click", toggleWalletSection);
@@ -2114,6 +2197,14 @@ function toggleCollectionsSection() {
     collectionsHeader.addEventListener("click", toggleCollectionsSection);
     collectionsHeader.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCollectionsSection(); }
+    });
+  }
+
+  const traitOrderHeader = $("traitOrderSectionHeader");
+  if (traitOrderHeader) {
+    traitOrderHeader.addEventListener("click", toggleTraitOrderSection);
+    traitOrderHeader.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTraitOrderSection(); }
     });
   }
 

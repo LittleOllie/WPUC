@@ -370,14 +370,9 @@ body{
     .stageTitle{ font-weight: 950; letter-spacing: .2px; }
     .stageMeta{ font-size: 16px; opacity:.95; text-align:right; }
 
-    /* Stage footer - Build / Export at bottom of collage */
-    .stageFooter{
-      display: flex;
-      gap: 12px;
-      padding: 14px 16px;
-      border-top: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.1);
-      flex-wrap: wrap;
+    /* Stage footer - now empty (Build/Export moved to Trait Order) */
+    .stageFooter:empty{
+      display: none;
     }
     .stageFooterBtn{
       flex: 1;
@@ -576,18 +571,82 @@ body.dark .collectionItem.selected{
   background: rgba(0, 255, 213, 0.1);
 }
 
-/* Per-collection trait controls (above grid) - horizontal layout */
-.trait-row{
+/* Trait Order collapsible section */
+.traitOrderSection .traitOrderSectionHeader{
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0,0,0,.12);
+  border-radius: 10px;
+  margin-bottom: 0;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.traitOrderSection .traitOrderSectionHeader:hover{
+  background: rgba(0,0,0,.16);
+}
+.traitOrderSection:not(.collapsed) .traitOrderSectionHeader .collapseIcon{
+  transform: rotate(90deg);
+}
+.traitOrderContent{
+  max-height: 2000px;
+  overflow: hidden;
+  padding: 14px 0 0;
+  transition: max-height 0.35s ease, padding 0.25s ease, visibility 0.2s ease, opacity 0.2s ease;
+}
+.traitOrderSection.collapsed .traitOrderContent{
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Trait row: trait controls + Build/Export stacked on right */
+.traitOrderRow{
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
 }
 .collectionTraitControls{
+  flex: 1;
   padding: 12px;
   margin-bottom: 12px;
   background: rgba(0,0,0,.08);
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.12);
+}
+.traitActionsColumn{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: stretch;
+  min-width: 140px;
+  min-height: 100px; /* Match trait box height so two buttons = one trait box */
+}
+.trait-action-btn{
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  font-size: 15px;
+}
+/* Per-collection trait controls - horizontal layout */
+.trait-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .collection-trait-control{
   display: flex;
@@ -605,20 +664,36 @@ body.dark .collectionItem.selected{
   opacity: 1;
   color: var(--btnText);
 }
+/* Trait select + Re-build: same height as main .btn, text fits comfortably */
 .collection-trait-control .trait-type{
   width: 100%;
-  max-width: 200px;
+  min-width: 140px;
+  max-width: 220px;
+  min-height: 46px;
   margin-top: 4px;
   background: rgba(255,255,255,0.95);
   color: var(--btnText);
   border: 1px solid rgba(0,0,0,.12);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 12px 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  box-sizing: border-box;
 }
 .collection-trait-control .trait-type:focus{
   outline: 2px solid var(--btnYellow2);
+}
+.trait-rebuild-wrap{
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 2px;
+}
+.trait-rebuild-btn{
+  min-height: 46px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 /* Collapsible sections - clean bar, yellow arrow, fully hide content when collapsed */

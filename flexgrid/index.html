@@ -228,7 +228,21 @@
     </section>
 
 <section class="stageWrap" id="gridPanel">
-      <div id="collectionTraitControls" class="collectionTraitControls trait-row"></div>
+      <div class="traitOrderSection" id="traitOrderSection">
+        <div class="traitOrderSectionHeader" id="traitOrderSectionHeader" role="button" tabindex="0">
+          <span>Trait Order</span>
+          <span class="collapseIcon">▶</span>
+        </div>
+        <div class="traitOrderContent" id="traitOrderContent">
+          <div class="traitOrderRow">
+            <div id="collectionTraitControls" class="collectionTraitControls trait-row"></div>
+            <div class="traitActionsColumn">
+              <button id="gridBuildBtn" class="btn trait-action-btn" type="button" disabled>🧩 Build Grid</button>
+              <button id="gridExportBtn" class="btn trait-action-btn" type="button" disabled>📸 Export PNG</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="stage" class="stage">
         <div class="stageHeader">
 <div id="stageTitle" class="stageTitle">
@@ -252,10 +266,7 @@
 
         </div>
 
-        <div class="stageFooter">
-          <button id="gridBuildBtn" class="btn stageFooterBtn" type="button" disabled>🧩 Build Grid</button>
-          <button id="gridExportBtn" class="btn stageFooterBtn" type="button" disabled>📸 Export PNG</button>
-        </div>
+        <div class="stageFooter"></div>
       </div>
     </section>
 
