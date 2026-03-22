@@ -117,9 +117,12 @@ function updateGuideGlow() {
 const state = {
   collections: [],
   selectedKeys: new Set(),
+  selectedSortByCollection: {},
   wallets: [],
   chain: "eth",
   host: "eth-mainnet.g.alchemy.com",
+  walletCollapsed: false,
+  collectionsCollapsed: false,
 };
 state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
 
@@ -137,6 +140,8 @@ const ALCHEMY_HOST = {
   polygon: "polygon-mainnet.g.alchemy.com",
   apechain: null,
 };
+
+const WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
 
 // ---------- Build cache-buster (GRID only) ----------
 let BUILD_ID = Date.now();
@@ -202,6 +207,8 @@ function setImgCORS(imgEl, enabled) {
 }
 
 // ---------- Timeout wrapper for image loading ----------
+const PLACEHOLDER_DATA_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect fill='%23333' width='1' height='1'/%3E%3C/svg%3E";
+
 function loadImgWithTimeout(imgEl, src, timeout = 25000) {
   return Promise.race([
     new Promise((resolve, reject) => {
@@ -214,11 +221,20 @@ function loadImgWithTimeout(imgEl, src, timeout = 25000) {
         resolve(true);
       };
       imgEl.onerror = () => {
+        if (!imgEl.dataset.retry) {
+          imgEl.dataset.retry = "1";
+          const fallbackSrc = src.replace("nftstorage.link", "cloudflare-ipfs.com");
+          if (fallbackSrc !== src) {
+            imgEl.src = fallbackSrc;
+            return;
+          }
+        }
+        imgEl.src = PLACEHOLDER_DATA_URL;
+        imgEl.onerror = null;
         clean();
         reject(new Error("Image failed: " + src));
       };
 
-      // ✅ prevents broken icon / filename flash
       try {
         imgEl.removeAttribute("src");
       } catch (e) {}
@@ -411,6 +427,12 @@ function showControlsPanel(show) {
   if (el) el.style.display = show ? "" : "none";
 }
 
+function syncGridFooterButtons(buildDisabled, exportDisabled) {
+  const gridBuild = $("gridBuildBtn");
+  const gridExport = $("gridExportBtn");
+  if (gridBuild != null) gridBuild.disabled = buildDisabled ?? state.selectedKeys.size === 0;
+  if (gridExport != null) gridExport.disabled = exportDisabled ?? true;
+}
 function enableButtons() {
   const loadBtn = $("loadBtn");
   const buildBtn = $("buildBtn");
@@ -418,8 +440,10 @@ function enableButtons() {
 
   const hasWallets = state.wallets.length > 0;
   if (loadBtn) loadBtn.disabled = !hasWallets;
-  if (buildBtn) buildBtn.disabled = state.selectedKeys.size === 0;
+  const buildDisabled = state.selectedKeys.size === 0;
+  if (buildBtn) buildBtn.disabled = buildDisabled;
   if (exportBtn) exportBtn.disabled = true;
+  syncGridFooterButtons(buildDisabled, true);
 
   updateGuideGlow();
 }
@@ -464,7 +488,7 @@ function normalizeImageUrl(url) {
   if (isAlreadyProxied(url)) return url;
 
   const ipfsPath = getIpfsPath(url);
-  if (ipfsPath) return "ipfs://" + ipfsPath;
+  if (ipfsPath) return "https://nftstorage.link/ipfs/" + ipfsPath;
 
   try {
     const u = new URL(String(url));
@@ -544,6 +568,7 @@ function addWallet() {
   }
 
   renderWalletList();
+  syncWalletHeader();
   enableButtons();
   updateGuideGlow();
   setStatus(`✅ Nice! Wallet added (${state.wallets.length} total)`);
@@ -552,6 +577,7 @@ function addWallet() {
 function removeWallet(w) {
   state.wallets = state.wallets.filter((x) => x !== w);
   renderWalletList();
+  syncWalletHeader();
   enableButtons();
   updateGuideGlow();
     setStatus(`Bye bye wallet — ${state.wallets.length} remaining`);
@@ -630,27 +656,29 @@ function renderCollectionsList() {
       const exportBtn = $("exportBtn");
       if (buildBtn) buildBtn.disabled = state.selectedKeys.size === 0;
       if (exportBtn) exportBtn.disabled = true;
+      syncGridFooterButtons(state.selectedKeys.size === 0, true);
 
+      renderTraitFiltersForSelected();
       updateGuideGlow();
     });
 
     const label = document.createElement("div");
     label.style.minWidth = "0";
 
+    const count = (c.count ?? c.nfts?.length ?? 0);
+    const displayName = shortenForDisplay(c.name) || "Unknown Collection";
+    const labelText = `${displayName} (${count} owned)`;
+
     const name = document.createElement("div");
     name.className = "collectionName";
-    name.textContent = c.name;
-
-    const count = document.createElement("div");
-    count.className = "collectionCount";
-    count.textContent = `${c.count} owned`;
+    name.textContent = labelText;
 
     label.appendChild(name);
-
     row.appendChild(label);
-    row.appendChild(count);
     wrap.appendChild(row);
   });
+
+  renderTraitFiltersForSelected();
 }
 
 function setAllCollections(checked) {
@@ -662,12 +690,140 @@ function setAllCollections(checked) {
   const exportBtn = $("exportBtn");
   if (buildBtn) buildBtn.disabled = state.selectedKeys.size === 0;
   if (exportBtn) exportBtn.disabled = true;
+  syncGridFooterButtons(state.selectedKeys.size === 0, true);
 
   updateGuideGlow();
 }
 
 function getSelectedCollections() {
   return state.collections.filter((c) => state.selectedKeys.has(c.key));
+}
+
+/** Build traitsByCollection: { [key]: { "Hat": { "Crown": 5, "Beanie": 3 }, ... } } */
+function buildTraitsByCollection(collection) {
+  const traits = {};
+  const nfts = collection.nfts || [];
+  for (const nft of nfts) {
+    const attrs =
+      nft.rawMetadata?.attributes ||
+      nft.rawMetadata?.metadata?.attributes ||
+      nft.metadata?.attributes ||
+      [];
+    if (!Array.isArray(attrs)) continue;
+    for (const a of attrs) {
+      const tt = (a?.trait_type || a?.traitType || a?.type || "").toString().trim();
+      const val = (a?.value ?? "").toString().trim();
+      if (!tt) continue;
+      if (!traits[tt]) traits[tt] = {};
+      traits[tt][val] = (traits[tt][val] || 0) + 1;
+    }
+  }
+  return traits;
+}
+
+/** Instant trait sort: update state and re-render grid (no refetch, no Build required). */
+function onTraitChange(collectionKey, trait) {
+  state.selectedSortByCollection[collectionKey] = trait;
+  updateGrid();
+}
+
+/** Re-render grid using already-loaded NFTs. Instantly reorders when trait changes. */
+function updateGrid() {
+  const grid = $("grid");
+  const hasTiles = grid && Array.from(grid.children).some((c) => c.classList.contains("tile") && (c.dataset.kind === "nft" || c.dataset.kind === "missing"));
+  if (hasTiles && state.currentGridItems?.length > 0) {
+    reorderGrid();
+  } else {
+    const chosen = getSelectedCollections();
+    if (chosen.length > 0) buildGrid();
+  }
+}
+
+/** Render per-collection trait sort dropdown (one per collection, trait type only). */
+function renderTraitFiltersForSelected() {
+  const container = document.getElementById("collectionTraitControls");
+  if (!container) return;
+
+  const chosen = getSelectedCollections();
+  container.innerHTML = "";
+
+  if (!chosen.length) return;
+
+  chosen.forEach((c) => {
+    const traitsByType = buildTraitsByCollection(c);
+    const traitTypes = Object.keys(traitsByType).sort();
+
+    const block = document.createElement("div");
+    block.className = "collection-trait-control";
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "collection-name";
+    nameEl.textContent = shortenForDisplay(c.name) || "Collection";
+
+    const select = document.createElement("select");
+    select.className = "input trait-type";
+    select.dataset.key = c.key;
+
+    const toTitleCase = (s) =>
+      !s ? s : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const options = [
+      { value: "", label: "Original" },
+      ...traitTypes.map((t) => ({ value: t, label: toTitleCase(t) })),
+    ];
+    options.forEach((opt) => {
+      const o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.label;
+      select.appendChild(o);
+    });
+
+    const selectedTrait = state.selectedSortByCollection[c.key] || "";
+    select.value = selectedTrait;
+
+    select.addEventListener("change", () => {
+      onTraitChange(c.key, select.value || "");
+    });
+
+    block.appendChild(nameEl);
+    block.appendChild(select);
+    container.appendChild(block);
+  });
+}
+
+function sortCollection(nfts, trait) {
+  if (!trait || !nfts?.length) return nfts || [];
+
+  return [...nfts].sort((a, b) => {
+    const getVal = (nft) => {
+      const list =
+        nft?.rawMetadata?.attributes ||
+        nft?.rawMetadata?.metadata?.attributes ||
+        nft?.metadata?.attributes ||
+        [];
+      if (!Array.isArray(list)) return "";
+      const attr = list.find(
+        (x) => (x?.trait_type || x?.traitType || x?.type) === trait
+      );
+      return String(attr?.value ?? "");
+    };
+    const aVal = getVal(a);
+    const bVal = getVal(b);
+    return aVal.localeCompare(bVal);
+  });
+}
+
+/** Apply per-collection trait sorting. Returns flat array of grid items.
+ *  IMPORTANT: Each collection stays in its own block — never interleaved. */
+function getSortedItemsForGrid(selectedCollections) {
+  const all = [];
+  for (const collection of selectedCollections) {
+    const trait = state.selectedSortByCollection[collection.key] || "";
+    const sorted = sortCollection(collection.nfts || [], trait);
+    for (const nft of sorted) {
+      all.push(nftToGridItem(nft, collection.key));
+    }
+  }
+  return all;
 }
 
 /** Fallback: fetch NFTs from Zora API when Alchemy returns nothing (e.g. OGenie) */
@@ -740,31 +896,25 @@ async function addCollectionByContract(contractInput) {
     setAddStatus("Load wallets first, then add a collection.");
     return;
   }
-  if (!configLoaded || !ALCHEMY_KEY) {
+  if (!configLoaded) {
     setAddStatus("Configuration not loaded.");
-    return;
-  }
-  const host = state.host || ALCHEMY_HOST[state.chain || "eth"];
-  if (!host) {
-    setAddStatus("Load wallets first to set chain.");
     return;
   }
 
   try {
     setAddStatus("Fetching…");
     let allNfts = [];
+    const chain = state.chain || "eth";
     for (const wallet of state.wallets) {
-      const nfts = await fetchNFTsForContractsBatch({
-        wallet,
-        host,
-        contractAddresses: [normAddr],
-      }).catch(() => []);
+      const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chain}&contractAddresses=${encodeURIComponent(normAddr)}`;
+      const res = await fetch(url).catch(() => null);
+      const json = res?.ok ? await res.json().catch(() => ({})) : {};
+      const nfts = json.nfts || [];
       allNfts.push(...nfts);
     }
 
-    // If Alchemy returns nothing, try Zora as fallback (e.g. OGenie)
-    if (allNfts.length === 0 && (state.chain === "eth" || host?.includes("eth"))) {
-      setAddStatus("Alchemy had none — trying Zora…");
+    if (allNfts.length === 0 && (state.chain === "eth" || state.host?.includes("eth"))) {
+      setAddStatus("Trying Zora…");
       for (const wallet of state.wallets) {
         const nfts = await fetchNFTsFromZora({ wallet, contractAddress: normAddr }).catch(() => []);
         allNfts.push(...nfts);
@@ -776,8 +926,11 @@ async function addCollectionByContract(contractInput) {
       return;
     }
 
-    const deduped = dedupeNFTs(allNfts);
-    const newGrouped = groupByCollection(deduped);
+    const validNfts = allNfts.filter((n) => n && typeof n === "object");
+    const normalized = validNfts.map(normalizeNFT);
+    const deduped = dedupeNFTs(normalized);
+    const expanded = expandNFTs(deduped);
+    const newGrouped = groupByCollection(expanded);
     const newCol = newGrouped.find((c) => c.key === normAddr) || newGrouped[0];
 
     if (!newCol) {
@@ -788,18 +941,21 @@ async function addCollectionByContract(contractInput) {
     state.collections = state.collections || [];
     const existing = state.collections.find((c) => c.key === normAddr);
     if (existing) {
-      const seen = new Set(existing.items.map((i) => `${i.contract}:${i.tokenId}`));
-      for (const it of newCol.items) {
-        const k = `${it.contract}:${it.tokenId}`;
+      const nftKey = (n) =>
+        n?._instanceId ||
+        `${(n?.contract?.address || n?.collection?.address || n?.contractAddress || "").toString().toLowerCase()}:${(n?.tokenId ?? n?.token_id ?? n?.id ?? "").toString()}`;
+      const seen = new Set(existing.nfts.map(nftKey));
+      for (const nft of newCol.nfts) {
+        const k = nftKey(nft);
         if (!seen.has(k)) {
           seen.add(k);
-          existing.items.push(it);
+          existing.nfts.push(nft);
         }
       }
-      existing.count = existing.items.length;
+      existing.count = existing.nfts.length;
     } else {
       state.collections.push(newCol);
-      state.collections.sort((a, b) => b.count - a.count);
+      state.collections.sort((a, b) => (b.nfts?.length ?? 0) - (a.nfts?.length ?? 0));
     }
 
     renderCollectionsList();
@@ -814,9 +970,7 @@ async function addCollectionByContract(contractInput) {
 
 // ---------- Grid helpers ----------
 function flattenItems(chosen) {
-  const all = [];
-  chosen.forEach((c) => c.items.forEach((it) => all.push({ ...it, sourceKey: c.key })));
-  return all;
+  return getSortedItemsForGrid(chosen);
 }
 
 function clampInt(v, min, max, fallback) {
@@ -829,218 +983,6 @@ function clampInt(v, min, max, fallback) {
 // Trait Group Sort (instant reorder)
 // ==========================
 state.currentGridItems = [];
-state.originalGridKeys = [];
-state.lastTraitType = "";
-
-function normalizeTraitType(t) {
-  const s = String(t || "").trim();
-  if (!s) return "";
-  const low = s.toLowerCase();
-
-  if (low === "bg" || low === "b/g" || low === "background") return "Background";
-  if (low === "hat" || low === "head" || low === "headwear") return "Hat";
-  if (low === "eyes" || low === "eye") return "Eyes";
-  if (low === "mouth" || low === "smile") return "Mouth";
-  if (low === "body" || low === "skin") return "Body";
-  if (low === "clothes" || low === "outfit") return "Clothes";
-
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function extractAttributes(item) {
-  const attrs = item?.attributes;
-  if (!attrs) return [];
-  if (Array.isArray(attrs)) return attrs;
-  if (typeof attrs === "object") {
-    return Object.entries(attrs).map(([k, v]) => ({ trait_type: k, value: v }));
-  }
-  return [];
-}
-
-function getTraitValue(item, traitType) {
-  const want = normalizeTraitType(traitType);
-  if (!want) return "";
-
-  const attrs = extractAttributes(item);
-  for (const a of attrs) {
-    const tt = normalizeTraitType(a?.trait_type || a?.traitType || a?.type);
-    if (!tt) continue;
-    if (tt === want) {
-      const v = a?.value;
-      return v === null || v === undefined ? "" : String(v);
-    }
-  }
-  return "";
-}
-
-function computeTraitTypes(items) {
-  const counts = new Map();
-  for (const it of items) {
-    const attrs = extractAttributes(it);
-    for (const a of attrs) {
-      const tt = normalizeTraitType(a?.trait_type || a?.traitType || a?.type);
-      if (!tt) continue;
-      counts.set(tt, (counts.get(tt) || 0) + 1);
-    }
-  }
-
-  const arr = [...counts.entries()]
-    .filter(([_, n]) => n >= 3)
-    .sort((a, b) => b[1] - a[1]);
-
-  return arr.slice(0, 10).map(([tt]) => tt);
-}
-
-function ensureTraitBar() {
-  const stage = document.getElementById("stage");
-  if (!stage) return null;
-
-  let bar = document.getElementById("traitBar");
-  if (bar) return bar;
-
-  bar = document.createElement("div");
-  bar.id = "traitBar";
-  bar.style.display = "flex";
-  bar.style.flexWrap = "wrap";
-  bar.style.gap = "8px";
-  bar.style.padding = "8px 10px";
-  bar.style.borderTop = "1px solid rgba(255,255,255,.12)";
-  bar.style.background = "rgba(0,0,0,.10)";
-  bar.style.alignItems = "center";
-
-  const gridWrap = stage.querySelector(".gridWrap");
-  if (gridWrap) stage.insertBefore(bar, gridWrap);
-  else stage.appendChild(bar);
-
-  return bar;
-}
-
-function renderTraitButtons(items) {
-  const bar = ensureTraitBar();
-  if (!bar) return;
-
-  bar.innerHTML = "";
-
-  const types = computeTraitTypes(items);
-  if (!types.length) {
-    const note = document.createElement("div");
-    note.style.fontSize = "12px";
-    note.style.opacity = "0.9";
-    note.textContent = "Trait groups: (none found in metadata for this grid)";
-    bar.appendChild(note);
-    return;
-  }
-
-  const label = document.createElement("div");
-  label.style.fontSize = "12px";
-  label.style.fontWeight = "900";
-  label.style.opacity = "0.95";
-  label.textContent = "Group:";
-  bar.appendChild(label);
-
-  const originalBtn = document.createElement("button");
-  originalBtn.type = "button";
-  originalBtn.className = "btnSmall";
-  originalBtn.textContent = "↩️ Original";
-  originalBtn.addEventListener("click", () => {
-    if (!state.originalGridKeys?.length) return;
-    reorderGridByKeys(state.originalGridKeys);
-    state.lastTraitType = "";
-    setStatus("Order: original ✅");
-  });
-  bar.appendChild(originalBtn);
-
-  types.forEach((tt) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "btnSmall";
-    b.textContent = tt;
-
-    const isActive = state.lastTraitType === tt;
-    if (isActive) {
-      b.style.filter = "brightness(1.05)";
-      b.style.boxShadow =
-        "0 0 0 2px rgba(255,221,85,0.55), 0 10px 18px rgba(0,0,0,.18)";
-    }
-
-    b.addEventListener("click", () => applyTraitGrouping(tt));
-    bar.appendChild(b);
-  });
-
-  const hint = document.createElement("div");
-  hint.style.marginLeft = "auto";
-  hint.style.fontSize = "12px";
-  hint.style.opacity = "0.85";
-  hint.textContent = "Click a trait to group tiles instantly.";
-  bar.appendChild(hint);
-}
-
-function applyTraitGrouping(traitType) {
-  const items = state.currentGridItems || [];
-  if (!items.length) return;
-
-  const want = normalizeTraitType(traitType);
-  state.lastTraitType = want;
-
-  const sorted = items
-    .map((it, idx) => {
-      const contract = (it?.contract || it?.contractAddress || it?.sourceKey || "").toLowerCase();
-      const tokenId = (it?.tokenId || "").toString();
-      const key = contract && tokenId ? `${contract}:${tokenId}` : "";
-
-      let v = getTraitValue(it, want);
-      v = v ? v.toLowerCase() : "~~~"; // missing last
-
-      return { key, v, idx };
-    })
-    .filter((x) => x.key);
-
-  sorted.sort((a, b) => {
-    if (a.v < b.v) return -1;
-    if (a.v > b.v) return 1;
-    return a.idx - b.idx;
-  });
-
-  const keys = sorted.map((x) => x.key);
-  reorderGridByKeys(keys);
-  renderTraitButtons(items);
-
-  setStatus(`Grouped by: ${want} ✅`);
-}
-
-function reorderGridByKeys(keys) {
-  const grid = document.getElementById("grid");
-  if (!grid) return;
-
-  const tiles = Array.from(grid.querySelectorAll(".tile"));
-  const map = new Map();
-  const fillers = [];
-
-  for (const t of tiles) {
-    const k = t.dataset.key || "";
-    if (k) map.set(k, t);
-    else fillers.push(t);
-  }
-
-  grid.innerHTML = "";
-
-  for (const k of keys) {
-    const t = map.get(k);
-    if (t) grid.appendChild(t);
-  }
-
-  for (const [k, t] of map.entries()) {
-    if (!keys.includes(k)) grid.appendChild(t);
-  }
-
-  for (const f of fillers) grid.appendChild(f);
-
-  requestAnimationFrame(() => {
-    try { syncWatermarkDOMToOneTile(); } catch (e) {}
-    try { enableDragDrop(); } catch (e) {}
-    try { updateGuideGlow(); } catch (e) {}
-  });
-}
 
 function getGridChoice() {
   const v = $("gridSize")?.value || "auto";
@@ -1074,13 +1016,17 @@ function buildGrid() {
   const chosen = getSelectedCollections();
   const exportBtn = $("exportBtn");
 
+  const gridInputNfts = chosen.flatMap((c) => c.nfts || []);
+  console.log("GRID INPUT NFT COUNT", gridInputNfts.length);
+
   if (!chosen.length) {
     setStatus("🎯 Pick at least one collection to build your grid!");
     if (exportBtn) exportBtn.disabled = true;
+    syncGridFooterButtons(true, true);
     return;
   }
 
-  let items = flattenItems(chosen); // ✅ always fill in order
+  let items = flattenItems(chosen);
 
   const HARD_CAP = 400;
   if (items.length > HARD_CAP) items = items.slice(0, HARD_CAP);
@@ -1103,21 +1049,15 @@ function buildGrid() {
     usedItems = items;
   }
 
-  // ✅ Remember current grid NFTs for instant trait grouping
   state.currentGridItems = usedItems.slice();
-  state.originalGridKeys = usedItems
-    .map((it) => {
-      const c = (it?.contract || it?.contractAddress || it?.sourceKey || "").toLowerCase();
-      const t = (it?.tokenId || "").toString();
-      return c && t ? `${c}:${t}` : "";
-    })
-    .filter(Boolean);
-  state.lastTraitType = "";
 
   setGridColumns(cols);
 
   const grid = $("grid");
   if (!grid) return;
+  const oldBar = document.getElementById("traitBar");
+  if (oldBar) oldBar.remove();
+  renderTraitFiltersForSelected();
   grid.innerHTML = "";
 
   const stageTitle = $("stageTitle");
@@ -1150,13 +1090,80 @@ function buildGrid() {
   requestAnimationFrame(syncWatermarkDOMToOneTile);
 
   if (exportBtn) exportBtn.disabled = false;
+  syncGridFooterButtons(false, false);
 
   if (state.imageLoadState.total > 0) updateImageProgress();
   else setStatus("🔥 Your grid is ready! (drag tiles to reorder on desktop)");
 
   enableDragDrop();
   updateGuideGlow();
-  renderTraitButtons(state.currentGridItems);
+
+  state.collectionsCollapsed = true;
+  collapseCollectionsSection();
+}
+
+/** Compute canonical key for item/tile matching. Must match makeNFTTile's dataset.key logic. */
+function getGridItemKey(it) {
+  if (!it) return "";
+  if (it._instanceId) return String(it._instanceId);
+  const contract = String(it?.contract || it?.contractAddress || "").trim().toLowerCase();
+  const tokenId = String(it?.tokenId ?? "").trim();
+  return contract && tokenId ? `${contract}:${tokenId}` : "";
+}
+
+/** Reorder grid tiles to match sorted items. Preserves existing DOM nodes (no image reload). */
+function reorderGrid() {
+  const chosen = getSelectedCollections();
+  if (!chosen.length) return;
+
+  let items = getSortedItemsForGrid(chosen);
+  const HARD_CAP = 400;
+  if (items.length > HARD_CAP) items = items.slice(0, HARD_CAP);
+
+  const choice = getGridChoice();
+  let usedItems;
+  if (choice.mode === "fixed") {
+    usedItems = items.slice(0, choice.cap);
+  } else {
+    const side = Math.ceil(Math.sqrt(items.length));
+    usedItems = items;
+  }
+
+  state.currentGridItems = usedItems.slice();
+
+  const grid = $("grid");
+  if (!grid) return;
+
+  const tiles = Array.from(grid.children).filter((t) => t.classList.contains("tile"));
+  const nftTiles = tiles.filter((t) => t.dataset.kind === "nft" || t.dataset.kind === "missing");
+  const fillerTiles = tiles.filter((t) => t.dataset.kind === "empty");
+
+  const keyToTile = new Map();
+  const usedKeys = new Set();
+  nftTiles.forEach((t) => {
+    const k = (t.dataset.key || "").trim();
+    if (k) {
+      keyToTile.set(k, t);
+      const alt = (t.dataset.contract && t.dataset.tokenId)
+        ? `${String(t.dataset.contract).toLowerCase()}:${String(t.dataset.tokenId).trim()}`
+        : "";
+      if (alt && alt !== k && !usedKeys.has(alt)) {
+        usedKeys.add(alt);
+        keyToTile.set(alt, t);
+      }
+    }
+  });
+
+  const usedTiles = new Set();
+  for (const it of usedItems) {
+    const k = getGridItemKey(it);
+    const t = keyToTile.get(k);
+    if (t && !usedTiles.has(t)) {
+      usedTiles.add(t);
+      grid.appendChild(t);
+    }
+  }
+  fillerTiles.forEach((t) => grid.appendChild(t));
 }
 
 // ---------- Image loading + fallbacks ----------
@@ -1219,8 +1226,12 @@ async function retryMissingTiles() {
     setStatus(stillMissing > 0 ? `😕 ${stillMissing} still failed` : "✅ Retry complete!");
 }
 
-async function fetchBestAlchemyImage({ contract, tokenId, host }) {
-  const meta = await fetchAlchemyNFTMetadata({ contract, tokenId, host });
+async function fetchBestAlchemyImage({ contract, tokenId }) {
+  const url = `${WORKER_BASE}/api/nft-metadata?contract=${encodeURIComponent(contract)}&tokenId=${encodeURIComponent(tokenId)}&chain=${state.chain || "eth"}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Metadata ${res.status}`);
+  const meta = await res.json();
+  if (meta?.error) throw new Error(meta.error);
 
   const image =
     meta?.image?.cachedUrl ||
@@ -1255,7 +1266,7 @@ async function loadTileImage(tile, img, rawUrl, retryAttempt = 0) {
   if (contract && tokenId && tokenId !== "null" && /^0x[a-f0-9]{40}$/i.test(contract) && tile.dataset.alchemyTried !== "1") {
     tile.dataset.alchemyTried = "1";
     try {
-      const metaUrl = await fetchBestAlchemyImage({ contract, tokenId, host: state.host });
+      const metaUrl = await fetchBestAlchemyImage({ contract, tokenId });
       if (metaUrl && metaUrl !== primary) {
         try {
           setImgCORS(img, true);
@@ -1283,11 +1294,11 @@ async function loadTileImage(tile, img, rawUrl, retryAttempt = 0) {
     tile.classList.add("isLoaded");
     return true;
   } catch (e1) {
-    // Strategy 3: Direct (DISPLAY-ONLY) fallback (non-IPFS only)
+    // Strategy 3: Retry primary via Worker proxy (non-IPFS direct URLs)
     if (!ipfsPath && /^https?:\/\//i.test(primary)) {
       try {
-        setImgCORS(img, false);
-        await loadImgNoLimit(img, primary, IMG_LOAD.gridDirectTimeoutMs);
+        setImgCORS(img, true);
+        await loadImgNoLimit(img, gridProxyUrl(primary), IMG_LOAD.gridDirectTimeoutMs);
         state.imageLoadState.loaded++;
         updateImageProgress();
         tile.dataset.kind = "loaded";
@@ -1296,8 +1307,6 @@ async function loadTileImage(tile, img, rawUrl, retryAttempt = 0) {
         return true;
       } catch (_) {
         // continue
-      } finally {
-        setImgCORS(img, true);
       }
     }
 
@@ -1370,11 +1379,12 @@ function makeNFTTile(it) {
   tile.classList.remove("isLoaded", "isMissing");
   tile.draggable = true;
 
-  const contract = (it?.contract || it?.contractAddress || it?.sourceKey || "").toLowerCase();
-  const tokenId = (it?.tokenId || "").toString();
+  const contract = (it?.contract || it?.contractAddress || it?.sourceKey || "").toString().trim().toLowerCase();
+  const tokenId = (it?.tokenId ?? "").toString().trim();
   tile.dataset.contract = contract;
   tile.dataset.tokenId = tokenId;
-  tile.dataset.key = contract && tokenId ? `${contract}:${tokenId}` : "";
+  tile.dataset.collectionKey = (it?.sourceKey || "").toString().trim().toLowerCase();
+  tile.dataset.key = getGridItemKey(it);
 
   const raw = it?.image || "";
   tile.dataset.kind = raw ? "nft" : "empty";
@@ -1466,11 +1476,10 @@ async function loadWallets() {
   if (chain === "apechain") return setStatus("ApeChain coming soon. For now use ETH or Base.");
   if (!state.wallets.length) return setStatus("👋 Add at least one wallet first!");
 
-  if (!configLoaded || !ALCHEMY_KEY) {
+  if (!configLoaded) {
     return setStatus(
       "⚠️ Configuration not loaded. " +
-        "Please set up secure config (see docs/FLEX_GRID_SETUP.md). " +
-        "For development, enable DEV_CONFIG in config.js"
+        "Ensure the Worker config is available at " + WORKER_BASE + "/api/config/flex-grid"
     );
   }
 
@@ -1490,15 +1499,28 @@ async function loadWallets() {
       const walletPct = state.wallets.length > 0 ? Math.round((i / state.wallets.length) * 100) : 0;
       showLoading("🧺 Gathering your NFTs... This may take a minute.", `Wallet ${i + 1}/${state.wallets.length}`, walletPct);
       setStatus(`Gathering NFTs… wallet ${i + 1}/${state.wallets.length}. This may take a minute.`);
-      const nfts = await fetchAlchemyNFTs({ wallet: w, host });
+      const nfts = await fetchNFTsFromWorker({ wallet: w, chain });
       allNfts.push(...(nfts || []));
     }
 
     showLoading("🎨 Sorting your collections...", "", 85);
-    const deduped = dedupeNFTs(allNfts);
-    const grouped = groupByCollection(deduped);
-    const displayedCount = grouped.reduce((s, c) => s + c.items.length, 0);
-    console.log(`NFT load complete: ${allNfts.length} fetched → ${deduped.length} unique → ${grouped.length} collections → ${displayedCount} displayed`);
+    console.log("RAW NFT COUNT (all wallets)", allNfts.length);
+    console.log("RAW SAMPLE (all)", allNfts.slice(0, 10).map((nft) => ({
+      contract: nft?.contract?.address,
+      name: nft?.contract?.name || nft?.collection?.name,
+      tokenType: nft?.tokenType || nft?.id?.tokenMetadata?.tokenType,
+      balance: nft?.balance,
+      tokenId: nft?.tokenId,
+      idTokenId: nft?.id?.tokenId,
+    })));
+    const validNfts = allNfts.filter((n) => n && typeof n === "object");
+    const normalized = validNfts.map(normalizeNFT);
+    const deduped = dedupeNFTs(normalized);
+    const expanded = expandNFTs(deduped);
+    console.log("EXPANDED NFT COUNT", expanded.length);
+    const grouped = groupByCollection(expanded);
+    const displayedCount = grouped.reduce((s, c) => s + (c.nfts?.length ?? 0), 0);
+    console.log(`NFT load complete: total ${allNfts.length} fetched → ${deduped.length} deduped → ${expanded.length} expanded → ${displayedCount} in ${grouped.length} collections`);
 
     showLoading("✨ Almost ready...", "", 100);
     state.collections = grouped;
@@ -1523,6 +1545,9 @@ async function loadWallets() {
       : `😅 Hmm... no NFTs found here`);
     showConnectionStatus(true);
 
+    state.walletCollapsed = true;
+    collapseWalletSection();
+
     await new Promise((r) => setTimeout(r, 400));
     hideLoading();
   } catch (err) {
@@ -1532,6 +1557,48 @@ async function loadWallets() {
     addError(err, "Load Wallets");
     showConnectionStatus(false);
   }
+}
+
+/** Shorten long address-like names for display (e.g. 0x3006b9de...ddfb) */
+function shortenForDisplay(name) {
+  if (typeof name !== "string" || !name) return name || "";
+  const s = name.trim();
+  if (/^0x[a-fA-F0-9]{40}$/.test(s)) return s.slice(0, 6) + "..." + s.slice(-4);
+  return s;
+}
+
+/** Convert raw NFT to grid item format { contract, tokenId, image, name, attributes, sourceKey } */
+function nftToGridItem(nft, sourceKey = "") {
+  const contractAddr = (
+    nft?._contractAddress ||
+    nft?.contract?.address ||
+    nft?.collection?.address ||
+    nft?.contractAddress ||
+    ""
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+  const tokenId = (nft?._tokenId ?? nft?.tokenId ?? nft?.token_id ?? nft?.id?.tokenId ?? nft?.id ?? "").toString().trim();
+  const safeTokenId = tokenId && tokenId !== "null" ? tokenId : "0";
+  const image = extractImage(nft) || PLACEHOLDER_IMAGE;
+  const name = nft?.name || (safeTokenId ? `#${safeTokenId}` : "NFT");
+  const attributes =
+    nft?.rawMetadata?.attributes ||
+    nft?.rawMetadata?.metadata?.attributes ||
+    nft?.metadata?.attributes ||
+    nft?.contractMetadata?.openSea?.traits ||
+    [];
+  const item = {
+    contract: contractAddr,
+    tokenId: safeTokenId,
+    image,
+    name,
+    attributes,
+    sourceKey: sourceKey || contractAddr,
+  };
+  if (nft._instanceId) item._instanceId = nft._instanceId;
+  return item;
 }
 
 /** Unique key for grouping NFTs. Uses address when present; otherwise derives from name so collections without address don't merge. */
@@ -1574,8 +1641,8 @@ function dedupeNFTs(nfts) {
     const nft = nfts[i];
     if (!nft || typeof nft !== "object") continue;
     try {
-      const collectionKey = getCollectionKey(nft);
-      const tokenId = (nft?.tokenId ?? nft?.token_id ?? nft?.id ?? `_${i}`).toString().trim();
+      const collectionKey = nft._contractAddress || getCollectionKey(nft);
+      const tokenId = nft._tokenId || (nft?.tokenId ?? nft?.token_id ?? nft?.id?.tokenId ?? nft?.id ?? `_${i}`).toString().trim();
       const safeTokenId = tokenId && tokenId !== "null" ? tokenId : `_${i}`;
       const key = `${collectionKey}:${safeTokenId}`;
       if (seen.has(key)) {
@@ -1593,216 +1660,70 @@ function dedupeNFTs(nfts) {
   return out;
 }
 
-function isPageKeySafe(pk) {
-  if (pk == null || pk === "") return false;
-  const s = String(pk).trim();
-  if (!s) return false;
-  if (s.toLowerCase().includes("null")) return false;
-  return true;
-}
-
-/** Contracts Alchemy discovery often misses — we always try to fetch these */
-const PRIORITY_CONTRACTS = [
-  "0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd", // OGenie NFT
-].map((a) => a.toLowerCase());
-
-function nftUniqueKey(nft) {
-  const addr = (nft?.contract?.address || nft?.collection?.address || nft?.contractAddress || "").toLowerCase();
-  const tokenId = (nft?.tokenId ?? nft?.token_id ?? nft?.id ?? "").toString();
-  return `${addr}:${tokenId}`;
-}
-
-async function fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize = 100, orderBy = null }) {
-  const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
-  let pageKey = null;
-  let all = [];
-  let hit400 = false;
-  let pageCount = 0;
-  const hardCap = 10000;
-
-  while (all.length < hardCap) {
-    const url = new URL(baseUrl);
-    url.searchParams.set("owner", wallet);
-    url.searchParams.set("withMetadata", "true");
-    url.searchParams.set("pageSize", String(pageSize));
-    if (orderBy) url.searchParams.set("orderBy", orderBy);
-    if (isPageKeySafe(pageKey)) {
-      url.searchParams.set("pageKey", pageKey);
-    }
-
-    let res;
-    try {
-      res = await fetch(url.toString());
-    } catch (err) {
-      console.error("NETWORK ERROR:", err);
-      break;
-    }
-
-    if (!res.ok) {
-      console.error("❌ BAD RESPONSE:", res.status);
-      hit400 = true;
-      break;
-    }
-
-    let json;
-    try {
-      json = await res.json();
-    } catch (e) {
-      console.error("INVALID JSON RESPONSE");
-      break;
-    }
-
-    const pageNfts = json.ownedNfts || json.data?.ownedNfts || [];
-    for (const n of pageNfts) {
-      if (n && typeof n === "object") all.push(n);
-    }
-
-    pageCount++;
-    const nextKey = json.pageKey ?? json.nextToken;
-    if (!isPageKeySafe(nextKey)) break;
-    pageKey = nextKey;
+async function fetchNFTsFromWorker({ wallet, chain }) {
+  const chainParam = chain || "eth";
+  const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chainParam}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error || `NFT fetch failed (${res.status})`);
   }
-
-  return { nfts: all, hit400 };
-}
-
-function mergeNFTsUnique(listA, listB) {
-  const seen = new Set();
-  const out = [];
-  for (const n of listA) {
-    if (!n || typeof n !== "object") continue;
-    const key = nftUniqueKey(n);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(n);
-  }
-  for (const n of listB) {
-    if (!n || typeof n !== "object") continue;
-    const key = nftUniqueKey(n);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(n);
-  }
-  return out;
-}
-
-function isValidContractAddress(addr) {
-  return typeof addr === "string" && /^0x[a-f0-9]{40}$/i.test(addr.trim());
-}
-
-async function fetchNFTsForContractsBatch({ wallet, host, contractAddresses }) {
-  const validAddrs = (contractAddresses || []).filter(isValidContractAddress);
-  if (validAddrs.length === 0) return [];
-  const baseUrl = `https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTsForOwner`;
-  const all = [];
-  let pageKey = null;
-  let pageCount = 0;
-
-  while (true) {
-    const url = new URL(baseUrl);
-    url.searchParams.set("owner", wallet);
-    url.searchParams.set("withMetadata", "true");
-    url.searchParams.set("pageSize", "100");
-    for (const addr of validAddrs) url.searchParams.append("contractAddresses[]", addr);
-    if (isPageKeySafe(pageKey)) url.searchParams.set("pageKey", pageKey);
-
-    const res = await fetch(url.toString());
-    if (!res.ok) break;
-    const json = await res.json().catch(() => ({}));
-    const nfts = json.ownedNfts || json.data?.ownedNfts || [];
-    for (const n of nfts) {
-      if (n && typeof n === "object") all.push(n);
-    }
-    pageCount++;
-    const nextKey = json.pageKey ?? json.nextToken;
-    if (!isPageKeySafe(nextKey)) break;
-    pageKey = nextKey;
-  }
-
-  if (pageCount > 0 && all.length > 0) {
-    console.log(`NFT batch (${validAddrs.length} contract(s)): ${pageCount} page(s), ${all.length} NFTs`);
-  }
-  return all;
-}
-
-async function fetchAlchemyNFTs({ wallet, host }) {
-  const mergeInto = (target, source) => {
-    const seen = new Set(target.map((n) => nftUniqueKey(n)));
-    for (const n of source) {
-      const key = nftUniqueKey(n);
-      if (!seen.has(key)) {
-        seen.add(key);
-        target.push(n);
-      }
-    }
-  };
-
-  const chain = state.chain || "eth";
-
-  // Call A: default order
-  setStatus("Loading NFTs…");
-  const fetchA = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 100 });
-  console.log(`NFT fetch A (default): ${fetchA.nfts.length} NFTs`);
-
-  // Call B: transferTime order (different ordering can surface different NFTs)
-  const fetchB = await fetchAlchemyNFTsWithPageSize({
-    wallet,
-    host,
-    pageSize: 100,
-    orderBy: (chain === "eth" || host?.includes("eth") || host?.includes("base") || host?.includes("polygon")) ? "transferTime" : null,
-  });
-  console.log(`NFT fetch B (transferTime): ${fetchB.nfts.length} NFTs`);
-
-  const merged = mergeNFTsUnique(fetchA.nfts, fetchB.nfts);
-  console.log(`NFT merged: ${fetchA.nfts.length} + ${fetchB.nfts.length} → ${merged.length} unique`);
-
-  if (fetchA.hit400) {
-    setStatus("Retrying…");
-    const retry = await fetchAlchemyNFTsWithPageSize({ wallet, host, pageSize: 50 });
-    mergeInto(merged, retry.nfts);
-  }
-
-  const haveContracts = new Set();
-  for (const n of merged) {
-    const a = (n?.contract?.address || n?.collection?.address || n?.contractAddress || "").toLowerCase();
-    if (a && /^0x[a-f0-9]{40}$/i.test(a)) haveContracts.add(a);
-  }
-
-  // Fallback: fetch priority contracts (e.g. OGenie) via getNFTsForOwner with contract filter
-  const toFetch = PRIORITY_CONTRACTS.filter((a) => !haveContracts.has(a));
-  for (const addr of toFetch) {
-    setStatus(`Loading priority collection…`);
-    let nfts = await fetchNFTsForContractsBatch({ wallet, host, contractAddresses: [addr] }).catch(() => []);
-    if (nfts.length === 0 && (chain === "eth" || host?.includes("eth"))) {
-      nfts = await fetchNFTsFromZora({ wallet, contractAddress: addr }).catch(() => []);
-    }
-    if (nfts.length > 0) mergeInto(merged, nfts);
-  }
-
-  return merged;
-}
-
-async function fetchAlchemyNFTMetadata({ contract, tokenId, host }) {
-  if (!tokenId || tokenId === "null" || String(tokenId).trim() === "") {
-    throw new Error("Invalid tokenId");
-  }
-  if (!contract || !/^0x[a-f0-9]{40}$/i.test(String(contract).trim())) {
-    throw new Error("Invalid contract address");
-  }
-  const url = new URL(`https://${host}/nft/v3/${ALCHEMY_KEY}/getNFTMetadata`);
-  url.searchParams.set("contractAddress", contract);
-  url.searchParams.set("tokenId", String(tokenId));
-  url.searchParams.set("refreshCache", "false");
-
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error(`Alchemy metadata error (${res.status})`);
-
   const json = await res.json();
-  if (json.error) throw new Error(`Alchemy metadata error: ${json.error.message || JSON.stringify(json.error)}`);
-  return json;
+  const nfts = json.nfts || [];
+  console.log("RAW NFT COUNT", nfts.length);
+  console.log("RAW SAMPLE", nfts.slice(0, 10).map((nft) => ({
+    contract: nft.contract?.address,
+    name: nft.contract?.name || nft.collection?.name,
+    tokenType: nft.tokenType || nft.id?.tokenMetadata?.tokenType,
+    balance: nft.balance,
+    tokenId: nft.tokenId,
+    idTokenId: nft.id?.tokenId,
+  })));
+  return nfts;
 }
 
 const PLACEHOLDER_IMAGE = "";
+
+/** Normalize NFT into consistent shape with _contractAddress, _tokenId, _tokenType, _balance */
+function normalizeNFT(nft) {
+  const _contractAddress = (nft.contract?.address || nft.collection?.address || nft.contractAddress || "")
+    .toString().trim().toLowerCase() || "unknown";
+  const _tokenId = (
+    nft.tokenId ??
+    nft.token_id ??
+    (typeof nft.id === "object" && nft.id !== null ? nft.id?.tokenId : nft.id) ??
+    "unknown"
+  ).toString().trim();
+  const _tokenType = String(nft.tokenType || nft.id?.tokenMetadata?.tokenType || "ERC721").toUpperCase();
+  const _balance = Math.max(1, parseInt(nft.balance || "1", 10) || 1);
+  return {
+    ...nft,
+    _contractAddress,
+    _tokenId,
+    _tokenType,
+    _balance,
+  };
+}
+
+/** Expand ERC1155 by _balance, add _instanceId to all */
+function expandNFTs(nfts) {
+  const out = [];
+  for (const nft of nfts) {
+    const addr = nft._contractAddress || (nft.contract?.address || nft.contractAddress || "").toString().toLowerCase();
+    const tokenId = nft._tokenId || (nft.tokenId ?? nft.token_id ?? nft.id?.tokenId ?? "").toString();
+    const tokenType = String(nft._tokenType || nft.tokenType || "ERC721").toUpperCase();
+
+    if (tokenType === "ERC1155") {
+      const balance = nft._balance || Math.max(1, parseInt(nft.balance || "1", 10) || 1);
+      for (let i = 0; i < balance; i++) {
+        out.push({ ...nft, _instanceId: `${addr}_${tokenId}_${i}` });
+      }
+    } else {
+      out.push({ ...nft, _instanceId: `${addr}_${tokenId}` });
+    }
+  }
+  return out;
+}
 
 function extractImage(nft) {
   const candidates = [
@@ -1830,62 +1751,50 @@ function extractImage(nft) {
 }
 
 function groupByCollection(nfts) {
-  const map = new Map();
-  let noImage = 0;
+  /** collections[key] = { key, name, nfts: [], count: 0 } — group by _contractAddress only */
+  const collections = {};
 
   for (let i = 0; i < nfts.length; i++) {
     const nft = nfts[i];
     if (!nft || typeof nft !== "object") continue;
 
-    const tokenId = (
-      nft.tokenId ??
-      nft.token_id ??
-      nft.id ??
-      `_${i}`
-    ).toString().trim();
-    const safeTokenId = tokenId && tokenId !== "null" ? tokenId : `_${i}`;
+    const key = nft._contractAddress || (nft.contract?.address || nft.collection?.address || nft.contractAddress || "")
+      .toString().trim().toLowerCase() || "unknown";
 
-    const collectionName =
-      nft.contract?.name ||
-      nft.collection?.name ||
-      nft.contract?.address ||
-      nft.collection?.address ||
-      nft.title ||
-      "Unknown Collection";
-
-    const name = nft.name || (safeTokenId ? `#${safeTokenId}` : "NFT");
-    const image = extractImage(nft);
-    if (!image) noImage++;
-
-    const contractAddr = (
-      nft.contract?.address ||
-      nft.collection?.address ||
-      nft.contractAddress ||
-      ""
-    ).toLowerCase();
-
-    const key = getCollectionKey(nft);
-    if (!map.has(key)) map.set(key, { key, name: collectionName, count: 0, items: [] });
-    const entry = map.get(key);
-    entry.count++;
-    entry.items.push({
-      name,
-      tokenId: safeTokenId,
-      contract: contractAddr,
-      image: image || PLACEHOLDER_IMAGE,
-      sourceKey: key,
-      attributes:
-        nft.rawMetadata?.attributes ||
-        nft.rawMetadata?.metadata?.attributes ||
-        nft.metadata?.attributes ||
-        nft.contractMetadata?.openSea?.traits ||
-        [],
-    });
+    if (!collections[key]) {
+      collections[key] = {
+        key,
+        name:
+          nft.contract?.name ||
+          nft.collection?.name ||
+          nft.contractMetadata?.name ||
+          nft.contract?.address ||
+          "Unknown Collection",
+        nfts: [],
+        count: 0,
+      };
+    }
+    collections[key].nfts.push(nft);
   }
 
-  const total = [...map.values()].reduce((s, c) => s + c.items.length, 0);
-  console.log(`groupByCollection: ${nfts.length} fetched → ${total} displayed, ${noImage} without image`);
-  return [...map.values()].sort((a, b) => b.count - a.count);
+  Object.keys(collections).forEach((k) => {
+    collections[k].count = collections[k].nfts.length;
+  });
+
+  const collectionList = Object.values(collections);
+  const sorted = collectionList.sort((a, b) => b.count - a.count);
+
+  console.log("COLLECTION COUNT", Object.keys(collections).length);
+  Object.values(collections).slice(0, 20).forEach((c) => {
+    console.log("COLLECTION", {
+      key: c.key,
+      name: c.name,
+      count: c.count,
+      sampleIds: c.nfts.slice(0, 5).map((n) => n._instanceId),
+    });
+  });
+
+  return sorted;
 }
 
 // ---------- Export + helpers ----------
@@ -2074,6 +1983,55 @@ function loadImage(src) {
   });
 }
 
+// ---------- Collapsible sections ----------
+function collapseWalletSection() {
+  state.walletCollapsed = true;
+  const el = $("walletSection");
+  if (el) el.classList.add("collapsed");
+  syncWalletHeader();
+}
+function expandWalletSection() {
+  state.walletCollapsed = false;
+  const el = $("walletSection");
+  if (el) el.classList.remove("collapsed");
+  syncWalletHeader();
+}
+function toggleWalletSection() {
+  state.walletCollapsed = !state.walletCollapsed;
+  const el = $("walletSection");
+  if (el) {
+    if (state.walletCollapsed) el.classList.add("collapsed");
+    else el.classList.remove("collapsed");
+  }
+  syncWalletHeader();
+}
+function syncWalletHeader() {
+  const header = $("walletSectionHeader");
+  if (!header) return;
+  const n = state.wallets?.length ?? 0;
+  const label = header.querySelector("span:first-child");
+  if (label) label.textContent = n > 0 ? `Wallets (${n})` : "Wallets";
+}
+
+function collapseCollectionsSection() {
+  state.collectionsCollapsed = true;
+  const el = $("collectionsSection");
+  if (el) el.classList.add("collapsed");
+}
+function expandCollectionsSection() {
+  state.collectionsCollapsed = false;
+  const el = $("collectionsSection");
+  if (el) el.classList.remove("collapsed");
+}
+function toggleCollectionsSection() {
+  state.collectionsCollapsed = !state.collectionsCollapsed;
+  const el = $("collectionsSection");
+  if (el) {
+    if (state.collectionsCollapsed) el.classList.add("collapsed");
+    else el.classList.remove("collapsed");
+  }
+}
+
 // ---------- Events + Retry ----------
 (function bindEvents() {
   const walletInput = $("walletInput");
@@ -2129,6 +2087,10 @@ function loadImage(src) {
   if (loadBtn) loadBtn.addEventListener("click", loadWallets);
   if (buildBtn) buildBtn.addEventListener("click", buildGrid);
   if (exportBtn) exportBtn.addEventListener("click", exportPNG);
+  const gridBuildBtn = $("gridBuildBtn");
+  const gridExportBtn = $("gridExportBtn");
+  if (gridBuildBtn) gridBuildBtn.addEventListener("click", buildGrid);
+  if (gridExportBtn) gridExportBtn.addEventListener("click", exportPNG);
 
   const retryBtn = $("retryBtn");
   if (retryBtn && typeof retryMissingTiles === "function") {
@@ -2137,6 +2099,23 @@ function loadImage(src) {
 
   const clearErrBtn = $("clearErrorLog");
   if (clearErrBtn) clearErrBtn.addEventListener("click", clearErrorLog);
+
+  const walletHeader = $("walletSectionHeader");
+  if (walletHeader) {
+    walletHeader.addEventListener("click", toggleWalletSection);
+    walletHeader.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleWalletSection(); }
+    });
+  }
+  syncWalletHeader();
+
+  const collectionsHeader = $("collectionsSectionHeader");
+  if (collectionsHeader) {
+    collectionsHeader.addEventListener("click", toggleCollectionsSection);
+    collectionsHeader.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCollectionsSection(); }
+    });
+  }
 
   window.addEventListener("resize", syncWatermarkDOMToOneTile);
   window.addEventListener("orientationchange", syncWatermarkDOMToOneTile);
@@ -2193,6 +2172,7 @@ async function initializeConfig() {
     if (loadBtn) loadBtn.disabled = true;
     if (buildBtn) buildBtn.disabled = true;
     if (exportBtn) exportBtn.disabled = true;
+    syncGridFooterButtons(true, true);
 
     showConnectionStatus(false);
   }

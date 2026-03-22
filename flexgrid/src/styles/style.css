@@ -370,6 +370,23 @@ body{
     .stageTitle{ font-weight: 950; letter-spacing: .2px; }
     .stageMeta{ font-size: 16px; opacity:.95; text-align:right; }
 
+    /* Stage footer - Build / Export at bottom of collage */
+    .stageFooter{
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.1);
+      flex-wrap: wrap;
+    }
+    .stageFooterBtn{
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
     /* Grid */
     .gridWrap{ position: relative; }
     .grid{
@@ -557,6 +574,115 @@ body.dark .collectionItem.selected{
   box-shadow: 0 0 0 2px rgba(0, 255, 213, 0.95), 0 0 24px rgba(0, 255, 213, 0.55);
   border-color: rgba(0, 255, 213, 0.5);
   background: rgba(0, 255, 213, 0.1);
+}
+
+/* Per-collection trait controls (above grid) - horizontal layout */
+.trait-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.collectionTraitControls{
+  padding: 12px;
+  margin-bottom: 12px;
+  background: rgba(0,0,0,.08);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+}
+.collection-trait-control{
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+.collection-trait-control .collection-name{
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 8px;
+  opacity: 1;
+  color: var(--btnText);
+}
+.collection-trait-control .trait-type{
+  width: 100%;
+  max-width: 200px;
+  margin-top: 4px;
+  background: rgba(255,255,255,0.95);
+  color: var(--btnText);
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.collection-trait-control .trait-type:focus{
+  outline: 2px solid var(--btnYellow2);
+}
+
+/* Collapsible sections - clean bar, yellow arrow, fully hide content when collapsed */
+.walletSectionHeader,
+.collectionsSectionHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 800;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0,0,0,.12);
+  border-radius: 10px;
+  margin-bottom: 0;
+  border: 1px solid rgba(255,255,255,.1);
+}
+.walletSectionHeader:hover,
+.collectionsSectionHeader:hover{
+  background: rgba(0,0,0,.16);
+}
+.collapseIcon{
+  font-size: 14px;
+  color: var(--btnYellow);
+  transition: transform 0.25s ease;
+}
+.walletSection:not(.collapsed) .walletSectionHeader .collapseIcon,
+.collectionsSection:not(.collapsed) .collectionsSectionHeader .collapseIcon{
+  transform: rotate(90deg);
+}
+.walletSection .walletSectionContent{
+  max-height: 2000px;
+  overflow: hidden;
+  padding: 14px 0 0;
+  transition: max-height 0.35s ease, padding 0.25s ease, visibility 0.2s ease, opacity 0.2s ease;
+}
+.walletSection.collapsed .walletSectionContent{
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.collectionsSection .collectionsCard{
+  max-height: 2000px;
+  transition: max-height 0.35s ease, padding 0.25s ease, visibility 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
+  padding-top: 12px;
+}
+.collectionsSection.collapsed .collectionsCard{
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* =========================================

@@ -1,11 +1,10 @@
 /**
  * Flex Grid Configuration
- * Production: fetches from https://loflexgrid.littleollienft.workers.dev/api/config/flex-grid
- * Dev: tries localhost first, then Worker
+ * Always fetches from https://loflexgrid.littleollienft.workers.dev/api/config/flex-grid
+ * (never localhost – avoids 404s when dev server is down)
  */
 
 const IS_BROWSER = typeof window !== "undefined";
-const HOSTNAME = IS_BROWSER ? window.location.hostname : "";
 
 const WORKER_CONFIG_URL = "https://loflexgrid.littleollienft.workers.dev/api/config/flex-grid";
 
@@ -32,20 +31,10 @@ async function fetchConfig(url, timeoutMs = 8000) {
 async function loadConfig() {
   if (!IS_BROWSER) throw new Error("Config can only be loaded in the browser.");
 
-  if (HOSTNAME === "localhost" || HOSTNAME === "127.0.0.1") {
-    try {
-      const cfg = await fetchConfig("http://localhost:3000/api/config/flex-grid", 3000);
-      return cfg;
-    } catch {
-      /* fall through to Worker */
-    }
-  }
-
   try {
-    const cfg = await fetchConfig(WORKER_CONFIG_URL);
-    return cfg;
+    return await fetchConfig(WORKER_CONFIG_URL);
   } catch (e) {
-    const msg = `Configuration not available. Hostname: ${HOSTNAME}. Worker: ${WORKER_CONFIG_URL}`;
+    const msg = `Configuration not available. Worker: ${WORKER_CONFIG_URL}`;
     console.error("Config error:", msg, e?.message || e);
     throw new Error(msg);
   }
