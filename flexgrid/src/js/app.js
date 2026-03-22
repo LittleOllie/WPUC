@@ -7,8 +7,46 @@
      - Export stays PROXY-first to keep canvas untainted.
    - SECURITY: API keys loaded from secure config (see config.js)
 */
-
+const DEV = window.location.hostname === "localhost";
 const $ = (id) => document.getElementById(id);
+
+// ---------- Step-based UI flow ----------
+let currentStep = 1;
+
+function goToStep(step) {
+  currentStep = Math.max(1, Math.min(3, step));
+
+  const wallets = $("screen-wallets");
+  const collections = $("screen-collections");
+  const grid = $("screen-grid");
+  const gridStage = $("gridStageWrapper");
+
+  if (wallets) wallets.style.display = currentStep === 1 ? "block" : "none";
+  if (collections) collections.style.display = currentStep === 2 ? "block" : "none";
+  if (grid) grid.style.display = currentStep === 3 ? "block" : "none";
+  if (gridStage) gridStage.style.display = currentStep === 3 ? "block" : "none";
+
+  // Step indicator
+  document.querySelectorAll(".stepItem").forEach((el) => {
+    const s = parseInt(el.dataset.step, 10);
+    el.classList.remove("active", "completed");
+    if (s === currentStep) el.classList.add("active");
+    else if (s < currentStep) el.classList.add("completed");
+  });
+
+  // Expand sections when entering their step
+  const walletSection = $("walletSection");
+  const collectionsSection = $("collectionsSection");
+  const traitOrderSection = $("traitOrderSection");
+  if (currentStep === 1 && walletSection) {
+    walletSection.classList.remove("collapsed");
+    state.walletCollapsed = false;
+  }
+  if (currentStep === 2 && collectionsSection) collectionsSection.classList.remove("collapsed");
+  if (currentStep === 3 && traitOrderSection) traitOrderSection.classList.remove("collapsed");
+
+  updateGuideGlow();
+}
 
 function escapeHtml(str) {
   if (str === null || str === undefined) return "";
@@ -47,9 +85,7 @@ function setGuideGlow(ids = []) {
 function updateGuideGlow() {
   const hasWallets = state.wallets.length > 0;
   const hasLoadedWallets = state.collections.length > 0;
-  const controlsVisible =
-    !!document.getElementById("controlsPanel") &&
-    $("controlsPanel")?.style.display !== "none";
+  const controlsVisible = currentStep === 2;
   const hasSelectedCollections = state.selectedKeys && state.selectedKeys.size > 0;
   const hasTwoOrMoreSelected = state.selectedKeys && state.selectedKeys.size >= 2;
 
@@ -145,6 +181,34 @@ const WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
 // ---------- Build cache-buster (GRID only) ----------
 let BUILD_ID = Date.now();
 
+// ---------- Global image cache (reuse loaded images) ----------
+const imageCache = new Map();
+
+// ---------- Concurrent load limiter (prevents network overload) ----------
+const MAX_CONCURRENT_LOADS = 6;
+let activeLoads = 0;
+const loadQueue = [];
+
+function queueImageLoad(fn) {
+  return new Promise((resolve, reject) => {
+    loadQueue.push({ fn, resolve, reject });
+    processQueue();
+  });
+}
+
+function processQueue() {
+  if (activeLoads >= MAX_CONCURRENT_LOADS || loadQueue.length === 0) return;
+  const { fn, resolve, reject } = loadQueue.shift();
+  activeLoads++;
+  fn()
+    .then(resolve)
+    .catch(reject)
+    .finally(() => {
+      activeLoads--;
+      processQueue();
+    });
+}
+
 // ---------- Image load limiter (prevents Worker/IPFS stampede) ----------
 function createLimiter(max = 3) {
   let active = 0;
@@ -171,27 +235,16 @@ function createLimiter(max = 3) {
     });
 }
 
-// 12 concurrent image loads — faster grid; Worker can handle it
-let gridImgLimit = createLimiter(12);
+// 18 concurrent image loads — faster perceived load; fail-fast timeouts prevent blocking
+let gridImgLimit = createLimiter(18);
 
 // ---------- Image loading tune ----------
 const IMG_LOAD = {
-  gridTimeoutMs: 12000,  // fail fast so slow URLs don't block others
-  gridDirectTimeoutMs: 8000,
-  retriesPerCandidate: 0,  // skip extra gateway retries for speed
+  gridTimeoutMs: 5000,   // fail fast — 5s so slow gateways don't block
+  gridDirectTimeoutMs: 4000,
+  retriesPerCandidate: 0,
   backoffMs: 200,
 };
-
-// Prefer reliable gateways first (you can reorder later)
-const IPFS_GATEWAYS = [
-  "https://cloudflare-ipfs.com/ipfs/",
-  "https://nftstorage.link/ipfs/",
-  "https://w3s.link/ipfs/",
-  "https://dweb.link/ipfs/",
-  "https://gateway.pinata.cloud/ipfs/",
-  "https://ipfs.io/ipfs/",
-  "https://ipfs.filebase.io/ipfs/",
-];
 
 function setImgCORS(imgEl, enabled) {
   try {
@@ -207,6 +260,7 @@ function setImgCORS(imgEl, enabled) {
 
 // ---------- Timeout wrapper for image loading ----------
 const PLACEHOLDER_DATA_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect fill='%23333' width='1' height='1'/%3E%3C/svg%3E";
+const TILE_PLACEHOLDER_SRC = "src/assets/images/tile.png";
 
 function loadImgWithTimeout(imgEl, src, timeout = 25000) {
   return Promise.race([
@@ -220,14 +274,6 @@ function loadImgWithTimeout(imgEl, src, timeout = 25000) {
         resolve(true);
       };
       imgEl.onerror = () => {
-        if (!imgEl.dataset.retry) {
-          imgEl.dataset.retry = "1";
-          const fallbackSrc = src.replace("nftstorage.link", "cloudflare-ipfs.com");
-          if (fallbackSrc !== src) {
-            imgEl.src = fallbackSrc;
-            return;
-          }
-        }
         imgEl.src = PLACEHOLDER_DATA_URL;
         imgEl.onerror = null;
         clean();
@@ -249,15 +295,12 @@ function loadImgWithLimiter(imgEl, src, timeout = 25000) {
   return gridImgLimit(() => loadImgWithTimeout(imgEl, src, timeout));
 }
 
-// Non-limited (for direct fallback)
-function loadImgNoLimit(imgEl, src, timeout = 20000) {
-  return loadImgWithTimeout(imgEl, src, timeout);
-}
-
 // ---------- UI helpers ----------
 const errorLog = {
   errors: [],
   maxErrors: 50,
+  imageErrorCount: 0,
+  imageErrorThrottleMax: 3,
 };
 
 function addError(error, context = "") {
@@ -303,7 +346,7 @@ function updateErrorLogDisplay() {
         : "";
       const stackText =
         err.stack && window.location.hostname === "localhost"
-          ? `<div style="margin-top: 4px; padding-left: 12px; opacity: 0.6; font-size: 10px;">${err.stack
+          ? `<div style="margin-top: 4px; padding-left: 12px; opacity: 0.6; font-size: 13px;">${err.stack
               .split("\n")
               .slice(0, 3)
               .map((line) => escapeHtml(line))
@@ -312,7 +355,7 @@ function updateErrorLogDisplay() {
       return `
       <div style="padding: 6px 0; border-bottom: 1px solid rgba(244, 67, 54, 0.2);">
         <div style="color: #f44336; font-weight: 700;">
-          <span style="opacity: 0.7; font-size: 10px;">[${escapeHtml(err.timestamp)}]</span>${contextText}
+          <span style="opacity: 0.7; font-size: 13px;">[${escapeHtml(err.timestamp)}]</span>${contextText}
         </div>
         <div style="margin-top: 2px; color: #ffcdd2;">${escapeHtml(err.message)}</div>
         ${stackText}
@@ -410,6 +453,8 @@ function updateImageProgress() {
     if (retryBtn) retryBtn.classList.remove("pulseAlert");
     if (stageFooter) stageFooter.style.display = "none";
     if (gridStatusHint) gridStatusHint.style.display = "none";
+    const rb = $("removeUnloadedBtn");
+    if (rb) rb.style.display = "none";
     return;
   }
 
@@ -447,11 +492,10 @@ function updateImageProgress() {
     if (failed > 0) retryBtn.classList.add("pulseAlert");
     else retryBtn.classList.remove("pulseAlert");
   }
-}
-
-function showControlsPanel(show) {
-  const el = $("controlsPanel");
-  if (el) el.style.display = show ? "" : "none";
+  const removeUnloadedBtn = $("removeUnloadedBtn");
+  if (removeUnloadedBtn) {
+    removeUnloadedBtn.style.display = failed > 0 ? "" : "none";
+  }
 }
 
 function syncGridFooterButtons(buildDisabled, exportDisabled) {
@@ -511,34 +555,72 @@ function getIpfsPath(url) {
 }
 
 function normalizeImageUrl(url) {
-  if (!url) return "";
-  if (isAlreadyProxied(url)) return url;
+  if (!url) return null;
 
-  const ipfsPath = getIpfsPath(url);
-  if (ipfsPath) return "https://nftstorage.link/ipfs/" + ipfsPath;
+  const s = String(url).trim();
 
-  try {
-    const u = new URL(String(url));
-    return u.toString();
-  } catch (e) {
-    return String(url);
+  // Already good
+  if (s.startsWith("https://")) return s;
+
+  // ipfs://
+  if (s.startsWith("ipfs://")) {
+    const path = s.replace("ipfs://", "").replace(/^ipfs\//, "");
+    return "https://cloudflare-ipfs.com/ipfs/" + path;
   }
+
+  // Raw CID
+  if (!s.startsWith("http") && s.length > 40) {
+    return "https://cloudflare-ipfs.com/ipfs/" + s;
+  }
+
+  return s;
 }
 
 function safeProxyUrl(src) {
   if (!src) return "";
-  if (!IMG_PROXY) return normalizeImageUrl(src); // ✅ if config not loaded yet, don't crash
-  if (isAlreadyProxied(src)) return src;
-
-  const direct = normalizeImageUrl(src);
-  if (isAlreadyProxied(direct)) return direct;
-
-  return IMG_PROXY + encodeURIComponent(direct);
+  return normalizeImageUrl(src); // ✅ ALWAYS use direct URL
 }
 
 function gridProxyUrl(src) {
-  const prox = safeProxyUrl(src);
-  return prox + (prox.includes("?") ? "&" : "?") + "b=" + BUILD_ID;
+  return normalizeImageUrl(src); // ✅ no proxy, no cache param
+}
+
+function buildImageCandidates(rawUrl) {
+  const candidates = [];
+  const normalized = normalizeImageUrl(rawUrl);
+  if (normalized) candidates.push(normalized);
+  const ipfsPath = getIpfsPath(rawUrl);
+  if (ipfsPath) {
+    candidates.push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
+    candidates.push(`https://w3s.link/ipfs/${ipfsPath}`);
+    candidates.push(`https://nftstorage.link/ipfs/${ipfsPath}`);
+    candidates.push(`https://gateway.pinata.cloud/ipfs/${ipfsPath}`);
+    candidates.push(`https://ipfs.io/ipfs/${ipfsPath}`);
+  }
+  return [...new Set(candidates)];
+}
+
+function loadImageWithTimeout(img, src, timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    const testImg = new Image();
+    setImgCORS(testImg, true);
+    const t = setTimeout(() => {
+      testImg.onload = null;
+      testImg.onerror = null;
+      testImg.src = "";
+      reject(new Error("timeout"));
+    }, timeout);
+    testImg.onload = () => {
+      clearTimeout(t);
+      img.src = src;
+      resolve();
+    };
+    testImg.onerror = () => {
+      clearTimeout(t);
+      reject(new Error("error"));
+    };
+    testImg.src = src;
+  });
 }
 
 function exportProxyUrl(src) {
@@ -578,14 +660,42 @@ function normalizeWallet(w) {
   return (w || "").trim().replace(/\s+/g, "").toLowerCase();
 }
 
+let walletValidationDebounce = null;
+
+function clearWalletValidationHint() {
+  const hint = $("walletValidationHint");
+  if (hint) hint.textContent = "";
+}
+
+function showWalletValidationHint(valid) {
+  const hint = $("walletValidationHint");
+  if (!hint) return;
+  hint.textContent = valid ? "✓ Valid" : "";
+  hint.style.color = valid ? "#4CAF50" : "";
+}
+
 function addWallet() {
   const input = $("walletInput");
+  const hint = $("walletValidationHint");
   const w = normalizeWallet(input ? input.value : "");
 
-  if (!w) return setStatus("👋 Paste a wallet address first.");
-  if (!/^0x[a-f0-9]{40}$/.test(w))
-    return setStatus("That doesn’t look like a valid 0x wallet address.");
-  if (state.wallets.includes(w)) return setStatus("Already got that one!");
+  const showAddError = (msg) => {
+    setStatus(msg);
+    if (hint) { hint.textContent = msg; hint.style.color = "#ff9800"; }
+  };
+
+  if (!w) {
+    showAddError("👋 Paste a wallet address first.");
+    return;
+  }
+  if (!/^0x[a-f0-9]{40}$/.test(w)) {
+    showAddError("That doesn't look like a valid 0x address (need 0x + 40 hex chars).");
+    return;
+  }
+  if (state.wallets.includes(w)) {
+    showAddError("Already got that one!");
+    return;
+  }
 
   state.wallets.push(w);
 
@@ -593,6 +703,7 @@ function addWallet() {
     input.value = "";
     input.blur();
   }
+  clearWalletValidationHint();
 
   renderWalletList();
   syncWalletHeader();
@@ -694,14 +805,18 @@ function renderCollectionsList() {
 
     const count = (c.count ?? c.nfts?.length ?? 0);
     const displayName = shortenForDisplay(c.name) || "Unknown Collection";
-    const labelText = `${displayName} (${count} owned)`;
 
     const name = document.createElement("div");
     name.className = "collectionName";
-    name.textContent = labelText;
+    name.textContent = displayName;
+
+    const countBadge = document.createElement("span");
+    countBadge.className = "collectionCount";
+    countBadge.textContent = `${count} owned`;
 
     label.appendChild(name);
     row.appendChild(label);
+    row.appendChild(countBadge);
     wrap.appendChild(row);
   });
 
@@ -743,10 +858,11 @@ function buildTraitsByCollection(collection) {
   return traits;
 }
 
-/** Update trait sort state when dropdown changes. Triggers Build Grid glow until rebuilt. */
+/** Update trait sort state when dropdown changes. Instantly reorders grid. */
 function onTraitChange(collectionKey, trait) {
   state.selectedSortByCollection[collectionKey] = trait;
-  setBuildGridNeedsRebuild(true);
+  updateGrid();
+  setBuildGridNeedsRebuild(false);
 }
 
 function setBuildGridNeedsRebuild(needs) {
@@ -799,6 +915,7 @@ function renderTraitFiltersForSelected() {
       !s ? s : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
     const options = [
       { value: "", label: "Original" },
+      { value: "__random__", label: "Random" },
       ...traitTypes.map((t) => ({ value: t, label: toTitleCase(t) })),
     ];
     options.forEach((opt) => {
@@ -860,8 +977,20 @@ function getTraitMatchNames(selectedTrait) {
   return [norm];
 }
 
+const RANDOM_TRAIT_VALUE = "__random__";
+
 function sortCollection(nfts, trait) {
-  if (!trait || !nfts?.length) return nfts || [];
+  if (!nfts?.length) return nfts || [];
+  if (!trait) return nfts;
+
+  if (trait === RANDOM_TRAIT_VALUE) {
+    const arr = [...nfts];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
   const matchNames = getTraitMatchNames(trait);
   return [...nfts].sort((a, b) => {
@@ -1107,7 +1236,6 @@ function scheduleProgressiveTiles(grid, usedItems, totalSlots, buildId) {
 
 // ---------- Build grid ----------
 function buildGrid() {
-  gridImgLimit = createLimiter(3);
   BUILD_ID = Date.now();
   const buildId = BUILD_ID;
 
@@ -1117,12 +1245,13 @@ function buildGrid() {
     failed: 0,
     retrying: 0,
   };
+  errorLog.imageErrorCount = 0;
 
   const chosen = getSelectedCollections();
   const exportBtn = $("gridExportBtn");
 
   const gridInputNfts = chosen.flatMap((c) => c.nfts || []);
-  console.log("GRID INPUT NFT COUNT", gridInputNfts.length);
+  if (DEV) console.log("GRID INPUT NFT COUNT", gridInputNfts.length);
 
   if (!chosen.length) {
     setStatus("🎯 Pick at least one collection to build your grid!");
@@ -1190,7 +1319,7 @@ function buildGrid() {
   const nftsWithImages = usedItems.filter((item) => item?.image);
   state.imageLoadState.total = nftsWithImages.length;
   const noImageCount = usedItems.length - nftsWithImages.length;
-  if (noImageCount > 0) {
+  if (DEV && noImageCount > 0) {
     console.log(`buildGrid: ${noImageCount} tile(s) have no image (using placeholder)`);
   }
 
@@ -1215,9 +1344,7 @@ function buildGrid() {
   enableDragDrop();
   updateGuideGlow();
   setBuildGridNeedsRebuild(false);
-
-  state.collectionsCollapsed = true;
-  collapseCollectionsSection();
+  goToStep(3);
 }
 
 /** Compute canonical key for item/tile matching. Must match makeNFTTile's dataset.key logic. */
@@ -1290,6 +1417,80 @@ function reorderGrid() {
     }
   }
   fillerTiles.forEach((t) => grid.appendChild(t));
+  requestAnimationFrame(syncWatermarkDOMToOneTile);
+}
+
+/** Remove failed tiles and reshuffle loaded NFTs into a fresh grid. */
+function removeUnloadedAndReshuffle() {
+  const grid = $("grid");
+  if (!grid) return;
+  const missing = grid.querySelectorAll(".tile.isMissing");
+  if (missing.length === 0) {
+    setStatus("✅ No unloaded tiles to remove!");
+    return;
+  }
+
+  const tiles = Array.from(grid.children).filter((t) => t.classList.contains("tile"));
+  const loadedTiles = tiles.filter((t) => t.classList.contains("isLoaded"));
+  if (loadedTiles.length === 0) {
+    setStatus("😕 No loaded images to keep — try Retry missing first");
+    return;
+  }
+
+  const collKeyNorm = (s) => String(s || "").trim().toLowerCase();
+  const keyToItem = new Map();
+  for (const it of state.currentGridItems || []) {
+    const k = getGridItemKey(it);
+    const collKey = collKeyNorm(it?.sourceKey);
+    keyToItem.set(`${collKey}::${k}`, it);
+    keyToItem.set(k, it);
+  }
+
+  const newItems = [];
+  for (const t of loadedTiles) {
+    const k = (t.dataset.key || "").trim();
+    const collKey = collKeyNorm(t.dataset.collectionKey);
+    let it = keyToItem.get(`${collKey}::${k}`);
+    if (!it) it = keyToItem.get(k);
+    if (it) newItems.push(it);
+  }
+
+  if (newItems.length === 0) {
+    setStatus("😕 Couldn't map loaded tiles to items");
+    return;
+  }
+
+  const side = Math.ceil(Math.sqrt(newItems.length));
+  const cols = side;
+  const rows = side;
+  const totalSlots = rows * cols;
+
+  state.currentGridItems = newItems.slice();
+  state.imageLoadState = {
+    total: newItems.length,
+    loaded: newItems.length,
+    failed: 0,
+    retrying: 0,
+  };
+
+  setGridColumns(cols);
+  grid.innerHTML = "";
+
+  loadedTiles.forEach((t) => grid.appendChild(t));
+  const fillerCount = totalSlots - loadedTiles.length;
+  for (let i = 0; i < fillerCount; i++) grid.appendChild(makeFillerTile());
+
+  const stageMeta = $("stageMeta");
+  if (stageMeta) {
+    stageMeta.textContent =
+      `${state.wallets.length} wallet(s) • ${getSelectedCollections().length} collection(s) • ${newItems.length} NFT(s) • grid ${rows}×${cols}`;
+  }
+
+  requestAnimationFrame(syncWatermarkDOMToOneTile);
+  updateImageProgress();
+  syncGridFooterButtons(false, false);
+  setStatus(`✨ Removed ${missing.length} unloaded • ${newItems.length} NFTs reshuffled`);
+  updateGuideGlow();
 }
 
 // ---------- Image loading + fallbacks ----------
@@ -1313,7 +1514,7 @@ function markMissing(tile, img, rawUrl) {
   tile.classList.add("isMissing");
   tile.dataset.rawUrl = rawUrl || tile.dataset.rawUrl || "";
 
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+  if (DEV) {
     console.warn("❌ Tile missing", {
       contract: tile.dataset.contract,
       tokenId: tile.dataset.tokenId,
@@ -1326,177 +1527,113 @@ function markMissing(tile, img, rawUrl) {
 
 async function retryMissingTiles() {
   const grid = $("grid");
+  const retryBtn = $("retryBtn");
   if (!grid) return;
   const missing = Array.from(grid.querySelectorAll(".tile.isMissing"));
   if (missing.length === 0) {
     setStatus("✅ All good — no missing tiles to retry!");
     return;
   }
-    setStatus(`🔄 Retrying ${missing.length} missing image(s)…`);
+
+  /* Show retry-in-progress UI */
+  state.imageLoadState.retrying = missing.length;
+  state.imageLoadState.failed = Math.max(0, state.imageLoadState.failed - missing.length);
+  if (retryBtn) {
+    retryBtn.disabled = true;
+    retryBtn.dataset.originalText = retryBtn.textContent;
+    retryBtn.textContent = "⏳ Retrying…";
+    retryBtn.classList.add("retryLoading");
+  }
+  missing.forEach((t) => t.classList.add("isRetrying"));
+  updateImageProgress();
+
   const tasks = missing.map((tile) => {
     const rawUrl = tile.dataset.rawUrl;
     if (!rawUrl) return Promise.resolve();
     tile.classList.remove("isMissing");
-    tile.dataset.alchemyTried = "0";
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
     const img = document.createElement("img");
     img.alt = "";
     img.referrerPolicy = "no-referrer";
     img.crossOrigin = "anonymous";
+    img.src = TILE_PLACEHOLDER_SRC;
     tile.appendChild(img);
-    return loadTileImage(tile, img, rawUrl, 1).catch(() => {});
+    return loadTileImage(tile, img, rawUrl).catch(() => {});
   });
   await Promise.all(tasks);
+
+  missing.forEach((t) => t.classList.remove("isRetrying"));
+  state.imageLoadState.retrying = 0;
+  if (retryBtn) {
+    retryBtn.disabled = false;
+    retryBtn.textContent = retryBtn.dataset.originalText || "🔄 Retry missing";
+    retryBtn.classList.remove("retryLoading");
+  }
   const stillMissing = grid.querySelectorAll(".tile.isMissing").length;
   setStatus(stillMissing > 0 ? `😕 ${stillMissing} still failed` : "✅ Retry complete!");
   updateImageProgress();
 }
 
-async function fetchBestAlchemyImage({ contract, tokenId }) {
-  const url = `${WORKER_BASE}/api/nft-metadata?contract=${encodeURIComponent(contract)}&tokenId=${encodeURIComponent(tokenId)}&chain=${state.chain || "eth"}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Metadata ${res.status}`);
-  const meta = await res.json();
-  if (meta?.error) throw new Error(meta.error);
+async function loadTileImage(tile, img, rawUrl) {
+  tile.dataset.ipfsPath = getIpfsPath(rawUrl) || "";
+  const candidates = buildImageCandidates(rawUrl);
+  if (candidates.length === 0) {
+    markMissing(tile, img, rawUrl);
+    state.imageLoadState.failed++;
+    updateImageProgress();
+    return false;
+  }
 
-  const image =
-    meta?.image?.cachedUrl ||
-    meta?.image?.pngUrl ||
-    meta?.image?.thumbnailUrl ||
-    meta?.image?.originalUrl ||
-    meta?.rawMetadata?.image ||
-    "";
+  for (const url of candidates) {
+    if (imageCache.has(url)) {
+      img.src = imageCache.get(url);
+      tile.dataset.src = url;
+      tile.classList.remove("isMissing");
+      tile.classList.add("isLoaded");
+      state.imageLoadState.loaded++;
+      updateImageProgress();
+      return true;
+    }
 
-  return image ? normalizeImageUrl(image) : "";
+    try {
+      setImgCORS(img, true);
+      const proxyUrl = gridProxyUrl(url) || url;
+      await queueImageLoad(() =>
+        loadImageWithTimeout(img, proxyUrl, 8000)
+      );
+      imageCache.set(url, url);
+      tile.dataset.src = url;
+      tile.classList.remove("isMissing");
+      tile.classList.add("isLoaded");
+      state.imageLoadState.loaded++;
+      updateImageProgress();
+      return true;
+    } catch (_) {
+      /* try next candidate */
+    }
+  }
+
+  markMissing(tile, img, rawUrl);
+  state.imageLoadState.failed++;
+  updateImageProgress();
+  errorLog.imageErrorCount = (errorLog.imageErrorCount || 0) + 1;
+  if (errorLog.imageErrorCount <= (errorLog.imageErrorThrottleMax ?? 3)) {
+    addError(new Error("Image failed after fallback: " + rawUrl), "Image Loading");
+  }
+  return false;
 }
 
-async function loadTileImage(tile, img, rawUrl, retryAttempt = 0) {
-  const contract = tile.dataset.contract || "";
-  const tokenId = tile.dataset.tokenId || "";
-
-  const ipfsPath = getIpfsPath(rawUrl);
-  tile.dataset.ipfsPath = ipfsPath || "";
-
-  const directNormalized = normalizeImageUrl(rawUrl);
-  if (!directNormalized) {
-    markMissing(tile, img, rawUrl);
-    state.imageLoadState.failed++;
-    updateImageProgress();
-    return false;
-  }
-
-  const primary = ipfsPath ? "ipfs://" + ipfsPath : directNormalized;
-  tile.dataset.src = primary;
-
-  // Strategy 1: Alchemy cached URL (proxy first) — only for valid contract addresses
-  if (contract && tokenId && tokenId !== "null" && /^0x[a-f0-9]{40}$/i.test(contract) && tile.dataset.alchemyTried !== "1") {
-    tile.dataset.alchemyTried = "1";
-    try {
-      const metaUrl = await fetchBestAlchemyImage({ contract, tokenId });
-      if (metaUrl && metaUrl !== primary) {
-        try {
-          setImgCORS(img, true);
-          await loadImgWithLimiter(img, gridProxyUrl(metaUrl), IMG_LOAD.gridTimeoutMs);
-          state.imageLoadState.loaded++;
-          updateImageProgress();
-          tile.dataset.kind = "loaded";
-          tile.classList.remove("isMissing");
-          tile.classList.add("isLoaded");
-          tile.dataset.src = metaUrl;
-          return true;
-        } catch (_) {}
-      }
-    } catch (_) {}
-  }
-
-  // Strategy 2: Worker proxy (primary)
-  try {
-    setImgCORS(img, true);
-    await loadImgWithLimiter(img, gridProxyUrl(primary), IMG_LOAD.gridTimeoutMs);
-    state.imageLoadState.loaded++;
-    updateImageProgress();
-    tile.dataset.kind = "loaded";
-    tile.classList.remove("isMissing");
-    tile.classList.add("isLoaded");
-    return true;
-  } catch (e1) {
-    // Strategy 3: Retry primary via Worker proxy (non-IPFS direct URLs)
-    if (!ipfsPath && /^https?:\/\//i.test(primary)) {
-      try {
-        setImgCORS(img, true);
-        await loadImgNoLimit(img, gridProxyUrl(primary), IMG_LOAD.gridDirectTimeoutMs);
-        state.imageLoadState.loaded++;
-        updateImageProgress();
-        tile.dataset.kind = "loaded";
-        tile.classList.remove("isMissing");
-        tile.classList.add("isLoaded");
-        return true;
-      } catch (_) {
-        // continue
-      }
+function preloadCollection(nfts) {
+  const batch = (nfts || []).slice(0, 30);
+  for (const nft of batch) {
+    const url = normalizeImageUrl(getImage(nft));
+    if (!url) continue;
+    if (!imageCache.has(url)) {
+      const img = new Image();
+      img.src = url;
+      imageCache.set(url, url);
     }
-
-    // Strategy 4: IPFS gateways (via Worker proxy)
-    if (ipfsPath) {
-      const candidates = IPFS_GATEWAYS.map((g) => g + ipfsPath);
-
-      for (const gatewayUrl of candidates) {
-        for (let attempt = 0; attempt <= IMG_LOAD.retriesPerCandidate; attempt++) {
-          try {
-            setImgCORS(img, true);
-            await loadImgWithLimiter(img, gridProxyUrl(gatewayUrl), IMG_LOAD.gridTimeoutMs);
-            state.imageLoadState.loaded++;
-            updateImageProgress();
-            tile.dataset.kind = "loaded";
-            tile.classList.remove("isMissing");
-            tile.classList.add("isLoaded");
-            tile.dataset.src = gatewayUrl;
-            return true;
-          } catch (_) {
-            if (attempt < IMG_LOAD.retriesPerCandidate) {
-              await new Promise((r) => setTimeout(r, IMG_LOAD.backoffMs));
-            }
-          }
-        }
-      }
-    }
-
-    // Grace period before Missing
-    const startedAt = Number(tile.dataset.loadStartedAt || Date.now());
-    const elapsed = Date.now() - startedAt;
-
-    if (elapsed < MISSING_GRACE_MS) {
-      const waitMs = MISSING_GRACE_MS - elapsed;
-      state.imageLoadState.retrying++;
-      updateImageProgress();
-
-      await new Promise((r) => setTimeout(r, waitMs));
-
-      state.imageLoadState.retrying = Math.max(0, state.imageLoadState.retrying - 1);
-      updateImageProgress();
-
-      try {
-        setImgCORS(img, true);
-        await loadImgWithLimiter(img, gridProxyUrl(primary), IMG_LOAD.gridTimeoutMs);
-        state.imageLoadState.loaded++;
-        updateImageProgress();
-        tile.dataset.kind = "loaded";
-        tile.classList.remove("isMissing");
-        tile.classList.add("isLoaded");
-        return true;
-      } catch (_) {}
-    }
-
-    markMissing(tile, img, rawUrl);
-    state.imageLoadState.failed++;
-    updateImageProgress();
-
-    if (retryAttempt === 0) {
-      addError(new Error(`Failed to load image: ${String(rawUrl).substring(0, 100)}`), "Image Loading");
-    }
-
-    return false;
   }
 }
 
@@ -1515,13 +1652,13 @@ function makeNFTTile(it) {
 
   const raw = it?.image || "";
   tile.dataset.kind = raw ? "nft" : "empty";
-  tile.dataset.alchemyTried = "0";
 
   const img = document.createElement("img");
   img.loading = "lazy";
   img.alt = ""; // ✅ prevents filename/name text showing
   img.referrerPolicy = "no-referrer";
   img.crossOrigin = "anonymous";
+  img.src = TILE_PLACEHOLDER_SRC; // show tile.png immediately before/during load
 
   if (raw) {
     tile.appendChild(img);
@@ -1642,8 +1779,8 @@ async function loadWallets() {
     }
 
     showLoading("🎨 Sorting your collections...", "", 85);
-    console.log("RAW NFT COUNT (all wallets)", allNfts.length);
-    console.log("RAW SAMPLE (all)", allNfts.slice(0, 10).map((nft) => ({
+    if (DEV) console.log("RAW NFT COUNT (all wallets)", allNfts.length);
+    if (DEV) console.log("RAW SAMPLE (all)", allNfts.slice(0, 10).map((nft) => ({
       contract: nft?.contract?.address,
       name: nft?.contract?.name || nft?.collection?.name,
       tokenType: nft?.tokenType || nft?.id?.tokenMetadata?.tokenType,
@@ -1655,18 +1792,25 @@ async function loadWallets() {
     const normalized = validNfts.map(normalizeNFT);
     const deduped = dedupeNFTs(normalized);
     const expanded = expandNFTs(deduped);
-    console.log("EXPANDED NFT COUNT", expanded.length);
+    if (DEV) console.log("EXPANDED NFT COUNT", expanded.length);
     const grouped = groupByCollection(expanded);
+    window.allNFTs = allNfts;
+    window.collections = grouped;
     const displayedCount = grouped.reduce((s, c) => s + (c.nfts?.length ?? 0), 0);
-    console.log(`NFT load complete: total ${allNfts.length} fetched → ${deduped.length} deduped → ${expanded.length} expanded → ${displayedCount} in ${grouped.length} collections`);
+    if (DEV) console.log(`NFT load complete: total ${allNfts.length} fetched → ${deduped.length} deduped → ${expanded.length} expanded → ${displayedCount} in ${grouped.length} collections`);
 
     showLoading("✨ Almost ready...", "", 100);
     state.collections = grouped;
     state.selectedKeys = new Set();
 
+    for (const c of grouped) {
+      if (c.name && c.name.toLowerCase().includes("quirkling")) {
+        preloadCollection(c.nfts || []);
+      }
+    }
+
     renderCollectionsList();
-    showControlsPanel(true);
-    updateGuideGlow();
+    goToStep(2);
 
     const buildBtn = $("gridBuildBtn");
     const exportBtn = $("gridExportBtn");
@@ -1683,15 +1827,22 @@ async function loadWallets() {
       : `😅 Hmm... no NFTs found here`);
     showConnectionStatus(true);
 
-    state.walletCollapsed = true;
-    collapseWalletSection();
-
     await new Promise((r) => setTimeout(r, 400));
     hideLoading();
   } catch (err) {
     hideLoading();
-    const errorMsg = err?.message || "Error loading NFTs.";
-    setStatus(`❌ ${errorMsg} Please try again or check your wallet addresses.`);
+    const raw = (err?.message || "Error loading NFTs.").toLowerCase();
+    let userMsg = "Something went wrong loading your NFTs. Please check your wallet addresses and try again.";
+    if (raw.includes("upstream connect error")) {
+      userMsg = "Our servers had a temporary hiccup. Please try again in a moment.";
+    } else if (raw.includes("502") || raw.includes("service temporarily unavailable")) {
+      userMsg = "Service temporarily unavailable. Please try again.";
+    } else if ((raw.includes("invalid") && raw.includes("api")) || raw.includes("unauthorized") || raw.includes("api key")) {
+      userMsg = "Configuration issue. Please contact the site owner.";
+    } else if (raw.includes("timed out") || raw.includes("timeout")) {
+      userMsg = "Request timed out. Try again in a moment.";
+    }
+    setStatus(`❌ ${userMsg}`);
     addError(err, "Load Wallets");
     showConnectionStatus(false);
   }
@@ -1719,8 +1870,9 @@ function nftToGridItem(nft, sourceKey = "") {
     .toLowerCase();
   const tokenId = (nft?._tokenId ?? nft?.tokenId ?? nft?.token_id ?? nft?.id?.tokenId ?? nft?.id ?? "").toString().trim();
   const safeTokenId = tokenId && tokenId !== "null" ? tokenId : "0";
-  const image = extractImage(nft) || PLACEHOLDER_IMAGE;
-  const name = nft?.name || (safeTokenId ? `#${safeTokenId}` : "NFT");
+  const image = normalizeImageUrl(getImage(nft)) || PLACEHOLDER_IMAGE;
+  const name = nft?.name || nft?.title || (safeTokenId ? `#${safeTokenId}` : "NFT");
+  if (DEV) console.log("RENDERING NFT", { name: nft?.title || nft?.name, contract: nft?.contract?.address });
   const attributes =
     nft?.rawMetadata?.attributes ||
     nft?.rawMetadata?.metadata?.attributes ||
@@ -1790,33 +1942,40 @@ function dedupeNFTs(nfts) {
       seen.add(key);
       out.push(nft);
     } catch (e) {
-      console.warn("dedupeNFTs: error for NFT, including anyway", e?.message);
+      if (DEV) console.warn("dedupeNFTs: error for NFT, including anyway", e?.message);
       out.push(nft);
     }
   }
-  if (dupes > 0) console.log(`dedupeNFTs: ${nfts.length} → ${out.length} unique (${dupes} duplicates)`);
+  if (DEV && dupes > 0) console.log(`dedupeNFTs: ${nfts.length} → ${out.length} unique (${dupes} duplicates)`);
   return out;
 }
 
 async function fetchNFTsFromWorker({ wallet, chain }) {
   const chainParam = chain || "eth";
   const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chainParam}`;
+
   const res = await fetch(url);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.error || `NFT fetch failed (${res.status})`);
   }
+
   const json = await res.json();
   const nfts = json.nfts || [];
-  console.log("RAW NFT COUNT", nfts.length);
-  console.log("RAW SAMPLE", nfts.slice(0, 10).map((nft) => ({
-    contract: nft.contract?.address,
-    name: nft.contract?.name || nft.collection?.name,
-    tokenType: nft.tokenType || nft.id?.tokenMetadata?.tokenType,
-    balance: nft.balance,
-    tokenId: nft.tokenId,
-    idTokenId: nft.id?.tokenId,
-  })));
+
+  if (DEV) console.log("✅ WORKER NFT COUNT", nfts.length);
+  if (DEV) console.log(
+    "✅ WORKER RAW SAMPLE",
+    nfts.slice(0, 10).map((nft) => ({
+      contract: nft?.contract?.address,
+      name: nft?.contract?.name || nft?.collection?.name,
+      tokenType: nft?.tokenType || nft?.id?.tokenMetadata?.tokenType,
+      balance: nft?.balance,
+      tokenId: nft?.tokenId,
+      idTokenId: nft?.id?.tokenId,
+    }))
+  );
+
   return nfts;
 }
 
@@ -1863,29 +2022,24 @@ function expandNFTs(nfts) {
   return out;
 }
 
-function extractImage(nft) {
-  const candidates = [
-    nft?.media?.[0]?.gateway,
-    nft?.media?.[0]?.raw,
-    nft?.metadata?.image,
-    nft?.metadata?.image_url,
-    nft?.rawMetadata?.image,
-    nft?.tokenUri?.gateway,
-    nft?.image?.cachedUrl,
-    nft?.image?.pngUrl,
-    nft?.image?.thumbnailUrl,
-    nft?.image?.originalUrl,
-  ];
-  for (const c of candidates) {
-    if (typeof c === "string" && c.trim()) {
-      let url = c.trim();
-      if (url.startsWith("ipfs://")) {
-        url = "https://nftstorage.link/ipfs/" + url.slice(7);
-      }
-      return url;
-    }
-  }
-  return PLACEHOLDER_IMAGE;
+/** Image extraction — never blocks render. Caller must wrap with normalizeImageUrl. */
+function getImage(nft) {
+  const raw =
+    nft?.media?.[0]?.thumbnail ||
+    nft?.media?.[0]?.gateway ||
+    nft?.media?.[0]?.raw ||
+    nft?.rawMetadata?.image ||
+    nft?.rawMetadata?.image_url ||
+    nft?.metadata?.image ||
+    nft?.metadata?.image_url ||
+    nft?.tokenUri?.gateway ||
+    nft?.image?.cachedUrl ||
+    nft?.image?.pngUrl ||
+    nft?.image?.thumbnailUrl ||
+    nft?.image?.originalUrl ||
+    (typeof nft?.image === "string" ? nft.image : "") ||
+    "";
+  return typeof raw === "string" ? raw.trim() : "";
 }
 
 function groupByCollection(nfts) {
@@ -1900,14 +2054,16 @@ function groupByCollection(nfts) {
       .toString().trim().toLowerCase() || "unknown";
 
     if (!collections[key]) {
+      const collectionName =
+        nft.contract?.name ||
+        nft.collection?.name ||
+        nft.contractMetadata?.name ||
+        nft.title ||
+        nft.contract?.address ||
+        "Unknown Collection";
       collections[key] = {
         key,
-        name:
-          nft.contract?.name ||
-          nft.collection?.name ||
-          nft.contractMetadata?.name ||
-          nft.contract?.address ||
-          "Unknown Collection",
+        name: String(collectionName || "Unknown Collection").trim() || "Unknown Collection",
         nfts: [],
         count: 0,
       };
@@ -1922,15 +2078,17 @@ function groupByCollection(nfts) {
   const collectionList = Object.values(collections);
   const sorted = collectionList.sort((a, b) => b.count - a.count);
 
-  console.log("COLLECTION COUNT", Object.keys(collections).length);
-  Object.values(collections).slice(0, 20).forEach((c) => {
-    console.log("COLLECTION", {
-      key: c.key,
-      name: c.name,
-      count: c.count,
-      sampleIds: c.nfts.slice(0, 5).map((n) => n._instanceId),
+  if (DEV) {
+    console.log("COLLECTION COUNT", Object.keys(collections).length);
+    Object.values(collections).slice(0, 20).forEach((c) => {
+      console.log("COLLECTION", {
+        key: c.key,
+        name: c.name,
+        count: c.count,
+        sampleIds: c.nfts.slice(0, 5).map((n) => n._instanceId),
+      });
     });
-  });
+  }
 
   return sorted;
 }
@@ -2020,8 +2178,7 @@ function isImgUsable(img) {
 
 async function exportPNG() {
   try {
-    setStatus("📸 Creating your masterpiece...");
-
+    setStatus("📸 Preparing canvas...");
     const tiles = [...document.querySelectorAll("#grid .tile")];
     if (!tiles.length) return setStatus("😅 Nothing to export yet — build a grid first!");
 
@@ -2052,10 +2209,15 @@ async function exportPNG() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, outW, outH);
 
+    const totalTiles = tiles.length;
     let i = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const tile = tiles[i++];
+        const tile = tiles[i];
+        i++;
+        if (i % 20 === 0 || i === totalTiles) {
+          setStatus(`📸 Creating your masterpiece... ${Math.round((i / totalTiles) * 100)}%`);
+        }
         if (!tile) continue;
 
         const img = tile.querySelector("img");
@@ -2192,6 +2354,19 @@ function toggleTraitOrderSection() {
         addWallet();
       }
     });
+    walletInput.addEventListener("input", () => {
+      if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
+      walletValidationDebounce = setTimeout(() => {
+        const w = normalizeWallet(walletInput.value);
+        showWalletValidationHint(w && /^0x[a-f0-9]{40}$/.test(w) && !state.wallets.includes(w));
+        walletValidationDebounce = null;
+      }, 200);
+    });
+    walletInput.addEventListener("blur", () => {
+      if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
+      walletValidationDebounce = null;
+      clearWalletValidationHint();
+    });
   }
 
   const addBtn = $("addWalletBtn");
@@ -2207,11 +2382,9 @@ function toggleTraitOrderSection() {
       addWallet();
     };
 
+    addBtn.addEventListener("click", handler, { passive: false });
     if (window.PointerEvent) addBtn.addEventListener("pointerup", handler, { passive: false });
-    else {
-      addBtn.addEventListener("click", handler, { passive: false });
-      addBtn.addEventListener("touchend", handler, { passive: false });
-    }
+    else addBtn.addEventListener("touchend", handler, { passive: false });
   }
 
   const selectAllBtn = $("selectAllBtn");
@@ -2235,9 +2408,35 @@ function toggleTraitOrderSection() {
   if (gridBuildBtn) gridBuildBtn.addEventListener("click", buildGrid);
   if (gridExportBtn) gridExportBtn.addEventListener("click", exportPNG);
 
+  // Step navigation
+  const collectionsBackBtn = $("collectionsBackBtn");
+  const collectionsNextBtn = $("collectionsNextBtn");
+  const gridBackBtn = $("gridBackBtn");
+  if (collectionsBackBtn) collectionsBackBtn.addEventListener("click", () => goToStep(1));
+  if (collectionsNextBtn) collectionsNextBtn.addEventListener("click", () => {
+    if (state.selectedKeys.size === 0) {
+      setStatus("🎯 Select at least one collection to continue");
+      return;
+    }
+    goToStep(3);
+  });
+  if (gridBackBtn) gridBackBtn.addEventListener("click", () => goToStep(2));
+
+  // Step indicator clicks
+  document.querySelectorAll(".stepItem").forEach((el) => {
+    el.addEventListener("click", () => {
+      const s = parseInt(el.dataset.step, 10);
+      if (s >= 1 && s <= 3) goToStep(s);
+    });
+  });
+
   const retryBtn = $("retryBtn");
   if (retryBtn && typeof retryMissingTiles === "function") {
     retryBtn.addEventListener("click", retryMissingTiles);
+  }
+  const removeUnloadedBtn = $("removeUnloadedBtn");
+  if (removeUnloadedBtn && typeof removeUnloadedAndReshuffle === "function") {
+    removeUnloadedBtn.addEventListener("click", removeUnloadedAndReshuffle);
   }
 
   const clearErrBtn = $("clearErrorLog");
@@ -2278,6 +2477,8 @@ function toggleTraitOrderSection() {
     });
   }
 
+  goToStep(1);
+
   window.addEventListener("resize", syncWatermarkDOMToOneTile);
   window.addEventListener("orientationchange", syncWatermarkDOMToOneTile);
 })();
@@ -2296,9 +2497,7 @@ async function initializeConfig() {
     }
     configLoaded = true;
 
-    if (window.location.hostname === "localhost") {
-      console.log("Config loaded");
-    }
+    if (DEV) console.log("Config loaded");
 
     enableButtons();
     setStatus("Ready! ➕ Add wallet(s) → 🔍 Load → select collections → 🧩 Build → 📸 Export");
@@ -2320,7 +2519,7 @@ async function initializeConfig() {
       statusEl.appendChild(msg);
 
       const hint = document.createElement("div");
-      hint.style.fontSize = "12px";
+      hint.style.fontSize = "16px";
       hint.style.opacity = "0.9";
       hint.innerHTML = "See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.";
       statusEl.appendChild(hint);

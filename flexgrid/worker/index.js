@@ -1,81 +1,139 @@
-/**
- * Flex Grid Cloudflare Worker
- * - /api/config/flex-grid: Returns config (alchemyApiKey, workerUrl, network)
- * - /img?url=...: Image proxy with CORS
- */
-
-const CORS_HEADERS = {
+const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Accept",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "*",
   "Access-Control-Max-Age": "86400",
 };
 
-const WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
-const IMG_PROXY_BASE = `${WORKER_BASE}/img?url=`;
-
-const CONFIG_RESPONSE = {
-  alchemyApiKey: "2LxYSccU9cpZLJ3HEjV6Q",
-  workerUrl: IMG_PROXY_BASE,
-  network: "eth-mainnet",
+const ALCHEMY_HOSTS = {
+  eth: "eth-mainnet.g.alchemy.com",
+  base: "base-mainnet.g.alchemy.com",
+  polygon: "polygon-mainnet.g.alchemy.com",
 };
 
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
+const CONFIG = {
+  alchemyApiKey: "2LxYSccU9cpZLJ3HEjV6Q",
+  network: "eth-mainnet",
+  ipfsGateway: "https://cloudflare-ipfs.com/ipfs/",
+  workerUrl: "https://loflexgrid.littleollienft.workers.dev/img?url=",
+};
+
+function corsResponse(body, status = 200, contentType = "application/json") {
+  return new Response(body, {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      ...CORS_HEADERS,
-    },
+    headers: { "Content-Type": contentType, ...CORS },
   });
 }
 
-function handleConfig() {
-  return jsonResponse(CONFIG_RESPONSE);
-}
-
-async function handleImgProxy(request) {
+async function handleApiNfts(request) {
   const url = new URL(request.url);
-  const target = url.searchParams.get("url");
-  if (!target) {
-    return new Response("Missing url parameter", { status: 400, headers: CORS_HEADERS });
-  }
-  try {
-    const res = await fetch(target, {
-      headers: {
-        "User-Agent": "FlexGrid-ImageProxy/1.0",
-      },
-    });
-    if (!res.ok) throw new Error(`Upstream ${res.status}`);
-    const headers = new Headers(res.headers);
-    headers.set("Access-Control-Allow-Origin", "*");
-    headers.set("Cache-Control", "public, max-age=86400");
-    return new Response(res.body, { status: res.status, headers });
-  } catch (e) {
-    return new Response("Proxy error", { status: 502, headers: CORS_HEADERS });
-  }
-}
+  const owner = url.searchParams.get("owner");
+  const chain = url.searchParams.get("chain") || "eth";
+  const contractAddressesParam = url.searchParams.get("contractAddresses");
 
-function handleOptions() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
+  if (!owner || String(owner).trim() === "") {
+    return corsResponse(JSON.stringify({ error: "Missing owner" }), 400);
+  }
+
+  const ownerVal = owner.trim().toLowerCase();
+  const host = ALCHEMY_HOSTS[chain] || ALCHEMY_HOSTS.eth;
+  const apiKey = CONFIG.alchemyApiKey;
+  const baseUrl = `https://${host}/v2/${apiKey}/getNFTsForOwner`;
+
+  const contractAddresses = contractAddressesParam
+    ? contractAddressesParam.split(",").map((a) => a.trim().toLowerCase()).filter((a) => /^0x[a-f0-9]{40}$/.test(a))
+    : null;
+
+  const allNFTs = [];
+  let pageKey = null;
+
+  try {
+    do {
+      const params = new URLSearchParams({
+        owner: ownerVal,
+        withMetadata: "true",
+        pageSize: "100",
+      });
+
+      if (pageKey) params.set("pageKey", pageKey);
+      if (contractAddresses?.length) {
+        contractAddresses.forEach((addr) => params.append("contractAddresses[]", addr));
+      }
+
+      const fetchUrl = `${baseUrl}?${params.toString()}`;
+      const res = await fetch(fetchUrl);
+
+      if (!res.ok) {
+        const text = await res.text();
+        return corsResponse(
+          JSON.stringify({ error: text || `Alchemy ${res.status}` }),
+          502
+        );
+      }
+
+      const data = await res.json();
+      const nfts = data.ownedNfts || [];
+      allNFTs.push(...nfts);
+
+      pageKey = data.pageKey || null;
+    } while (pageKey);
+
+    return corsResponse(JSON.stringify({ nfts: allNFTs }));
+  } catch (e) {
+    return corsResponse(
+      JSON.stringify({ error: e?.message || "NFT fetch failed" }),
+      502
+    );
+  }
 }
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
-      return handleOptions();
+      return new Response(null, { status: 204, headers: CORS });
     }
 
-    if (url.pathname === "/api/config/flex-grid" && request.method === "GET") {
-      return handleConfig();
+    const isConfigPath =
+      url.pathname === "/api/config/flex-grid" ||
+      url.pathname === "/api/config/flexgrid";
+
+    if (isConfigPath && request.method === "GET") {
+      return corsResponse(JSON.stringify(CONFIG));
+    }
+
+    if (url.pathname === "/api/nfts" && request.method === "GET") {
+      return handleApiNfts(request);
     }
 
     if (url.pathname === "/img" && request.method === "GET") {
-      return handleImgProxy(request);
+      const imageUrl = url.searchParams.get("url");
+
+      if (!imageUrl) {
+        return new Response("Missing URL", { status: 400, headers: CORS });
+      }
+
+      try {
+        const res = await fetch(imageUrl, {
+          headers: { "User-Agent": "FlexGrid-ImageProxy/1.0" },
+        });
+
+        if (!res.ok) throw new Error("Upstream error");
+
+        const headers = new Headers(res.headers);
+        headers.set("Access-Control-Allow-Origin", "*");
+        headers.set("Cache-Control", "public, max-age=86400");
+
+        return new Response(res.body, {
+          status: res.status,
+          headers,
+        });
+      } catch (e) {
+        return new Response("Proxy error", { status: 502, headers: CORS });
+      }
     }
 
-    return new Response("Not Found", { status: 404, headers: CORS_HEADERS });
+    return new Response("Not found", { status: 404, headers: CORS });
   },
 };

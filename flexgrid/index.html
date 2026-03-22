@@ -7,17 +7,7 @@
   base-uri 'self';
   object-src 'none';
 
-  img-src
-    'self'
-    data:
-    blob:
-    https://loflexgrid.littleollienft.workers.dev
-    https://nft-cdn.alchemy.com
-    https://cloudflare-ipfs.com
-    https://ipfs.io
-    https://nftstorage.link
-    https://w3s.link
-    https://dweb.link;
+  img-src 'self' data: blob: https:;
 
   style-src
     'self'
@@ -36,7 +26,6 @@
   connect-src
     'self'
     http://localhost:3000
-    https://*.alchemy.com
     https://api.zora.co
     https://loflexgrid.littleollienft.workers.dev;
 ">
@@ -83,6 +72,24 @@
       <img src="src/assets/images/LO.png" class="headerLogo" alt="Little Ollie" />
     </div>
 
+    <!-- Step indicator + theme toggle -->
+    <div class="stepBar">
+    <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
+      <span class="stepItem" data-step="1">1. Wallets</span>
+      <span class="stepConnector">→</span>
+      <span class="stepItem" data-step="2">2. Collections</span>
+      <span class="stepConnector">→</span>
+      <span class="stepItem" data-step="3">3. Grid</span>
+    </nav>
+    <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
+      <span class="themeToggleIcon themeToggleSun">☀️</span>
+      <span class="themeToggleIcon themeToggleMoon">🌙</span>
+      <span class="themeToggleKnob" aria-hidden="true"></span>
+    </div>
+    </div>
+
+    <!-- STEP 1: Add Wallets -->
+    <div id="screen-wallets" class="screen">
     <section class="panel" id="setupPanel">
       <div class="topSection">
 
@@ -107,86 +114,44 @@
             <button id="addWalletBtn" class="btn guideGlow" type="button">
               ➕ Add wallet
             </button>
+            <span id="walletValidationHint" class="walletValidationHint" style="margin-top:6px;display:block;font-weight:700;font-size:17px;"></span>
+          </div>
+          <div class="chainRow" style="margin-top:10px;">
+            <label class="lbl">Chain</label>
+            <select id="chainSelect" class="input">
+              <option value="eth" selected>Ethereum</option>
+              <option value="base">Base</option>
+              <option value="polygon">Polygon (Coming Soon)</option>
+              <option value="apechain">ApeChain (Coming Soon)</option>
+              <option value="solana">Solana (Coming Soon)</option>
+            </select>
           </div>
           <div id="walletList" class="walletList" style="display:none;"></div>
-          <div id="walletEmptyState" class="emptyState">👋 Add your first wallet to get started</div>
-          <div class="hint walletHint">Add multiple wallets, then load them all together.</div>
-
-          <!-- Chain + Grid size (inside wallet) -->
-          <div class="chainGridRow" style="margin-top:14px;">
-            <div>
-              <label class="lbl">Chain</label>
-              <select id="chainSelect" class="input">
-                <option value="eth" selected>Ethereum</option>
-                <option value="base">Base</option>
-                <option value="polygon">Polygon (Coming Soon)</option>
-                <option value="apechain">ApeChain (Coming Soon)</option>
-                <option value="solana">Solana (Coming Soon)</option>
-              </select>
-            </div>
-            <div>
-              <label class="lbl">Grid size</label>
-              <select id="gridSize" class="input">
-                <option value="auto" selected>Auto (fit selected NFTs)</option>
-                <option value="9">3×3 (9)</option>
-                <option value="16">4×4 (16)</option>
-                <option value="25">5×5 (25)</option>
-                <option value="36">6×6 (36)</option>
-                <option value="49">7×7 (49)</option>
-                <option value="100">10×10 (100)</option>
-                <option value="custom">Custom Rows × Cols…</option>
-              </select>
-            </div>
-          </div>
-          <div id="customGridWrap" style="display:none; margin-top:10px;">
-            <label class="lbl">Custom grid</label>
-            <div class="row two" style="margin:0;">
-              <div>
-                <label class="lbl" style="margin-top:0;">Columns</label>
-                <input id="customCols" class="input" type="number" min="1" max="50" value="6" placeholder="Cols (e.g. 8)" />
-              </div>
-              <div>
-                <label class="lbl" style="margin-top:0;">Rows</label>
-                <input id="customRows" class="input" type="number" min="1" max="50" value="6" placeholder="Rows (e.g. 5)" />
-              </div>
-            </div>
-            <div class="hint">Builds a Rows × Columns grid. Export will match this shape.</div>
-          </div>
           </div>
         </div>
 
       </div>
 
+      <div id="status" class="status" role="status" aria-live="polite" style="min-height:24px;font-weight:800;margin-top:8px;"></div>
       <div class="actionRow">
         <button id="loadBtn" class="btn" type="button" disabled>🔍 Load wallet(s)</button>
-        <button id="themeToggle" class="btn" type="button">🌙 Dark Mode</button>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0; flex-wrap: wrap;">
-        <div id="connectionStatus" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(244, 67, 54, 0.15); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px;">
-          <div id="connectionLight" style="width: 12px; height: 12px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px rgba(244, 67, 54, 0.75);"></div>
-          <span id="connectionText" style="font-size: 13px; font-weight: 700; color: #f44336;">Not Connected</span>
-        </div>
-        <div style="flex: 1; min-width: 180px;">
-          <div id="status" class="status"></div>
-          <div id="imageProgressBarWrap" style="display:none;">
-            <div id="imageProgressBar"></div>
-          </div>
-        </div>
       </div>
       
       <!-- Error Log -->
       <div id="errorLog" style="display: none; margin-top: 12px; padding: 12px; background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <span style="font-size: 14px; font-weight: 900; color: #f44336;">⚠️ Error Log</span>
-          <button id="clearErrorLog" style="margin-left: auto; padding: 4px 8px; font-size: 11px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.4); border-radius: 6px; color: #f44336; cursor: pointer;">Clear</button>
+          <span style="font-size: 17px; font-weight: 900; color: #f44336;">⚠️ Error Log</span>
+          <button id="clearErrorLog" style="margin-left: auto; padding: 4px 8px; font-size: 17px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.4); border-radius: 6px; color: #f44336; cursor: pointer;">Clear</button>
         </div>
-        <div id="errorLogContent" style="max-height: 200px; overflow-y: auto; font-family: 'Monaco', 'Courier New', monospace; font-size: 11px; line-height: 1.6;">
+        <div id="errorLogContent" style="max-height: 200px; overflow-y: auto; font-family: 'Monaco', 'Courier New', monospace; font-size: 17px; line-height: 1.6;">
           <!-- Errors will be added here -->
         </div>
       </div>
     </section>
+    </div>
 
+    <!-- STEP 2: Collections Selection -->
+    <div id="screen-collections" class="screen" style="display:none;">
     <section class="panel" id="controlsPanel">
       <div class="collectionsSection collapsed" id="collectionsSection">
       <div class="collectionsSectionHeader" id="collectionsSectionHeader" role="button" tabindex="0">
@@ -205,13 +170,6 @@
               <button class="btn btnSmall" type="button" id="selectNoneBtn">🚫 Select none</button>
             </div>
           </div>
-          <div class="collectionsRow">
-            <div class="addContractInputWrap" style="min-width:0; flex:1;">
-              <input id="addContractInput" class="input" placeholder="Add missing collection: paste contract (0x...)" style="width:100%;" autocomplete="off" autocapitalize="none" spellcheck="false" />
-              <span id="addContractStatus" class="hint" style="display:block; margin-top:4px;"></span>
-            </div>
-            <button class="btn btnSmall" type="button" id="addContractBtn">➕ Add collection</button>
-          </div>
         </div>
 
         <div id="collectionsEmptyState" class="emptyState" style="display:none;">👇 Select collections to build your grid</div>
@@ -220,17 +178,25 @@
           <label class="lbl" style="margin-bottom:8px;">Trait + value filter (each collection independently)</label>
           <div id="traitFiltersList"></div>
         </div>
+        <div class="buildGridRow">
+          <button id="gridBuildBtn" class="btn" type="button" disabled>🧩 Build Grid</button>
+        </div>
       </div>
       </div>
     </section>
-
-    <div class="buildExportRow" id="buildExportRow">
-      <button id="gridBuildBtn" class="btn" type="button" disabled>🧩 Build Grid</button>
-      <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
-      <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
     </div>
 
-<section class="stageWrap" id="gridPanel">
+    <!-- STEP 3: Grid Builder (retry + grid shown below) -->
+    <div id="screen-grid" class="screen" style="display:none;">
+    <div class="buildExportRow" id="buildExportRow">
+      <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
+      <button id="removeUnloadedBtn" class="btn" type="button" style="display:none;">🗑️ Remove unloaded & reshuffle</button>
+    </div>
+    </div>
+
+    <!-- Grid stage (visible in Step 3) -->
+    <div id="gridStageWrapper" class="screen" style="display:none;">
+    <section class="stageWrap" id="gridPanel">
       <div class="traitOrderSection collapsed" id="traitOrderSection">
         <div class="traitOrderSectionHeader" id="traitOrderSectionHeader" role="button" tabindex="0">
           <span>Trait Order</span>
@@ -271,12 +237,16 @@
               <div id="gridStatusProgress" class="gridStatusProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <div id="gridStatusRetryArea" class="gridStatusRetryArea" style="display: none;">
-              <span class="gridStatusRetryHint">Some images didn't load? Use Retry missing button above.</span>
+              <span class="gridStatusRetryHint">Some images didn't load? Use Retry missing to try again, or Remove unloaded & reshuffle to keep only loaded NFTs.</span>
             </div>
           </div>
         </div>
+        <div class="gridExportBar">
+          <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
+        </div>
       </div>
     </section>
+    </div>
 
   </div>
 
@@ -319,13 +289,12 @@
 <script>
   (function(){
     const key = "lo_theme";
-    const btn = document.getElementById("themeToggle");
-    if(!btn) return;
+    const wrap = document.getElementById("themeToggleWrap");
+    if(!wrap) return;
 
-    const setLabel = () => {
-      btn.textContent = document.body.classList.contains("dark")
-        ? "☀️ Light Mode"
-        : "🌙 Dark Mode";
+    const updateState = () => {
+      wrap.classList.toggle("dark", document.body.classList.contains("dark"));
+      wrap.setAttribute("aria-checked", document.body.classList.contains("dark"));
     };
 
     // 1) Load saved theme, otherwise use system preference
@@ -335,19 +304,20 @@
     }else if(saved === "light"){
       document.body.classList.remove("dark");
     }else{
-      // No saved preference -> match device
       if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
         document.body.classList.add("dark");
       }
     }
-    setLabel();
+    updateState();
 
-    // 2) Toggle on click + persist
-    btn.addEventListener("click", () => {
+    // 2) Toggle on click/key + persist
+    const toggle = () => {
       document.body.classList.toggle("dark");
       localStorage.setItem(key, document.body.classList.contains("dark") ? "dark" : "light");
-      setLabel();
-    });
+      updateState();
+    };
+    wrap.addEventListener("click", toggle);
+    wrap.addEventListener("keydown", (e) => { if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
   })();
 </script>
  
