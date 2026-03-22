@@ -87,7 +87,7 @@
       <div class="topSection">
 
         <!-- Add wallet section -->
-        <div class="walletSection" id="walletSection">
+        <div class="walletSection collapsed" id="walletSection">
           <div class="walletSectionHeader" id="walletSectionHeader" role="button" tabindex="0">
             <span>Wallets</span>
             <span class="collapseIcon">▶</span>
@@ -159,10 +159,7 @@
 
       <div class="actionRow">
         <button id="loadBtn" class="btn" type="button" disabled>🔍 Load wallet(s)</button>
-        <button id="buildBtn" class="btn" type="button" disabled>🧩 Build grid</button>
-        <button id="exportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
         <button id="themeToggle" class="btn" type="button">🌙 Dark Mode</button>
-        <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
       </div>
 
       <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0; flex-wrap: wrap;">
@@ -191,7 +188,7 @@
     </section>
 
     <section class="panel" id="controlsPanel">
-      <div class="collectionsSection" id="collectionsSection">
+      <div class="collectionsSection collapsed" id="collectionsSection">
       <div class="collectionsSectionHeader" id="collectionsSectionHeader" role="button" tabindex="0">
         <span>Collections</span>
         <span class="collapseIcon">▶</span>
@@ -227,20 +224,20 @@
       </div>
     </section>
 
+    <div class="buildExportRow" id="buildExportRow">
+      <button id="gridBuildBtn" class="btn" type="button" disabled>🧩 Build Grid</button>
+      <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
+      <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
+    </div>
+
 <section class="stageWrap" id="gridPanel">
-      <div class="traitOrderSection" id="traitOrderSection">
+      <div class="traitOrderSection collapsed" id="traitOrderSection">
         <div class="traitOrderSectionHeader" id="traitOrderSectionHeader" role="button" tabindex="0">
           <span>Trait Order</span>
           <span class="collapseIcon">▶</span>
         </div>
         <div class="traitOrderContent" id="traitOrderContent">
-          <div class="traitOrderRow">
-            <div id="collectionTraitControls" class="collectionTraitControls trait-row"></div>
-            <div class="traitActionsColumn">
-              <button id="gridBuildBtn" class="btn trait-action-btn" type="button" disabled>🧩 Build Grid</button>
-              <button id="gridExportBtn" class="btn trait-action-btn" type="button" disabled>📸 Export PNG</button>
-            </div>
-          </div>
+          <div id="collectionTraitControls" class="collectionTraitControls trait-row"></div>
         </div>
       </div>
       <div id="stage" class="stage">
@@ -266,7 +263,17 @@
 
         </div>
 
-        <div class="stageFooter"></div>
+        <div id="stageFooter" class="stageFooter gridStatusBar" style="display: none;">
+          <div class="gridStatusContent">
+            <div id="gridStatusText" class="gridStatusText"></div>
+            <div id="gridStatusProgressWrap" class="gridStatusProgressWrap" style="display: none;">
+              <div id="gridStatusProgress" class="gridStatusProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div id="gridStatusRetryArea" class="gridStatusRetryArea" style="display: none;">
+              <span class="gridStatusRetryHint">Some images didn't load? Use Retry missing button above.</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

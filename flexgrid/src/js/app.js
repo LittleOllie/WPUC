@@ -28,8 +28,6 @@ function setGuideGlow(ids = []) {
     "loadBtn",
     "controlsPanel",
     "collectionsList",
-    "buildBtn",
-    "exportBtn",
   ];
 
   // clear glow everywhere
@@ -56,10 +54,10 @@ function updateGuideGlow() {
   const hasTwoOrMoreSelected = state.selectedKeys && state.selectedKeys.size >= 2;
 
   const gridHasTiles = document.querySelectorAll("#grid .tile").length > 0;
-  const exportEnabled = !!$("exportBtn") && $("exportBtn").disabled === false;
+  const exportEnabled = !!$("gridExportBtn") && $("gridExportBtn").disabled === false;
 
   // Clear primaryCTA from all CTA buttons
-  ["loadBtn", "buildBtn", "exportBtn"].forEach((id) => {
+  ["loadBtn", "gridBuildBtn", "gridExportBtn"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("primaryCTA");
   });
@@ -97,16 +95,16 @@ function updateGuideGlow() {
 
   // 4) Two or more collections selected -> highlight build
   if (hasTwoOrMoreSelected && !gridHasTiles) {
-    setGuideGlow(["buildBtn"]);
-    const buildBtn = $("buildBtn");
+    setGuideGlow(["gridBuildBtn"]);
+    const buildBtn = $("gridBuildBtn");
     if (buildBtn) buildBtn.classList.add("primaryCTA");
     return;
   }
 
   // 5) Grid built -> highlight export
   if (gridHasTiles) {
-    setGuideGlow(["exportBtn"]);
-    const exportBtn = $("exportBtn");
+    setGuideGlow(["gridExportBtn"]);
+    const exportBtn = $("gridExportBtn");
     if (exportBtn) exportBtn.classList.add("primaryCTA");
     return;
   }
@@ -121,9 +119,9 @@ const state = {
   wallets: [],
   chain: "eth",
   host: "eth-mainnet.g.alchemy.com",
-  walletCollapsed: false,
-  collectionsCollapsed: false,
-  traitOrderCollapsed: false,
+  walletCollapsed: true,
+  collectionsCollapsed: true,
+  traitOrderCollapsed: true,
 };
 state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
 
@@ -400,20 +398,42 @@ function updateImageProgress() {
   const barWrap = document.getElementById("imageProgressBarWrap");
   const bar = document.getElementById("imageProgressBar");
   const retryBtn = document.getElementById("retryBtn");
+  const stageFooter = document.getElementById("stageFooter");
+  const gridStatusText = document.getElementById("gridStatusText");
+  const gridStatusProgressWrap = document.getElementById("gridStatusProgressWrap");
+  const gridStatusProgress = document.getElementById("gridStatusProgress");
+  const gridStatusRetryArea = document.getElementById("gridStatusRetryArea");
 
   if (total === 0) {
     if (barWrap) barWrap.style.display = "none";
     if (retryBtn) retryBtn.classList.remove("pulseAlert");
+    if (stageFooter) stageFooter.style.display = "none";
     return;
   }
 
   const progress = Math.round((loaded / total) * 100);
-  let statusMsg = `Loading images: ${loaded}/${total}`;
+  const isComplete = loaded >= total && failed === 0;
+  let statusMsg = isComplete
+    ? `✨ All ${total} images loaded`
+    : `Loading images: ${loaded}/${total}`;
   if (failed > 0) statusMsg += ` • ${failed} failed`;
   if (retrying > 0) statusMsg += ` • retrying...`;
 
   setStatus(statusMsg);
 
+  /* Below-grid status bar */
+  if (stageFooter) stageFooter.style.display = "flex";
+  if (gridStatusText) gridStatusText.textContent = statusMsg;
+  if (gridStatusProgressWrap) gridStatusProgressWrap.style.display = loaded < total ? "" : "none";
+  if (gridStatusProgress) {
+    gridStatusProgress.style.width = progress + "%";
+    gridStatusProgress.setAttribute("aria-valuenow", String(progress));
+  }
+  if (gridStatusRetryArea) {
+    gridStatusRetryArea.style.display = failed > 0 ? "flex" : "none";
+  }
+
+  /* Legacy left-panel elements */
   if (barWrap) barWrap.style.display = "";
   if (bar) bar.style.width = progress + "%";
 
@@ -436,8 +456,8 @@ function syncGridFooterButtons(buildDisabled, exportDisabled) {
 }
 function enableButtons() {
   const loadBtn = $("loadBtn");
-  const buildBtn = $("buildBtn");
-  const exportBtn = $("exportBtn");
+  const buildBtn = $("gridBuildBtn");
+  const exportBtn = $("gridExportBtn");
 
   const hasWallets = state.wallets.length > 0;
   if (loadBtn) loadBtn.disabled = !hasWallets;
@@ -653,8 +673,8 @@ function renderCollectionsList() {
         row.classList.add("selected");
       }
 
-      const buildBtn = $("buildBtn");
-      const exportBtn = $("exportBtn");
+      const buildBtn = $("gridBuildBtn");
+      const exportBtn = $("gridExportBtn");
       if (buildBtn) buildBtn.disabled = state.selectedKeys.size === 0;
       if (exportBtn) exportBtn.disabled = true;
       syncGridFooterButtons(state.selectedKeys.size === 0, true);
@@ -687,8 +707,8 @@ function setAllCollections(checked) {
   if (checked) state.collections.forEach((c) => state.selectedKeys.add(c.key));
   renderCollectionsList();
 
-  const buildBtn = $("buildBtn");
-  const exportBtn = $("exportBtn");
+  const buildBtn = $("gridBuildBtn");
+  const exportBtn = $("gridExportBtn");
   if (buildBtn) buildBtn.disabled = state.selectedKeys.size === 0;
   if (exportBtn) exportBtn.disabled = true;
   syncGridFooterButtons(state.selectedKeys.size === 0, true);
@@ -717,9 +737,18 @@ function buildTraitsByCollection(collection) {
   return traits;
 }
 
-/** Update trait sort state when dropdown changes. User clicks Re-build to apply. */
+/** Update trait sort state when dropdown changes. Triggers Build Grid glow until rebuilt. */
 function onTraitChange(collectionKey, trait) {
   state.selectedSortByCollection[collectionKey] = trait;
+  setBuildGridNeedsRebuild(true);
+}
+
+function setBuildGridNeedsRebuild(needs) {
+  state.buildGridNeedsRebuild = !!needs;
+  const btn = $("gridBuildBtn");
+  if (!btn) return;
+  if (needs) btn.classList.add("buildGridGlow");
+  else btn.classList.remove("buildGridGlow");
 }
 
 /** Re-render grid using already-loaded NFTs. Instantly reorders when trait changes. */
@@ -780,17 +809,6 @@ function renderTraitFiltersForSelected() {
     block.appendChild(select);
     container.appendChild(block);
   });
-
-  const rebuildWrap = document.createElement("div");
-  rebuildWrap.className = "collection-trait-control trait-rebuild-wrap";
-  const rebuildBtn = document.createElement("button");
-  rebuildBtn.type = "button";
-  rebuildBtn.className = "btn trait-rebuild-btn";
-  rebuildBtn.textContent = "Re-build";
-  rebuildBtn.title = "Rebuild grid with current trait order";
-  rebuildBtn.addEventListener("click", () => buildGrid());
-  rebuildWrap.appendChild(rebuildBtn);
-  container.appendChild(rebuildWrap);
 }
 
 /** Get attributes array from NFT (handles multiple metadata structures). */
@@ -1061,7 +1079,7 @@ function buildGrid() {
   };
 
   const chosen = getSelectedCollections();
-  const exportBtn = $("exportBtn");
+  const exportBtn = $("gridExportBtn");
 
   const gridInputNfts = chosen.flatMap((c) => c.nfts || []);
   console.log("GRID INPUT NFT COUNT", gridInputNfts.length);
@@ -1153,6 +1171,7 @@ function buildGrid() {
 
   enableDragDrop();
   updateGuideGlow();
+  setBuildGridNeedsRebuild(false);
 
   state.collectionsCollapsed = true;
   collapseCollectionsSection();
@@ -1287,7 +1306,8 @@ async function retryMissingTiles() {
   });
   await Promise.all(tasks);
   const stillMissing = grid.querySelectorAll(".tile.isMissing").length;
-    setStatus(stillMissing > 0 ? `😕 ${stillMissing} still failed` : "✅ Retry complete!");
+  setStatus(stillMissing > 0 ? `😕 ${stillMissing} still failed` : "✅ Retry complete!");
+  updateImageProgress();
 }
 
 async function fetchBestAlchemyImage({ contract, tokenId }) {
@@ -1594,8 +1614,8 @@ async function loadWallets() {
     showControlsPanel(true);
     updateGuideGlow();
 
-    const buildBtn = $("buildBtn");
-    const exportBtn = $("exportBtn");
+    const buildBtn = $("gridBuildBtn");
+    const exportBtn = $("gridExportBtn");
     if (buildBtn) buildBtn.disabled = true;
     if (exportBtn) exportBtn.disabled = true;
 
@@ -2155,11 +2175,7 @@ function toggleTraitOrderSection() {
   }
 
   const loadBtn = $("loadBtn");
-  const buildBtn = $("buildBtn");
-  const exportBtn = $("exportBtn");
   if (loadBtn) loadBtn.addEventListener("click", loadWallets);
-  if (buildBtn) buildBtn.addEventListener("click", buildGrid);
-  if (exportBtn) exportBtn.addEventListener("click", exportPNG);
   const gridBuildBtn = $("gridBuildBtn");
   const gridExportBtn = $("gridExportBtn");
   if (gridBuildBtn) gridBuildBtn.addEventListener("click", buildGrid);
@@ -2258,8 +2274,8 @@ async function initializeConfig() {
     addError(error, "Config Loading");
 
     const loadBtn = $("loadBtn");
-    const buildBtn = $("buildBtn");
-    const exportBtn = $("exportBtn");
+    const buildBtn = $("gridBuildBtn");
+    const exportBtn = $("gridExportBtn");
     if (loadBtn) loadBtn.disabled = true;
     if (buildBtn) buildBtn.disabled = true;
     if (exportBtn) exportBtn.disabled = true;

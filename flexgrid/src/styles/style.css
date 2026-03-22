@@ -370,9 +370,49 @@ body{
     .stageTitle{ font-weight: 950; letter-spacing: .2px; }
     .stageMeta{ font-size: 16px; opacity:.95; text-align:right; }
 
-    /* Stage footer - now empty (Build/Export moved to Trait Order) */
-    .stageFooter:empty{
-      display: none;
+    /* Grid status bar - below grid, shows image loading + retry */
+    .stageFooter.gridStatusBar{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.1);
+      flex-wrap: wrap;
+    }
+    .gridStatusContent{
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+    .gridStatusText{
+      font-size: 15px;
+      font-weight: 800;
+      color: rgba(255,255,255,.95);
+    }
+    .gridStatusProgressWrap{
+      height: 6px;
+      background: rgba(0,0,0,.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .gridStatusProgress{
+      height: 100%;
+      background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
+      border-radius: 4px;
+      transition: width 0.2s ease;
+    }
+    .gridStatusRetryArea{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .gridStatusRetryHint{
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,.85);
     }
     .stageFooterBtn{
       flex: 1;
@@ -591,9 +631,6 @@ body.dark .collectionItem.selected{
 .traitOrderSection .traitOrderSectionHeader:hover{
   background: rgba(0,0,0,.16);
 }
-.traitOrderSection:not(.collapsed) .traitOrderSectionHeader .collapseIcon{
-  transform: rotate(90deg);
-}
 .traitOrderContent{
   max-height: 2000px;
   overflow: hidden;
@@ -611,36 +648,50 @@ body.dark .collectionItem.selected{
   pointer-events: none;
 }
 
-/* Trait row: trait controls + Build/Export stacked on right */
-.traitOrderRow{
+/* Build Grid + Export row - between Collections and Trait Order */
+.buildExportRow{
   display: flex;
-  align-items: stretch;
   gap: 12px;
+  margin: 12px 0;
+  padding: 12px 16px;
+  background: rgba(0,0,0,.08);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  width: 100%;
+  box-sizing: border-box;
 }
-.collectionTraitControls{
+.buildExportRow .btn{
   flex: 1;
+  min-width: 0;
+}
+
+/* Build Grid glow + pulse when trait changed (needs rebuild) */
+@keyframes buildGridGlowPulse {
+  0%, 100% {
+    box-shadow: 0 10px 18px rgba(0,0,0,.25), 0 0 20px rgba(255,221,85,.6);
+    filter: brightness(1.1);
+  }
+  50% {
+    box-shadow: 0 10px 18px rgba(0,0,0,.25), 0 0 32px rgba(255,221,85,.9);
+    filter: brightness(1.2);
+  }
+}
+.btn.buildGridGlow{
+  animation: buildGridGlowPulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.buildGridGlow{
+    animation: none;
+    box-shadow: 0 10px 18px rgba(0,0,0,.25), 0 0 24px rgba(255,221,85,.7);
+  }
+}
+
+.collectionTraitControls{
   padding: 12px;
   margin-bottom: 12px;
   background: rgba(0,0,0,.08);
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.12);
-}
-.traitActionsColumn{
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-self: stretch;
-  min-width: 140px;
-  min-height: 100px; /* Match trait box height so two buttons = one trait box */
-}
-.trait-action-btn{
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 16px;
-  font-size: 15px;
 }
 /* Per-collection trait controls - horizontal layout */
 .trait-row{
@@ -664,7 +715,7 @@ body.dark .collectionItem.selected{
   opacity: 1;
   color: var(--btnText);
 }
-/* Trait select + Re-build: same height as main .btn, text fits comfortably */
+/* Trait select: same height as main .btn, text fits comfortably */
 .collection-trait-control .trait-type{
   width: 100%;
   min-width: 140px;
@@ -684,18 +735,6 @@ body.dark .collectionItem.selected{
 .collection-trait-control .trait-type:focus{
   outline: 2px solid var(--btnYellow2);
 }
-.trait-rebuild-wrap{
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 2px;
-}
-.trait-rebuild-btn{
-  min-height: 46px;
-  padding: 14px 18px;
-  font-size: 16px;
-  font-weight: 800;
-}
-
 /* Collapsible sections - clean bar, yellow arrow, fully hide content when collapsed */
 .walletSectionHeader,
 .collectionsSectionHeader{
@@ -719,12 +758,13 @@ body.dark .collectionItem.selected{
   background: rgba(0,0,0,.16);
 }
 .collapseIcon{
-  font-size: 14px;
+  font-size: 22px;
   color: var(--btnYellow);
   transition: transform 0.25s ease;
 }
 .walletSection:not(.collapsed) .walletSectionHeader .collapseIcon,
-.collectionsSection:not(.collapsed) .collectionsSectionHeader .collapseIcon{
+.collectionsSection:not(.collapsed) .collectionsSectionHeader .collapseIcon,
+.traitOrderSection:not(.collapsed) .traitOrderSectionHeader .collapseIcon{
   transform: rotate(90deg);
 }
 .walletSection .walletSectionContent{
