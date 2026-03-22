@@ -1433,12 +1433,15 @@ async function retryMissingTiles() {
     tile.classList.remove("isMissing");
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
-    const img = document.createElement("img");
-    img.alt = "";
-    img.referrerPolicy = "no-referrer";
-    img.crossOrigin = "anonymous";
+    let img = tile.querySelector("img");
+    if (!img) {
+      img = document.createElement("img");
+      img.alt = "";
+      img.referrerPolicy = "no-referrer";
+      img.crossOrigin = "anonymous";
+      tile.appendChild(img);
+    }
     img.src = TILE_PLACEHOLDER_SRC;
-    tile.appendChild(img);
     return loadTileImage(tile, img, rawUrl).catch(() => {});
   });
   await Promise.all(tasks);
