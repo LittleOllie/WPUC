@@ -386,6 +386,13 @@ body{
       gap: 8px;
       width: 100%;
     }
+    .gridStatusHint{
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,.9);
+      font-style: italic;
+      opacity: 0.95;
+    }
     .gridStatusText{
       font-size: 15px;
       font-weight: 800;

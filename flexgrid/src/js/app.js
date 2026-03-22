@@ -400,6 +400,7 @@ function updateImageProgress() {
   const retryBtn = document.getElementById("retryBtn");
   const stageFooter = document.getElementById("stageFooter");
   const gridStatusText = document.getElementById("gridStatusText");
+  const gridStatusHint = document.getElementById("gridStatusHint");
   const gridStatusProgressWrap = document.getElementById("gridStatusProgressWrap");
   const gridStatusProgress = document.getElementById("gridStatusProgress");
   const gridStatusRetryArea = document.getElementById("gridStatusRetryArea");
@@ -408,6 +409,7 @@ function updateImageProgress() {
     if (barWrap) barWrap.style.display = "none";
     if (retryBtn) retryBtn.classList.remove("pulseAlert");
     if (stageFooter) stageFooter.style.display = "none";
+    if (gridStatusHint) gridStatusHint.style.display = "none";
     return;
   }
 
@@ -423,6 +425,10 @@ function updateImageProgress() {
 
   /* Below-grid status bar */
   if (stageFooter) stageFooter.style.display = "flex";
+  if (gridStatusHint) {
+    const showHint = total >= 40 && loaded < total;
+    gridStatusHint.style.display = showHint ? "block" : "none";
+  }
   if (gridStatusText) gridStatusText.textContent = statusMsg;
   if (gridStatusProgressWrap) gridStatusProgressWrap.style.display = loaded < total ? "" : "none";
   if (gridStatusProgress) {
@@ -1066,10 +1072,44 @@ function getGridChoice() {
   return { mode: "fixed", cap, rows: side, cols: side };
 }
 
+// ---------- Progressive grid rendering ----------
+const INITIAL_TILE_COUNT = 40;
+const PROGRESSIVE_BATCH_SIZE = 40;
+const PROGRESSIVE_BATCH_DELAY_MS = 100;
+
+function scheduleProgressiveTiles(grid, usedItems, totalSlots, buildId) {
+  let visibleCount = Math.min(INITIAL_TILE_COUNT, usedItems.length);
+
+  function addBatch() {
+    if (BUILD_ID !== buildId) return;
+    const end = Math.min(visibleCount + PROGRESSIVE_BATCH_SIZE, usedItems.length);
+    for (let i = visibleCount; i < end; i++) {
+      grid.appendChild(makeNFTTile(usedItems[i]));
+    }
+    visibleCount = end;
+    requestAnimationFrame(syncWatermarkDOMToOneTile);
+    if (visibleCount < usedItems.length) {
+      setTimeout(addBatch, PROGRESSIVE_BATCH_DELAY_MS);
+    } else {
+      const remaining = totalSlots - usedItems.length;
+      for (let j = 0; j < remaining; j++) grid.appendChild(makeFillerTile());
+      requestAnimationFrame(syncWatermarkDOMToOneTile);
+    }
+  }
+
+  if (visibleCount < usedItems.length) {
+    setTimeout(addBatch, PROGRESSIVE_BATCH_DELAY_MS);
+  } else {
+    const remaining = totalSlots - usedItems.length;
+    for (let j = 0; j < remaining; j++) grid.appendChild(makeFillerTile());
+  }
+}
+
 // ---------- Build grid ----------
 function buildGrid() {
   gridImgLimit = createLimiter(3);
   BUILD_ID = Date.now();
+  const buildId = BUILD_ID;
 
   state.imageLoadState = {
     total: 0,
@@ -1154,9 +1194,12 @@ function buildGrid() {
     console.log(`buildGrid: ${noImageCount} tile(s) have no image (using placeholder)`);
   }
 
-  for (let i = 0; i < usedItems.length; i++) grid.appendChild(makeNFTTile(usedItems[i]));
-  const remaining = totalSlots - usedItems.length;
-  for (let j = 0; j < remaining; j++) grid.appendChild(makeFillerTile());
+  // ✅ Progressive: render first 40 immediately, then batches of 40 every 100ms
+  const initialCount = Math.min(INITIAL_TILE_COUNT, usedItems.length);
+  for (let i = 0; i < initialCount; i++) {
+    grid.appendChild(makeNFTTile(usedItems[i]));
+  }
+  scheduleProgressiveTiles(grid, usedItems, totalSlots, buildId);
 
   const wm = $("wmGrid");
   if (wm) wm.style.display = "block";
@@ -1505,50 +1548,61 @@ function makeFillerTile() {
   return tile;
 }
 
-// ---------- Drag & drop ----------
+// ---------- Drag & drop (event delegation: works with progressively added tiles) ----------
+let _dragEl = null;
+
 function enableDragDrop() {
   const grid = $("grid");
   if (!grid) return;
 
-  const tiles = Array.from(grid.querySelectorAll(".tile"));
-  let dragEl = null;
+  // Remove existing delegated listeners by cloning (or use a single setup - only bind once)
+  if (grid._dragDropBound) return;
+  grid._dragDropBound = true;
 
-  tiles.forEach((t) => {
-    t.addEventListener("dragstart", (e) => {
-      dragEl = t;
-      t.classList.add("dragging");
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", "tile");
-    });
+  grid.addEventListener("dragstart", (e) => {
+    const t = e.target.closest(".tile");
+    if (!t) return;
+    _dragEl = t;
+    t.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "tile");
+  });
 
-    t.addEventListener("dragend", () => {
-      t.classList.remove("dragging");
-      tiles.forEach((x) => x.classList.remove("dropTarget"));
-      dragEl = null;
-    });
+  grid.addEventListener("dragend", (e) => {
+    const t = e.target.closest(".tile");
+    if (t) t.classList.remove("dragging");
+    grid.querySelectorAll(".tile.dropTarget").forEach((x) => x.classList.remove("dropTarget"));
+    _dragEl = null;
+  });
 
-    t.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      if (!dragEl || dragEl === t) return;
-      t.classList.add("dropTarget");
-      e.dataTransfer.dropEffect = "move";
-    });
+  grid.addEventListener("dragover", (e) => {
+    const t = e.target.closest(".tile");
+    if (!t) return;
+    e.preventDefault();
+    if (!_dragEl || _dragEl === t) return;
+    t.classList.add("dropTarget");
+    e.dataTransfer.dropEffect = "move";
+  });
 
-    t.addEventListener("dragleave", () => t.classList.remove("dropTarget"));
+  grid.addEventListener("dragleave", (e) => {
+    const t = e.target.closest(".tile");
+    if (t) t.classList.remove("dropTarget");
+  });
 
-    t.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (!dragEl || dragEl === t) return;
+  grid.addEventListener("drop", (e) => {
+    const t = e.target.closest(".tile");
+    if (!t) return;
+    e.preventDefault();
+    if (!_dragEl || _dragEl === t) return;
 
-      const a = dragEl;
-      const b = t;
+    const a = _dragEl;
+    const b = t;
 
-      const aNext = a.nextSibling === b ? a : a.nextSibling;
-      grid.insertBefore(a, b);
-      grid.insertBefore(b, aNext);
+    const aNext = a.nextSibling === b ? a : a.nextSibling;
+    grid.insertBefore(a, b);
+    grid.insertBefore(b, aNext);
 
-      tiles.forEach((x) => x.classList.remove("dropTarget"));
-    });
+    grid.querySelectorAll(".tile.dropTarget").forEach((x) => x.classList.remove("dropTarget"));
   });
 }
 
