@@ -690,6 +690,12 @@ body.dark .collectionList.collections-container{
   background: radial-gradient(circle at top, rgba(0, 255, 213, 0.12), rgba(76, 111, 255, 0.16));
   border-color: rgba(0, 255, 213, 0.28);
 }
+/* Phones / narrow viewports: one collection per row (desktop ≥860px uses full-width span instead) */
+@media (max-width: 859px){
+  .collectionList.collections-container{
+    grid-template-columns: 1fr;
+  }
+}
 .collectionList.collections-container .collectionItem{
   margin-bottom: 0;
 }
@@ -1954,9 +1960,44 @@ body.dark .tile[data-kind="empty"]{
     padding: 12px 8px;
   }
 
+  /* Collection cards: full-width name, readable buttons (iPhone / small phones) */
+  .collectionLogoWrap{
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+  }
+  .collectionItemHeader{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .collectionNameRow{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+  }
+  .collectionName{
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+  }
+  .collectionSelectionInline{
+    white-space: normal;
+  }
+  .collectionCount{
+    margin-left: 0;
+    align-self: flex-start;
+    font-size: 16px;
+    padding: 5px 10px;
+  }
   .collectionItemActions{
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     align-items: stretch;
   }
@@ -1965,15 +2006,20 @@ body.dark .tile[data-kind="empty"]{
     min-width: 0;
     width: 100%;
     font-size: 15px;
-    padding: 10px 8px;
+    padding: 12px 8px;
     white-space: normal;
     line-height: 1.2;
+    min-height: 44px;
+  }
+  /* Third action = Add logo — full row so label isn’t crushed */
+  .collectionItemActions .collectionBtnPickLogo{
+    grid-column: 1 / -1;
   }
   .collectionItemActions .collectionBtnSelectNone{
     grid-column: 1 / -1;
-    justify-self: center;
+    justify-self: stretch;
     text-align: center;
-    padding: 4px 8px;
+    padding: 8px 8px;
   }
 
   .layoutPickerBtns{
