@@ -86,4 +86,37 @@ export async function fetchNFTsFromZora({ wallet, contractAddress }) {
   return all;
 }
 
+/**
+ * Contract-level metadata (OpenSea collection image, etc.) via Worker → Alchemy getContractMetadata.
+ * Returns { rawLogoUrl: string | null, error?: string }.
+ */
+export async function fetchContractMetadataFromWorker({ contract, chain }) {
+  const chainParam = chain || "eth";
+  const addr = String(contract || "").trim();
+  const url = `${WORKER_BASE}/api/contract-metadata?contract=${encodeURIComponent(addr)}&chain=${encodeURIComponent(chainParam)}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 22000);
+
+  let res;
+  try {
+    res = await fetch(url, { signal: controller.signal });
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      return { rawLogoUrl: null, error: "Request timed out" };
+    }
+    return { rawLogoUrl: null, error: e?.message || "Fetch failed" };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { rawLogoUrl: null, error: json?.error || `Contract metadata failed (${res.status})` };
+  }
+  const rawLogoUrl =
+    typeof json.rawLogoUrl === "string" && json.rawLogoUrl.trim() ? json.rawLogoUrl.trim() : null;
+  return { rawLogoUrl };
+}
+
 export { WORKER_BASE };
