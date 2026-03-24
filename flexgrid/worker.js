@@ -112,13 +112,32 @@ function sanitizeIpfsPathForGateway(ipfsPath) {
   return String(ipfsPath).replace(/^\/+/, "").trim();
 }
 
-async function fetchWithTimeout(resource, timeoutMs = IMAGE_FETCH_TIMEOUT_MS) {
+/** OpenSea / Looksrare CDNs often 404 or return HTML unless the request looks browser-like. */
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+function headersForImageOrigin(url) {
+  const u = String(url || "");
+  if (/seadn\.io|looksrare|cdn\.blur\.io|openseauserdata\.com/i.test(u)) {
+    return {
+      "User-Agent": BROWSER_UA,
+      Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+      Referer: "https://opensea.io/",
+    };
+  }
+  return { "User-Agent": "FlexGrid-ImageProxy/2.0" };
+}
+
+async function fetchWithTimeout(resource, timeoutMs = IMAGE_FETCH_TIMEOUT_MS, headerOverrides = {}) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(resource, {
       redirect: "follow",
-      headers: { "User-Agent": "FlexGrid-ImageProxy/2.0" },
+      headers: {
+        ...headersForImageOrigin(resource),
+        ...headerOverrides,
+      },
       signal: controller.signal,
       cf: ORIGIN_FETCH_CF,
     });

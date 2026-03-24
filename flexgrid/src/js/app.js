@@ -72,7 +72,11 @@ function goToStep(step) {
   }
   if (currentStep === 2 && collectionsSection) collectionsSection.classList.remove("collapsed");
   if (currentStep === 3 && traitOrderSection) traitOrderSection.classList.remove("collapsed");
-  if (currentStep === 3) syncLayoutPickerActiveStates();
+  if (currentStep === 3) {
+    syncLayoutPickerActiveStates();
+    applySettingsToLiveGrids();
+    syncStageCaptionOverlay();
+  }
 
   updateGuideGlow();
 }
@@ -207,8 +211,24 @@ const state = {
   /** Dedupe in-flight contract metadata fetches */
   contractLogoInflight: new Map(),
   _collectionLogoRerenderScheduled: false,
+
+  /** Right drawer — open state only; panel DOM is separate */
+  isSettingsOpen: false,
+  /** "theme" | "light" | "dark" — stage preview behind grid */
+  settingsCanvasBg: "theme",
+  /** Grid gap: none keeps legacy 0 gap */
+  settingsGridSpacing: "none",
+  settingsTileBorder: false,
+  settingsKeepGridSquare: true,
+  /** When true, classic grid pads to a square (⌈√n⌉²); when false, minimum rectangle */
+  settingsAutoFillEmpty: true,
+  settingsTextShadow: true,
+  /** Optional caption on stage (export still uses flat fill; caption is on-screen only unless we extend export later) */
+  settingsStageCaption: "",
 };
 state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
+
+const APP_SETTINGS_VERSION = "v2 Beta";
 
 /** Same array reference as currentGridItems — manual drag order (updated on swap). */
 state.orderedItems = [];
@@ -1322,6 +1342,38 @@ function refreshManualSelectionModalTiles() {
   if (countEl) countEl.textContent = `${draft.size} selected`;
 }
 
+/** Light shell so the overlay can paint before heavy grid DOM + image wiring. */
+function primeManualModalOpenShell() {
+  const grid = document.getElementById("manualSelectionGrid");
+  const bar = document.getElementById("manualSelectionLoadingBar");
+  const fill = document.getElementById("manualSelectionProgressFill");
+  const frac = document.getElementById("manualSelectionLoadFraction");
+  const label = document.getElementById("manualSelectionLoadLabel");
+  const track = document.getElementById("manualSelectionProgressTrack");
+  const retryAll = document.getElementById("manualSelectionRetryFailed");
+  if (grid) grid.innerHTML = "";
+  manualModal.imageLoadState = { total: 0, settled: 0 };
+  manualModal.waitingForNfts = false;
+  if (bar) {
+    bar.classList.remove("manual-selection-loading--empty", "manual-selection-loading--done", "manual-selection-loading--waitNfts");
+    bar.classList.add("manual-selection-loading--busy");
+  }
+  if (label) label.textContent = "Opening picker…";
+  if (frac) frac.textContent = "";
+  if (fill) {
+    fill.style.width = "10%";
+    fill.style.background = "linear-gradient(90deg, hsl(200, 70%, 52%), hsl(210, 72%, 48%))";
+    fill.style.boxShadow = "0 0 10px hsla(200, 82%, 55%, 0.45)";
+  }
+  if (track) {
+    track.setAttribute("aria-valuenow", "0");
+    track.setAttribute("aria-valuetext", "Opening");
+  }
+  if (retryAll) retryAll.classList.add("hidden");
+  const countEl = document.getElementById("manualSelectionCount");
+  if (countEl) countEl.textContent = `${manualModal.draftKeys?.size ?? 0} selected`;
+}
+
 function renderManualSelectionModalGrid(collection) {
   const grid = document.getElementById("manualSelectionGrid");
   if (!grid) return;
@@ -1441,11 +1493,21 @@ function openManualSelectionModal(collectionKey) {
 
   const overlay = ensureManualSelectionModal();
   syncManualSelectionModalHeader();
+  primeManualModalOpenShell();
 
-  renderManualSelectionModalGrid(c);
   overlay.classList.remove("hidden");
   overlay.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
+  syncBodyScrollLock();
+
+  const openKey = collectionKey;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (manualModal.collectionKey !== openKey) return;
+      const c2 = state.collections.find((x) => x.key === openKey);
+      if (!c2) return;
+      renderManualSelectionModalGrid(c2);
+    });
+  });
 }
 
 function closeManualSelectionModal() {
@@ -1456,7 +1518,7 @@ function closeManualSelectionModal() {
     overlay.classList.add("hidden");
     overlay.setAttribute("aria-hidden", "true");
   }
-  document.body.style.overflow = "";
+  syncBodyScrollLock();
   manualModal.collectionKey = null;
   manualModal.draftKeys = null;
 }
@@ -2417,11 +2479,18 @@ function showGridOverflow(show) {
 }
 
 /**
- * Classic grid: smallest square grid that fits `count` items (⌈√n⌉ × ⌈√n⌉).
- * Extra cells at the end stay blank (filler tiles).
+ * Classic grid dimensions.
+ * When settingsAutoFillEmpty: square ⌈√n⌉ × ⌈√n⌉ (extra filler tiles).
+ * Otherwise: minimum rectangle ⌈√n⌉ columns × ⌈n/cols⌉ rows.
  */
 function computeGridDimensionsForCount(count) {
   const n = Math.max(1, count);
+  const autoFill = state.settingsAutoFillEmpty !== false;
+  const cols = Math.ceil(Math.sqrt(n));
+  if (!autoFill) {
+    const rows = Math.ceil(n / cols);
+    return { cols, rows, totalSlots: cols * rows };
+  }
   const side = Math.ceil(Math.sqrt(n));
   return { cols: side, rows: side, totalSlots: side * side };
 }
@@ -2434,13 +2503,325 @@ function setTileDraggableForLayout(tile) {
 }
 
 function syncLayoutPickerActiveStates() {
-  for (const wrapId of ["layoutPickerBtns", "stageLayoutPickerBtns"]) {
+  for (const wrapId of ["layoutPickerBtns", "stageLayoutPickerBtns", "settingsLayoutPicker"]) {
     const wrap = $(wrapId);
     if (!wrap) continue;
-    wrap.querySelectorAll(".layoutPickerBtn").forEach((b) => {
+    wrap.querySelectorAll(".layoutPickerBtn, .settings-layout-btn").forEach((b) => {
       b.classList.toggle("layoutPickerBtn--active", b.dataset.layoutId === state.selectedLayout);
     });
   }
+}
+
+/** Shared by collections bar, stage bar, and settings drawer */
+function onUserSelectLayout(id) {
+  if (!LAYOUTS[id] || LAYOUTS[id].comingSoon) return;
+  state.selectedLayout = id;
+  if (LAYOUTS[state.selectedLayout]?.comingSoon) state.selectedLayout = "classic";
+  syncLayoutPickerActiveStates();
+  if (state.currentGridItems?.length && currentStep === 3) {
+    BUILD_ID = Date.now();
+    renderFullLayoutFromItems(state.currentGridItems.slice(), state.selectedLayout, BUILD_ID);
+    enableDragDrop();
+    if (state.imageLoadState.total > 0) updateImageProgress();
+    requestAnimationFrame(syncWatermarkDOMToOneTile);
+  } else {
+    setBuildGridNeedsRebuild(true);
+  }
+  renderSettingsPanel();
+}
+
+function syncBodyScrollLock() {
+  const manualOpen = manualModal.overlay && !manualModal.overlay.classList.contains("hidden");
+  if (manualOpen || state.isSettingsOpen) document.body.style.overflow = "hidden";
+  else document.body.style.overflow = "";
+}
+
+function applySettingsToLiveGrids() {
+  const gapMap = { none: "0px", small: "4px", medium: "10px", large: "18px" };
+  const g = gapMap[state.settingsGridSpacing] || "0px";
+  const gridWrap = document.querySelector(".gridWrap");
+  if (gridWrap) gridWrap.style.setProperty("--flexGridGap", g);
+
+  const primary = getGridPrimary();
+  const overflow = getGridOverflow();
+
+  const stack = $("gridStack");
+  if (stack) {
+    stack.classList.toggle("gridStack--tileBorders", !!state.settingsTileBorder);
+  }
+
+  const meta = state.gridLayoutMeta;
+  const keepSq = state.settingsKeepGridSquare !== false;
+  if (primary && meta?.mode === "classic" && meta.columns && meta.rows) {
+    primary.style.aspectRatio = keepSq ? `${meta.columns} / ${meta.rows}` : "auto";
+  }
+  if (overflow && overflow.style.display !== "none" && meta?.overflowCols && meta.overflowRows) {
+    overflow.style.aspectRatio = keepSq ? `${meta.overflowCols} / ${meta.overflowRows}` : "auto";
+  }
+  if (primary && meta?.mode === "template") {
+    const L = LAYOUTS[meta.layoutId];
+    if (L && L.columns && L.rows) {
+      primary.style.aspectRatio = keepSq ? `${L.columns} / ${L.rows}` : "auto";
+    }
+  }
+
+  const stage = $("stage");
+  if (stage) {
+    stage.classList.toggle("settings-canvas--light", state.settingsCanvasBg === "light");
+    stage.classList.toggle("settings-canvas--dark", state.settingsCanvasBg === "dark");
+  }
+}
+
+function syncStageCaptionOverlay() {
+  const el = $("stageCaptionOverlay");
+  if (!el) return;
+  const text = state.settingsStageCaption || "";
+  el.textContent = text;
+  el.hidden = !text;
+  el.classList.toggle("stageCaptionOverlay--shadow", !!state.settingsTextShadow && !!text);
+}
+
+function promptAddStageCaption() {
+  const cur = state.settingsStageCaption || "";
+  const next = window.prompt("Caption text (shown on your collage preview):", cur);
+  if (next === null) return;
+  state.settingsStageCaption = next.trim();
+  syncStageCaptionOverlay();
+  renderSettingsPanel();
+}
+
+function clearAllCustomImages() {
+  for (const item of state.customImages || []) {
+    if (typeof item.image === "string" && item.image.startsWith("blob:")) {
+      try {
+        URL.revokeObjectURL(item.image);
+      } catch (_) {}
+    }
+  }
+  state.customImages = [];
+  state.selectedCustomImageIds.clear();
+  renderCustomImagesPanel();
+  updateBuildButtonAvailability();
+  updateGuideGlow();
+  setStatus("Custom images cleared");
+  renderSettingsPanel();
+}
+
+function rebuildClassicFromDenseForSettings() {
+  if (currentStep !== 3 || !state.currentGridItems?.length) return;
+  if (state.gridLayoutMeta?.mode !== "classic") return;
+  const dense = state.currentGridItems.filter((it) => !isGridSlotEmpty(it));
+  BUILD_ID = Date.now();
+  renderFullLayoutFromItems(dense, "classic", BUILD_ID);
+  enableDragDrop();
+  if (state.imageLoadState.total > 0) updateImageProgress();
+  requestAnimationFrame(syncWatermarkDOMToOneTile);
+}
+
+let settingsPanelBound = false;
+
+function ensureSettingsPanel() {
+  if (document.getElementById("settingsPanel")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "settingsOverlay";
+  overlay.className = "settings-overlay";
+  overlay.setAttribute("aria-hidden", "true");
+
+  const panel = document.createElement("aside");
+  panel.id = "settingsPanel";
+  panel.className = "settings-panel";
+  panel.setAttribute("aria-hidden", "true");
+  panel.innerHTML = `
+    <div class="settings-panel-header">
+      <h2 class="settings-panel-title">Settings</h2>
+      <button type="button" class="settings-panel-close" id="settingsPanelClose" aria-label="Close settings">×</button>
+    </div>
+    <div class="settings-panel-scroll">
+      <section class="settings-section">
+        <h3 class="settings-section-title">About</h3>
+        <p class="settings-about-line">FlexGrid ${APP_SETTINGS_VERSION}</p>
+        <p class="settings-about-sub">Built in real time 👊</p>
+      </section>
+      <section class="settings-section">
+        <h3 class="settings-section-title">Canvas</h3>
+        <p class="settings-hint">Background (stage behind grid)</p>
+        <div class="settings-segment" role="group" aria-label="Stage background">
+          <button type="button" class="settings-seg-btn" data-settings-canvas="theme">Theme</button>
+          <button type="button" class="settings-seg-btn" data-settings-canvas="light">White</button>
+          <button type="button" class="settings-seg-btn" data-settings-canvas="dark">Black</button>
+        </div>
+        <p class="settings-hint">Spacing between tiles</p>
+        <div class="settings-segment" role="group" aria-label="Grid spacing">
+          <button type="button" class="settings-seg-btn" data-settings-spacing="none">None</button>
+          <button type="button" class="settings-seg-btn" data-settings-spacing="small">S</button>
+          <button type="button" class="settings-seg-btn" data-settings-spacing="medium">M</button>
+          <button type="button" class="settings-seg-btn" data-settings-spacing="large">L</button>
+        </div>
+        <label class="settings-toggle"><input type="checkbox" id="settingsTileBorder" /> Tile borders</label>
+      </section>
+      <section class="settings-section">
+        <h3 class="settings-section-title">Grid / layout</h3>
+        <p class="settings-hint">Layout</p>
+        <div class="settings-layout-picker" id="settingsLayoutPicker" role="group" aria-label="Layout from settings"></div>
+        <label class="settings-toggle"><input type="checkbox" id="settingsKeepSquare" checked /> Keep grid square</label>
+        <label class="settings-toggle"><input type="checkbox" id="settingsAutoFill" checked /> Auto-fill empty spaces (classic)</label>
+      </section>
+      <section class="settings-section">
+        <h3 class="settings-section-title">Import</h3>
+        <button type="button" class="btn btnSmall settings-fullbtn" id="settingsImportBtn">Import Image / Logo</button>
+        <button type="button" class="btn btnSmall settings-fullbtn settings-btn-muted" id="settingsClearCustomBtn">Clear Custom Images</button>
+      </section>
+      <section class="settings-section">
+        <h3 class="settings-section-title">Text</h3>
+        <button type="button" class="btn btnSmall settings-fullbtn" id="settingsAddTextBtn">Add / edit caption</button>
+        <label class="settings-toggle"><input type="checkbox" id="settingsTextShadow" checked /> Text shadow</label>
+      </section>
+      <section class="settings-section">
+        <h3 class="settings-section-title">Feedback</h3>
+        <p class="settings-about-line">FlexGrid ${APP_SETTINGS_VERSION}</p>
+        <p class="settings-about-sub">We’re building this in real time 🙌</p>
+        <a class="settings-linkbtn" href="mailto:Littleollienft@gmail.com?subject=FlexGrid%20feature%20idea">💡 Suggest Feature</a>
+        <a class="settings-linkbtn" href="mailto:Littleollienft@gmail.com?subject=FlexGrid%20bug%20report">🐛 Report Issue</a>
+      </section>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(panel);
+
+  overlay.addEventListener("click", () => closeSettings());
+  panel.addEventListener("click", (e) => e.stopPropagation());
+
+  const fillLayoutPicker = () => {
+    const wrap = $("settingsLayoutPicker");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    for (const id of Object.keys(LAYOUTS)) {
+      const def = LAYOUTS[id];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btnSmall layoutPickerBtn settings-layout-btn";
+      btn.dataset.layoutId = id;
+      if (def.comingSoon) {
+        btn.textContent = `${def.name} · soon`;
+        btn.disabled = true;
+        btn.classList.add("layoutPickerBtn--soon");
+      } else {
+        btn.textContent = def.name;
+        btn.addEventListener("click", () => onUserSelectLayout(id));
+      }
+      wrap.appendChild(btn);
+    }
+  };
+  fillLayoutPicker();
+
+  if (!settingsPanelBound) {
+    settingsPanelBound = true;
+    panel.addEventListener("change", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement)) return;
+      if (t.id === "settingsTileBorder") {
+        state.settingsTileBorder = t.checked;
+        applySettingsToLiveGrids();
+      }
+      if (t.id === "settingsKeepSquare") {
+        state.settingsKeepGridSquare = t.checked;
+        applySettingsToLiveGrids();
+      }
+      if (t.id === "settingsAutoFill") {
+        state.settingsAutoFillEmpty = t.checked;
+        rebuildClassicFromDenseForSettings();
+      }
+      if (t.id === "settingsTextShadow") {
+        state.settingsTextShadow = t.checked;
+        syncStageCaptionOverlay();
+      }
+    });
+
+    panel.addEventListener("click", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (t.dataset.settingsCanvas) {
+        state.settingsCanvasBg = t.dataset.settingsCanvas;
+        applySettingsToLiveGrids();
+        renderSettingsPanel();
+      }
+      if (t.dataset.settingsSpacing) {
+        state.settingsGridSpacing = t.dataset.settingsSpacing;
+        applySettingsToLiveGrids();
+        renderSettingsPanel();
+      }
+    });
+
+    const closeBtn = $("settingsPanelClose");
+    if (closeBtn) closeBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      closeSettings();
+    });
+
+    const imp = $("settingsImportBtn");
+    const fileInput = $("importImageInput");
+    if (imp && fileInput) imp.addEventListener("click", () => fileInput.click());
+
+    const clr = $("settingsClearCustomBtn");
+    if (clr) clr.addEventListener("click", () => clearAllCustomImages());
+
+    const addTxt = $("settingsAddTextBtn");
+    if (addTxt) addTxt.addEventListener("click", () => promptAddStageCaption());
+  }
+}
+
+function renderSettingsPanel() {
+  const panel = $("settingsPanel");
+  const overlay = $("settingsOverlay");
+  const btn = $("settingsBtn");
+  if (!panel || !overlay) return;
+
+  if (state.isSettingsOpen) {
+    panel.classList.add("open");
+    overlay.classList.add("visible");
+    overlay.setAttribute("aria-hidden", "false");
+    panel.setAttribute("aria-hidden", "false");
+    if (btn) btn.setAttribute("aria-expanded", "true");
+  } else {
+    panel.classList.remove("open");
+    overlay.classList.remove("visible");
+    overlay.setAttribute("aria-hidden", "true");
+    panel.setAttribute("aria-hidden", "true");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+  syncBodyScrollLock();
+
+  panel.querySelectorAll("[data-settings-canvas]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.classList.toggle("settings-seg-btn--on", el.dataset.settingsCanvas === state.settingsCanvasBg);
+  });
+  panel.querySelectorAll("[data-settings-spacing]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.classList.toggle("settings-seg-btn--on", el.dataset.settingsSpacing === state.settingsGridSpacing);
+  });
+
+  const tb = $("settingsTileBorder");
+  if (tb) tb.checked = !!state.settingsTileBorder;
+  const ks = $("settingsKeepSquare");
+  if (ks) ks.checked = state.settingsKeepGridSquare !== false;
+  const af = $("settingsAutoFill");
+  if (af) af.checked = state.settingsAutoFillEmpty !== false;
+  const ts = $("settingsTextShadow");
+  if (ts) ts.checked = state.settingsTextShadow !== false;
+
+  syncLayoutPickerActiveStates();
+}
+
+function toggleSettings() {
+  ensureSettingsPanel();
+  state.isSettingsOpen = !state.isSettingsOpen;
+  renderSettingsPanel();
+}
+
+function closeSettings() {
+  state.isSettingsOpen = false;
+  renderSettingsPanel();
 }
 
 function renderLayoutPicker() {
@@ -2461,11 +2842,7 @@ function renderLayoutPicker() {
       btn.classList.add("layoutPickerBtn--soon");
     } else {
       btn.textContent = def.name;
-      btn.addEventListener("click", () => {
-        state.selectedLayout = id;
-        syncLayoutPickerActiveStates();
-        setBuildGridNeedsRebuild(true);
-      });
+      btn.addEventListener("click", () => onUserSelectLayout(id));
     }
     wrap.appendChild(btn);
   }
@@ -2492,17 +2869,7 @@ function renderStageLayoutPicker() {
       btn.classList.add("layoutPickerBtn--soon");
     } else {
       btn.textContent = def.name;
-      btn.addEventListener("click", () => {
-        state.selectedLayout = id;
-        syncLayoutPickerActiveStates();
-        if (state.currentGridItems?.length) {
-          BUILD_ID = Date.now();
-          renderFullLayoutFromItems(state.currentGridItems.slice(), id, BUILD_ID);
-          enableDragDrop();
-          if (state.imageLoadState.total > 0) updateImageProgress();
-          requestAnimationFrame(syncWatermarkDOMToOneTile);
-        }
-      });
+      btn.addEventListener("click", () => onUserSelectLayout(id));
     }
     wrap.appendChild(btn);
   }
@@ -2732,6 +3099,7 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
   const overflowEl = getGridOverflow();
   if (!grid) return;
 
+  try {
   state.imageLoadState = {
     total: 0,
     loaded: 0,
@@ -2861,6 +3229,10 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
 
   syncOrderedItemsFromGrid();
   requestAnimationFrame(syncWatermarkDOMToOneTile);
+  } finally {
+    applySettingsToLiveGrids();
+    syncStageCaptionOverlay();
+  }
 }
 
 function rebuildTemplateGridFromItems(items, layoutId) {
@@ -4050,7 +4422,9 @@ async function exportPNG() {
     ctx.scale(scale, scale);
     ctx.imageSmoothingQuality = "high";
 
-    ctx.fillStyle = "#ffffff";
+    const exportBg =
+      state.settingsCanvasBg === "dark" ? "#111111" : "#ffffff";
+    ctx.fillStyle = exportBg;
     ctx.fillRect(0, 0, logicalW + pad * 2, logicalH + pad * 2);
 
     const totalTiles = tiles.length;
@@ -4337,6 +4711,27 @@ function toggleTraitOrderSection() {
   }
 
   goToStep(1);
+
+  const settingsBtn = $("settingsBtn");
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSettings();
+    });
+  }
+
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Escape") return;
+      const manualOpen = manualModal.overlay && !manualModal.overlay.classList.contains("hidden");
+      if (manualOpen) return;
+      if (!state.isSettingsOpen) return;
+      e.preventDefault();
+      closeSettings();
+    },
+    true
+  );
 
   window.addEventListener("resize", syncWatermarkDOMToOneTile);
   window.addEventListener("orientationchange", syncWatermarkDOMToOneTile);

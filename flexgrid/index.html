@@ -51,7 +51,7 @@
 </head>
 
 <body>
-  <!-- First-visit disclaimer -->
+  <!-- Welcome disclaimer (shown on every visit; Continue only hides until next load) -->
   <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
     <div class="disclaimer-modal">
       <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
@@ -69,16 +69,10 @@
   </div>
   <script>
     (function(){
-      var KEY = "flexgridDisclaimerAccepted";
       var overlay = document.getElementById("disclaimerOverlay");
       var btn = document.getElementById("disclaimerContinue");
-      var isLocalhost = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-      if (!isLocalhost && localStorage.getItem(KEY)) {
-        if (overlay) overlay.classList.add("hidden");
-      }
       if (btn && overlay) {
         btn.addEventListener("click", function(){
-          if (!isLocalhost) localStorage.setItem(KEY, "1");
           overlay.classList.add("hidden");
           overlay.setAttribute("aria-hidden", "true");
         });
@@ -115,10 +109,13 @@
       <span class="stepConnector">→</span>
       <span class="stepItem" data-step="3">3. Grid</span>
     </nav>
+    <div class="stepBarTrailing">
     <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
       <span class="themeToggleIcon themeToggleSun">☀️</span>
       <span class="themeToggleIcon themeToggleMoon">🌙</span>
       <span class="themeToggleKnob" aria-hidden="true"></span>
+    </div>
+    <button type="button" id="settingsBtn" class="settingsTopBtn" aria-label="Settings" aria-expanded="false" title="Settings">⚙️</button>
     </div>
     </div>
 
@@ -288,6 +285,7 @@
         </div>
 
         <div class="gridWrap">
+        <div id="stageCaptionOverlay" class="stageCaptionOverlay" hidden aria-live="polite"></div>
   <div id="gridStack" class="gridStack">
   <div id="grid" class="grid"></div>
   <div id="gridOverflow" class="grid gridOverflow" style="display: none;" aria-hidden="true"></div>
