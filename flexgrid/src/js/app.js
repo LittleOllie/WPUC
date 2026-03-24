@@ -210,8 +210,6 @@ const state = {
   contractLogoCache: Object.create(null),
   /** Dedupe in-flight contract metadata fetches */
   contractLogoInflight: new Map(),
-  _collectionLogoRerenderScheduled: false,
-
   /** Right drawer — open state only; panel DOM is separate */
   isSettingsOpen: false,
   /** "theme" | "light" | "dark" — stage preview behind grid */
@@ -1563,13 +1561,62 @@ function confirmManualSelection() {
 }
 
 // ---------- Collection logos (Alchemy contract metadata, async) ----------
-function scheduleCollectionsListRerenderDebounced() {
-  if (state._collectionLogoRerenderScheduled) return;
-  state._collectionLogoRerenderScheduled = true;
-  requestAnimationFrame(() => {
-    state._collectionLogoRerenderScheduled = false;
-    renderCollectionsList();
+/** Avoid dozens of simultaneous /img requests freezing the collections UI — cap starts per frame. */
+const COLLECTION_THUMB_LOADS_PER_FRAME = 2;
+let _collectionThumbQueue = [];
+let _collectionThumbRaf = null;
+
+function enqueueCollectionListImageLoad(setSrcFn) {
+  _collectionThumbQueue.push(setSrcFn);
+  if (_collectionThumbRaf != null) return;
+  const pump = () => {
+    _collectionThumbRaf = null;
+    let n = COLLECTION_THUMB_LOADS_PER_FRAME;
+    while (n-- > 0 && _collectionThumbQueue.length) {
+      const fn = _collectionThumbQueue.shift();
+      try {
+        fn();
+      } catch (_) {}
+    }
+    if (_collectionThumbQueue.length) {
+      _collectionThumbRaf = requestAnimationFrame(pump);
+    }
+  };
+  _collectionThumbRaf = requestAnimationFrame(pump);
+}
+
+let _collectionLogoPatchKeys = new Set();
+let _collectionLogoPatchRaf = null;
+
+/** When contract metadata returns a logo URL, patch only that row — do not rebuild the whole list. */
+function scheduleCollectionLogoPatch(contractKey) {
+  const k = String(contractKey || "").trim().toLowerCase();
+  if (!k) return;
+  _collectionLogoPatchKeys.add(k);
+  if (_collectionLogoPatchRaf != null) return;
+  _collectionLogoPatchRaf = requestAnimationFrame(() => {
+    _collectionLogoPatchRaf = null;
+    const keys = [..._collectionLogoPatchKeys];
+    _collectionLogoPatchKeys.clear();
+    for (const addr of keys) {
+      patchCollectionLogoInList(addr);
+    }
+    syncManualSelectionModalHeader();
   });
+}
+
+function patchCollectionLogoInList(contractKey) {
+  const list = $("collectionsList");
+  if (!list) return;
+  const k = String(contractKey || "").trim().toLowerCase();
+  const row = list.querySelector(`[data-collection-key="${k}"]`);
+  if (!row) return;
+  const oldWrap = row.querySelector(".collectionLogoWrap");
+  if (!oldWrap) return;
+  const c = state.collections.find((x) => String(x.key || "").trim().toLowerCase() === k);
+  if (!c) return;
+  const newWrap = buildCollectionLogoThumb(c);
+  oldWrap.replaceWith(newWrap);
 }
 
 function syncLogoFromCacheToCollections(contractKey, rawLogoUrl) {
@@ -1582,7 +1629,7 @@ async function fetchCollectionLogoForContract(contractKey, chain) {
   const k = `${chain}::${contractKey}`;
   if (Object.prototype.hasOwnProperty.call(state.contractLogoCache, k)) {
     syncLogoFromCacheToCollections(contractKey, state.contractLogoCache[k]);
-    scheduleCollectionsListRerenderDebounced();
+    scheduleCollectionLogoPatch(contractKey);
     return;
   }
 
@@ -1594,13 +1641,13 @@ async function fetchCollectionLogoForContract(contractKey, chain) {
       state.contractLogoCache[k] = raw;
       state.contractLogoInflight.delete(k);
       syncLogoFromCacheToCollections(contractKey, raw);
-      scheduleCollectionsListRerenderDebounced();
+      scheduleCollectionLogoPatch(contractKey);
       return raw;
     })().catch(() => {
       state.contractLogoCache[k] = null;
       state.contractLogoInflight.delete(k);
       syncLogoFromCacheToCollections(contractKey, null);
-      scheduleCollectionsListRerenderDebounced();
+      scheduleCollectionLogoPatch(contractKey);
       return null;
     });
     state.contractLogoInflight.set(k, p);
@@ -1617,7 +1664,7 @@ function queueCollectionLogoFetches() {
     const list = state.collections.filter((c) => /^0x[a-fA-F0-9]{40}$/.test(String(c.key || "").trim()));
     if (!list.length) return;
 
-    const concurrency = 4;
+    const concurrency = 2;
     let idx = 0;
 
     async function worker() {
@@ -1626,6 +1673,7 @@ function queueCollectionLogoFetches() {
         const c = list[i];
         try {
           await fetchCollectionLogoForContract(c.key, chain);
+          await new Promise((r) => setTimeout(r, 75));
         } catch (_) {}
       }
     }
@@ -1680,14 +1728,21 @@ function buildCollectionLogoThumb(c) {
     img.className = "collectionLogoThumb";
     img.alt = "";
     img.draggable = false;
+    img.loading = "lazy";
+    img.decoding = "async";
+    try {
+      if ("fetchPriority" in img) img.fetchPriority = "low";
+    } catch (_) {}
     img.referrerPolicy = "no-referrer";
     img.crossOrigin = "anonymous";
-    img.src = src;
     img.onerror = () => {
       wrap.innerHTML = "";
       wrap.appendChild(makeCollectionLogoPlaceholder());
     };
     wrap.appendChild(img);
+    enqueueCollectionListImageLoad(() => {
+      img.src = src;
+    });
   };
 
   if (c.logo) {
@@ -1713,6 +1768,7 @@ function renderCollectionsList() {
   state.collections.forEach((c) => {
     const row = document.createElement("div");
     row.className = "collectionItem";
+    row.dataset.collectionKey = String(c.key || "").trim().toLowerCase();
     if (state.selectedKeys.has(c.key)) row.classList.add("selected");
     const selMode = state.selectionModeByCollection[c.key] || "none";
     if (
@@ -3649,19 +3705,8 @@ async function loadTileImage(tile, img, rawUrl) {
   return false;
 }
 
-function preloadCollection(nfts) {
-  const batch = (nfts || []).slice(0, 30);
-  for (const nft of batch) {
-    const raw = getImage(nft);
-    const url = toProxyUrl(raw) || normalizeImageUrl(raw);
-    if (!url) continue;
-    if (!imageCache.has(url)) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = url;
-      imageCache.set(url, url);
-    }
-  }
+function preloadCollection(_nfts) {
+  /* Disabled: burst prefetch to /img was freezing the collections UI (main thread + connection cap). */
 }
 
 function makeNFTTile(it) {
@@ -3943,7 +3988,6 @@ async function loadWallets() {
   try {
     state.contractLogoCache = Object.create(null);
     state.contractLogoInflight.clear();
-    state._collectionLogoRerenderScheduled = false;
 
     showLoading("👀 Little Ollie is checking your wallet...", "", 0);
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
@@ -3990,15 +4034,12 @@ async function loadWallets() {
     state.collections = grouped;
     resetCollectionSelectionState();
 
-    for (const c of grouped) {
-      if (c.name && c.name.toLowerCase().includes("quirkling")) {
-        preloadCollection(c.nfts || []);
-      }
-    }
-
     renderCollectionsList();
-    queueCollectionLogoFetches();
     goToStep(2);
+    /* Let the collections screen paint before starting contract-metadata + logo patch work */
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => queueCollectionLogoFetches());
+    });
 
     const buildBtn = $("gridBuildBtn");
     const exportBtn = $("gridExportBtn");

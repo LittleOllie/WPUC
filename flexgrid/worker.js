@@ -239,10 +239,13 @@ async function fetchHttpImage(decodedUrl, env) {
     },
   ];
 
-  for (const run of attempts) {
+  const relaxCtOnRetry = /seadn\.io|openseauserdata\.com/i.test(decodedUrl);
+
+  for (let i = 0; i < attempts.length; i++) {
     try {
-      const res = await run();
-      if (isAcceptableImageResponse(res, { allowUnknownContentType: false })) {
+      const res = await attempts[i]();
+      const allowUnknown = relaxCtOnRetry && i > 0;
+      if (isAcceptableImageResponse(res, { allowUnknownContentType: allowUnknown })) {
         return res;
       }
     } catch {
