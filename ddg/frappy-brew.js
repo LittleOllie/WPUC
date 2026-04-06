@@ -78,7 +78,6 @@
   const PICKUP_DRAW_SIZE = gs(56);
   const PICKUP_DRAW_SIZE_FISH = gs(112);
   const PICKUP_DRAW_SIZE_MINE = Math.max(28, gs(36));
-  const MINE_HIT_RADIUS_PX = Math.max(10, gs(14));
   const PICKUP_OFFSET_X = gs(70);
   const PICKUP_OFFSET_X_MINE = gs(92);
   const PICKUP_Y_JITTER = gs(70);
@@ -363,6 +362,13 @@
     return a + Math.random() * (b - a);
   }
 
+  /** Circle radius for mine hits — matches drawUnderwaterMine (body r = sz*0.36, spikes to r*1.62) plus a small skim margin. */
+  function mineHitRadiusPx(sz) {
+    const bodyR = sz * 0.36;
+    const spikeTip = bodyR * 1.62;
+    return spikeTip + Math.max(2, gs(4));
+  }
+
   /** Same formula as spawnPipe — keeps gap valid if window height changes mid-game. */
   function clampPipeGapsToScreen() {
     const gapHalf = PIPE_GAP / 2;
@@ -569,7 +575,9 @@
       if (p.type === PICKUP_TYPES.BURNT) {
         const dx = hitPosX() - p.x;
         const dy = hitPosY() - p.y;
-        const rr = MINE_HIT_RADIUS_PX + pradius;
+        const mineSz = p.drawSize != null ? p.drawSize : PICKUP_DRAW_SIZE_MINE;
+        const mineR = mineHitRadiusPx(mineSz);
+        const rr = mineR + pradius;
         hit = dx * dx + dy * dy <= rr * rr;
       } else {
         const ph = psz / 2;
