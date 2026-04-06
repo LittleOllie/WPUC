@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Frappy Brew – LO Arcade</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="frappy-brew.css" />
+</head>
+<body>
+  <div class="page page-fullscreen">
+    <!-- Same background as One Button Hero / links / games -->
+    <div class="frappy-bg" aria-hidden="true"></div>
+    <div class="frappy-bg-overlay" aria-hidden="true"></div>
+
+    <div class="game-top-bar">
+      <div class="co-brand-bar" aria-label="LO x DDG">
+        <img src="assets/lo.png" alt="LO" class="co-brand-img co-brand-lo" width="120" height="40" />
+        <span class="co-brand-x" aria-hidden="true">×</span>
+        <img src="assets/ddg.png" alt="DDG" class="co-brand-img co-brand-ddg" width="40" height="40" />
+      </div>
+      <div class="hud hud-overlay">
+        <div class="hud-pill">
+          <span>Score</span>
+          <span id="scoreValue">0</span>
+        </div>
+        <div class="hud-pill">
+          <span>Bubbles</span>
+          <span id="beansValue">0</span>
+        </div>
+        <div class="hud-pill">
+          <span>Best</span>
+          <span id="bestValue">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-viewport">
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="gameCanvas"></canvas>
+        <div id="overlay" class="overlay">
+          <div class="overlay-card" id="startCard">
+            <div class="overlay-card-brand" aria-hidden="true">
+              <img src="assets/lo.png" alt="" class="overlay-brand-lo" />
+              <span class="co-brand-x">×</span>
+              <img src="assets/ddg.png" alt="" class="overlay-brand-ddg" />
+            </div>
+            <p id="loadingText" class="loading-text">Loading…</p>
+            <h2 class="ready-title">Ready?</h2>
+            <p class="ready-desc">Tap or click to flap.<br />Stay alive and collect bubbles.</p>
+            <button id="startBtn" type="button" class="btn-primary" disabled>
+              <span class="btn-primary-content">
+                <img src="assets/lo.png" alt="" class="btn-brand-lo" />
+                <span class="btn-primary-text">Start</span>
+                <img src="assets/ddg.png" alt="" class="btn-brand-ddg" />
+              </span>
+            </button>
+          </div>
+          <div class="overlay-card overlay-card--gameover hidden" id="gameOverCard">
+            <div class="overlay-card-ddg-watermark" aria-hidden="true">
+              <img src="assets/ddg.png" alt="" />
+            </div>
+            <div class="overlay-card-gameover-body">
+              <h2>Game Over</h2>
+              <p id="summaryText"></p>
+              <button id="playAgainBtn" type="button" class="btn-primary btn-primary-text-only">
+                <span class="btn-primary-text">Play Again</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a href="/games.html" class="btn-back btn-back-float">← Back</a>
+
+    <div class="controls-hint controls-hint-float">
+      <span>Tap / Click or Spacebar to flap</span>
+    </div>
+  </div>
+
+  <script src="frappy-brew.js"></script>
+</body>
+</html>
+
