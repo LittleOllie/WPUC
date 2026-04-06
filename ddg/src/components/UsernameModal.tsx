@@ -1,103 +1,129 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
-import { useModalFocusRestore } from "../hooks/useModalFocusRestore";
-import { MAX_HANDLE_LEN, normalizeHandleInput, saveHandle } from "../xhandle";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  filterHandleInput,
+  MAX_HANDLE_LENGTH,
+  normalizeHandle,
+} from "../handleStorage";
 import "./UsernameModal.css";
 
-export type UsernameModalProps = {
-  /** Called after a non-blank handle is saved and stored. */
-  onSaved: () => void;
-  /** Prefill when reopening (e.g. edit). */
-  initialHandle?: string;
-  /** True when changing an existing saved handle. */
-  isEdit?: boolean;
-  /** When editing, Escape closes without saving. */
-  onCancel?: () => void;
+type Props = {
+  open: boolean;
+  mode: "welcome" | "edit";
+  initialValue: string;
+  onSave: (normalized: string) => void;
+  onClose: () => void;
 };
 
-export function UsernameModal({ onSaved, initialHandle = "", isEdit = false, onCancel }: UsernameModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useModalFocusRestore(true, dialogRef, "input.username-modal-input");
+export function UsernameModal({ open, mode, initialValue, onSave, onClose }: Props) {
+  const titleId = useId();
+  const descId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+  const [value, setValue] = useState(initialValue);
 
-  const [value, setValue] = useState(() => normalizeHandleInput(initialHandle));
+  const required = mode === "welcome";
 
   useEffect(() => {
-    setValue(normalizeHandleInput(initialHandle));
-  }, [initialHandle]);
+    if (open) {
+      lastFocusRef.current = document.activeElement as HTMLElement;
+      setValue(initialValue);
+      document.body.classList.add("modal-scroll-lock");
+      requestAnimationFrame(() => inputRef.current?.focus());
+    } else {
+      document.body.classList.remove("modal-scroll-lock");
+      lastFocusRef.current?.focus?.();
+    }
+    return () => {
+      document.body.classList.remove("modal-scroll-lock");
+    };
+  }, [open, initialValue]);
+
+  const normalized = normalizeHandle(value);
+  const canSave = normalized.length > 0;
+
+  const save = useCallback(() => {
+    if (!canSave) return;
+    onSave(normalized);
+  }, [canSave, normalized, onSave]);
 
   useEffect(() => {
-    if (!isEdit || !onCancel) return;
-    const onKey: EventListener = (e) => {
-      if (!(e instanceof globalThis.KeyboardEvent) || e.key !== "Escape") return;
-      e.preventDefault();
-      onCancel();
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && canSave) {
+        e.preventDefault();
+        save();
+      }
+      if (e.key === "Escape" && !required) {
+        e.preventDefault();
+        onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isEdit, onCancel]);
+  }, [open, canSave, required, save, onClose]);
 
-  const applyNormalized = useCallback((raw: string) => {
-    setValue(normalizeHandleInput(raw));
-  }, []);
-
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-    applyNormalized(e.target.value);
-  };
-
-  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text") || "";
-    applyNormalized(value + text);
-  };
-
-  const canSave = value.trim().length > 0;
-
-  const onSave = () => {
-    const h = normalizeHandleInput(value);
-    if (!h) return;
-    saveHandle(h);
-    onSaved();
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && canSave) onSave();
-  };
+  if (!open) return null;
 
   return (
-    <div className="username-modal-overlay" role="presentation">
+    <div
+      className="username-modal-overlay"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !required) onClose();
+      }}
+    >
       <div
-        ref={dialogRef}
-        className="username-modal-dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="username-modal-title"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        className="username-modal"
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        <h2 id="username-modal-title" className="username-modal-title">
-          {isEdit ? "Edit your handle" : "Welcome"}
+        <h2 id={titleId} className="username-modal-title">
+          {mode === "welcome" ? "Welcome" : "Edit your handle"}
         </h2>
-        <p className="username-modal-sub">
-          {isEdit
-            ? "Update the X handle shown in-game."
-            : "Drop Dead Gorgez — set your X handle to play."}
+        <p id={descId} className="username-modal-desc">
+          Choose your X (Twitter) handle. It is stored on this device only and is not sent to any
+          server.
         </p>
-        <div className="username-modal-field">
+        <label htmlFor="frappy-x-handle-input" className="username-modal-label">
+          X handle
+        </label>
+        <div className="username-modal-input-wrap">
           <input
+            ref={inputRef}
+            id="frappy-x-handle-input"
             className="username-modal-input"
             type="text"
-            inputMode="text"
             autoComplete="username"
-            maxLength={MAX_HANDLE_LEN}
-            placeholder="Enter your X handle"
+            inputMode="text"
+            maxLength={MAX_HANDLE_LENGTH}
+            placeholder="yourhandle"
             value={value}
-            onChange={onChange}
-            onPaste={onPaste}
-            onKeyDown={onKeyDown}
+            onChange={(e) => setValue(filterHandleInput(e.target.value))}
           />
-          <div className="username-modal-meta">
-            {value.length}/{MAX_HANDLE_LEN}
-          </div>
         </div>
+        <p
+          className={`username-modal-count${
+            normalized.length >= MAX_HANDLE_LENGTH ? " username-modal-count--warn" : ""
+          }`}
+          aria-live="polite"
+        >
+          {normalized.length}/{MAX_HANDLE_LENGTH}
+        </p>
         <div className="username-modal-actions">
-          <button type="button" className="username-modal-save" disabled={!canSave} onClick={onSave}>
+          {!required ? (
+            <button type="button" className="username-modal-btn username-modal-btn--ghost" onClick={onClose}>
+              Cancel
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="username-modal-btn username-modal-btn--primary"
+            disabled={!canSave}
+            onClick={save}
+          >
             Save
           </button>
         </div>
@@ -105,5 +131,3 @@ export function UsernameModal({ onSaved, initialHandle = "", isEdit = false, onC
     </div>
   );
 }
-
-export { getSavedHandle } from "../xhandle";

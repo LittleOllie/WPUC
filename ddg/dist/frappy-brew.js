@@ -2,26 +2,13 @@
 // Uses all assets from ARCADE GAMES/CURRENT FINAL VERSION/Shared/Assets.xcassets
 
 (() => {
-  let started = false;
-  let canvasWaitTries = 0;
-  function tryStart() {
-    if (started) return;
-    const canvas = document.getElementById("gameCanvas");
-    if (!canvas) {
-      if (++canvasWaitTries > 500) {
-        console.error("Frappy Brew: #gameCanvas not found");
-        return;
-      }
-      requestAnimationFrame(tryStart);
-      return;
-    }
-    started = true;
-    const canvasWrap = document.getElementById("canvasWrap");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      console.error("Frappy Brew: could not get 2D canvas context");
-      return;
-    }
+  const canvas = document.getElementById("gameCanvas");
+  const canvasWrap = document.getElementById("canvasWrap");
+  if (!canvas) {
+    console.error("Frappy Brew: #gameCanvas not found");
+    return;
+  }
+  const ctx = canvas.getContext("2d");
 
   const scoreEl = document.getElementById("scoreValue");
   const beansEl = document.getElementById("beansValue");
@@ -32,15 +19,26 @@
   const startBtn = document.getElementById("startBtn");
   const playAgainBtn = document.getElementById("playAgainBtn");
   const summaryTextEl = document.getElementById("summaryText");
-  const gameOverTitleEl = document.getElementById("gameOverTitle");
-  const gameOverCelebrationEl = document.getElementById("gameOverCelebration");
-  const gameOverFireworksEl = document.getElementById("gameOverFireworks");
   const loadingTextEl = document.getElementById("loadingText");
   const readyTitleEl = document.querySelector(".ready-title");
   const readyDescEl = document.querySelector(".ready-desc");
   const introSplashEl = document.getElementById("introSplash");
   const introPlayBtn = document.getElementById("introPlayBtn");
   const introSplashLoadingEl = document.getElementById("introSplashLoading");
+
+  function isBlockingModalOpen() {
+    return document.querySelector('[role="dialog"][aria-modal="true"]') != null;
+  }
+
+  /** Resolves `assets/...` against Vite base (data-frappy-base on this script). */
+  function assetUrlFromScript(relPath) {
+    const el = document.querySelector("script[data-frappy-brew]");
+    const raw = (el && el.getAttribute("data-frappy-base")) || "/";
+    const normalized = raw.endsWith("/") ? raw.slice(0, -1) : raw;
+    const path = relPath.replace(/^\/+/, "");
+    if (normalized === "" || normalized === "/") return "/" + path;
+    return normalized + "/" + path;
+  }
 
   let width = 480;
   let height = 640;
@@ -128,9 +126,9 @@
   let score = 0;
   let beans = 0;
   let best = Number(localStorage.getItem("frappy_best_web") || "0");
-  /** Best score at the start of the current run (for personal-best celebration). */
-  let bestAtRunStart = 0;
   if (bestEl) bestEl.textContent = best;
+  /** Best score at the start of the current run (for new-personal-best detection). */
+  let bestAtRunStart = 0;
 
   let isRunning = false;
   let isGameOver = false;
@@ -220,7 +218,7 @@
         resolve();
       };
       img.onerror = () => reject(new Error("Failed to load " + path));
-      img.src = path;
+      img.src = assetUrlFromScript(path);
     });
   }
 
@@ -308,8 +306,8 @@
     }
 
     lastTime = performance.now();
-    if (startCardEl) startCardEl.classList.add("hidden");
-    if (gameOverCardEl) gameOverCardEl.classList.add("hidden");
+    startCardEl.classList.add("hidden");
+    gameOverCardEl.classList.add("hidden");
     syncInputStacking();
   }
 
@@ -482,47 +480,21 @@
   function endGame() {
     isRunning = false;
     isGameOver = true;
+    gameOverCardEl.classList.remove("hidden");
+    startCardEl.classList.add("hidden");
+    summaryTextEl.textContent = `Score ${score} • Bubbles ${beans} • Best ${best}`;
+    syncInputStacking();
     const newPersonalBest = score > bestAtRunStart;
-    if (gameOverCardEl) {
-      gameOverCardEl.classList.remove("hidden");
-      gameOverCardEl.classList.toggle("game-over--celebrate", newPersonalBest);
-    }
-    if (startCardEl) startCardEl.classList.add("hidden");
-    if (gameOverTitleEl) {
-      gameOverTitleEl.textContent = newPersonalBest ? "CONGRATS!" : "Game Over";
-    }
-    if (gameOverCelebrationEl) {
-      gameOverCelebrationEl.textContent = newPersonalBest
-        ? "You made the leaderboard!"
-        : "So close — try and beat your best again!";
-      gameOverCelebrationEl.classList.toggle("game-over-celebration--win", newPersonalBest);
-      gameOverCelebrationEl.classList.toggle("game-over-celebration--lose", !newPersonalBest);
-    }
-    if (summaryTextEl) summaryTextEl.textContent = `Score ${score} • Bubbles ${beans} • Best ${best}`;
-    if (gameOverFireworksEl) {
-      gameOverFireworksEl.innerHTML = "";
-      gameOverFireworksEl.classList.toggle("game-over-fireworks--active", newPersonalBest);
-      if (newPersonalBest) {
-        for (let i = 0; i < 40; i++) {
-          const sp = document.createElement("span");
-          sp.className = "game-over-spark";
-          sp.style.left = `${5 + Math.random() * 90}%`;
-          sp.style.animationDelay = `${Math.random() * 0.65}s`;
-          sp.style.setProperty("--dx", `${(Math.random() - 0.5) * 100}px`);
-          gameOverFireworksEl.appendChild(sp);
-        }
-      }
-    }
     try {
       window.dispatchEvent(
         new CustomEvent("frappy-brew-gameover", {
-          detail: { score, beans, best, newPersonalBest },
+          detail: { score, newPersonalBest, beans, best },
+          bubbles: true,
         })
       );
-    } catch (_) {
-      /* ignore */
+    } catch (err) {
+      console.warn("frappy-brew-gameover dispatch failed", err);
     }
-    syncInputStacking();
   }
 
   /** While playing, canvas must be above #overlay or taps go to the overlay div and never reach the canvas (Safari/desktop). */
@@ -541,6 +513,7 @@
   }
 
   function flap() {
+    if (isBlockingModalOpen()) return;
     if (isIntroVisible()) return;
     if (!isRunning && !isGameOver) {
       doResetWorld();
@@ -799,7 +772,6 @@
   }
 
   function draw() {
-    if (!ctx) return;
 
     const bgImg = images.bg0;
     if (bgImg) {
@@ -903,24 +875,11 @@
         playerY = height * 0.48;
       }
       syncInputStacking();
+      // Cycle BG on new run (done in resetWorld)
       requestAnimationFrame(loop);
     })
     .catch((err) => {
       console.error("Asset load failed:", err);
-      // Still allow PLAY — otherwise button stays disabled forever if any image 404s
-      assetsReady = true;
-      if (introSplashLoadingEl) introSplashLoadingEl.style.display = "none";
-      if (introPlayBtn) introPlayBtn.disabled = false;
-      if (startBtn) {
-        startBtn.disabled = false;
-        const t = startBtn.querySelector(".btn-primary-text");
-        if (t) t.textContent = "Start";
-      }
-      if (!isRunning && !isGameOver) {
-        playerX = Math.max(PLAYER_MIN_X, width * PLAYER_X_RATIO);
-        playerY = height * 0.48;
-      }
-      syncInputStacking();
       requestAnimationFrame(loop);
     });
 
@@ -931,6 +890,7 @@
   let lastFlapInputAt = 0;
 
   function tryFlapFromPointerEvent(e) {
+    if (isBlockingModalOpen()) return;
     if (isIntroVisible()) return;
     if (e.type === "mousedown" || e.type === "pointerdown") {
       if (e.button != null && e.button !== 0) return;
@@ -951,7 +911,6 @@
     const topEl = document.elementFromPoint(x, y);
     if (topEl && typeof topEl.closest === "function") {
       if (topEl.closest("button") || topEl.closest("a")) return;
-      if (topEl.closest('[role="dialog"]') || topEl.closest('[aria-modal="true"]')) return;
     }
     const now = performance.now();
     if (now - lastFlapInputAt < 45) return;
@@ -972,8 +931,8 @@
 
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
       e.preventDefault();
+      if (isBlockingModalOpen()) return;
       if (isIntroVisible()) return;
       flap();
     }
@@ -981,8 +940,10 @@
 
   let lastPrimaryAction = 0;
   function onPrimaryOverlayAction(e) {
+    if (isBlockingModalOpen()) return;
     const btn = e.currentTarget;
     if (!btn || btn.disabled) return;
+    if (!assetsReady) return;
     if (e.type === "pointerdown" && e.button != null && e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -993,7 +954,9 @@
   }
 
   function onIntroPlayAction(e) {
+    if (isBlockingModalOpen()) return;
     if (!introPlayBtn || introPlayBtn.disabled) return;
+    if (!assetsReady) return;
     if (e.type === "pointerdown" && e.button != null && e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -1019,6 +982,4 @@
   if (backBtn) {
     backBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
   }
-  }
-  tryStart();
 })();

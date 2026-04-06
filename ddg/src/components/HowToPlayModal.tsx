@@ -1,145 +1,163 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { assetUrl } from "../config/site";
-import { useModalFocusRestore } from "../hooks/useModalFocusRestore";
-import { HowToMineIllustration } from "./HowToMineIllustration";
 import "./HowToPlayModal.css";
 
-export type HowToPlayModalProps = {
+type Props = {
+  open: boolean;
   onClose: () => void;
 };
 
-export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useModalFocusRestore(true, dialogRef, "button.howto-modal-close");
+export function HowToPlayModal({ open, onClose }: Props) {
+  const titleId = useId();
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const onKey: EventListener = (e) => {
-      if (e instanceof globalThis.KeyboardEvent && e.key === "Escape") onClose();
+    if (open) {
+      lastFocusRef.current = document.activeElement as HTMLElement;
+      document.body.classList.add("modal-scroll-lock");
+      requestAnimationFrame(() => closeBtnRef.current?.focus());
+    } else {
+      document.body.classList.remove("modal-scroll-lock");
+      lastFocusRef.current?.focus?.();
+    }
+    return () => {
+      document.body.classList.remove("modal-scroll-lock");
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [open, onClose]);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
+  if (!open) return null;
+
+  const bg = assetUrl("assets/bg0.png");
+  const player = assetUrl("assets/player.png");
+  const bean = assetUrl("assets/bean.png");
+  const beanGold = assetUrl("assets/bean_golden.png");
+  const cupRed = assetUrl("assets/cup_red.png");
 
   return (
-    <div className="howto-modal-overlay" role="presentation" onClick={onClose}>
+    <div
+      className="howto-overlay"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
-        ref={dialogRef}
-        className="howto-modal-dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="howto-modal-title"
-        onClick={(e) => e.stopPropagation()}
+        aria-labelledby={titleId}
+        className="howto-dialog"
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="howto-modal-header">
-          <h2 id="howto-modal-title" className="howto-modal-title">
+        <div className="howto-header">
+          <h2 id={titleId} className="howto-title">
             How to play
           </h2>
-          <button type="button" className="howto-modal-close" onClick={onClose} aria-label="Close">
+          <button
+            ref={closeBtnRef}
+            type="button"
+            className="howto-close"
+            aria-label="Close"
+            onClick={onClose}
+          >
             ×
           </button>
         </div>
-
-        <div className="howto-modal-body">
-          <section className="howto-hero">
-            <div className="howto-hero-scene" aria-hidden="true">
-              <img src={assetUrl("assets/bg0.png")} alt="" className="howto-hero-bg" />
-              <img src={assetUrl("assets/player.png")} alt="" className="howto-hero-player" />
+        <div className="howto-body">
+          <div className="howto-hero">
+            <div
+              className="howto-hero-bg"
+              style={{ backgroundImage: `url(${bg})` }}
+              aria-hidden
+            />
+            <div className="howto-hero-player">
+              <img src={player} alt="" width={120} height={120} />
             </div>
-            <p className="howto-modal-lead">
-              Fly your <strong>character</strong> through each <strong>scene</strong>. Flap past the steel pillars, collect the pickups that help you, and avoid the hazards. More characters and scenes are on the way.
-            </p>
+          </div>
+
+          <section className="howto-section">
+            <h3>Controls</h3>
+            <p>Tap, click, or press Space to flap. Stay in the gap between the steel pillars and keep moving forward.</p>
           </section>
 
           <section className="howto-section">
-            <h3 className="howto-heading">Controls</h3>
+            <h3>Scoring</h3>
             <p>
-              <strong>Tap</strong>, <strong>click</strong>, or press <strong>Space</strong> to flap. Stay inside the gap between the pillars. Don’t hit the pillars, the ceiling, or the floor.
+              You earn points by passing pillars and collecting pickups. Your best run is saved in the browser on this
+              device.
             </p>
           </section>
 
           <section className="howto-section">
-            <h3 className="howto-heading">Scoring</h3>
-            <p>Each pillar gap you pass through safely adds <strong>+1</strong> to your score. Pickups add bonuses on top.</p>
+            <h3>Collect</h3>
+            <div className="howto-row">
+              <img src={bean} alt="" width={48} height={48} />
+              <div className="howto-row-text">
+                <strong>Bubble</strong>
+                <span>Worth points and counts toward your bubble total.</span>
+              </div>
+            </div>
+            <div className="howto-row">
+              <img src={beanGold} alt="" width={48} height={48} />
+              <div className="howto-row-text">
+                <strong>Golden bubble</strong>
+                <span>Extra points and grants one shield hit — the next hazard consumes the shield instead of ending your run.</span>
+              </div>
+            </div>
+            <div className="howto-row">
+              <img src={cupRed} alt="" width={48} height={48} />
+              <div className="howto-row-text">
+                <strong>Red fish</strong>
+                <span>Big score bonus — grab it when you can.</span>
+              </div>
+            </div>
           </section>
 
           <section className="howto-section">
-            <h3 className="howto-heading howto-heading--good">Collect — good</h3>
-            <ul className="howto-pickup-list">
-              <li className="howto-asset-row">
-                <span className="howto-asset-wrap">
-                  <img src={assetUrl("assets/bean.png")} alt="" className="howto-asset-img" />
-                </span>
-                <span>
-                  <strong>Bubble</strong> — +1 score, +1 bubble in your tally.
-                </span>
-              </li>
-              <li className="howto-asset-row">
-                <span className="howto-asset-wrap">
-                  <img src={assetUrl("assets/bean_golden.png")} alt="" className="howto-asset-img" />
-                </span>
-                <span>
-                  <strong>Golden bubble</strong> — +5 score, +1 bubble, and a <strong>shield</strong> (one charge — see below).
-                </span>
-              </li>
-              <li className="howto-asset-row">
-                <span className="howto-asset-wrap">
-                  <img
-                    src={assetUrl("assets/cup_red.png")}
-                    alt=""
-                    className="howto-asset-img howto-asset-img--fish"
-                  />
-                </span>
-                <span>
-                  <strong>Red fish</strong> — +8 score.
-                </span>
-              </li>
-            </ul>
+            <h3>Shield</h3>
+            <p>Pick up a golden bubble to gain a shield. The next mine hit uses the shield instead of ending the game.</p>
           </section>
 
           <section className="howto-section">
-            <h3 className="howto-heading howto-heading--shield">Shield</h3>
-            <p>
-              If you have a shield from a golden bubble, the <strong>next</strong> hit from a <strong>mine</strong> or <strong>pillar</strong> is absorbed — you lose the shield instead of the run. You can only hold one shield at a time.
-            </p>
+            <h3>Avoid</h3>
+            <div className="howto-row">
+              <div className="howto-mine" aria-hidden>
+                <div className="howto-mine-visual">
+                  <div className="howto-mine-body" />
+                </div>
+              </div>
+              <div className="howto-row-text">
+                <strong>Underwater mine</strong>
+                <span>Explodes on contact. With no shield, it is game over.</span>
+              </div>
+            </div>
+            <div className="howto-row">
+              <div className="howto-pillar-thumb" aria-hidden />
+              <div className="howto-row-text">
+                <strong>Steel pillar</strong>
+                <span>Do not hit the top or bottom segments — only the gap is safe.</span>
+              </div>
+            </div>
           </section>
 
-          <section className="howto-section">
-            <h3 className="howto-heading howto-heading--bad">Avoid — don’t hit</h3>
-            <ul className="howto-pickup-list">
-              <li className="howto-asset-row">
-                <span className="howto-asset-wrap howto-asset-wrap--mine" aria-hidden="true">
-                  <HowToMineIllustration />
-                </span>
-                <span>
-                  <strong>Underwater mine</strong> — touching one explodes. If you have no shield (and you’re past the short start grace), it’s game over.
-                </span>
-              </li>
-              <li className="howto-asset-row">
-                <span className="howto-asset-wrap">
-                  <img src={assetUrl("assets/pillar_cup.png")} alt="" className="howto-asset-img howto-asset-img--pillar" />
-                </span>
-                <span>
-                  <strong>Steel pillars</strong> — don’t fly into the metal — only through the open gap.
-                </span>
-              </li>
-            </ul>
-          </section>
-
-          <p className="howto-modal-foot">Stay alive, stack bubbles, and chase your best score.</p>
-        </div>
-
-        <div className="howto-modal-actions">
-          <button type="button" className="howto-modal-done" onClick={onClose}>
-            Got it
-          </button>
+          <p className="howto-footer">LO × DDG — Frappy Brew. Good luck!</p>
+          <div className="howto-footer-actions">
+            <button type="button" className="howto-gotit" onClick={onClose}>
+              Got it
+            </button>
+          </div>
         </div>
       </div>
     </div>

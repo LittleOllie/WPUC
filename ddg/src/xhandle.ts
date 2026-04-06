@@ -1,33 +1,24 @@
-/** localStorage key for saved X / Twitter handle (no @). */
-export const XHANDLE_STORAGE_KEY = "frappybrew_xhandle";
+/**
+ * X handle normalization for UI + Firestore document IDs.
+ * Allowed: [a-zA-Z0-9_], max length 15.
+ */
 
-export const MAX_HANDLE_LEN = 15;
+export const MAX_HANDLE_LENGTH = 15;
 
-/** Returns trimmed saved handle or null if missing / empty. */
-export function getSavedHandle(): string | null {
-  try {
-    const v = localStorage.getItem(XHANDLE_STORAGE_KEY);
-    if (v == null) return null;
-    const t = v.trim();
-    return t === "" ? null : t;
-  } catch {
-    return null;
-  }
-}
-
-/** Strip leading @ and keep only a-z A-Z 0-9 _, max length. */
+/** Strip leading @, keep only [a-zA-Z0-9_], cap length. Use before any leaderboard write. */
 export function normalizeHandleInput(raw: string): string {
-  let s = raw.replace(/^@+/, "");
+  let s = raw.trim();
+  while (s.startsWith("@")) s = s.slice(1);
   s = s.replace(/[^a-zA-Z0-9_]/g, "");
-  return s.slice(0, MAX_HANDLE_LEN);
+  return s.slice(0, MAX_HANDLE_LENGTH);
 }
 
-export function saveHandle(handle: string): void {
-  const h = normalizeHandleInput(handle);
-  if (!h) return;
-  try {
-    localStorage.setItem(XHANDLE_STORAGE_KEY, h);
-  } catch {
-    /* private mode / quota — caller should still continue UI flow */
-  }
+export function filterHandleInput(raw: string): string {
+  let s = raw.replace(/[^a-zA-Z0-9_]/g, "");
+  while (s.startsWith("@")) s = s.slice(1);
+  return s.slice(0, MAX_HANDLE_LENGTH);
+}
+
+export function isValidHandle(s: string): boolean {
+  return normalizeHandleInput(s).length > 0;
 }

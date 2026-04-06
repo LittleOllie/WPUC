@@ -1,8 +1,24 @@
-/** Vite base URL (ends with `/` in production when using a subpath). */
-export const SITE_BASE_URL = import.meta.env.BASE_URL;
+/** Vite base path, e.g. `/` or `/repo-name/` for GitHub Pages */
+export const SITE_BASE_URL: string = import.meta.env.BASE_URL;
 
-/** Public asset path under `public/` → served at `${BASE_URL}assets/...`. */
-export function assetUrl(relativePath: string): string {
-  const p = relativePath.replace(/^\//, "");
-  return `${SITE_BASE_URL}${p}`;
+export function getBaseUrl(): string {
+  return SITE_BASE_URL;
 }
+
+/**
+ * Absolute URL for static files in `public/` (e.g. `assets/foo.png` → `/repo/assets/foo.png`).
+ */
+export function assetUrl(path: string): string {
+  const base = getBaseUrl();
+  const p = path.replace(/^\/+/, "");
+  return `${base}${p}`;
+}
+
+/** Same-origin href for site-relative pages (e.g. games.html). */
+export function pageHref(path: string): string {
+  return assetUrl(path.replace(/^\/+/, ""));
+}
+
+/** Submitted with leaderboard rows until character/scene are chosen in-game */
+export const LB_CHARACTER = "Oceanus";
+export const LB_SCENE = "Primordial Water";

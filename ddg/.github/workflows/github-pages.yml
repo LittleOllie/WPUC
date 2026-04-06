@@ -1,13 +1,12 @@
-# Build and deploy static site. No API keys required.
-# Optional secret VITE_BASE_PATH overrides auto default (use "/" for *.github.io user-site repo).
-#
-# Repo Settings → Pages → Source: GitHub Actions
+# Build Frappy Brew and upload to GitHub Pages.
+# Set repository secrets: VITE_FIREBASE_* (same names as .env.example). Optionally VITE_BASE_PATH.
+# If VITE_BASE_PATH is unset, it defaults to /{repository-name}/ (typical project Pages URL).
 
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -24,16 +23,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-      - run: npm ci
-      # Project sites are at /<repo>/ — correct base avoids 404 on /assets/...
-      - name: Build
-        run: npm run build
+          cache: "npm"
+
+      - name: Install and build
         env:
-          VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH != '' && secrets.VITE_BASE_PATH || (endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name)) }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+        run: |
+          npm ci
+          npm run build
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -43,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deploy
+      - id: deployment
         uses: actions/deploy-pages@v4
