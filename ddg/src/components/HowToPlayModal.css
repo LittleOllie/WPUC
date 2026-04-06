@@ -1,0 +1,307 @@
+.howto-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(4, 24, 48, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: howto-modal-overlay-in 0.28s ease-out;
+}
+
+@keyframes howto-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.howto-modal-dialog {
+  width: min(94vw, 440px);
+  max-height: min(88vh, 720px);
+  border-radius: 20px;
+  padding: 18px 20px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(
+    155deg,
+    rgba(18, 72, 120, 0.98) 0%,
+    rgba(12, 48, 88, 0.98) 40%,
+    rgba(8, 32, 56, 0.99) 100%
+  );
+  border: 1px solid rgba(255, 221, 85, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(100, 180, 255, 0.2) inset,
+    0 24px 48px rgba(0, 0, 0, 0.55),
+    0 0 36px rgba(80, 160, 255, 0.22);
+  animation: howto-modal-dialog-in 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes howto-modal-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.howto-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.howto-modal-title {
+  margin: 0;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff8e6;
+  text-shadow: 0 2px 14px rgba(100, 180, 255, 0.55);
+}
+
+.howto-modal-close {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: rgba(255, 248, 230, 0.95);
+  background: rgba(255, 221, 85, 0.15);
+  transition: background 0.15s ease;
+}
+
+.howto-modal-close:hover {
+  background: rgba(255, 221, 85, 0.28);
+}
+
+.howto-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding-right: 4px;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: rgba(215, 235, 255, 0.92);
+}
+
+.howto-hero {
+  margin-bottom: 16px;
+}
+
+.howto-hero-scene {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  border: 1px solid rgba(100, 170, 255, 0.35);
+  background: rgba(4, 20, 40, 0.6);
+}
+
+.howto-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+
+.howto-hero-player {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
+}
+
+.howto-modal-body strong {
+  font-weight: 800;
+  color: #fff8e6;
+}
+
+.howto-modal-lead {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+}
+
+.howto-section {
+  margin-bottom: 14px;
+}
+
+.howto-section:last-of-type {
+  margin-bottom: 10px;
+}
+
+.howto-heading {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffe986;
+}
+
+.howto-heading--good {
+  color: #9ee8ff;
+}
+
+.howto-heading--shield {
+  color: #b8f0ff;
+}
+
+.howto-heading--bad {
+  color: #ffb4a8;
+}
+
+.howto-section p {
+  margin: 0;
+}
+
+.howto-list {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.howto-list li {
+  margin-bottom: 6px;
+}
+
+.howto-list li:last-child {
+  margin-bottom: 0;
+}
+
+.howto-pickup-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.howto-asset-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.howto-asset-row:last-child {
+  margin-bottom: 0;
+}
+
+.howto-asset-wrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(4, 24, 48, 0.65);
+  border: 1px solid rgba(100, 170, 255, 0.25);
+}
+
+.howto-asset-wrap--mine {
+  width: 56px;
+  height: 56px;
+  padding: 2px;
+  background: radial-gradient(ellipse at 50% 80%, rgba(40, 70, 100, 0.5), rgba(12, 20, 32, 0.95));
+  align-items: center;
+  justify-content: center;
+}
+
+.howto-mine-svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.howto-asset-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+/* Same asset as in-game red pickup; flip so it faces like the in-game sprite (canvas uses scale -1). */
+.howto-asset-img--fish {
+  width: 44px;
+  height: 44px;
+  transform: scaleX(-1);
+}
+
+.howto-asset-img--pillar {
+  width: 36px;
+  height: auto;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.howto-asset-row span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.howto-modal-foot {
+  margin: 12px 0 0;
+  font-size: 0.88rem;
+  color: rgba(180, 220, 255, 0.85);
+  font-style: italic;
+}
+
+.howto-modal-actions {
+  margin-top: 14px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.howto-modal-done {
+  min-width: 120px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  color: #0a2840;
+  background: linear-gradient(180deg, #ffe986 0%, #ffdd55 45%, #e8b820 100%);
+  box-shadow:
+    0 4px 0 rgba(20, 60, 90, 0.85),
+    0 8px 20px rgba(255, 200, 60, 0.25);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.howto-modal-done:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.howto-modal-done:active {
+  transform: translateY(1px);
+}

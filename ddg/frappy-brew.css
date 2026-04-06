@@ -33,6 +33,8 @@ body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   font-family: "Fredoka", sans-serif;
   /* Fallback: same gradient as One Button Hero / links when image hasn’t loaded */
   background: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-bg-bottom) 100%);
@@ -173,6 +175,94 @@ body {
   padding: 14px 24px;
   font-size: 20px;
   letter-spacing: 0.06em;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Same size: HOW TO PLAY, Edit X handle, Leaderboard — under PLAY */
+.intro-actions-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: min(280px, 86vw);
+  margin-top: 4px;
+}
+
+.intro-stack-btn {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  transition: transform 0.12s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.intro-stack-btn--gold {
+  color: #0a2840;
+  background: linear-gradient(180deg, rgba(255, 233, 134, 0.95) 0%, rgba(255, 221, 85, 0.88) 100%);
+  border: 1px solid rgba(100, 170, 255, 0.45);
+  box-shadow: 0 3px 0 rgba(12, 48, 80, 0.45);
+}
+
+.intro-stack-btn--gold:hover {
+  filter: brightness(1.06);
+}
+
+.intro-stack-btn--ghost {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.intro-stack-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.intro-stack-btn:active {
+  transform: translateY(1px);
+}
+
+.btn-leaderboard-float {
+  position: fixed;
+  top: max(52px, calc(env(safe-area-inset-top) + 44px));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 55;
+  margin: 0;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 14px;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a2840;
+  background: linear-gradient(180deg, rgba(255, 233, 134, 0.95) 0%, rgba(255, 221, 85, 0.92) 100%);
+  border: 1px solid rgba(100, 170, 255, 0.35);
+  box-shadow: 0 4px 0 rgba(12, 48, 80, 0.55);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.btn-leaderboard-float:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+
+.btn-leaderboard-float:active {
+  transform: translateY(0);
 }
 
 .game-viewport {
@@ -209,6 +299,33 @@ body {
     width: min(100cqw, 100cqh * 0.75);
     height: min(100cqh, 100cqw / 0.75);
   }
+}
+
+/* Saved X handle — top left (above canvas; below intro splash) */
+.player-welcome {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 65;
+  max-width: min(42vw, 220px);
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-family: "Fredoka", system-ui, sans-serif;
+  font-size: clamp(12px, 2.8vw, 14px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+.player-welcome-handle {
+  color: #f0e6ff;
+  font-weight: 800;
+  word-break: break-all;
 }
 
 /* LO × DDG + HUD stacked at top — above canvas (25) during play */
@@ -405,6 +522,81 @@ body {
 .overlay-card--gameover {
   position: relative;
   overflow: hidden;
+  background: linear-gradient(
+    165deg,
+    rgba(12, 56, 96, 0.94) 0%,
+    rgba(8, 36, 64, 0.96) 50%,
+    rgba(4, 24, 44, 0.98) 100%
+  );
+  border: 1px solid rgba(100, 170, 255, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(255, 221, 85, 0.12) inset,
+    0 12px 28px rgba(0, 0, 0, 0.65);
+}
+
+.overlay-card--gameover.game-over--celebrate {
+  overflow: visible;
+  border-color: rgba(255, 221, 85, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 221, 85, 0.2) inset,
+    0 12px 32px rgba(0, 0, 0, 0.65),
+    0 0 40px rgba(100, 180, 255, 0.25);
+}
+
+.game-over-fireworks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100px;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+
+.game-over-fireworks--active .game-over-spark {
+  position: absolute;
+  bottom: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 6px 2px #ffdd55,
+    0 0 14px 4px rgba(100, 190, 255, 0.9);
+  animation: game-over-spark-burst 1.15s ease-out forwards;
+}
+
+@keyframes game-over-spark-burst {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx, 0px), -120px, 0) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.game-over-celebration-msg {
+  margin: 0 0 10px 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.game-over-celebration--win {
+  color: #ffe986;
+  text-shadow: 0 0 18px rgba(255, 221, 85, 0.55);
+}
+
+.game-over-celebration--lose {
+  color: rgba(200, 225, 255, 0.88);
+}
+
+.overlay-card--gameover.game-over--celebrate #gameOverTitle {
+  color: #fff8e6;
+  text-shadow: 0 2px 16px rgba(255, 221, 85, 0.45);
 }
 
 .overlay-card-ddg-watermark {
@@ -554,5 +746,20 @@ body {
     font-size: 12px;
     padding: 8px 12px;
   }
+}
+
+/* Vite/React: game mounts under #root — must fill viewport or .game-viewport / canvas get 0 height */
+#root {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+#root > .page.page-fullscreen {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
 }
 

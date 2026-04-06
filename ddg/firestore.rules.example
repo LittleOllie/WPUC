@@ -1,0 +1,20 @@
+// Paste into Firebase Console → Firestore Database → Rules (or use with Firebase CLI deploy).
+// This allows anyone to read the leaderboard and submit scores — tighten before production if needed.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leaderboard/{docId} {
+      allow read: if true;
+      // `score` from the web SDK is often stored as float, not int — allow both.
+      allow create: if request.resource.data.keys().hasAll(['handle', 'score', 'character', 'scene', 'createdAt'])
+        && request.resource.data.handle is string
+        && (request.resource.data.score is int || request.resource.data.score is float)
+        && request.resource.data.character is string
+        && request.resource.data.scene is string;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'character', 'scene'])
+        && (request.resource.data.score is int || request.resource.data.score is float)
+        && request.resource.data.score > resource.data.score;
+    }
+  }
+}
