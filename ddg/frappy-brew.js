@@ -22,6 +22,9 @@
   const loadingTextEl = document.getElementById("loadingText");
   const readyTitleEl = document.querySelector(".ready-title");
   const readyDescEl = document.querySelector(".ready-desc");
+  const introSplashEl = document.getElementById("introSplash");
+  const introPlayBtn = document.getElementById("introPlayBtn");
+  const introSplashLoadingEl = document.getElementById("introSplashLoading");
 
   let width = 480;
   let height = 640;
@@ -38,20 +41,30 @@
 
   const images = {};
 
+  /** Scales player, pillars, pickups, and physics distances together (~12% smaller on screen). */
+  const GAMEPLAY_SCALE = 0.88;
+  function gs(n) {
+    return Math.max(1, Math.round(n * GAMEPLAY_SCALE));
+  }
+
   // Match FrappyBrewEngine constants
   const GRAVITY = 1050;
   const FLAP_VELOCITY = -430;
   const SCROLL_SPEED = 260;
-  const PIPE_GAP = 248;
-  const PIPE_WIDTH = 86;
-  const PIPE_SPACING = 280;
-  const MARGIN_TOP = 70;
-  const MARGIN_BOTTOM = 70;
+  /** Vertical opening height (px) — slightly wider for a bit more room. */
+  const PIPE_GAP = gs(262);
+  const PIPE_WIDTH = gs(86);
+  /** Horizontal distance between pillar pairs — wider = more time to react. */
+  const PIPE_SPACING = gs(330);
+  /** Max vertical shift of gap center vs the previous pillar (smoother difficulty curve). */
+  const PIPE_GAP_CENTER_MAX_STEP = gs(105);
+  const MARGIN_TOP = gs(70);
+  const MARGIN_BOTTOM = gs(70);
   const PLAYER_X_RATIO = 0.28;
   const GRACE_DURATION = 1.2; // seconds
 
   // View sizes (FrappyBrewView)
-  const PLAYER_DRAW_SIZE = 134;
+  const PLAYER_DRAW_SIZE = gs(134);
   /** Fallback if alpha analysis fails (same-origin PNG required for ImageData). */
   const PLAYER_HIT_RADIUS_FALLBACK = (PLAYER_DRAW_SIZE / 2) * 0.18;
   /** Filled from opaque pixels of player.png at load — tight circle, not full square. */
@@ -60,12 +73,24 @@
   let playerHitOffsetX = 0;
   let playerHitOffsetY = 0;
   /** Horizontal inset only: cup tiles are 3× clip width and centered; clip left/right are often empty. */
-  const PILLAR_HIT_INSET_X = 12;
-  const CEILING_TOP_MARGIN = 10;
-  const PICKUP_DRAW_SIZE = 56;
-  const PICKUP_DRAW_SIZE_FISH = 112;
-  const PICKUP_DRAW_SIZE_MINE = 36;
-  const MINE_HIT_RADIUS_PX = 14;
+  const PILLAR_HIT_INSET_X = Math.max(6, gs(12));
+  const CEILING_TOP_MARGIN = Math.max(8, gs(10));
+  const PICKUP_DRAW_SIZE = gs(56);
+  const PICKUP_DRAW_SIZE_FISH = gs(112);
+  const PICKUP_DRAW_SIZE_MINE = Math.max(28, gs(36));
+  const MINE_HIT_RADIUS_PX = Math.max(10, gs(14));
+  const PICKUP_OFFSET_X = gs(70);
+  const PICKUP_OFFSET_X_MINE = gs(92);
+  const PICKUP_Y_JITTER = gs(70);
+  const PICKUP_Y_JITTER_MINE = gs(44);
+  const EDGE_PAD = gs(60);
+  const WORLD_SEED_X = gs(220);
+  const SPAWN_AHEAD = gs(240);
+  const PIPE_CULL_X = gs(220);
+  const PICKUP_CULL_X = gs(240);
+  const SHIELD_RING_R = gs(53);
+  const SHIELD_LINE_W = Math.max(2, gs(5));
+  const PLAYER_MIN_X = gs(44);
   const PILLAR_CUP_WIDTH_MULT = 3.0;
   const PILLAR_CUP_ASPECT = 1.10;
 
@@ -188,12 +213,24 @@
       if (loadingTextEl) loadingTextEl.style.display = "none";
       if (readyTitleEl) readyTitleEl.style.display = "block";
       if (readyDescEl) readyDescEl.style.display = "block";
+      if (introSplashLoadingEl) introSplashLoadingEl.style.display = "none";
+      if (introPlayBtn) introPlayBtn.disabled = false;
       if (startBtn) {
         startBtn.disabled = false;
         const t = startBtn.querySelector(".btn-primary-text");
         if (t) t.textContent = "Start";
       }
     });
+  }
+
+  function isIntroVisible() {
+    return introSplashEl != null && !introSplashEl.classList.contains("hidden");
+  }
+
+  function dismissIntro() {
+    if (!introSplashEl) return;
+    introSplashEl.classList.add("hidden");
+    introSplashEl.setAttribute("aria-hidden", "true");
   }
 
   function resizeCanvas() {
@@ -218,7 +255,7 @@
       );
     }
     if (!isRunning && !isGameOver) {
-      playerX = Math.max(44, width * PLAYER_X_RATIO);
+      playerX = Math.max(PLAYER_MIN_X, width * PLAYER_X_RATIO);
       playerY = height * 0.48;
     }
   }
@@ -238,7 +275,7 @@
     isGameOver = false;
     shieldHits = 0;
     graceUntil = performance.now() / 1000 + GRACE_DURATION;
-    playerX = Math.max(44, width * PLAYER_X_RATIO);
+    playerX = Math.max(PLAYER_MIN_X, width * PLAYER_X_RATIO);
     playerY = height * 0.48;
     playerVY = FLAP_VELOCITY * 0.4;
 
@@ -247,24 +284,34 @@
     mineExplosions = [];
 
     // Seed pipes offscreen (match Swift)
-    const startX = width + 220;
+    const startX = width + WORLD_SEED_X;
     for (let i = 0; i < 3; i++) {
       spawnPipe(startX + i * PIPE_SPACING);
     }
 
     lastTime = performance.now();
-    overlayEl.style.pointerEvents = "none";
     startCardEl.classList.add("hidden");
     gameOverCardEl.classList.add("hidden");
+    syncInputStacking();
   }
 
   function spawnPipe(x) {
     const gapHalf = PIPE_GAP / 2;
     const minY = MARGIN_TOP + gapHalf;
     const maxY = height - MARGIN_BOTTOM - gapHalf;
-    const span = maxY - minY;
-    let centerY =
-      span > 0 ? minY + Math.random() * span : (MARGIN_TOP + height - MARGIN_BOTTOM) / 2;
+    let prevCenter = height * 0.5;
+    if (pipes.length > 0) {
+      let rx = -Infinity;
+      for (const p of pipes) {
+        if (p.x > rx) {
+          rx = p.x;
+          prevCenter = p.gapCenterY;
+        }
+      }
+    }
+    const low = clamp(prevCenter - PIPE_GAP_CENTER_MAX_STEP, minY, maxY);
+    const high = clamp(prevCenter + PIPE_GAP_CENTER_MAX_STEP, minY, maxY);
+    let centerY = low <= high ? low + Math.random() * (high - low) : (minY + maxY) * 0.5;
     centerY = clamp(centerY, minY, Math.max(minY, maxY));
     pipes.push({ x, gapCenterY: centerY, scored: false });
 
@@ -275,14 +322,22 @@
     else if (roll < 0.93) type = PICKUP_TYPES.RED_CUP;
     else type = PICKUP_TYPES.BURNT;
 
-    let py = clamp(centerY + randomRange(-70, 70), 60, height - 60);
-    let px = x + PIPE_WIDTH + 70;
+    let py = clamp(
+      centerY + randomRange(-PICKUP_Y_JITTER, PICKUP_Y_JITTER),
+      EDGE_PAD,
+      height - EDGE_PAD
+    );
+    let px = x + PIPE_WIDTH + PICKUP_OFFSET_X;
     let drawSize =
       type === PICKUP_TYPES.RED_CUP ? PICKUP_DRAW_SIZE_FISH : PICKUP_DRAW_SIZE;
     if (type === PICKUP_TYPES.BURNT) {
       drawSize = PICKUP_DRAW_SIZE_MINE;
-      py = clamp(centerY + randomRange(-44, 44), 60, height - 60);
-      px = x + PIPE_WIDTH + 92;
+      py = clamp(
+        centerY + randomRange(-PICKUP_Y_JITTER_MINE, PICKUP_Y_JITTER_MINE),
+        EDGE_PAD,
+        height - EDGE_PAD
+      );
+      px = x + PIPE_WIDTH + PICKUP_OFFSET_X_MINE;
     }
     pickups.push({
       type,
@@ -395,13 +450,29 @@
   function endGame() {
     isRunning = false;
     isGameOver = true;
-    overlayEl.style.pointerEvents = "auto";
     gameOverCardEl.classList.remove("hidden");
     startCardEl.classList.add("hidden");
     summaryTextEl.textContent = `Score ${score} • Bubbles ${beans} • Best ${best}`;
+    syncInputStacking();
+  }
+
+  /** While playing, canvas must be above #overlay or taps go to the overlay div and never reach the canvas (Safari/desktop). */
+  function syncInputStacking() {
+    if (!canvas || !overlayEl) return;
+    const menuUp = !isRunning || isGameOver;
+    if (menuUp) {
+      canvas.style.zIndex = "1";
+      overlayEl.style.zIndex = "15";
+      overlayEl.style.pointerEvents = "auto";
+    } else {
+      canvas.style.zIndex = "25";
+      overlayEl.style.zIndex = "5";
+      overlayEl.style.pointerEvents = "none";
+    }
   }
 
   function flap() {
+    if (isIntroVisible()) return;
     if (!isRunning && !isGameOver) {
       doResetWorld();
       return;
@@ -441,12 +512,12 @@
     }
 
     const rightMost = pipes.reduce((m, p) => Math.max(m, p.x), -Infinity);
-    if (rightMost < width + 240) {
+    if (rightMost < width + SPAWN_AHEAD) {
       spawnPipe(rightMost + PIPE_SPACING);
     }
 
-    pipes = pipes.filter((p) => p.x + PIPE_WIDTH > -220);
-    pickups = pickups.filter((p) => p.x > -240 && p.alive);
+    pipes = pipes.filter((p) => p.x + PIPE_WIDTH > -PIPE_CULL_X);
+    pickups = pickups.filter((p) => p.x > -PICKUP_CULL_X && p.alive);
 
     const px = playerX;
     for (const p of pipes) {
@@ -603,7 +674,7 @@
         ctx.globalAlpha = 0.45 * (1 - u * 0.85);
         const cx = ex.cx;
         const cy = ex.cy;
-        const rad = 28 + u * 95;
+        const rad = gs(28) + u * gs(95);
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
         g.addColorStop(0, "rgba(255,248,220,0.95)");
         g.addColorStop(0.25, "rgba(255,160,60,0.55)");
@@ -709,7 +780,7 @@
         } else {
           ctx.beginPath();
           ctx.fillStyle = "#8B4513";
-          ctx.arc(p.x, p.y, 20, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, gs(20), 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -733,8 +804,8 @@
     if (shieldHits > 0) {
       ctx.beginPath();
       ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = 5;
-      ctx.arc(playerX, playerY, 53, 0, Math.PI * 2);
+      ctx.lineWidth = SHIELD_LINE_W;
+      ctx.arc(playerX, playerY, SHIELD_RING_R, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -756,9 +827,10 @@
   loadAllAssets()
     .then(() => {
       if (!isRunning && !isGameOver) {
-        playerX = Math.max(44, width * PLAYER_X_RATIO);
+        playerX = Math.max(PLAYER_MIN_X, width * PLAYER_X_RATIO);
         playerY = height * 0.48;
       }
+      syncInputStacking();
       // Cycle BG on new run (done in resetWorld)
       requestAnimationFrame(loop);
     })
@@ -772,8 +844,9 @@
   }
 
   let lastFlapInputAt = 0;
-  function onGameSurfaceInput(e) {
-    if (!canvasWrap) return;
+
+  function tryFlapFromPointerEvent(e) {
+    if (isIntroVisible()) return;
     if (e.type === "mousedown" || e.type === "pointerdown") {
       if (e.button != null && e.button !== 0) return;
     }
@@ -788,29 +861,33 @@
     } else {
       return;
     }
-    const top = document.elementFromPoint(x, y);
-    if (!top || !canvasWrap.contains(top)) return;
-    if (typeof top.closest === "function") {
-      if (top.closest("button") || top.closest("a")) return;
+    const r = canvas.getBoundingClientRect();
+    if (x < r.left || x > r.right || y < r.top || y > r.bottom) return;
+    const topEl = document.elementFromPoint(x, y);
+    if (topEl && typeof topEl.closest === "function") {
+      if (topEl.closest("button") || topEl.closest("a")) return;
     }
     const now = performance.now();
-    if (now - lastFlapInputAt < 42) return;
+    if (now - lastFlapInputAt < 45) return;
     lastFlapInputAt = now;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     flap();
   }
 
-  const captureFlap = { capture: true, passive: false };
-  document.addEventListener("pointerdown", onGameSurfaceInput, captureFlap);
-  document.addEventListener("mousedown", onGameSurfaceInput, captureFlap);
-  document.addEventListener("touchstart", onGameSurfaceInput, captureFlap);
+  const winFlapOpts = { capture: true, passive: false };
+  window.addEventListener("pointerdown", tryFlapFromPointerEvent, winFlapOpts);
+  window.addEventListener("mousedown", tryFlapFromPointerEvent, winFlapOpts);
+  window.addEventListener("touchstart", tryFlapFromPointerEvent, winFlapOpts);
   if (canvasWrap) {
     canvasWrap.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
   }
 
+  syncInputStacking();
+
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
       e.preventDefault();
+      if (isIntroVisible()) return;
       flap();
     }
   });
@@ -827,6 +904,24 @@
     if (now - lastPrimaryAction < 350) return;
     lastPrimaryAction = now;
     doResetWorld();
+  }
+
+  function onIntroPlayAction(e) {
+    if (!introPlayBtn || introPlayBtn.disabled) return;
+    if (!assetsReady) return;
+    if (e.type === "pointerdown" && e.button != null && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const now = performance.now();
+    if (now - lastPrimaryAction < 350) return;
+    lastPrimaryAction = now;
+    dismissIntro();
+    doResetWorld();
+  }
+
+  if (introPlayBtn) {
+    introPlayBtn.addEventListener("pointerdown", onIntroPlayAction, { passive: false });
+    introPlayBtn.addEventListener("click", onIntroPlayAction);
   }
 
   for (const btn of [startBtn, playAgainBtn]) {

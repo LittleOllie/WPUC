@@ -16,6 +16,18 @@
     <div class="frappy-bg" aria-hidden="true"></div>
     <div class="frappy-bg-overlay" aria-hidden="true"></div>
 
+    <div id="introSplash" class="intro-splash" aria-hidden="false">
+      <div class="intro-splash-inner">
+        <img src="assets/lo.png" alt="Little Ollie" class="intro-splash-lo" width="400" height="120" />
+        <span class="intro-splash-x" aria-hidden="true">×</span>
+        <img src="assets/ddg.png" alt="DDG" class="intro-splash-ddg" width="120" height="120" />
+        <p id="introSplashLoading" class="intro-splash-loading">Loading…</p>
+        <button type="button" id="introPlayBtn" class="btn-primary intro-play-btn" disabled>
+          <span class="btn-primary-text">PLAY</span>
+        </button>
+      </div>
+    </div>
+
     <div class="game-top-bar">
       <div class="co-brand-bar" aria-label="LO x DDG">
         <img src="assets/lo.png" alt="LO" class="co-brand-img co-brand-lo" width="120" height="40" />
@@ -42,13 +54,13 @@
       <div class="canvas-wrap" id="canvasWrap">
         <canvas id="gameCanvas"></canvas>
         <div id="overlay" class="overlay">
-          <div class="overlay-card" id="startCard">
+          <div class="overlay-card hidden" id="startCard" aria-hidden="true">
             <div class="overlay-card-brand" aria-hidden="true">
               <img src="assets/lo.png" alt="" class="overlay-brand-lo" />
               <span class="co-brand-x">×</span>
               <img src="assets/ddg.png" alt="" class="overlay-brand-ddg" />
             </div>
-            <p id="loadingText" class="loading-text">Loading…</p>
+            <p id="loadingText" class="loading-text" style="display: none">Loading…</p>
             <h2 class="ready-title">Ready?</h2>
             <p class="ready-desc">Tap or click to flap.<br />Stay alive and collect bubbles.</p>
             <button id="startBtn" type="button" class="btn-primary" disabled>
