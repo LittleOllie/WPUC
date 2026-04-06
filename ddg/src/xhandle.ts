@@ -1,7 +1,7 @@
 /** localStorage key for saved X / Twitter handle (no @). */
 export const XHANDLE_STORAGE_KEY = "frappybrew_xhandle";
 
-const MAX_LEN = 15;
+export const MAX_HANDLE_LEN = 15;
 
 /** Returns trimmed saved handle or null if missing / empty. */
 export function getSavedHandle(): string | null {
@@ -19,12 +19,14 @@ export function getSavedHandle(): string | null {
 export function normalizeHandleInput(raw: string): string {
   let s = raw.replace(/^@+/, "");
   s = s.replace(/[^a-zA-Z0-9_]/g, "");
-  return s.slice(0, MAX_LEN);
+  return s.slice(0, MAX_HANDLE_LEN);
 }
 
 export function saveHandle(handle: string): void {
+  const h = normalizeHandleInput(handle);
+  if (!h) return;
   try {
-    localStorage.setItem(XHANDLE_STORAGE_KEY, handle);
+    localStorage.setItem(XHANDLE_STORAGE_KEY, h);
   } catch {
     /* private mode / quota — caller should still continue UI flow */
   }

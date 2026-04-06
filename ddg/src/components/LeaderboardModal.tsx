@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { getTopScores, type LeaderboardEntry } from "../leaderboard";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { LeaderboardEntry } from "../leaderboard";
+import { assetUrl } from "../config/site";
+import { useModalFocusRestore } from "../hooks/useModalFocusRestore";
 import "./LeaderboardModal.css";
 
 export type LeaderboardModalProps = {
   onClose: () => void;
 };
 
-const base = import.meta.env.BASE_URL;
-
 export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusRestore(true, dialogRef, "button.leaderboard-modal-close");
+
   const [rows, setRows] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +20,7 @@ export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
     setLoading(true);
     setError(null);
     try {
+      const { getTopScores } = await import("../leaderboard");
       const data = await getTopScores();
       setRows(data);
     } catch (e) {
@@ -51,6 +55,7 @@ export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
   return (
     <div className="leaderboard-modal-overlay" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="leaderboard-modal-dialog"
         role="dialog"
         aria-modal="true"
@@ -58,9 +63,9 @@ export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="leaderboard-modal-brand" aria-hidden="true">
-          <img src={`${base}assets/lo.png`} alt="" className="leaderboard-modal-brand-lo" width={160} height={48} />
+          <img src={assetUrl("assets/lo.png")} alt="" className="leaderboard-modal-brand-lo" width={160} height={48} />
           <span className="leaderboard-modal-brand-x">×</span>
-          <img src={`${base}assets/ddg.png`} alt="" className="leaderboard-modal-brand-ddg" width={56} height={56} />
+          <img src={assetUrl("assets/ddg.png")} alt="" className="leaderboard-modal-brand-ddg" width={56} height={56} />
         </div>
         <div className="leaderboard-modal-header">
           <h2 id="leaderboard-modal-title" className="leaderboard-modal-title">
@@ -88,8 +93,12 @@ export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
                   <th scope="col">#</th>
                   <th scope="col">Handle</th>
                   <th scope="col">Score</th>
-                  <th scope="col">Character</th>
-                  <th scope="col">Scene</th>
+                  <th scope="col" className="leaderboard-col-character">
+                    Character
+                  </th>
+                  <th scope="col" className="leaderboard-col-scene">
+                    Scene
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -98,8 +107,8 @@ export function LeaderboardModal({ onClose }: LeaderboardModalProps) {
                     <td>{i + 1}</td>
                     <td className="leaderboard-col-handle">{r.handle || "—"}</td>
                     <td>{r.score}</td>
-                    <td>{r.character || "—"}</td>
-                    <td>{r.scene || "—"}</td>
+                    <td className="leaderboard-col-character">{r.character || "—"}</td>
+                    <td className="leaderboard-col-scene">{r.scene || "—"}</td>
                   </tr>
                 ))}
               </tbody>

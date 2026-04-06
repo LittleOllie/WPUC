@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
-import { normalizeHandleInput, saveHandle } from "../xhandle";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useModalFocusRestore } from "../hooks/useModalFocusRestore";
+import { MAX_HANDLE_LEN, normalizeHandleInput, saveHandle } from "../xhandle";
 import "./UsernameModal.css";
 
 export type UsernameModalProps = {
@@ -14,6 +15,9 @@ export type UsernameModalProps = {
 };
 
 export function UsernameModal({ onSaved, initialHandle = "", isEdit = false, onCancel }: UsernameModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusRestore(true, dialogRef, "input.username-modal-input");
+
   const [value, setValue] = useState(() => normalizeHandleInput(initialHandle));
 
   useEffect(() => {
@@ -61,6 +65,7 @@ export function UsernameModal({ onSaved, initialHandle = "", isEdit = false, onC
   return (
     <div className="username-modal-overlay" role="presentation">
       <div
+        ref={dialogRef}
         className="username-modal-dialog"
         role="dialog"
         aria-modal="true"
@@ -80,15 +85,16 @@ export function UsernameModal({ onSaved, initialHandle = "", isEdit = false, onC
             type="text"
             inputMode="text"
             autoComplete="username"
-            maxLength={15}
+            maxLength={MAX_HANDLE_LEN}
             placeholder="Enter your X handle"
             value={value}
             onChange={onChange}
             onPaste={onPaste}
             onKeyDown={onKeyDown}
-            autoFocus
           />
-          <div className="username-modal-meta">{value.length}/15</div>
+          <div className="username-modal-meta">
+            {value.length}/{MAX_HANDLE_LEN}
+          </div>
         </div>
         <div className="username-modal-actions">
           <button type="button" className="username-modal-save" disabled={!canSave} onClick={onSave}>

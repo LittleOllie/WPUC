@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { assetUrl } from "../config/site";
+import { useModalFocusRestore } from "../hooks/useModalFocusRestore";
 import { HowToMineIllustration } from "./HowToMineIllustration";
 import "./HowToPlayModal.css";
 
@@ -6,9 +8,10 @@ export type HowToPlayModalProps = {
   onClose: () => void;
 };
 
-const base = import.meta.env.BASE_URL;
-
 export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocusRestore(true, dialogRef, "button.howto-modal-close");
+
   useEffect(() => {
     const onKey: EventListener = (e) => {
       if (e instanceof globalThis.KeyboardEvent && e.key === "Escape") onClose();
@@ -28,6 +31,7 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
   return (
     <div className="howto-modal-overlay" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="howto-modal-dialog"
         role="dialog"
         aria-modal="true"
@@ -46,8 +50,8 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
         <div className="howto-modal-body">
           <section className="howto-hero">
             <div className="howto-hero-scene" aria-hidden="true">
-              <img src={`${base}assets/bg0.png`} alt="" className="howto-hero-bg" />
-              <img src={`${base}assets/player.png`} alt="" className="howto-hero-player" />
+              <img src={assetUrl("assets/bg0.png")} alt="" className="howto-hero-bg" />
+              <img src={assetUrl("assets/player.png")} alt="" className="howto-hero-player" />
             </div>
             <p className="howto-modal-lead">
               Fly your <strong>character</strong> through each <strong>scene</strong>. Flap past the steel pillars, collect the pickups that help you, and avoid the hazards. More characters and scenes are on the way.
@@ -71,7 +75,7 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
             <ul className="howto-pickup-list">
               <li className="howto-asset-row">
                 <span className="howto-asset-wrap">
-                  <img src={`${base}assets/bean.png`} alt="" className="howto-asset-img" />
+                  <img src={assetUrl("assets/bean.png")} alt="" className="howto-asset-img" />
                 </span>
                 <span>
                   <strong>Bubble</strong> — +1 score, +1 bubble in your tally.
@@ -79,7 +83,7 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
               </li>
               <li className="howto-asset-row">
                 <span className="howto-asset-wrap">
-                  <img src={`${base}assets/bean_golden.png`} alt="" className="howto-asset-img" />
+                  <img src={assetUrl("assets/bean_golden.png")} alt="" className="howto-asset-img" />
                 </span>
                 <span>
                   <strong>Golden bubble</strong> — +5 score, +1 bubble, and a <strong>shield</strong> (one charge — see below).
@@ -88,7 +92,7 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
               <li className="howto-asset-row">
                 <span className="howto-asset-wrap">
                   <img
-                    src={`${base}assets/cup_red.png`}
+                    src={assetUrl("assets/cup_red.png")}
                     alt=""
                     className="howto-asset-img howto-asset-img--fish"
                   />
@@ -120,7 +124,7 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
               </li>
               <li className="howto-asset-row">
                 <span className="howto-asset-wrap">
-                  <img src={`${base}assets/pillar_cup.png`} alt="" className="howto-asset-img howto-asset-img--pillar" />
+                  <img src={assetUrl("assets/pillar_cup.png")} alt="" className="howto-asset-img howto-asset-img--pillar" />
                 </span>
                 <span>
                   <strong>Steel pillars</strong> — don’t fly into the metal — only through the open gap.

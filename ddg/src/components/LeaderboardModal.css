@@ -189,6 +189,13 @@
   max-width: 120px;
 }
 
+@media (max-width: 420px) {
+  .leaderboard-table .leaderboard-col-character,
+  .leaderboard-table .leaderboard-col-scene {
+    display: none;
+  }
+}
+
 .leaderboard-modal-actions {
   margin-top: 14px;
   display: flex;

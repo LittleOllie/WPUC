@@ -1,17 +1,11 @@
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { collection, doc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp } from "firebase/firestore";
 import { getFirestoreDb } from "./firebase";
+import { normalizeHandleInput } from "./xhandle";
 
-const COLLECTION_NAME = "leaderboard";
+export const COLLECTION_NAME = "leaderboard";
+
+const MAX_SCORE = 10_000_000;
+const MAX_META_LEN = 64;
 
 /** One row for the leaderboard UI — plain data, safe for React state. */
 export type LeaderboardEntry = {
@@ -30,42 +24,54 @@ function toDate(value: unknown): Date | null {
   return null;
 }
 
+function clampMeta(s: string): string {
+  return s.slice(0, MAX_META_LEN);
+}
+
+function assertValidScore(score: number): number {
+  if (!Number.isFinite(score)) throw new Error("Invalid score");
+  const n = Math.floor(score);
+  if (n < 1 || n > MAX_SCORE) throw new Error("Invalid score");
+  return n;
+}
+
 /**
- * Upserts a leaderboard row by `handle`.
- * Creates a new document if none exists; otherwise updates only when `score` is higher than stored.
+ * Upserts a leaderboard row: document ID is the normalized handle.
+ * Uses a transaction so concurrent updates cannot corrupt the row.
  */
-export async function submitScore(
-  handle: string,
-  score: number,
-  character: string,
-  scene: string
-): Promise<void> {
+export async function submitScore(handle: string, score: number, character: string, scene: string): Promise<void> {
+  const h = normalizeHandleInput(handle);
+  if (!h) throw new Error("Invalid handle");
+
+  const n = assertValidScore(score);
+  const ch = clampMeta(character);
+  const sc = clampMeta(scene);
+
   const db = getFirestoreDb();
-  const colRef = collection(db, COLLECTION_NAME);
-  const q = query(colRef, where("handle", "==", handle), limit(1));
-  const snap = await getDocs(q);
+  const docRef = doc(db, COLLECTION_NAME, h);
 
-  if (snap.empty) {
-    await addDoc(colRef, {
-      handle,
-      score,
-      character,
-      scene,
-      createdAt: serverTimestamp(),
-    });
-    return;
-  }
-
-  const docSnap = snap.docs[0]!;
-  const prev = (docSnap.data() as { score?: number }).score;
-  const prevScore = typeof prev === "number" ? prev : 0;
-  if (score > prevScore) {
-    await updateDoc(docSnap.ref, {
-      score,
-      character,
-      scene,
-    });
-  }
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(docRef);
+    if (!snap.exists()) {
+      transaction.set(docRef, {
+        handle: h,
+        score: n,
+        character: ch,
+        scene: sc,
+        createdAt: serverTimestamp(),
+      });
+      return;
+    }
+    const prev = snap.data() as { score?: unknown };
+    const prevScore = typeof prev.score === "number" && Number.isFinite(prev.score) ? Math.floor(prev.score) : 0;
+    if (n > prevScore) {
+      transaction.update(docRef, {
+        score: n,
+        character: ch,
+        scene: sc,
+      });
+    }
+  });
 }
 
 /**
