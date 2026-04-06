@@ -81,6 +81,22 @@
     }
   }
 
+  /** Intro welcome + game HUD handle line (shown while playing). */
+  function syncHandleDisplay() {
+    var h = getStoredHandle();
+    setWelcomeLine(h);
+    var bar = document.getElementById("gameHandleBar");
+    if (bar) {
+      if (h) {
+        bar.textContent = "@" + h;
+        bar.removeAttribute("hidden");
+      } else {
+        bar.textContent = "";
+        bar.setAttribute("hidden", "");
+      }
+    }
+  }
+
   function injectGameScript() {
     if (document.querySelector("script[data-frappy-brew]")) return;
     var loadingEl = document.getElementById("introSplashLoading");
@@ -196,7 +212,7 @@
       localStorage.setItem(STORAGE_KEY, normalized);
     } catch (_) {}
     if (usernameError) usernameError.textContent = "";
-    setWelcomeLine(normalized);
+    syncHandleDisplay();
     injectGameScript();
     closeUsernameModal();
     updateEditHandleLabel();
@@ -333,11 +349,32 @@
 
   var initial = getStoredHandle();
   var loadingEl = document.getElementById("introSplashLoading");
+  function onBackToMenu() {
+    if (window.FrappyBrew && typeof window.FrappyBrew.returnToMenu === "function") {
+      window.FrappyBrew.returnToMenu();
+    } else {
+      var intro = document.getElementById("introSplash");
+      if (intro) {
+        intro.classList.remove("hidden");
+        intro.setAttribute("aria-hidden", "false");
+      }
+    }
+    syncHandleDisplay();
+  }
+
+  var backBtn = document.getElementById("gameBackBtn");
+  if (backBtn) {
+    backBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      onBackToMenu();
+    });
+  }
+
   if (initial) {
-    setWelcomeLine(initial);
+    syncHandleDisplay();
     injectGameScript();
   } else {
-    setWelcomeLine("");
+    syncHandleDisplay();
     if (loadingEl) loadingEl.textContent = "Save your handle to load the game";
     openUsernameModal({ firstTime: true });
   }

@@ -968,4 +968,31 @@
   if (backBtn) {
     backBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
   }
+
+  /** Pause play and show intro (shell Back → menu). */
+  function returnToMenu() {
+    isRunning = false;
+    isGameOver = false;
+    score = 0;
+    beans = 0;
+    pipes = [];
+    pickups = [];
+    mineExplosions = [];
+    if (scoreEl) scoreEl.textContent = "0";
+    if (beansEl) beansEl.textContent = "0";
+    if (bestEl) bestEl.textContent = String(best);
+    if (startCardEl) startCardEl.classList.add("hidden");
+    if (gameOverCardEl) gameOverCardEl.classList.add("hidden");
+    syncInputStacking();
+    if (introSplashEl) {
+      introSplashEl.classList.remove("hidden");
+      introSplashEl.setAttribute("aria-hidden", "false");
+    }
+    playerX = Math.max(PLAYER_MIN_X, width * PLAYER_X_RATIO);
+    playerY = height * 0.48;
+    playerVY = FLAP_VELOCITY * 0.4;
+    lastTime = performance.now();
+  }
+
+  window.FrappyBrew = { returnToMenu };
 })();
