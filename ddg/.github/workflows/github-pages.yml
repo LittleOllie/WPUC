@@ -1,16 +1,5 @@
-# Build and deploy without committing .env — add the same names as Repository secrets:
-# Settings → Secrets and variables → Actions → New repository secret
-#
-# Required secrets (same values as your local .env):
-#   VITE_FIREBASE_API_KEY
-#   VITE_FIREBASE_AUTH_DOMAIN
-#   VITE_FIREBASE_PROJECT_ID
-#   VITE_FIREBASE_STORAGE_BUCKET
-#   VITE_FIREBASE_MESSAGING_SENDER_ID
-#   VITE_FIREBASE_APP_ID
-#   VITE_FIREBASE_MEASUREMENT_ID
-#
-# Optional: VITE_BASE_PATH (defaults to /<repo>/ for normal repos; use "/" if repo is *.github.io user site)
+# Build and deploy static site. No API keys required.
+# Optional secret VITE_BASE_PATH overrides auto default (use "/" for *.github.io user-site repo).
 #
 # Repo Settings → Pages → Source: GitHub Actions
 
@@ -40,19 +29,11 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
-      # VITE_BASE_PATH: GitHub Pages "project" sites live at /<repo>/ — without this, JS/CSS request /assets/... and 404.
-      # Set secret VITE_BASE_PATH to override (use "/" for a user/org site repo named *.github.io).
+      # Project sites are at /<repo>/ — correct base avoids 404 on /assets/...
       - name: Build
         run: npm run build
         env:
           VITE_BASE_PATH: ${{ secrets.VITE_BASE_PATH != '' && secrets.VITE_BASE_PATH || (endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name)) }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

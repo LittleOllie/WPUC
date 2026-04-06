@@ -3,11 +3,10 @@ import { assetUrl, SITE_BASE_URL } from "../config/site";
 export type GameShellProps = {
   displayHandle: string;
   onEditHandle: () => void;
-  onOpenLeaderboard: () => void;
   onOpenHowToPlay: () => void;
 };
 
-export function GameShell({ displayHandle, onEditHandle, onOpenLeaderboard, onOpenHowToPlay }: GameShellProps) {
+export function GameShell({ displayHandle, onEditHandle, onOpenHowToPlay }: GameShellProps) {
   const handle = displayHandle;
 
   return (
@@ -60,16 +59,6 @@ export function GameShell({ displayHandle, onEditHandle, onOpenLeaderboard, onOp
               }}
             >
               Edit X handle
-            </button>
-            <button
-              type="button"
-              className="intro-stack-btn intro-stack-btn--gold"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenLeaderboard();
-              }}
-            >
-              Leaderboard
             </button>
           </div>
         </div>
@@ -143,10 +132,6 @@ export function GameShell({ displayHandle, onEditHandle, onOpenLeaderboard, onOp
           </div>
         </div>
       </div>
-
-      <button type="button" className="btn-leaderboard-float" onClick={onOpenLeaderboard}>
-        Leaderboard
-      </button>
 
       <a href={SITE_BASE_URL} className="btn-back btn-back-float">
         ← Back

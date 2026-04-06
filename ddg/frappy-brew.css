@@ -236,35 +236,6 @@ body {
   transform: translateY(1px);
 }
 
-.btn-leaderboard-float {
-  position: fixed;
-  top: max(52px, calc(env(safe-area-inset-top) + 44px));
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 55;
-  margin: 0;
-  padding: 9px 14px;
-  border: none;
-  border-radius: 14px;
-  font-family: "Fredoka", system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0a2840;
-  background: linear-gradient(180deg, rgba(255, 233, 134, 0.95) 0%, rgba(255, 221, 85, 0.92) 100%);
-  border: 1px solid rgba(100, 170, 255, 0.35);
-  box-shadow: 0 4px 0 rgba(12, 48, 80, 0.55);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-}
-
-.btn-leaderboard-float:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.06);
-}
-
-.btn-leaderboard-float:active {
-  transform: translateY(0);
-}
-
 .game-viewport {
   position: relative;
   width: 100%;
