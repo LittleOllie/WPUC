@@ -61,7 +61,8 @@ body {
   min-height: 100dvh;
   min-height: 100lvh;
   min-height: -webkit-fill-available;
-  background-image: url("assets/mainbg.webp");
+  /* Use shipped art; mainbg.webp was never added — bg0 matches in-game sky feel */
+  background-image: url("assets/bg0.png");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;

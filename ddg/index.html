@@ -2,11 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>LO x DDG</title>
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
+    <meta name="theme-color" content="#041830" />
+    <title>LO × DDG</title>
+
+    <!-- Served from public/ → /assets/... in dev and copied into dist/ for production -->
+    <link rel="icon" type="image/png" href="/assets/ddg.png" />
+    <link rel="apple-touch-icon" href="/assets/ddg.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,7 +18,13 @@
     />
   </head>
   <body>
-    <!-- Dev: run "npm install" then "npm run dev" from this folder (Vite). The Live Server extension cannot compile React/TS — use Vite, or "npm run build" and point Live Server at the /dist folder. -->
+    <!--
+      SOURCE ENTRY (development only)
+      • Local: run `npm install` then `npm run dev` — Vite compiles /src/main.tsx on the fly.
+      • Do NOT open this HTML in Live Server or upload this file alone to a host — /src/ does not exist on the server.
+      • Production: run `npm run build`, then deploy the ENTIRE `dist/` folder. Vite rewrites this file so it loads
+        hashed JS/CSS from /assets/… (and applies VITE_BASE_PATH for GitHub Pages subpaths).
+    -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
