@@ -3,6 +3,11 @@
 
 (() => {
   const canvas = document.getElementById("gameCanvas");
+  const canvasWrap = document.getElementById("canvasWrap");
+  if (!canvas) {
+    console.error("Frappy Brew: #gameCanvas not found");
+    return;
+  }
   const ctx = canvas.getContext("2d");
 
   const scoreEl = document.getElementById("scoreValue");
@@ -59,6 +64,8 @@
   const CEILING_TOP_MARGIN = 10;
   const PICKUP_DRAW_SIZE = 56;
   const PICKUP_DRAW_SIZE_FISH = 112;
+  const PICKUP_DRAW_SIZE_MINE = 36;
+  const MINE_HIT_RADIUS_PX = 14;
   const PILLAR_CUP_WIDTH_MULT = 3.0;
   const PILLAR_CUP_ASPECT = 1.10;
 
@@ -265,17 +272,24 @@
     let type;
     if (roll < 0.65) type = PICKUP_TYPES.BEAN;
     else if (roll < 0.78) type = PICKUP_TYPES.GOLDEN;
-    else if (roll < 0.9) type = PICKUP_TYPES.RED_CUP;
+    else if (roll < 0.93) type = PICKUP_TYPES.RED_CUP;
     else type = PICKUP_TYPES.BURNT;
 
-    const py = clamp(centerY + randomRange(-70, 70), 60, height - 60);
-    const px = x + PIPE_WIDTH + 70;
+    let py = clamp(centerY + randomRange(-70, 70), 60, height - 60);
+    let px = x + PIPE_WIDTH + 70;
+    let drawSize =
+      type === PICKUP_TYPES.RED_CUP ? PICKUP_DRAW_SIZE_FISH : PICKUP_DRAW_SIZE;
+    if (type === PICKUP_TYPES.BURNT) {
+      drawSize = PICKUP_DRAW_SIZE_MINE;
+      py = clamp(centerY + randomRange(-44, 44), 60, height - 60);
+      px = x + PIPE_WIDTH + 92;
+    }
     pickups.push({
       type,
       x: px,
       y: py,
       alive: true,
-      drawSize: type === PICKUP_TYPES.RED_CUP ? PICKUP_DRAW_SIZE_FISH : PICKUP_DRAW_SIZE,
+      drawSize,
     });
   }
 
@@ -473,9 +487,18 @@
     for (const p of pickups) {
       if (!p.alive) continue;
       const psz = p.drawSize != null ? p.drawSize : PICKUP_DRAW_SIZE;
-      const ph = psz / 2;
-      const pr = { x: p.x - ph, y: p.y - ph, w: psz, h: psz };
-      if (circleRectIntersects(hitPosX(), hitPosY(), pradius, pr)) {
+      let hit = false;
+      if (p.type === PICKUP_TYPES.BURNT) {
+        const dx = hitPosX() - p.x;
+        const dy = hitPosY() - p.y;
+        const rr = MINE_HIT_RADIUS_PX + pradius;
+        hit = dx * dx + dy * dy <= rr * rr;
+      } else {
+        const ph = psz / 2;
+        const pr = { x: p.x - ph, y: p.y - ph, w: psz, h: psz };
+        hit = circleRectIntersects(hitPosX(), hitPosY(), pradius, pr);
+      }
+      if (hit) {
         if (p.type === PICKUP_TYPES.BURNT) spawnMineExplosion(p.x, p.y);
         handlePickup(p.type);
         p.alive = false;
@@ -748,16 +771,42 @@
     resetWorld();
   }
 
-  // Input — only flap when the canvas itself is hit (not bubbled from overlay UI)
-  canvas.addEventListener(
-    "pointerdown",
-    (e) => {
-      if (e.target !== canvas) return;
-      e.preventDefault();
-      flap();
-    },
-    { passive: false }
-  );
+  let lastFlapInputAt = 0;
+  function onGameSurfaceInput(e) {
+    if (!canvasWrap) return;
+    if (e.type === "mousedown" || e.type === "pointerdown") {
+      if (e.button != null && e.button !== 0) return;
+    }
+    let x;
+    let y;
+    if (e.touches && e.touches.length > 0) {
+      x = e.touches[0].clientX;
+      y = e.touches[0].clientY;
+    } else if (typeof e.clientX === "number" && typeof e.clientY === "number") {
+      x = e.clientX;
+      y = e.clientY;
+    } else {
+      return;
+    }
+    const top = document.elementFromPoint(x, y);
+    if (!top || !canvasWrap.contains(top)) return;
+    if (typeof top.closest === "function") {
+      if (top.closest("button") || top.closest("a")) return;
+    }
+    const now = performance.now();
+    if (now - lastFlapInputAt < 42) return;
+    lastFlapInputAt = now;
+    e.preventDefault();
+    flap();
+  }
+
+  const captureFlap = { capture: true, passive: false };
+  document.addEventListener("pointerdown", onGameSurfaceInput, captureFlap);
+  document.addEventListener("mousedown", onGameSurfaceInput, captureFlap);
+  document.addEventListener("touchstart", onGameSurfaceInput, captureFlap);
+  if (canvasWrap) {
+    canvasWrap.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+  }
 
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
