@@ -2,17 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>LO x DDG</title>
+  <!-- Fix relative asset URLs when the page URL has no trailing slash (e.g. https://user.github.io/repo). -->
+  <script>
+    (function () {
+      var p = location.pathname;
+      var href =
+        p.endsWith("/") ? p : /\.html$/i.test(p) ? p.replace(/\/[^/]+$/, "/") : p + "/";
+      var b = document.createElement("base");
+      b.href = href;
+      var head = document.head;
+      var after = head.querySelector("meta[charset]");
+      head.insertBefore(b, after ? after.nextSibling : head.firstChild);
+    })();
+  </script>
+  <title>LO × DDG — Frappy Brew</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="frappy-brew.css" />
+  <link rel="stylesheet" href="modals.css" />
 </head>
 <body>
   <div class="page page-fullscreen">
-    <!-- Same background as One Button Hero / links / games -->
     <div class="frappy-bg" aria-hidden="true"></div>
     <div class="frappy-bg-overlay" aria-hidden="true"></div>
 
@@ -21,10 +34,15 @@
         <img src="assets/lo.png" alt="Little Ollie" class="intro-splash-lo" width="400" height="120" />
         <span class="intro-splash-x" aria-hidden="true">×</span>
         <img src="assets/ddg.png" alt="DDG" class="intro-splash-ddg" width="120" height="120" />
+        <p id="welcomeLine" class="intro-welcome" aria-live="polite" hidden></p>
         <p id="introSplashLoading" class="intro-splash-loading">Loading…</p>
         <button type="button" id="introPlayBtn" class="btn-primary intro-play-btn" disabled>
           <span class="btn-primary-text">PLAY</span>
         </button>
+        <div class="intro-splash-actions">
+          <button type="button" id="howToPlayBtn" class="btn-secondary">HOW TO PLAY</button>
+          <button type="button" id="editHandleBtn" class="btn-secondary">Set X handle</button>
+        </div>
       </div>
     </div>
 
@@ -76,8 +94,10 @@
               <img src="assets/ddg.png" alt="" />
             </div>
             <div class="overlay-card-gameover-body">
-              <h2>Game Over</h2>
+              <h2 id="gameOverTitle">Game Over</h2>
               <p id="summaryText"></p>
+              <div id="gameOverCelebration" class="game-over-extra" hidden aria-hidden="true"></div>
+              <div id="gameOverFireworks" class="game-over-extra" hidden aria-hidden="true"></div>
               <button id="playAgainBtn" type="button" class="btn-primary btn-primary-text-only">
                 <span class="btn-primary-text">Play Again</span>
               </button>
@@ -87,14 +107,141 @@
       </div>
     </div>
 
-    <a href="/games.html" class="btn-back btn-back-float">← Back</a>
+    <a href="../index.html" class="btn-back btn-back-float">← Back</a>
 
     <div class="controls-hint controls-hint-float">
       <span>Tap / Click or Spacebar to flap</span>
     </div>
   </div>
 
-  <script src="frappy-brew.js"></script>
+  <!-- Username: first visit cannot dismiss with Escape (handled in shell.js); × hidden until handle exists -->
+  <div
+    id="usernameModal"
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="usernameModalTitle"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="modal-panel">
+      <div class="modal-brand-strip" aria-hidden="true">
+        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
+        <span class="modal-brand-x">×</span>
+        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+      </div>
+      <div class="modal-header">
+        <h2 id="usernameModalTitle" class="modal-title">Welcome</h2>
+        <button type="button" id="usernameModalClose" class="modal-close" aria-label="Close" hidden>×</button>
+      </div>
+      <div class="modal-body">
+        <p id="usernameModalSubtitle" class="username-modal-subtitle" hidden></p>
+        <div class="username-field">
+          <label for="usernameInput">X (Twitter) handle</label>
+          <div class="username-input-wrap">
+            <input
+              id="usernameInput"
+              type="text"
+              autocomplete="username"
+              maxlength="15"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-describedby="usernameHint usernameError"
+            />
+            <span id="usernameCharCount" class="username-char-count" aria-hidden="true">0/15</span>
+          </div>
+          <p id="usernameHint" class="username-hint">Letters, numbers, and underscores only. @ is optional.</p>
+          <p id="usernameError" class="username-error" role="alert"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="usernameSaveBtn" class="btn-modal-primary" disabled>Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to play -->
+  <div
+    id="howToModal"
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="howToModalTitle"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="modal-panel">
+      <div class="modal-brand-strip" aria-hidden="true">
+        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
+        <span class="modal-brand-x">×</span>
+        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+      </div>
+      <div class="modal-header">
+        <h2 id="howToModalTitle" class="modal-title">How to play</h2>
+        <button type="button" class="modal-close" data-howto-close aria-label="Close">×</button>
+      </div>
+      <div class="modal-body modal-body--scroll">
+        <div class="howto-hero" aria-hidden="true">
+          <img class="howto-hero-bg" src="assets/bg0.png" alt="" />
+          <img class="howto-hero-player" src="assets/player.png" alt="" />
+        </div>
+
+        <section class="howto-section" aria-labelledby="howto-controls">
+          <h3 id="howto-controls">Controls</h3>
+          <p>Tap, click, or press Space to flap. Stay in the gap between the steel pillars.</p>
+        </section>
+
+        <section class="howto-section" aria-labelledby="howto-scoring">
+          <h3 id="howto-scoring">Scoring</h3>
+          <p>Pass pillars to increase your score. Your best run is saved on this device.</p>
+        </section>
+
+        <section class="howto-section" aria-labelledby="howto-collect">
+          <h3 id="howto-collect">Collect</h3>
+          <div class="howto-row">
+            <span class="howto-chip">
+              <img src="assets/bean.png" alt="" /> Bubble (+1 score, +1 bubble)
+            </span>
+            <span class="howto-chip">
+              <img src="assets/bean_golden.png" alt="" /> Golden bubble (+5, +1 bubble, shield charge)
+            </span>
+            <span class="howto-chip">
+              <img src="assets/cup_red.png" alt="" /> Red fish (+8 score)
+            </span>
+          </div>
+        </section>
+
+        <section class="howto-section" aria-labelledby="howto-shield">
+          <h3 id="howto-shield">Shield</h3>
+          <p>Collect a golden bubble to gain a shield ring. The next hit consumes the shield instead of ending your run.</p>
+        </section>
+
+        <section class="howto-section" aria-labelledby="howto-avoid">
+          <h3 id="howto-avoid">Avoid</h3>
+          <div class="howto-row">
+            <span class="howto-chip">
+              <span class="howto-mine-img" aria-hidden="true">
+                <img src="assets/mine-howto.svg" alt="" width="40" height="40" />
+              </span>
+              Underwater mine — explodes on contact
+            </span>
+            <span class="howto-chip">
+              <span class="howto-pillar-img" aria-hidden="true">
+                <img src="assets/pillar_cup.png" alt="" width="28" height="52" />
+              </span>
+              Steel pillars — don’t touch the solid parts
+            </span>
+          </div>
+        </section>
+
+        <p class="howto-footer">LO × DDG — Frappy Brew · local practice mode (no leaderboard)</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="howToGotIt" class="btn-modal-primary" data-howto-close>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="shell.js"></script>
 </body>
 </html>
-

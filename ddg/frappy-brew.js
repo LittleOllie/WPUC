@@ -26,6 +26,22 @@
   const introPlayBtn = document.getElementById("introPlayBtn");
   const introSplashLoadingEl = document.getElementById("introSplashLoading");
 
+  function resolveAssetPath(rel) {
+    const b = typeof window !== "undefined" && window.__FRAPPY_BASE__;
+    if (!b) return rel;
+    return String(b).replace(/\/?$/, "/") + String(rel).replace(/^\//, "");
+  }
+
+  /** Shell modals use role=dialog; block game input while any is open. */
+  function isModalDialogOpen() {
+    for (const el of document.querySelectorAll('[role="dialog"][aria-modal="true"]')) {
+      if (el.hasAttribute("hidden")) continue;
+      if (el.getAttribute("aria-hidden") === "true") continue;
+      return true;
+    }
+    return false;
+  }
+
   let width = 480;
   let height = 640;
 
@@ -202,7 +218,7 @@
         resolve();
       };
       img.onerror = () => reject(new Error("Failed to load " + path));
-      img.src = path;
+      img.src = resolveAssetPath(path);
     });
   }
 
@@ -485,6 +501,7 @@
   }
 
   function flap() {
+    if (isModalDialogOpen()) return;
     if (isIntroVisible()) return;
     if (!isRunning && !isGameOver) {
       doResetWorld();
@@ -861,6 +878,7 @@
   let lastFlapInputAt = 0;
 
   function tryFlapFromPointerEvent(e) {
+    if (isModalDialogOpen()) return;
     if (isIntroVisible()) return;
     if (e.type === "mousedown" || e.type === "pointerdown") {
       if (e.button != null && e.button !== 0) return;
@@ -902,6 +920,7 @@
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
       e.preventDefault();
+      if (isModalDialogOpen()) return;
       if (isIntroVisible()) return;
       flap();
     }

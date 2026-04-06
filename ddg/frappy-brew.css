@@ -59,7 +59,7 @@ body {
   min-height: 100dvh;
   min-height: 100lvh;
   min-height: -webkit-fill-available;
-  background-image: url("assets/mainbg.webp");
+  background-image: url("assets/bg0.png");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -104,19 +104,28 @@ body {
 .intro-splash {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 85;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
     max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  background: linear-gradient(
+  background-color: #0a1830;
+  background-image: linear-gradient(
     180deg,
-    rgba(10, 24, 48, 0.92) 0%,
-    rgba(20, 50, 90, 0.88) 45%,
-    rgba(12, 32, 64, 0.94) 100%
+    rgba(10, 24, 48, 0.98) 0%,
+    rgba(20, 50, 90, 0.95) 45%,
+    rgba(12, 32, 64, 0.98) 100%
   );
   pointer-events: auto;
+}
+
+.intro-splash:not(.hidden) ~ .game-top-bar,
+.intro-splash:not(.hidden) ~ .game-viewport,
+.intro-splash:not(.hidden) ~ .btn-back-float,
+.intro-splash:not(.hidden) ~ .controls-hint-float {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .intro-splash.hidden {
@@ -135,10 +144,12 @@ body {
 }
 
 .intro-splash-lo {
+  display: block;
   width: min(88vw, 360px);
   height: auto;
   max-height: min(38vh, 280px);
   object-fit: contain;
+  /* Transparent PNG — no fill behind logo */
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
 }
 
@@ -156,8 +167,22 @@ body {
   height: auto;
   aspect-ratio: 1;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.12), rgba(30, 40, 60, 0.9));
+}
+
+.intro-welcome {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.intro-welcome[hidden] {
+  display: none !important;
 }
 
 .intro-splash-loading {
@@ -165,6 +190,47 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.85);
+}
+
+.intro-splash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.btn-secondary {
+  flex: 1 1 auto;
+  min-width: min(140px, 42vw);
+  padding: 11px 16px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--lo-yellow);
+  outline-offset: 2px;
 }
 
 .intro-play-btn {
