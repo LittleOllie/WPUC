@@ -309,10 +309,17 @@
         }
       }
     }
-    const low = clamp(prevCenter - PIPE_GAP_CENTER_MAX_STEP, minY, maxY);
-    const high = clamp(prevCenter + PIPE_GAP_CENTER_MAX_STEP, minY, maxY);
-    let centerY = low <= high ? low + Math.random() * (high - low) : (minY + maxY) * 0.5;
-    centerY = clamp(centerY, minY, Math.max(minY, maxY));
+    const step = PIPE_GAP_CENTER_MAX_STEP;
+    let centerY;
+    if (maxY <= minY) {
+      centerY = (minY + maxY) * 0.5;
+    } else {
+      // Uniform target anywhere in the playable band, then move at most `step` from previous gap
+      // (avoids correlated up/down random-walk; still never jumps farther than `step`).
+      const desiredY = minY + Math.random() * (maxY - minY);
+      centerY = clamp(desiredY, prevCenter - step, prevCenter + step);
+      centerY = clamp(centerY, minY, maxY);
+    }
     pipes.push({ x, gapCenterY: centerY, scored: false });
 
     const roll = Math.random();
