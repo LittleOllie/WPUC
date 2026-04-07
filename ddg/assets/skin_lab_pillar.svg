@@ -1,17 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="132" viewBox="0 0 120 132" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
   <defs>
-    <linearGradient id="lp" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#3d4f5f"/>
-      <stop offset="50%" stop-color="#5a6d7e"/>
-      <stop offset="100%" stop-color="#3d4f5f"/>
+    <linearGradient id="lbFrame" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0a1018"/>
+      <stop offset="50%" stop-color="#1a2838"/>
+      <stop offset="100%" stop-color="#0a1018"/>
     </linearGradient>
-    <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,255,200,0.35)"/>
-      <stop offset="50%" stop-color="rgba(0,200,255,0.5)"/>
-      <stop offset="100%" stop-color="rgba(0,255,200,0.35)"/>
+    <linearGradient id="lbPanel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a3d52"/>
+      <stop offset="50%" stop-color="#1e2f42"/>
+      <stop offset="100%" stop-color="#152535"/>
+    </linearGradient>
+    <linearGradient id="lbRim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00ffc8"/>
+      <stop offset="50%" stop-color="#00a8cc"/>
+      <stop offset="100%" stop-color="#00ffc8"/>
     </linearGradient>
   </defs>
-  <rect x="8" y="0" width="104" height="132" fill="url(#lp)" stroke="#2c3e50" stroke-width="2" rx="4"/>
-  <rect x="22" y="12" width="76" height="108" fill="url(#lg)" stroke="rgba(0,200,255,0.4)" stroke-width="2" rx="2"/>
-  <line x1="60" y1="8" x2="60" y2="124" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+  <!-- Solid dark chassis — reads on busy lab BG -->
+  <rect x="4" y="0" width="112" height="132" fill="url(#lbFrame)" stroke="#000" stroke-width="3" rx="5"/>
+  <!-- Neon containment rim -->
+  <rect x="10" y="6" width="100" height="120" fill="none" stroke="url(#lbRim)" stroke-width="3" rx="4"/>
+  <!-- Opaque panel (no heavy transparency) -->
+  <rect x="20" y="14" width="80" height="104" fill="url(#lbPanel)" stroke="#00c8b8" stroke-width="2" rx="3"/>
+  <!-- Grid / tech detail -->
+  <line x1="28" y1="32" x2="92" y2="32" stroke="#00e5ff" stroke-width="1" opacity="0.55"/>
+  <line x1="28" y1="56" x2="92" y2="56" stroke="#00e5ff" stroke-width="1" opacity="0.4"/>
+  <line x1="28" y1="80" x2="92" y2="80" stroke="#00e5ff" stroke-width="1" opacity="0.4"/>
+  <line x1="40" y1="22" x2="40" y2="110" stroke="rgba(0,255,220,0.25)" stroke-width="1"/>
+  <line x1="60" y1="22" x2="60" y2="110" stroke="rgba(0,255,220,0.35)" stroke-width="1"/>
+  <line x1="80" y1="22" x2="80" y2="110" stroke="rgba(0,255,220,0.25)" stroke-width="1"/>
+  <!-- Subtle hazard accent -->
+  <rect x="20" y="118" width="80" height="6" fill="#222" rx="1"/>
+  <rect x="20" y="118" width="10" height="6" fill="#ffd000"/>
+  <rect x="40" y="118" width="10" height="6" fill="#ffd000"/>
+  <rect x="60" y="118" width="10" height="6" fill="#ffd000"/>
+  <rect x="80" y="118" width="10" height="6" fill="#ffd000"/>
 </svg>

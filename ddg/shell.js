@@ -590,8 +590,18 @@
     btn.textContent = h ? "Edit X handle" : "Set X handle";
   }
 
+  var leaderboardModal = document.getElementById("leaderboardModal");
+
   function onGlobalKeydown(e) {
     if (e.key !== "Escape") return;
+
+    if (leaderboardModal && !leaderboardModal.hidden) {
+      e.preventDefault();
+      if (window.Leaderboard && typeof window.Leaderboard.closeLeaderboardModal === "function") {
+        window.Leaderboard.closeLeaderboardModal();
+      }
+      return;
+    }
 
     if (howToModal && !howToModal.hidden) {
       e.preventDefault();

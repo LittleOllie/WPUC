@@ -364,6 +364,7 @@
     lastTime = performance.now();
     startCardEl.classList.add("hidden");
     gameOverCardEl.classList.add("hidden");
+    syncGameOverPageClass();
     syncInputStacking();
   }
 
@@ -551,13 +552,29 @@
     endGame();
   }
 
+  function syncGameOverPageClass() {
+    if (document.body) {
+      document.body.classList.toggle("game-over-active", isGameOver && !isIntroVisible());
+    }
+  }
+
   function endGame() {
     isRunning = false;
     isGameOver = true;
     gameOverCardEl.classList.remove("hidden");
     startCardEl.classList.add("hidden");
     summaryTextEl.textContent = `Score ${score} • Bubbles ${beans} • Best ${best}`;
+    syncGameOverPageClass();
     syncInputStacking();
+    /** Leaderboard: single hook after score is final — see leaderboard-init.js window.handleGameOver */
+    const finalScore = Math.floor(Number(score));
+    try {
+      if (typeof window.handleGameOver === "function") {
+        window.handleGameOver(Number.isFinite(finalScore) && finalScore >= 0 ? finalScore : 0);
+      }
+    } catch (_) {
+      /* non-fatal if leaderboard module missing */
+    }
   }
 
   /** While playing, canvas must be above #overlay or taps go to the overlay div and never reach the canvas (Safari/desktop). */
@@ -1206,6 +1223,7 @@
     if (bestEl) bestEl.textContent = String(best);
     if (startCardEl) startCardEl.classList.add("hidden");
     if (gameOverCardEl) gameOverCardEl.classList.add("hidden");
+    syncGameOverPageClass();
     syncInputStacking();
     if (introSplashEl) {
       introSplashEl.classList.remove("hidden");

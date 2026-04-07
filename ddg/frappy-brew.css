@@ -40,7 +40,7 @@ body {
   min-height: -webkit-fill-available;
   overflow: hidden;
   font-family: "Fredoka", sans-serif;
-  /* Fallback: same gradient as One Button Hero / links when image hasn’t loaded */
+  /* Fallback: same gradient as Frappy Brew / links when image hasn’t loaded */
   background: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-bg-bottom) 100%);
   color: #ffffff;
 }
@@ -672,6 +672,30 @@ body {
   pointer-events: auto;
 }
 
+/* Full-screen dim + hide HUD branding when Game Over is up (HUD was fixed above canvas). */
+body.game-over-active .game-top-bar {
+  visibility: hidden;
+}
+
+body.game-over-active .game-viewport {
+  z-index: 70;
+}
+
+body.game-over-active .btn-help--corner,
+body.game-over-active .btn-back--corner {
+  z-index: 90;
+}
+
+body.game-over-active .canvas-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  border-radius: inherit;
+  background: rgba(4, 8, 18, 0.82);
+  pointer-events: none;
+}
+
 .overlay-card .loading-text {
   margin: 0 0 8px 0;
   font-size: 14px;
@@ -699,10 +723,21 @@ body {
   display: none;
 }
 
-/* Game Over: subtle DDG watermark full card width, no LO */
+/* Game Over: LO×DDG + subtle DDG watermark — solid panel so playfield doesn’t bleed through */
 .overlay-card--gameover {
   position: relative;
   overflow: hidden;
+  z-index: 10;
+  background: rgba(8, 12, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.overlay-card-brand--gameover {
+  margin-top: 0;
+  margin-bottom: 10px;
 }
 
 .overlay-card-ddg-watermark {

@@ -1,0 +1,321 @@
+/* Leaderboard: game-over submit panel + Top 50 modal */
+
+.game-over-top5 {
+  margin-top: 12px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.game-over-top5 .leaderboard-title {
+  margin-bottom: 6px;
+}
+
+.game-over-top5-status {
+  min-height: 1.2em;
+  margin-bottom: 6px;
+}
+
+.leaderboard-list--gameover {
+  margin-bottom: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.leaderboard-panel {
+  margin-top: 14px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: left;
+  max-width: 100%;
+}
+
+.leaderboard-title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.leaderboard-status {
+  min-height: 1.2em;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 8px;
+}
+
+.leaderboard-status--error {
+  color: #ffb4b4;
+}
+
+.btn-secondary--leaderboard-inline {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+
+.leaderboard-list {
+  list-style: none;
+  margin: 0 0 12px 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.leaderboard-row,
+.leaderboard-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.leaderboard-row--top1 {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.22), rgba(0, 0, 0, 0.25));
+  border: 1px solid rgba(255, 215, 100, 0.35);
+}
+
+.leaderboard-row--top2 {
+  background: linear-gradient(90deg, rgba(200, 210, 220, 0.2), rgba(0, 0, 0, 0.22));
+  border: 1px solid rgba(200, 210, 220, 0.25);
+}
+
+.leaderboard-row--top3 {
+  background: linear-gradient(90deg, rgba(205, 127, 80, 0.22), rgba(0, 0, 0, 0.22));
+  border: 1px solid rgba(205, 150, 100, 0.3);
+}
+
+.leaderboard-rank {
+  flex: 0 0 2em;
+  font-weight: 800;
+  color: rgba(255, 230, 150, 0.95);
+}
+
+.leaderboard-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-score {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.leaderboard-submit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-submit label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 6px;
+}
+
+.leaderboard-submit input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.leaderboard-submit input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.btn-submit-score {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #1a1a2e;
+  background: linear-gradient(180deg, #ffe986 0%, #f4c430 90%);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  touch-action: manipulation;
+}
+
+.btn-submit-score:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.btn-submit-score:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.leaderboard-msg {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(180, 255, 200, 0.95);
+  min-height: 1.2em;
+}
+
+.leaderboard-msg--error {
+  color: #ffb4b4;
+}
+
+/* —— Top 50 modal (uses modals.css overlay + panel base) —— */
+
+.modal-panel--leaderboard {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(90dvh, 760px);
+  overflow: hidden;
+}
+
+/* Celebration burst after submit (triggered from leaderboard-init.js) */
+.leaderboard-fireworks {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.leaderboard-fireworks::before,
+.leaderboard-fireworks::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 140%;
+  height: 70%;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.leaderboard-fireworks::before {
+  top: -5%;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgba(255, 230, 120, 0.85) 0%,
+    rgba(255, 160, 60, 0.35) 35%,
+    transparent 70%
+  );
+}
+
+.leaderboard-fireworks::after {
+  top: 8%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse 90% 50% at 50% 20%,
+    rgba(120, 220, 255, 0.5) 0%,
+    transparent 55%
+  );
+}
+
+.leaderboard-fireworks.leaderboard-fireworks--active::before {
+  animation: leaderboard-fw-burst 2.4s ease-out forwards;
+}
+
+.leaderboard-fireworks.leaderboard-fireworks--active::after {
+  animation: leaderboard-fw-burst 2.4s ease-out 0.08s forwards;
+}
+
+@keyframes leaderboard-fw-burst {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.65);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+.leaderboard-list--modal .leaderboard-row--you {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid rgba(255, 220, 100, 0.95);
+  outline-offset: -1px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 18px rgba(255, 200, 90, 0.55);
+  border-radius: 10px;
+}
+
+.leaderboard-modal-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.leaderboard-modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.02em;
+}
+
+.modal-body--leaderboard {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.leaderboard-modal-status {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.leaderboard-list--modal {
+  flex: 1;
+  min-height: 120px;
+  max-height: min(52dvh, 480px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+  padding-right: 4px;
+}
+
+.leaderboard-list--modal .leaderboard-row:last-child,
+.leaderboard-list--modal .leaderboard-empty:last-child {
+  margin-bottom: 0;
+}
+
+.leaderboard-modal-footnote {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  letter-spacing: 0.04em;
+}

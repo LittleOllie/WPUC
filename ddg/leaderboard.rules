@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /one_button_hero_leaderboard/{docId} {
+      allow read: if true;
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'playerName',
+          'score',
+          'createdAt',
+          'game',
+          'runId',
+          'sessionId',
+          'version'
+        ]) &&
+        request.resource.data.playerName is string &&
+        request.resource.data.playerName.size() >= 2 &&
+        request.resource.data.playerName.size() <= 16 &&
+        request.resource.data.score is int &&
+        request.resource.data.score >= 0 &&
+        request.resource.data.score <= 1000000 &&
+        request.resource.data.game == 'one-button-hero' &&
+        request.resource.data.runId is string &&
+        request.resource.data.runId.size() >= 6 &&
+        request.resource.data.runId.size() <= 100 &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.sessionId.size() >= 3 &&
+        request.resource.data.sessionId.size() <= 100 &&
+        request.resource.data.version == 1;
+
+      allow update, delete: if false;
+    }
+  }
+}

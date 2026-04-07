@@ -1,18 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="132" viewBox="0 0 120 132" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
   <defs>
-    <linearGradient id="fp" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#5d2e0c"/>
-      <stop offset="40%" stop-color="#8b4513"/>
-      <stop offset="100%" stop-color="#3d1f0a"/>
+    <!-- Dark shell so pillar separates from molten BG -->
+    <linearGradient id="fpOuter" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1a0a02"/>
+      <stop offset="15%" stop-color="#3d1a0a"/>
+      <stop offset="85%" stop-color="#3d1a0a"/>
+      <stop offset="100%" stop-color="#1a0a02"/>
     </linearGradient>
-    <linearGradient id="fm" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ff6b35"/>
-      <stop offset="50%" stop-color="#ff4500"/>
-      <stop offset="100%" stop-color="#8b2500"/>
+    <linearGradient id="fpCore" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ff9a3c"/>
+      <stop offset="35%" stop-color="#ff4d00"/>
+      <stop offset="70%" stop-color="#b31d00"/>
+      <stop offset="100%" stop-color="#4a0a00"/>
+    </linearGradient>
+    <linearGradient id="fpEdgeHi" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fff2a0"/>
+      <stop offset="8%" stop-color="#ffb347"/>
+      <stop offset="25%" stop-color="rgba(255,120,40,0.15)"/>
+      <stop offset="75%" stop-color="rgba(255,120,40,0.15)"/>
+      <stop offset="92%" stop-color="#ffb347"/>
+      <stop offset="100%" stop-color="#fff2a0"/>
     </linearGradient>
   </defs>
-  <rect x="8" y="0" width="104" height="132" fill="url(#fp)" stroke="#2c1810" stroke-width="2" rx="4"/>
-  <rect x="18" y="8" width="84" height="116" fill="url(#fm)" opacity="0.85" stroke="#5c1a00" stroke-width="2" rx="3"/>
-  <path d="M32 12 L40 28 L24 28 Z" fill="#ff8c42" opacity="0.9"/>
-  <path d="M88 96 L96 112 L80 112 Z" fill="#ff8c42" opacity="0.9"/>
+  <!-- Heavy outer frame -->
+  <rect x="4" y="0" width="112" height="132" fill="url(#fpOuter)" stroke="#000" stroke-width="3" rx="5"/>
+  <!-- Molten body -->
+  <rect x="14" y="10" width="92" height="112" fill="url(#fpCore)" stroke="#1a0500" stroke-width="2" rx="4"/>
+  <!-- Bright vertical edges (reads against dark BG) -->
+  <rect x="14" y="10" width="10" height="112" fill="url(#fpEdgeHi)" opacity="0.55" rx="2"/>
+  <rect x="96" y="10" width="10" height="112" fill="url(#fpEdgeHi)" opacity="0.55" rx="2"/>
+  <!-- Crack lines -->
+  <path d="M28 24 L38 48 M82 72 L92 96 M44 100 L52 118" stroke="#1a0500" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M72 20 L68 44 M50 60 L58 88" stroke="#330800" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
+  <!-- Hot spots -->
+  <ellipse cx="60" cy="44" rx="18" ry="10" fill="#ffcc66" opacity="0.35"/>
+  <ellipse cx="48" cy="96" rx="14" ry="8" fill="#ff6b35" opacity="0.3"/>
 </svg>

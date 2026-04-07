@@ -23,6 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="frappy-brew.css" />
   <link rel="stylesheet" href="modals.css" />
+  <link rel="stylesheet" href="leaderboard.css" />
 </head>
 <body>
   <div class="page page-fullscreen">
@@ -43,6 +44,7 @@
         </button>
         <div class="intro-splash-actions">
           <button type="button" id="howToPlayBtn" class="btn-secondary">HOW TO PLAY</button>
+          <button type="button" id="leaderboardOpenBtn" class="btn-secondary">Leaderboard</button>
           <button type="button" id="chooseCharacterBtn" class="btn-secondary">Choose your Lord of chaos</button>
           <button type="button" id="editHandleBtn" class="btn-secondary">Set X handle</button>
         </div>
@@ -106,10 +108,48 @@
               </span>
             </div>
             <div class="overlay-card-gameover-body">
+              <div class="overlay-card-brand overlay-card-brand--gameover" aria-hidden="true">
+                <img src="assets/lo.png" alt="" class="overlay-brand-lo" />
+                <span class="co-brand-x">×</span>
+                <span class="ddg-skull-wrap ddg-skull-wrap--overlay">
+                  <img src="assets/ddg.png" alt="" />
+                </span>
+              </div>
               <h2 id="gameOverTitle">Game Over</h2>
               <p id="summaryText"></p>
               <div id="gameOverCelebration" class="game-over-extra" hidden aria-hidden="true"></div>
               <div id="gameOverFireworks" class="game-over-extra" hidden aria-hidden="true"></div>
+
+              <section class="game-over-top5" aria-labelledby="gameOverTop5Heading">
+                <h3 id="gameOverTop5Heading" class="leaderboard-title">Top 5</h3>
+                <p id="gameOverTop5Status" class="leaderboard-status game-over-top5-status" aria-live="polite"></p>
+                <ol id="gameOverTop5List" class="leaderboard-list leaderboard-list--gameover"></ol>
+                <button type="button" id="gameOverViewLeaderboardBtn" class="btn-secondary btn-secondary--leaderboard-inline">
+                  VIEW TOP 50
+                </button>
+              </section>
+
+              <section class="leaderboard-panel" id="leaderboardPanel" aria-labelledby="leaderboardHeading">
+                <h3 id="leaderboardHeading" class="leaderboard-title">Submit your score</h3>
+                <p id="leaderboardStatus" class="leaderboard-status" aria-live="polite"></p>
+                <div class="leaderboard-submit">
+                  <label for="leaderboardNameInput">Name for leaderboard</label>
+                  <input
+                    id="leaderboardNameInput"
+                    type="text"
+                    maxlength="16"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    placeholder="Your name"
+                  />
+                  <button type="button" id="leaderboardSubmitBtn" class="btn-submit-score">
+                    Submit score
+                  </button>
+                  <p id="leaderboardSubmitMsg" class="leaderboard-msg" role="status"></p>
+                </div>
+              </section>
+
               <button id="playAgainBtn" type="button" class="btn-primary btn-primary-text-only">
                 <span class="btn-primary-text">Play Again</span>
               </button>
@@ -259,7 +299,7 @@
           </div>
         </section>
 
-        <p class="howto-footer">LO × DDG — Frappy Brew · local practice mode (no leaderboard)</p>
+        <p class="howto-footer">LO × DDG — Frappy Brew · optional score submit on Game Over · Leaderboard button for live Top 50</p>
       </div>
       <div class="modal-footer">
         <button type="button" id="howToGotIt" class="btn-modal-primary" data-howto-close>Got it</button>
@@ -300,6 +340,41 @@
     </div>
   </div>
 
+  <!-- Leaderboard — Top 50 (Firestore listener while open only) -->
+  <div
+    id="leaderboardModal"
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="leaderboardModalTitle"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="modal-panel modal-panel--leaderboard">
+      <div id="leaderboardFireworks" class="leaderboard-fireworks" aria-hidden="true"></div>
+      <div class="modal-brand-strip" aria-hidden="true">
+        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
+        <span class="modal-brand-x">×</span>
+        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
+          <img src="assets/ddg.png" alt="" width="46" height="46" />
+        </span>
+      </div>
+      <div class="modal-header">
+        <div class="leaderboard-modal-title-wrap">
+          <h2 id="leaderboardModalTitle" class="modal-title">Leaderboard</h2>
+          <p class="leaderboard-modal-subtitle">Highest scores worldwide · Top 50</p>
+        </div>
+        <button type="button" id="leaderboardModalClose" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body modal-body--scroll modal-body--leaderboard">
+        <p id="leaderboardModalStatus" class="leaderboard-status leaderboard-modal-status" aria-live="polite"></p>
+        <ol id="leaderboardModalList" class="leaderboard-list leaderboard-list--modal"></ol>
+        <p class="leaderboard-modal-footnote">Live Top 50 · updates while this window is open</p>
+      </div>
+    </div>
+  </div>
+
   <script src="shell.js"></script>
+  <script type="module" src="leaderboard-init.js"></script>
 </body>
 </html>
