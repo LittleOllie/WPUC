@@ -27,6 +27,7 @@ body.modal-open {
 .modal-panel {
   position: relative;
   width: min(440px, 100%);
+  max-height: min(88vh, 720px);
   max-height: min(88dvh, 720px);
   display: flex;
   flex-direction: column;
@@ -123,6 +124,7 @@ body.modal-open {
 }
 
 .modal-body--scroll {
+  max-height: min(62vh, 520px);
   max-height: min(62dvh, 520px);
 }
 

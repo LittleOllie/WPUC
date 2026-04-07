@@ -191,6 +191,7 @@
 .modal-panel--leaderboard {
   position: relative;
   width: min(520px, 100%);
+  max-height: min(90vh, 760px);
   max-height: min(90dvh, 760px);
   overflow: hidden;
 }
@@ -298,6 +299,7 @@
 .leaderboard-list--modal {
   flex: 1;
   min-height: 120px;
+  max-height: min(52vh, 480px);
   max-height: min(52dvh, 480px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
