@@ -45,15 +45,40 @@
   let width = 480;
   let height = 640;
 
-  // Asset paths (from Assets.xcassets – frappy_*)
-  const ASSETS = {
-    player: "assets/player.png",
+  // Asset paths — shell sets window.__FRAPPY_SKIN__ (player, bg, pickups, hazardTheme).
+  const ASSETS_DEFAULT = {
+    player: "assets/player1.png",
     bean: "assets/bean.png",
     bean_golden: "assets/bean_golden.png",
     cup_red: "assets/cup_red.png",
-    bg0: "assets/bg0.png",
+    bg0: "assets/bg01.png",
     pillar_cup: "assets/pillar_cup.png",
   };
+  const ASSETS = { ...ASSETS_DEFAULT };
+
+  /** @type {"water"|"fire"|"lab"} */
+  let hazardTheme = "water";
+
+  function applySkinFromWindow() {
+    Object.assign(ASSETS, ASSETS_DEFAULT);
+    const s = typeof window !== "undefined" && window.__FRAPPY_SKIN__;
+    if (s) {
+      if (s.player) ASSETS.player = s.player;
+      if (s.bg) ASSETS.bg0 = s.bg;
+      if (s.bean) ASSETS.bean = s.bean;
+      if (s.bean_golden) ASSETS.bean_golden = s.bean_golden;
+      if (s.cup_red) ASSETS.cup_red = s.cup_red;
+      if (s.pillar_cup) ASSETS.pillar_cup = s.pillar_cup;
+      if (s.hazardTheme === "fire" || s.hazardTheme === "lab" || s.hazardTheme === "water") {
+        hazardTheme = s.hazardTheme;
+      } else {
+        hazardTheme = "water";
+      }
+    } else {
+      hazardTheme = "water";
+    }
+  }
+  applySkinFromWindow();
 
   const images = {};
 
@@ -88,6 +113,9 @@
   /** Offset from sprite center (playerX, playerY) to opaque character centroid in draw space. */
   let playerHitOffsetX = 0;
   let playerHitOffsetY = 0;
+  /** Actual on-canvas draw size (aspect preserved; max side = PLAYER_DRAW_SIZE). */
+  let playerDrawW = PLAYER_DRAW_SIZE;
+  let playerDrawH = PLAYER_DRAW_SIZE;
   /** Horizontal inset only: cup tiles are 3× clip width and centered; clip left/right are often empty. */
   const PILLAR_HIT_INSET_X = Math.max(6, gs(12));
   const CEILING_TOP_MARGIN = Math.max(8, gs(10));
@@ -138,22 +166,43 @@
   let assetsReady = false;
 
   /**
-   * Builds hit circle from non-transparent pixels only (ignores empty PNG padding / BG).
-   * Returns offsets and radius in the same space as draw: square PLAYER_DRAW_SIZE × PLAYER_DRAW_SIZE.
+   * Center square crop so tall portrait sprites (player 1/2) match scene 3’s square framing.
+   * Same on-screen size as player 3 (1024×1024) when drawn to PLAYER_DRAW_SIZE².
+   */
+  function getPlayerSourceCrop(img) {
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    if (!iw || !ih) return { sx: 0, sy: 0, sw: 1, sh: 1 };
+    const side = Math.min(iw, ih);
+    const sx = (iw - side) / 2;
+    const sy = (ih - side) / 2;
+    return { sx, sy, sw: side, sh: side };
+  }
+
+  /** Fallback when alpha analysis fails — still square like scene 3. */
+  function computePlayerDrawDims() {
+    return { drawW: PLAYER_DRAW_SIZE, drawH: PLAYER_DRAW_SIZE };
+  }
+
+  /**
+   * Hit circle from opaque pixels in the same square crop used for drawing.
    */
   function analyzePlayerHitFromImage(img) {
     const w = img.naturalWidth;
     const h = img.naturalHeight;
     if (!w || !h) return null;
+    const { sx, sy, sw, sh } = getPlayerSourceCrop(img);
+    const drawW = PLAYER_DRAW_SIZE;
+    const drawH = PLAYER_DRAW_SIZE;
     const maxSide = 256;
-    const scale = Math.min(1, maxSide / Math.max(w, h));
-    const cw = Math.max(1, Math.round(w * scale));
-    const ch = Math.max(1, Math.round(h * scale));
+    const scale = Math.min(1, maxSide / sw);
+    const cw = Math.max(1, Math.round(sw * scale));
+    const ch = Math.max(1, Math.round(sh * scale));
     const c = document.createElement("canvas");
     c.width = cw;
     c.height = ch;
     const cctx = c.getContext("2d");
-    cctx.drawImage(img, 0, 0, cw, ch);
+    cctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
     let data;
     try {
       data = cctx.getImageData(0, 0, cw, ch).data;
@@ -177,26 +226,22 @@
       }
     }
     if (maxX < minX) return null;
-    const sx = w / cw;
-    const sy = h / ch;
-    const bx0 = minX * sx;
-    const by0 = minY * sy;
-    const bx1 = (maxX + 1) * sx;
-    const by1 = (maxY + 1) * sy;
-    const centerX = (bx0 + bx1) / 2;
-    const centerY = (by0 + by1) / 2;
-    const bboxW = bx1 - bx0;
-    const bboxH = by1 - by0;
-    const psz = PLAYER_DRAW_SIZE;
-    const offX = (centerX / w - 0.5) * psz;
-    const offY = (centerY / h - 0.5) * psz;
-    const rW = (bboxW / w) * psz;
-    const rH = (bboxH / h) * psz;
+    const centerXp = (minX + maxX + 1) / (2 * cw);
+    const centerYp = (minY + maxY + 1) / (2 * ch);
+    const offX = (centerXp - 0.5) * drawW;
+    const offY = (centerYp - 0.5) * drawH;
+    const bboxWpx = (maxX - minX + 1) / cw;
+    const bboxHpx = (maxY - minY + 1) / ch;
+    const rW = bboxWpx * drawW;
+    const rH = bboxHpx * drawH;
     const r = Math.min(rW, rH) * 0.44;
+    const cap = Math.min(drawW, drawH) * 0.48;
     return {
       offX,
       offY,
-      r: Math.max(6, Math.min(r, psz * 0.48)),
+      r: Math.max(6, Math.min(r, cap)),
+      drawW,
+      drawH,
     };
   }
 
@@ -213,6 +258,15 @@
             playerHitOffsetX = hit.offX;
             playerHitOffsetY = hit.offY;
             playerHitRadiusPx = hit.r;
+            playerDrawW = hit.drawW;
+            playerDrawH = hit.drawH;
+          } else {
+            const d = computePlayerDrawDims();
+            playerDrawW = d.drawW;
+            playerDrawH = d.drawH;
+            playerHitOffsetX = 0;
+            playerHitOffsetY = 0;
+            playerHitRadiusPx = PLAYER_HIT_RADIUS_FALLBACK;
           }
         }
         resolve();
@@ -351,7 +405,11 @@
     );
     let px = x + PIPE_WIDTH + PICKUP_OFFSET_X;
     let drawSize =
-      type === PICKUP_TYPES.RED_CUP ? PICKUP_DRAW_SIZE_FISH : PICKUP_DRAW_SIZE;
+      type === PICKUP_TYPES.RED_CUP
+        ? hazardTheme === "fire"
+          ? PICKUP_DRAW_SIZE
+          : PICKUP_DRAW_SIZE_FISH
+        : PICKUP_DRAW_SIZE;
     if (type === PICKUP_TYPES.BURNT) {
       drawSize = PICKUP_DRAW_SIZE_MINE;
       py = clamp(
@@ -698,6 +756,109 @@
     ctx.restore();
   }
 
+  function drawFireMine(cx, cy, sz) {
+    const r = sz * 0.36;
+    ctx.save();
+    ctx.translate(cx, cy);
+    const g = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.05, 0, 0, r);
+    g.addColorStop(0, "#fff8e8");
+    g.addColorStop(0.35, "#ff8c42");
+    g.addColorStop(0.75, "#c0392b");
+    g.addColorStop(1, "#4a0e0e");
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = "#2c0a0a";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const spikes = 12;
+    for (let i = 0; i < spikes; i++) {
+      const a = (i / spikes) * Math.PI * 2;
+      ctx.save();
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.92);
+      ctx.lineTo(-3.5, -r * 1.62);
+      ctx.lineTo(3.5, -r * 1.62);
+      ctx.closePath();
+      const sg = ctx.createLinearGradient(0, -r * 0.92, 0, -r * 1.62);
+      sg.addColorStop(0, "#8b2500");
+      sg.addColorStop(1, "#3d0a0a");
+      ctx.fillStyle = sg;
+      ctx.fill();
+      ctx.strokeStyle = "#1a0505";
+      ctx.lineWidth = 0.75;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.arc(-r * 0.22, -r * 0.28, r * 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,220,160,0.55)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.62);
+    ctx.lineTo(0, -r * 2.05);
+    ctx.strokeStyle = "#5c1a00";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLabMine(cx, cy, sz) {
+    const r = sz * 0.36;
+    ctx.save();
+    ctx.translate(cx, cy);
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.06, 0, 0, r);
+    g.addColorStop(0, "#c8f0a0");
+    g.addColorStop(0.45, "#6b8e23");
+    g.addColorStop(1, "#0d3d0d");
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = "#0a2f0a";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const spikes = 12;
+    for (let i = 0; i < spikes; i++) {
+      const a = (i / spikes) * Math.PI * 2;
+      ctx.save();
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.92);
+      ctx.lineTo(-3.5, -r * 1.62);
+      ctx.lineTo(3.5, -r * 1.62);
+      ctx.closePath();
+      const sg = ctx.createLinearGradient(0, -r * 0.92, 0, -r * 1.62);
+      sg.addColorStop(0, "#556b2f");
+      sg.addColorStop(1, "#2f4f2f");
+      ctx.fillStyle = sg;
+      ctx.fill();
+      ctx.strokeStyle = "#1a2f1a";
+      ctx.lineWidth = 0.75;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.arc(-r * 0.26, -r * 0.3, r * 0.19, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(200,255,200,0.28)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.62);
+    ctx.lineTo(0, -r * 2.05);
+    ctx.strokeStyle = "#2d5016";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawHazardMine(cx, cy, sz) {
+    if (hazardTheme === "fire") drawFireMine(cx, cy, sz);
+    else if (hazardTheme === "lab") drawLabMine(cx, cy, sz);
+    else drawUnderwaterMine(cx, cy, sz);
+  }
+
   function drawMineExplosions() {
     for (const ex of mineExplosions) {
       if (ex.flash > 0) {
@@ -759,13 +920,31 @@
     ctx.restore();
   }
 
+  /** Cover dest rect without stretching; clips overflow (like object-fit: cover). */
+  function drawImageCover(img, x, y, w, h) {
+    const iw = img.naturalWidth;
+    const ih = img.naturalHeight;
+    if (!iw || !ih) return;
+    const scale = Math.max(w / iw, h / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    const ox = x + (w - dw) / 2;
+    const oy = y + (h - dh) / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.drawImage(img, ox, oy, dw, dh);
+    ctx.restore();
+  }
+
   function draw() {
 
     const bgImg = images.bg0;
     if (bgImg) {
       ctx.save();
       ctx.globalAlpha = 0.62;
-      ctx.drawImage(bgImg, 0, 0, width, height);
+      drawImageCover(bgImg, 0, 0, width, height);
       ctx.restore();
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.fillRect(0, 0, width, height);
@@ -796,7 +975,7 @@
       if (!p.alive) continue;
       const sz = p.drawSize != null ? p.drawSize : PICKUP_DRAW_SIZE;
       if (p.type === PICKUP_TYPES.BURNT) {
-        drawUnderwaterMine(p.x, p.y, sz);
+        drawHazardMine(p.x, p.y, sz);
       } else {
         const img = images[p.type];
         if (img) {
@@ -820,24 +999,39 @@
 
     drawMineExplosions();
 
-    // Player (94x94, match View)
+    // Player — square draw (center crop) matches scene 3 scale for all skins
     const playerImg = images.player;
-    const psz = PLAYER_DRAW_SIZE;
+    const pdw = playerDrawW;
+    const pdh = playerDrawH;
     if (playerImg) {
-      ctx.drawImage(playerImg, playerX - psz / 2, playerY - psz / 2, psz, psz);
+      const cr = getPlayerSourceCrop(playerImg);
+      ctx.drawImage(
+        playerImg,
+        cr.sx,
+        cr.sy,
+        cr.sw,
+        cr.sh,
+        playerX - pdw / 2,
+        playerY - pdh / 2,
+        pdw,
+        pdh
+      );
     } else {
+      const pr = Math.min(pdw, pdh) / 2;
       ctx.beginPath();
       ctx.fillStyle = "#ffdd55";
-      ctx.arc(playerX, playerY, psz / 2, 0, Math.PI * 2);
+      ctx.arc(playerX, playerY, pr, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Shield ring (match View)
+    // Shield ring — scales with sprite size
     if (shieldHits > 0) {
+      const scaleRing = Math.max(pdw, pdh) / PLAYER_DRAW_SIZE;
+      const ringR = SHIELD_RING_R * scaleRing;
       ctx.beginPath();
       ctx.strokeStyle = "rgba(255,255,255,0.55)";
-      ctx.lineWidth = SHIELD_LINE_W;
-      ctx.arc(playerX, playerY, SHIELD_RING_R, 0, Math.PI * 2);
+      ctx.lineWidth = Math.max(2, SHIELD_LINE_W * scaleRing);
+      ctx.arc(playerX, playerY, ringR, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -994,5 +1188,23 @@
     lastTime = performance.now();
   }
 
-  window.FrappyBrew = { returnToMenu };
+  async function reloadSkinAssets() {
+    applySkinFromWindow();
+    for (const k of Object.keys(ASSETS_DEFAULT)) {
+      delete images[k];
+    }
+    playerHitRadiusPx = PLAYER_HIT_RADIUS_FALLBACK;
+    playerHitOffsetX = 0;
+    playerHitOffsetY = 0;
+    assetsReady = false;
+    if (introPlayBtn) introPlayBtn.disabled = true;
+    if (startBtn) startBtn.disabled = true;
+    try {
+      await loadAllAssets();
+    } catch (err) {
+      console.error("Skin reload failed:", err);
+    }
+  }
+
+  window.FrappyBrew = { returnToMenu, reloadSkinAssets };
 })();

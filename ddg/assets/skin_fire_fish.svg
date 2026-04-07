@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <linearGradient id="flameOuter" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#8b0000"/>
+      <stop offset="40%" stop-color="#e25822"/>
+      <stop offset="75%" stop-color="#ff8c00"/>
+      <stop offset="100%" stop-color="#fff8dc"/>
+    </linearGradient>
+    <linearGradient id="flameCore" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#ff4500"/>
+      <stop offset="60%" stop-color="#ffcc33"/>
+      <stop offset="100%" stop-color="#fffef0"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer flame -->
+  <path
+    d="M32 52 C18 52 12 42 14 32 C16 22 24 18 28 12 C30 8 32 4 32 4 C32 4 34 8 36 12 C40 18 48 22 50 32 C52 42 46 52 32 52 Z"
+    fill="url(#flameOuter)"
+    stroke="#5c0a0a"
+    stroke-width="1.2"
+  />
+  <!-- Inner flame -->
+  <path
+    d="M32 46 C24 46 20 40 21 34 C22 28 28 24 30 20 C31 17 32 14 32 14 C32 14 33 17 34 20 C36 24 42 28 43 34 C44 40 40 46 32 46 Z"
+    fill="url(#flameCore)"
+    stroke="none"
+  />
+  <!-- Hot core -->
+  <ellipse cx="32" cy="36" rx="5" ry="8" fill="rgba(255,255,255,0.45)"/>
+</svg>

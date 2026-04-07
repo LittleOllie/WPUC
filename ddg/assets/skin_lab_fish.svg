@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+  <defs>
+    <radialGradient id="brain" cx="42%" cy="38%" r="78%">
+      <stop offset="0%" stop-color="#e4dae6"/>
+      <stop offset="55%" stop-color="#b9a0bc"/>
+      <stop offset="100%" stop-color="#7d6282"/>
+    </radialGradient>
+  </defs>
+  <!-- Two rounded upper lobes + wide base; scaled down; reads as cortex, not a single tip -->
+  <g transform="translate(32 33) scale(0.65) translate(-32 -33)">
+    <path
+      d="M 32 24
+         C 28 20  22 20  18 24
+         C 14 28  13 34  15 40
+         C 17 46  24 48  28 46
+         C 30 45  31 44  32 43
+         C 33 44  34 45  36 46
+         C 40 48  47 46  49 40
+         C 51 34  50 28  46 24
+         C 42 20  36 20  32 24
+         Z"
+      fill="url(#brain)"
+      stroke="#5c445f"
+      stroke-width="1.45"
+      stroke-linejoin="round"
+    />
+    <!-- Notch between lobes (wide U, not a line) -->
+    <path
+      d="M 28 22 Q 32 26 36 22"
+      fill="none"
+      stroke="#5c445f"
+      stroke-width="1.1"
+      stroke-linecap="round"
+    />
+    <!-- Surface folds: mostly horizontal curves -->
+    <path
+      d="M 18 32 C 22 30 28 33 32 31 S 42 29 46 33"
+      fill="none"
+      stroke="#6b5370"
+      stroke-width="0.85"
+      stroke-linecap="round"
+    />
+    <path
+      d="M 17 37 C 22 35 30 38 32 36 S 42 35 47 38"
+      fill="none"
+      stroke="#7d6580"
+      stroke-width="0.75"
+      stroke-linecap="round"
+    />
+    <path
+      d="M 20 41 C 24 40 28 42 32 41 S 40 40 44 42"
+      fill="none"
+      stroke="#6b5370"
+      stroke-width="0.7"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>

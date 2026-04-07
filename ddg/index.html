@@ -41,6 +41,7 @@
         </button>
         <div class="intro-splash-actions">
           <button type="button" id="howToPlayBtn" class="btn-secondary">HOW TO PLAY</button>
+          <button type="button" id="chooseCharacterBtn" class="btn-secondary">Choose your Lord of chaos</button>
           <button type="button" id="editHandleBtn" class="btn-secondary">Set X handle</button>
         </div>
       </div>
@@ -183,38 +184,46 @@
       </div>
       <div class="modal-body modal-body--scroll">
         <div class="howto-hero" aria-hidden="true">
-          <img class="howto-hero-bg" src="assets/bg0.png" alt="" />
-          <img class="howto-hero-player" src="assets/player.png" alt="" />
+          <img class="howto-hero-bg" src="assets/bg03.png" alt="" />
+          <img class="howto-hero-player" src="assets/player3.png" alt="" />
         </div>
+
+        <section class="howto-section howto-section--lead" aria-labelledby="howto-theme">
+          <h3 id="howto-theme" class="howto-theme-heading">Your Lord</h3>
+          <p id="howtoThemeIntro" class="howto-lead"></p>
+        </section>
 
         <section class="howto-section" aria-labelledby="howto-controls">
           <h3 id="howto-controls">Controls</h3>
-          <p>Tap, click, or press Space to flap. Stay in the gap between the steel pillars.</p>
+          <p id="howtoControlsText">Tap, click, or press Space to flap. Stay in the gap between the pillars.</p>
         </section>
 
         <section class="howto-section" aria-labelledby="howto-scoring">
           <h3 id="howto-scoring">Scoring</h3>
-          <p>Pass pillars to increase your score. Your best run is saved on this device.</p>
+          <p id="howtoScoringText">Pass pillars to increase your score. Your best run is saved on this device.</p>
         </section>
 
         <section class="howto-section" aria-labelledby="howto-collect">
           <h3 id="howto-collect">Collect</h3>
           <div class="howto-row">
             <span class="howto-chip">
-              <img src="assets/bean.png" alt="" /> Bubble (+1 score, +1 bubble)
+              <img id="howtoImgBean" src="assets/bean.png" alt="" />
+              <span id="howtoTextBean">Bubble (+1 score, +1 bubble)</span>
             </span>
             <span class="howto-chip">
-              <img src="assets/bean_golden.png" alt="" /> Golden bubble (+5, +1 bubble, shield charge)
+              <img id="howtoImgGolden" src="assets/bean_golden.png" alt="" />
+              <span id="howtoTextGolden">Golden bubble (+5, +1 bubble, shield charge)</span>
             </span>
             <span class="howto-chip">
-              <img src="assets/cup_red.png" alt="" /> Red fish (+8 score)
+              <img id="howtoImgFish" src="assets/cup_red.png" alt="" />
+              <span id="howtoTextFish">Red fish (+8 score)</span>
             </span>
           </div>
         </section>
 
         <section class="howto-section" aria-labelledby="howto-shield">
           <h3 id="howto-shield">Shield</h3>
-          <p>Collect a golden bubble to gain a shield ring. The next hit consumes the shield instead of ending your run.</p>
+          <p id="howtoShieldText">Collect a golden bubble to gain a shield ring. The next hit consumes the shield instead of ending your run.</p>
         </section>
 
         <section class="howto-section" aria-labelledby="howto-avoid">
@@ -222,15 +231,15 @@
           <div class="howto-row">
             <span class="howto-chip">
               <span class="howto-mine-img" aria-hidden="true">
-                <img src="assets/mine-howto.svg" alt="" width="40" height="40" />
+                <img id="howtoMineImg" src="assets/mine-howto.svg" alt="" width="40" height="40" />
               </span>
-              Underwater mine — explodes on contact
+              <span id="howtoTextHazard">Underwater mine — explodes on contact</span>
             </span>
             <span class="howto-chip">
               <span class="howto-pillar-img" aria-hidden="true">
-                <img src="assets/pillar_cup.png" alt="" width="28" height="52" />
+                <img id="howtoPillarImg" src="assets/pillar_cup.png" alt="" width="28" height="52" />
               </span>
-              Steel pillars — don’t touch the solid parts
+              <span id="howtoTextPillar">Steel pillars — don’t touch the solid parts</span>
             </span>
           </div>
         </section>
@@ -239,6 +248,37 @@
       </div>
       <div class="modal-footer">
         <button type="button" id="howToGotIt" class="btn-modal-primary" data-howto-close>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character + scene (after handle; pairs player1↔bg01, etc.) -->
+  <div
+    id="characterSelectModal"
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="characterSelectTitle"
+    aria-hidden="true"
+    hidden
+  >
+    <div class="modal-panel modal-panel--character">
+      <div class="modal-brand-strip" aria-hidden="true">
+        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
+        <span class="modal-brand-x">×</span>
+        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+      </div>
+      <div class="modal-header">
+        <h2 id="characterSelectTitle" class="modal-title">Choose your Lord of chaos</h2>
+      </div>
+      <div class="modal-body">
+        <p id="characterSelectSubtitle" class="character-select-subtitle">
+          Each Lord has their own look and level art. You can change this later from the menu.
+        </p>
+        <div class="character-grid" id="characterGrid" role="radiogroup" aria-labelledby="characterSelectTitle"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="characterSelectContinue" class="btn-modal-primary" disabled>Continue</button>
       </div>
     </div>
   </div>

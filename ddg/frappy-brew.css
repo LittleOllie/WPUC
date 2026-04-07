@@ -1,4 +1,6 @@
 :root {
+  /* Set by shell from chosen character (matches canvas bg). */
+  --frappy-bg-page: url("assets/bg01.png");
   --lo-blue: #4C6FFF;
   --lo-yellow: #FFDD55;
   --lo-bg-top: #6DE0FF;
@@ -52,7 +54,7 @@ body {
   overflow: hidden;
 }
 
-/* Full-bleed page BG (viewport-fit=cover; svh/dvh/lvh + fill-available for iOS Safari). */
+/* Full-bleed page BG — scene PNGs normalized to 1024×1536; cover = full visible screen on iPhone. */
 .frappy-bg {
   position: fixed;
   inset: 0;
@@ -64,7 +66,7 @@ body {
   min-height: 100dvh;
   min-height: 100lvh;
   min-height: -webkit-fill-available;
-  background-image: url("assets/bg0.png");
+  background-image: var(--frappy-bg-page);
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -90,7 +92,7 @@ body {
   );
 }
 
-/* iPhone / narrow screens: stretch bg0 to the full viewport (with viewport-fit=cover in meta). */
+/* iPhone / narrow: lock full-screen height chain; BG already uses cover + safe-area bleed above. */
 @media (max-width: 480px) {
   html,
   body,
@@ -102,16 +104,8 @@ body {
   }
 
   .frappy-bg {
-    background-size: 100% 100%;
-    min-height: 100lvh;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
-  }
-
-  .frappy-bg-overlay {
-    min-height: 100lvh;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
+    background-size: cover;
+    background-position: center center;
   }
 }
 
@@ -262,6 +256,90 @@ body {
 .btn-secondary:focus-visible {
   outline: 2px solid var(--lo-yellow);
   outline-offset: 2px;
+}
+
+/* HOW TO PLAY — glow after a Lord is chosen (shell adds class per skin). */
+#howToPlayBtn.howto-btn--accent-none {
+  opacity: 0.85;
+  box-shadow: none;
+}
+
+#howToPlayBtn.howto-btn--accent-1 {
+  border-color: rgba(186, 104, 255, 0.95);
+  background: linear-gradient(
+    145deg,
+    rgba(90, 40, 140, 0.55) 0%,
+    rgba(40, 20, 80, 0.65) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(200, 150, 255, 0.35),
+    0 0 22px rgba(160, 80, 255, 0.55),
+    0 0 42px rgba(120, 40, 200, 0.35);
+}
+
+#howToPlayBtn.howto-btn--accent-2 {
+  border-color: rgba(255, 120, 80, 0.95);
+  background: linear-gradient(
+    145deg,
+    rgba(140, 35, 20, 0.6) 0%,
+    rgba(80, 15, 10, 0.7) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 140, 90, 0.4),
+    0 0 22px rgba(255, 80, 40, 0.55),
+    0 0 40px rgba(200, 40, 20, 0.4);
+}
+
+#howToPlayBtn.howto-btn--accent-3 {
+  border-color: rgba(80, 180, 255, 0.95);
+  background: linear-gradient(
+    145deg,
+    rgba(25, 70, 120, 0.55) 0%,
+    rgba(15, 40, 90, 0.65) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(120, 200, 255, 0.35),
+    0 0 22px rgba(60, 160, 255, 0.5),
+    0 0 40px rgba(30, 100, 200, 0.4);
+}
+
+.intro-splash-actions #howToPlayBtn.howto-btn--accent-1:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(110, 55, 165, 0.65) 0%,
+    rgba(50, 25, 95, 0.75) 100%
+  );
+  border-color: rgba(210, 170, 255, 1);
+  box-shadow:
+    0 0 0 1px rgba(220, 180, 255, 0.45),
+    0 0 28px rgba(170, 100, 255, 0.65),
+    0 0 48px rgba(130, 60, 220, 0.45);
+}
+
+.intro-splash-actions #howToPlayBtn.howto-btn--accent-2:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(170, 50, 30, 0.7) 0%,
+    rgba(100, 25, 15, 0.78) 100%
+  );
+  border-color: rgba(255, 150, 110, 1);
+  box-shadow:
+    0 0 0 1px rgba(255, 160, 100, 0.5),
+    0 0 28px rgba(255, 90, 50, 0.65),
+    0 0 46px rgba(220, 60, 30, 0.45);
+}
+
+.intro-splash-actions #howToPlayBtn.howto-btn--accent-3:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(40, 100, 160, 0.65) 0%,
+    rgba(20, 55, 110, 0.75) 100%
+  );
+  border-color: rgba(130, 210, 255, 1);
+  box-shadow:
+    0 0 0 1px rgba(140, 210, 255, 0.45),
+    0 0 28px rgba(80, 180, 255, 0.6),
+    0 0 46px rgba(40, 120, 220, 0.45);
 }
 
 .intro-play-btn {
