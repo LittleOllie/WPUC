@@ -127,8 +127,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: 16px;
   background-color: #0a1830;
   background-image: linear-gradient(
     180deg,
@@ -406,8 +405,6 @@ body {
   justify-content: center;
   container-type: size;
   container-name: game;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Portrait 480:640 — same framing on Mac and iPhone */
@@ -441,9 +438,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: max(8px, env(safe-area-inset-top))
-    calc(max(12px, env(safe-area-inset-right)) + 44px) 10px
-    calc(max(12px, env(safe-area-inset-left)) + 44px);
+  /* Side padding reserves space for fixed corner buttons (44px) + gutter */
+  padding: 8px calc(12px + 44px) 10px calc(12px + 44px);
   pointer-events: none;
   background: linear-gradient(
     180deg,
@@ -519,8 +515,8 @@ body {
 /* Small top-left — How to play (mirrors back arrow) */
 .btn-help--corner {
   position: fixed;
-  top: max(8px, env(safe-area-inset-top));
-  left: max(8px, env(safe-area-inset-left));
+  top: 8px;
+  left: 8px;
   z-index: 62;
   width: 40px;
   height: 40px;
@@ -556,8 +552,8 @@ body {
 /* Small top-right control — out of the way of logo + HUD */
 .btn-back--corner {
   position: fixed;
-  top: max(8px, env(safe-area-inset-top));
-  right: max(8px, env(safe-area-inset-right));
+  top: 8px;
+  right: 8px;
   z-index: 62;
   width: 40px;
   height: 40px;
@@ -662,19 +658,16 @@ body {
   pointer-events: none;
 }
 
-/* Game Over: escape the letterboxed canvas — it’s sized with dvh/vw math and can sit *under*
-   Safari’s bottom chrome, clipping submit + Play Again. Pin #overlay to the visible viewport
-   (svh + safe-area) and scroll the overlay, not a nested card. */
+/* Game Over: escape the letterboxed canvas. Exact size/position come from
+   frappy-brew.js syncGameOverOverlayViewport() + window.visualViewport (iOS Safari).
+   Fallback CSS only when JS hasn’t run yet. No safe-area padding — full edge-to-edge. */
 body.game-over-active #overlay {
   position: fixed;
   left: 0;
-  right: 0;
   top: 0;
   width: 100%;
-  /* svh = smallest viewport (URL bar expanded); avoids content ending up behind the toolbar */
-  height: 100dvh;
-  height: min(100svh, 100dvh);
-  max-height: -webkit-fill-available;
+  height: 100%;
+  min-height: 100dvh;
   z-index: 100;
   display: flex;
   align-items: flex-start;
@@ -685,10 +678,7 @@ body.game-over-active #overlay {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding-top: max(8px, env(safe-area-inset-top, 0px));
-  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  padding-left: max(8px, env(safe-area-inset-left, 0px));
-  padding-right: max(8px, env(safe-area-inset-right, 0px));
+  padding: 10px;
 }
 
 .overlay-card {
@@ -759,7 +749,7 @@ body.game-over-active .canvas-wrap::before {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   max-height: min(88vh, 88dvh);
-  max-height: min(85svh, calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
+  max-height: min(92svh, 92dvh);
   z-index: 10;
   background: rgba(8, 12, 24, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -886,7 +876,7 @@ body.game-over-active #overlay .overlay-card--gameover {
 @media (max-width: 480px) {
   .hud-overlay {
     gap: 6px;
-    padding-top: max(10px, env(safe-area-inset-top));
+    padding-top: 10px;
   }
 
   .hud-pill {

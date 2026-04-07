@@ -552,10 +552,65 @@
     endGame();
   }
 
+  /**
+   * Pin #overlay to window.visualViewport (iOS Safari). Layout/CSS viewport units often
+   * don’t match what’s actually visible when the URL bar / bottom toolbar are present.
+   */
+  function syncGameOverOverlayViewport() {
+    if (!overlayEl) return;
+    const active = isGameOver && !isIntroVisible();
+    if (!active) {
+      overlayEl.style.removeProperty("position");
+      overlayEl.style.removeProperty("top");
+      overlayEl.style.removeProperty("left");
+      overlayEl.style.removeProperty("width");
+      overlayEl.style.removeProperty("height");
+      overlayEl.style.removeProperty("right");
+      overlayEl.style.removeProperty("bottom");
+      overlayEl.style.removeProperty("max-height");
+      return;
+    }
+    const vv = window.visualViewport;
+    if (vv && vv.width > 0 && vv.height > 0) {
+      overlayEl.style.position = "fixed";
+      overlayEl.style.top = `${vv.offsetTop}px`;
+      overlayEl.style.left = `${vv.offsetLeft}px`;
+      overlayEl.style.width = `${vv.width}px`;
+      overlayEl.style.height = `${vv.height}px`;
+      overlayEl.style.right = "auto";
+      overlayEl.style.bottom = "auto";
+      overlayEl.style.maxHeight = `${vv.height}px`;
+    } else {
+      overlayEl.style.position = "fixed";
+      overlayEl.style.top = "0";
+      overlayEl.style.left = "0";
+      overlayEl.style.width = "100%";
+      overlayEl.style.height = "100%";
+      overlayEl.style.right = "auto";
+      overlayEl.style.bottom = "auto";
+      overlayEl.style.removeProperty("max-height");
+    }
+  }
+
+  function scheduleGameOverViewportSync() {
+    if (!isGameOver || isIntroVisible()) return;
+    requestAnimationFrame(() => {
+      syncGameOverOverlayViewport();
+    });
+  }
+
+  if (typeof window !== "undefined" && window.visualViewport) {
+    window.visualViewport.addEventListener("resize", scheduleGameOverViewportSync);
+    window.visualViewport.addEventListener("scroll", scheduleGameOverViewportSync);
+  }
+  window.addEventListener("resize", scheduleGameOverViewportSync);
+  window.addEventListener("orientationchange", scheduleGameOverViewportSync);
+
   function syncGameOverPageClass() {
     if (document.body) {
       document.body.classList.toggle("game-over-active", isGameOver && !isIntroVisible());
     }
+    syncGameOverOverlayViewport();
   }
 
   function endGame() {
@@ -566,6 +621,10 @@
     summaryTextEl.textContent = `Score ${score} • Bubbles ${beans} • Best ${best}`;
     syncGameOverPageClass();
     syncInputStacking();
+    /* Safari: URL bar animation can change visualViewport after the first frame */
+    setTimeout(() => syncGameOverOverlayViewport(), 0);
+    setTimeout(() => syncGameOverOverlayViewport(), 200);
+    setTimeout(() => syncGameOverOverlayViewport(), 500);
     /** Leaderboard: single hook after score is final — see leaderboard-init.js window.handleGameOver */
     const finalScore = Math.floor(Number(score));
     try {
