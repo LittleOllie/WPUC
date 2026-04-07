@@ -26,28 +26,13 @@ let top50Unsubscribe = null;
 /** @type {HTMLElement | null} */
 let focusBeforeLeaderboard = null;
 
-/** Set only from handleGameOver — one submission per runId per completed run. */
+/** Fresh run id + score for the game-over submit panel (set each game over). */
 let currentRunId = null;
-let currentScore = null;
+let currentScore = 0;
 
 function lockBodyScroll(lock) {
   document.documentElement.classList.toggle("modal-open", lock);
   document.body.classList.toggle("modal-open", lock);
-}
-
-function readStoredHandle() {
-  try {
-    const h = localStorage.getItem("frappybrew_xhandle");
-    return typeof h === "string" ? h.trim() : "";
-  } catch (_) {
-    return "";
-  }
-}
-
-function setSubmitMessage(el, text, isError) {
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle("leaderboard-msg--error", !!isError);
 }
 
 function stopTop50Listener() {
@@ -70,46 +55,78 @@ function triggerLeaderboardFireworks() {
   }, 2600);
 }
 
+/** Same storage keys as shell.js (X handle). */
+function readStoredHandle() {
+  try {
+    const STORAGE_KEY = "frappybrew_xhandle";
+    const LEGACY_KEYS = ["frappy_brew_x_handle"];
+    let v = localStorage.getItem(STORAGE_KEY);
+    if (!v) {
+      for (let i = 0; i < LEGACY_KEYS.length; i++) {
+        const old = localStorage.getItem(LEGACY_KEYS[i]);
+        if (old) {
+          v = old;
+          break;
+        }
+      }
+    }
+    return typeof v === "string"
+      ? v.replace(/^@+/, "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 15)
+      : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function normalizeLeaderboardName(raw) {
+  return String(raw ?? "")
+    .trim()
+    .replace(/^@+/, "")
+    .slice(0, 16);
+}
+
+function setSubmitMessage(el, text, isError) {
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.toggle("leaderboard-msg--error", !!isError);
+}
+
+function updateSubmitButtonState() {
+  const submitBtn = document.getElementById("leaderboardSubmitBtn");
+  if (!submitBtn) return;
+  const disabled = !isFirebaseConfigured || currentScore < 1;
+  submitBtn.disabled = disabled;
+}
+
 /**
  * Single hook: call from the engine’s final game-over path after score is finalized.
- * Prepares submit row: new runId, score, cleared message, submit enabled.
+ * Refreshes the game-over Top 5 preview and prepares the submit panel for this run.
  *
  * @param {number} finalScore — non-negative integer run score
  */
 function handleGameOver(finalScore) {
-  const sc =
-    typeof finalScore === "number" && Number.isFinite(finalScore)
-      ? Math.floor(finalScore)
-      : Math.floor(Number(finalScore));
-  currentScore = Number.isFinite(sc) && sc >= 0 ? sc : null;
+  currentScore = Number.isFinite(finalScore) && finalScore >= 0 ? Math.floor(finalScore) : 0;
   currentRunId = generateRunId();
 
-  const msg = document.getElementById("leaderboardSubmitMsg");
-  const btn = document.getElementById("leaderboardSubmitBtn");
-  const input = document.getElementById("leaderboardNameInput");
-  const statusGameOver = document.getElementById("leaderboardStatus");
+  const nameInput = document.getElementById("leaderboardNameInput");
+  const statusEl = document.getElementById("leaderboardStatus");
 
-  setSubmitMessage(msg, "", false);
-  if (btn) {
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
+  if (nameInput) {
+    const h = readStoredHandle();
+    if (h.length >= 2) nameInput.value = h;
   }
 
-  if (input) {
-    if (!input.value.trim()) {
-      const h = readStoredHandle();
-      if (h) input.value = h.length > 16 ? h.slice(0, 16) : h;
+  if (statusEl) {
+    if (!isFirebaseConfigured) {
+      setSubmitMessage(statusEl, "Configure firebase-config.js to submit scores.", true);
+    } else if (currentScore < 1) {
+      setSubmitMessage(statusEl, "Score a point or more to submit.", false);
+    } else {
+      setSubmitMessage(statusEl, "", false);
     }
   }
 
-  if (statusGameOver && !isFirebaseConfigured) {
-    statusGameOver.textContent = "Configure firebase-config.js to submit online scores.";
-    statusGameOver.classList.add("leaderboard-status--error");
-  } else if (statusGameOver) {
-    statusGameOver.textContent = "";
-    statusGameOver.classList.remove("leaderboard-status--error");
-  }
-
+  updateSubmitButtonState();
   loadGameOverTop5();
 }
 
@@ -151,6 +168,43 @@ function loadGameOverTop5() {
     }
     renderLeaderboard(listEl, result.rows, { highlightTop3: true });
   });
+}
+
+async function onSubmitClick() {
+  const nameInput = document.getElementById("leaderboardNameInput");
+  const statusEl = document.getElementById("leaderboardStatus");
+  const submitBtn = document.getElementById("leaderboardSubmitBtn");
+  if (!nameInput || !currentRunId) return;
+
+  const name = normalizeLeaderboardName(nameInput.value);
+  if (name.length < 2) {
+    setSubmitMessage(statusEl, "Enter at least 2 characters for your name.", true);
+    return;
+  }
+  if (!isFirebaseConfigured || currentScore < 1) return;
+
+  if (submitBtn) submitBtn.disabled = true;
+  setSubmitMessage(statusEl, "Submitting…", false);
+
+  const result = await submitScore(name, currentScore, currentRunId);
+
+  updateSubmitButtonState();
+
+  if (result.ok) {
+    setSubmitMessage(statusEl, "Score saved!", false);
+    loadGameOverTop5();
+    openLeaderboardModal({ focusRunId: result.runId, celebrate: true });
+    return;
+  }
+  if (result.reason === "duplicate_run") {
+    setSubmitMessage(statusEl, "This run was already submitted.", false);
+    return;
+  }
+  if (result.reason === "bad_name") {
+    setSubmitMessage(statusEl, "Use 2–16 characters for your name.", true);
+    return;
+  }
+  setSubmitMessage(statusEl, "Could not submit. Try again.", true);
 }
 
 /**
@@ -227,54 +281,11 @@ if (typeof window !== "undefined") {
   window.handleGameOver = handleGameOver;
 }
 
-async function onSubmitClick() {
-  const btn = document.getElementById("leaderboardSubmitBtn");
-  const input = document.getElementById("leaderboardNameInput");
-  const msg = document.getElementById("leaderboardSubmitMsg");
-
-  if (!btn || !currentRunId || currentScore === null) return;
-  if (btn.disabled) return;
-
-  const name = input ? input.value : "";
-  btn.disabled = true;
-  btn.setAttribute("aria-disabled", "true");
-
-  const result = await submitScore(name, currentScore, currentRunId);
-
-  if (result.ok) {
-    setSubmitMessage(msg, "Score submitted! Check the leaderboard.", false);
-    openLeaderboardModal({ focusRunId: currentRunId, celebrate: true });
-  } else if (result.reason === "duplicate_run" || result.reason === "in_flight") {
-    setSubmitMessage(msg, "Already submitted for this run.", false);
-  } else if (result.reason === "bad_name") {
-    setSubmitMessage(msg, "Enter a name between 2 and 16 characters.", true);
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-  } else if (result.reason === "bad_score") {
-    setSubmitMessage(msg, "Invalid score.", true);
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-  } else if (result.reason === "no_db") {
-    setSubmitMessage(msg, "Leaderboard not configured (add Firebase config).", true);
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-  } else {
-    setSubmitMessage(msg, "Could not submit. Check connection or try later.", true);
-    btn.disabled = false;
-    btn.removeAttribute("aria-disabled");
-  }
-}
-
 /**
- * One-time DOM wiring: submit button, modal open/close, browse from game over / splash.
+ * One-time DOM wiring: modal open/close, browse from game over / splash, submit panel.
  */
 function boot() {
   attachFirestore(db);
-
-  const submitBtn = document.getElementById("leaderboardSubmitBtn");
-  if (submitBtn) {
-    submitBtn.addEventListener("click", onSubmitClick);
-  }
 
   const openBtn = document.getElementById("leaderboardOpenBtn");
   if (openBtn) {
@@ -287,6 +298,13 @@ function boot() {
   if (gameOverBrowse) {
     gameOverBrowse.addEventListener("click", function () {
       openLeaderboardModal();
+    });
+  }
+
+  const submitBtn = document.getElementById("leaderboardSubmitBtn");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", function () {
+      void onSubmitClick();
     });
   }
 

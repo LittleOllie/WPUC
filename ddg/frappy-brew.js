@@ -305,13 +305,7 @@
     introSplashEl.setAttribute("aria-hidden", "true");
   }
 
-  let lastLoggedViewportH = 0;
   function resizeCanvas() {
-    const vh = window.innerHeight;
-    if (vh !== lastLoggedViewportH) {
-      lastLoggedViewportH = vh;
-      console.log("Viewport height:", vh);
-    }
     const wrap = document.getElementById("canvasWrap");
     const rect = wrap ? { width: wrap.clientWidth, height: wrap.clientHeight } : canvas.getBoundingClientRect();
     const w = rect.width || 480;
@@ -339,14 +333,6 @@
   }
 
   window.addEventListener("resize", resizeCanvas);
-  window.addEventListener("orientationchange", function () {
-    requestAnimationFrame(function () {
-      resizeCanvas();
-    });
-  });
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", resizeCanvas);
-  }
   if (document.readyState === "complete") {
     resizeCanvas();
   } else {

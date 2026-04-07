@@ -16,10 +16,7 @@
     })();
   </script>
   <title>LO x DDG</title>
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
-  />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
   <link rel="icon" type="image/png" href="assets/ddg.png" />
   <link rel="apple-touch-icon" href="assets/ddg.png" />
 
@@ -31,7 +28,7 @@
   <link rel="stylesheet" href="leaderboard.css" />
 </head>
 <body>
-  <div id="game-root" class="page page-fullscreen">
+  <div class="page page-fullscreen">
     <div class="frappy-bg" aria-hidden="true"></div>
     <div class="frappy-bg-overlay" aria-hidden="true"></div>
 
@@ -134,24 +131,23 @@
                 </button>
               </section>
 
-              <section class="leaderboard-panel" id="leaderboardPanel" aria-labelledby="leaderboardHeading">
-                <h3 id="leaderboardHeading" class="leaderboard-title">Submit your score</h3>
-                <p id="leaderboardStatus" class="leaderboard-status" aria-live="polite"></p>
+              <section
+                class="leaderboard-panel"
+                id="leaderboardPanel"
+                aria-label="Submit score to the leaderboard"
+              >
                 <div class="leaderboard-submit">
                   <label for="leaderboardNameInput">Name for leaderboard</label>
                   <input
                     id="leaderboardNameInput"
                     type="text"
                     maxlength="16"
-                    autocomplete="off"
-                    autocapitalize="off"
+                    autocomplete="nickname"
                     spellcheck="false"
                     placeholder="Your name"
                   />
-                  <button type="button" id="leaderboardSubmitBtn" class="btn-submit-score">
-                    Submit score
-                  </button>
-                  <p id="leaderboardSubmitMsg" class="leaderboard-msg" role="status"></p>
+                  <button type="button" id="leaderboardSubmitBtn" class="btn-submit-score">Submit score</button>
+                  <p id="leaderboardStatus" class="leaderboard-msg" aria-live="polite"></p>
                 </div>
               </section>
 
@@ -304,7 +300,7 @@
           </div>
         </section>
 
-        <p class="howto-footer">LO × DDG — Frappy Brew · optional score submit on Game Over · Leaderboard button for live Top 50</p>
+        <p class="howto-footer">LO × DDG — Frappy Brew · Leaderboard for live Top 50; optional score submit on Game Over</p>
       </div>
       <div class="modal-footer">
         <button type="button" id="howToGotIt" class="btn-modal-primary" data-howto-close>Got it</button>
