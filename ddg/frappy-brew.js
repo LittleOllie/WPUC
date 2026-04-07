@@ -121,6 +121,9 @@
   const CEILING_TOP_MARGIN = Math.max(8, gs(10));
   const PICKUP_DRAW_SIZE = gs(56);
   const PICKUP_DRAW_SIZE_FISH = gs(112);
+  /** Lab brain: drawn larger than old fish slot; hit box uses hitSize (tighter) to match visible art. */
+  const LAB_BRAIN_DRAW_SIZE = Math.round(PICKUP_DRAW_SIZE_FISH * 1.14);
+  const LAB_BRAIN_HIT_RATIO = 0.7;
   const PICKUP_DRAW_SIZE_MINE = Math.max(28, gs(36));
   const PICKUP_OFFSET_X = gs(70);
   const PICKUP_OFFSET_X_MINE = gs(92);
@@ -410,8 +413,15 @@
           ? PICKUP_DRAW_SIZE
           : PICKUP_DRAW_SIZE_FISH
         : PICKUP_DRAW_SIZE;
+    /** @type {number | undefined} */
+    let hitSize;
+    if (type === PICKUP_TYPES.RED_CUP && hazardTheme === "lab") {
+      drawSize = LAB_BRAIN_DRAW_SIZE;
+      hitSize = Math.max(10, Math.round(LAB_BRAIN_DRAW_SIZE * LAB_BRAIN_HIT_RATIO));
+    }
     if (type === PICKUP_TYPES.BURNT) {
       drawSize = PICKUP_DRAW_SIZE_MINE;
+      hitSize = undefined;
       py = clamp(
         centerY + randomRange(-PICKUP_Y_JITTER_MINE, PICKUP_Y_JITTER_MINE),
         EDGE_PAD,
@@ -419,13 +429,15 @@
       );
       px = x + PIPE_WIDTH + PICKUP_OFFSET_X_MINE;
     }
-    pickups.push({
+    const pu = {
       type,
       x: px,
       y: py,
       alive: true,
       drawSize,
-    });
+    };
+    if (hitSize != null) pu.hitSize = hitSize;
+    pickups.push(pu);
   }
 
   function clamp(v, a, b) {
@@ -436,10 +448,18 @@
     return a + Math.random() * (b - a);
   }
 
-  /** Circle radius for mine hits — matches drawUnderwaterMine (body r = sz*0.36, spikes to r*1.62) plus a small skim margin. */
+  /**
+   * Circle radius for mine hits — matches procedural mines (body r = sz*0.36, spike tips at bodyR*1.62) plus a small margin.
+   * Fire (cinder core) uses a tighter extent: the same geometry as water/lab reads smaller on the molten BG, and the global
+   * margin was noticeably larger than the drawn spikes.
+   */
   function mineHitRadiusPx(sz) {
     const bodyR = sz * 0.36;
     const spikeTip = bodyR * 1.62;
+    if (hazardTheme === "fire") {
+      const extent = spikeTip * 0.88;
+      return extent + Math.max(1, gs(2));
+    }
     return spikeTip + Math.max(2, gs(4));
   }
 
@@ -655,8 +675,9 @@
         const rr = mineR + pradius;
         hit = dx * dx + dy * dy <= rr * rr;
       } else {
-        const ph = psz / 2;
-        const pr = { x: p.x - ph, y: p.y - ph, w: psz, h: psz };
+        const hitSz = p.hitSize != null ? p.hitSize : psz;
+        const ph = hitSz / 2;
+        const pr = { x: p.x - ph, y: p.y - ph, w: hitSz, h: hitSz };
         hit = circleRectIntersects(hitPosX(), hitPosY(), pradius, pr);
       }
       if (hit) {
@@ -1158,7 +1179,7 @@
     btn.addEventListener("click", onPrimaryOverlayAction);
   }
 
-  const backBtn = document.querySelector(".btn-back-float");
+  const backBtn = document.getElementById("gameBackBtn");
   if (backBtn) {
     backBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
   }

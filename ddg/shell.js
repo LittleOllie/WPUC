@@ -230,6 +230,15 @@
     return FRAPPY_SKINS[0];
   }
 
+  function syncHudSkinTheme(skin) {
+    var el = document.documentElement;
+    if (skin && skin.id && /^[123]$/.test(String(skin.id))) {
+      el.setAttribute("data-frappy-skin", String(skin.id));
+    } else {
+      el.removeAttribute("data-frappy-skin");
+    }
+  }
+
   function setSkinWindowAndPage(skin) {
     if (typeof window !== "undefined" && skin) {
       window.__FRAPPY_SKIN__ = skinGamePayload(skin);
@@ -238,11 +247,15 @@
       var u = assetUrl(skin.bg).replace(/\\/g, "/");
       document.documentElement.style.setProperty("--frappy-bg-page", 'url("' + u + '")');
     }
+    syncHudSkinTheme(skin);
   }
 
   function applyStoredSkinToPage() {
     var id = getSkinId();
-    if (!id) return;
+    if (!id) {
+      syncHudSkinTheme(null);
+      return;
+    }
     setSkinWindowAndPage(getSkinById(id));
   }
 

@@ -54,7 +54,7 @@ body {
   overflow: hidden;
 }
 
-/* Full-bleed page BG — scene PNGs normalized to 1024×1536; cover = full visible screen on iPhone. */
+/* Page backdrop — one rule everywhere (no dueling mobile/desktop BG math). */
 .frappy-bg {
   position: fixed;
   inset: 0;
@@ -92,7 +92,6 @@ body {
   );
 }
 
-/* iPhone / narrow: lock full-screen height chain; BG already uses cover + safe-area bleed above. */
 @media (max-width: 480px) {
   html,
   body,
@@ -102,14 +101,9 @@ body {
     min-height: 100dvh;
     min-height: -webkit-fill-available;
   }
-
-  .frappy-bg {
-    background-size: cover;
-    background-position: center center;
-  }
 }
 
-/* Full-screen layout: letterboxed 480:640 playfield; LO×DDG + HUD overlay via .game-top-bar */
+/* Letterboxed 480:640 playfield; HUD fixed on top */
 .page-fullscreen {
   position: relative;
   z-index: 2;
@@ -147,8 +141,7 @@ body {
 
 .intro-splash:not(.hidden) ~ .game-top-bar,
 .intro-splash:not(.hidden) ~ .game-viewport,
-.intro-splash:not(.hidden) ~ .btn-back-float,
-.intro-splash:not(.hidden) ~ .controls-hint-float {
+.intro-splash:not(.hidden) ~ .btn-back--corner {
   visibility: hidden;
   pointer-events: none;
 }
@@ -361,12 +354,11 @@ body {
   justify-content: center;
   container-type: size;
   container-name: game;
-  /* Horizontal safe-area only — full vertical space for sky BG + letterboxed canvas on iPhone */
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Portrait 480:640 — prefer full height; side margins when wide; top/bottom bars when narrow */
+/* Portrait 480:640 — same framing on Mac and iPhone */
 .canvas-wrap {
   position: relative;
   overflow: hidden;
@@ -397,8 +389,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px
-    max(12px, env(safe-area-inset-left));
+  padding: max(8px, env(safe-area-inset-top))
+    calc(max(12px, env(safe-area-inset-right)) + 44px) 10px max(12px, env(safe-area-inset-left));
   pointer-events: none;
   background: linear-gradient(
     180deg,
@@ -478,41 +470,46 @@ body {
   pointer-events: none;
 }
 
-.btn-back-float {
+/* Small top-right control — out of the way of logo + HUD */
+.btn-back--corner {
   position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  right: max(12px, env(safe-area-inset-right));
-  z-index: 55;
-  text-decoration: none;
-  padding: 9px 14px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 62;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
-  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
   color: #fff;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   pointer-events: auto;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.12s ease;
 }
 
-.btn-back-float:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
+.btn-back--corner:hover {
+  background: rgba(0, 0, 0, 0.6);
+  transform: scale(1.05);
 }
 
-.controls-hint-float {
-  position: fixed;
-  bottom: max(12px, env(safe-area-inset-bottom));
-  left: 0;
-  right: 0;
-  z-index: 55;
-  text-align: center;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  pointer-events: none;
+.btn-back--corner:active {
+  transform: scale(0.96);
+}
+
+.btn-back-arrow {
+  display: block;
+  margin-left: -2px;
 }
 
 .hud {
@@ -533,10 +530,31 @@ body {
   letter-spacing: 0.02em;
   background: rgba(0, 0, 0, 0.35);
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+  border: 1px solid transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .hud-pill span:last-child {
   font-variant-numeric: tabular-nums;
+}
+
+/* Scene-tinted pills only (data-frappy-skin set from shell when a Lord is chosen) */
+[data-frappy-skin="1"] .hud-pill {
+  background: rgba(55, 25, 85, 0.62);
+  border-color: rgba(190, 130, 255, 0.4);
+  box-shadow: 0 3px 0 rgba(30, 15, 50, 0.65);
+}
+
+[data-frappy-skin="2"] .hud-pill {
+  background: rgba(95, 25, 18, 0.62);
+  border-color: rgba(255, 130, 90, 0.42);
+  box-shadow: 0 3px 0 rgba(50, 15, 10, 0.65);
+}
+
+[data-frappy-skin="3"] .hud-pill {
+  background: rgba(18, 55, 105, 0.62);
+  border-color: rgba(110, 190, 255, 0.42);
+  box-shadow: 0 3px 0 rgba(12, 35, 70, 0.65);
 }
 
 #gameCanvas {
@@ -743,13 +761,10 @@ body {
     padding: 6px 8px;
   }
 
-  .controls-hint-float {
-    font-size: 10px;
-  }
-
-  .btn-back-float {
-    font-size: 12px;
-    padding: 8px 12px;
+  .btn-back--corner {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
   }
 }
 
