@@ -50,7 +50,7 @@
     player: "assets/player1.png",
     bean: "assets/bean.png",
     bean_golden: "assets/bean_golden.png",
-    cup_red: "assets/cup_red.png",
+    cup_red: "assets/ddg.png",
     bg0: "assets/bg01.png",
     pillar_cup: "assets/pillar_cup.png",
   };
@@ -120,10 +120,10 @@
   const PILLAR_HIT_INSET_X = Math.max(6, gs(12));
   const CEILING_TOP_MARGIN = Math.max(8, gs(10));
   const PICKUP_DRAW_SIZE = gs(56);
-  const PICKUP_DRAW_SIZE_FISH = gs(112);
-  /** Lab brain: drawn larger than old fish slot; hit box uses hitSize (tighter) to match visible art. */
-  const LAB_BRAIN_DRAW_SIZE = Math.round(PICKUP_DRAW_SIZE_FISH * 1.14);
-  const LAB_BRAIN_HIT_RATIO = 0.7;
+  /** DDG (+8) — PNG has lots of padding; draw larger than bubbles so the skull reads clearly. */
+  const PICKUP_DRAW_SIZE_DDG = Math.max(1, Math.round(PICKUP_DRAW_SIZE * 2.6));
+  /** Hit uses only the central skull — circle diameter ≈ this fraction of draw size. */
+  const DDG_HIT_RATIO = 0.38;
   const PICKUP_DRAW_SIZE_MINE = Math.max(28, gs(36));
   const PICKUP_OFFSET_X = gs(70);
   const PICKUP_OFFSET_X_MINE = gs(92);
@@ -407,17 +407,14 @@
       height - EDGE_PAD
     );
     let px = x + PIPE_WIDTH + PICKUP_OFFSET_X;
-    let drawSize =
-      type === PICKUP_TYPES.RED_CUP
-        ? hazardTheme === "fire"
-          ? PICKUP_DRAW_SIZE
-          : PICKUP_DRAW_SIZE_FISH
-        : PICKUP_DRAW_SIZE;
+    let drawSize = PICKUP_DRAW_SIZE;
+    if (type === PICKUP_TYPES.RED_CUP) {
+      drawSize = PICKUP_DRAW_SIZE_DDG;
+    }
     /** @type {number | undefined} */
     let hitSize;
-    if (type === PICKUP_TYPES.RED_CUP && hazardTheme === "lab") {
-      drawSize = LAB_BRAIN_DRAW_SIZE;
-      hitSize = Math.max(10, Math.round(LAB_BRAIN_DRAW_SIZE * LAB_BRAIN_HIT_RATIO));
+    if (type === PICKUP_TYPES.RED_CUP) {
+      hitSize = Math.max(12, Math.round(PICKUP_DRAW_SIZE_DDG * DDG_HIT_RATIO));
     }
     if (type === PICKUP_TYPES.BURNT) {
       drawSize = PICKUP_DRAW_SIZE_MINE;
@@ -673,6 +670,13 @@
         const mineSz = p.drawSize != null ? p.drawSize : PICKUP_DRAW_SIZE_MINE;
         const mineR = mineHitRadiusPx(mineSz);
         const rr = mineR + pradius;
+        hit = dx * dx + dy * dy <= rr * rr;
+      } else if (p.type === PICKUP_TYPES.RED_CUP) {
+        const hitD = p.hitSize != null ? p.hitSize : Math.max(12, Math.round(psz * DDG_HIT_RATIO));
+        const hr = hitD / 2;
+        const dx = hitPosX() - p.x;
+        const dy = hitPosY() - p.y;
+        const rr = hr + pradius;
         hit = dx * dx + dy * dy <= rr * rr;
       } else {
         const hitSz = p.hitSize != null ? p.hitSize : psz;
@@ -1182,6 +1186,10 @@
   const backBtn = document.getElementById("gameBackBtn");
   if (backBtn) {
     backBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+  }
+  const gameHowToBtn = document.getElementById("gameHowToBtn");
+  if (gameHowToBtn) {
+    gameHowToBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
   }
 
   /** Pause play and show intro (shell Back → menu). */

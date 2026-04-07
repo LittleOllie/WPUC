@@ -1,11 +1,79 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
   <defs>
-    <radialGradient id="fb" cx="40%" cy="38%" r="65%">
-      <stop offset="0%" stop-color="#fff5e6"/>
-      <stop offset="35%" stop-color="#ff8c42"/>
-      <stop offset="100%" stop-color="#c0392b"/>
+    <linearGradient id="flameOuter" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#4a0e00"/>
+      <stop offset="22%" stop-color="#a93226"/>
+      <stop offset="48%" stop-color="#e74c3c"/>
+      <stop offset="72%" stop-color="#f39c12"/>
+      <stop offset="100%" stop-color="#fff9e0"/>
+    </linearGradient>
+    <radialGradient id="flameCore" cx="42%" cy="52%" r="52%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fff3a0"/>
+      <stop offset="55%" stop-color="#ffc107"/>
+      <stop offset="100%" stop-color="#e65100"/>
     </radialGradient>
+    <linearGradient id="flameSide" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#b71c1c"/>
+      <stop offset="50%" stop-color="#ff6f00"/>
+      <stop offset="100%" stop-color="#ffab40"/>
+    </linearGradient>
   </defs>
-  <circle cx="32" cy="32" r="22" fill="url(#fb)" stroke="#7b241c" stroke-width="2"/>
-  <ellipse cx="28" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-15 28 28)"/>
+  <!-- Back / base flame (fills canvas — slightly bigger) -->
+  <path
+    fill="url(#flameOuter)"
+    stroke="#2d0a05"
+    stroke-width="1.1"
+    stroke-linejoin="round"
+    d="M32 1
+       C 38 2  44 10  46 20
+       C 50 14  54 24  52 32
+       C 55 28  58 38  54 46
+       C 52 54  44 60  32 63
+       C 20 60  12 54  10 46
+       C 6 38  9 28  12 32
+       C 10 24  14 14  18 20
+       C 20 10  26 2  32 1
+       Z"
+  />
+  <!-- Mid flicker (left tongue) -->
+  <path
+    fill="url(#flameSide)"
+    opacity="0.88"
+    d="M22 8
+       C 18 16  16 28  18 38
+       C 20 46  26 52  30 56
+       C 24 48  20 38  22 28
+       C 22 18  22 12  22 8
+       Z"
+  />
+  <!-- Mid flicker (right tongue — mirror of left) -->
+  <g transform="translate(64,0) scale(-1,1)">
+    <path
+      fill="url(#flameSide)"
+      opacity="0.88"
+      d="M22 8
+         C 18 16  16 28  18 38
+         C 20 46  26 52  30 56
+         C 24 48  20 38  22 28
+         C 22 18  22 12  22 8
+         Z"
+    />
+  </g>
+  <!-- Hot core -->
+  <path
+    fill="url(#flameCore)"
+    d="M32 18
+       C 38 24  40 36  36 46
+       C 34 52  32 56  32 58
+       C 32 56  30 52  28 46
+       C 24 36  26 24  32 18
+       Z"
+  />
+  <!-- Inner bright tip -->
+  <path
+    fill="#fffef5"
+    opacity="0.75"
+    d="M32 22 Q 34 30 32 40 Q 30 30 32 22 Z"
+  />
 </svg>

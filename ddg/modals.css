@@ -63,15 +63,6 @@ body.modal-open {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
-.modal-brand-ddg {
-  width: 46px;
-  height: 46px;
-  object-fit: cover;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
-}
-
 .modal-header {
   display: flex;
   align-items: flex-start;
@@ -340,6 +331,12 @@ body.modal-open {
   height: 36px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+/* DDG +8 — a bit larger than other chips so the skull reads at the points line */
+.howto-chip img#howtoImgFish {
+  width: 52px;
+  height: 52px;
 }
 
 .howto-chip .howto-mine-img {

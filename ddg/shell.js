@@ -24,7 +24,7 @@
   var DEFAULT_SKIN_ASSETS = {
     bean: "assets/bean.png",
     bean_golden: "assets/bean_golden.png",
-    cup_red: "assets/cup_red.png",
+    cup_red: "assets/ddg.png",
     pillar_cup: "assets/pillar_cup.png",
     mineHowto: "assets/mine-howto.svg",
     hazardTheme: "water",
@@ -42,7 +42,7 @@
       sceneName: "Supreme Lab",
       bean: "assets/skin_lab_bean.svg",
       bean_golden: "assets/skin_lab_golden.svg",
-      cup_red: "assets/skin_lab_fish.svg",
+      cup_red: "assets/ddg.png",
       pillar_cup: "assets/skin_lab_pillar.svg",
       mineHowto: "assets/skin_lab_mine.svg",
       hazardTheme: "lab",
@@ -55,7 +55,7 @@
           "Pass pillars to increase your score. Your best run is saved on this device.",
         chipBean: "Lab bubble (+1 score, +1 bubble)",
         chipGolden: "Golden reactor bubble (+5, +1 bubble, shield charge)",
-        chipFish: "Brain (+8 score)",
+        chipFish: "DDG skull (+8 score)",
         shield:
           "Collect a golden reactor bubble to gain a shield ring. The next hit consumes the shield instead of ending your run.",
         avoidHazard: "Containment sphere — explodes on contact",
@@ -70,7 +70,7 @@
       sceneName: "Molten Crucible",
       bean: "assets/skin_fire_bean.svg",
       bean_golden: "assets/skin_fire_golden.svg",
-      cup_red: "assets/skin_fire_fish.svg",
+      cup_red: "assets/ddg.png",
       pillar_cup: "assets/skin_fire_pillar.svg",
       mineHowto: "assets/skin_fire_mine.svg",
       hazardTheme: "fire",
@@ -81,9 +81,9 @@
           "Tap, click, or press Space to flap. Stay in the gap between the molten pillars.",
         scoring:
           "Pass pillars to increase your score. Your best run is saved on this device.",
-        chipBean: "Ember orb (+1 score, +1 bubble)",
+        chipBean: "Ember flame (+1 score, +1 bubble)",
         chipGolden: "Solar core (+5, +1 bubble, shield charge)",
-        chipFish: "Flame (+8 score)",
+        chipFish: "DDG skull (+8 score)",
         shield:
           "Collect a solar core to gain a shield ring. The next hit consumes the shield instead of ending your run.",
         avoidHazard: "Cinder core — explodes on contact",
@@ -98,7 +98,7 @@
       sceneName: "Primordial Waters",
       bean: "assets/bean.png",
       bean_golden: "assets/bean_golden.png",
-      cup_red: "assets/cup_red.png",
+      cup_red: "assets/ddg.png",
       pillar_cup: "assets/pillar_cup.png",
       mineHowto: "assets/mine-howto.svg",
       hazardTheme: "water",
@@ -111,7 +111,7 @@
           "Pass pillars to increase your score. Your best run is saved on this device.",
         chipBean: "Bubble (+1 score, +1 bubble)",
         chipGolden: "Golden bubble (+5, +1 bubble, shield charge)",
-        chipFish: "Red fish (+8 score)",
+        chipFish: "DDG skull (+8 score)",
         shield:
           "Collect a golden bubble to gain a shield ring. The next hit consumes the shield instead of ending your run.",
         avoidHazard: "Underwater mine — explodes on contact",
@@ -676,6 +676,14 @@
   var howToBtn = document.getElementById("howToPlayBtn");
   if (howToBtn) {
     howToBtn.addEventListener("click", function () {
+      openHowToModal();
+    });
+  }
+
+  var gameHowToBtn = document.getElementById("gameHowToBtn");
+  if (gameHowToBtn) {
+    gameHowToBtn.addEventListener("click", function (e) {
+      e.preventDefault();
       openHowToModal();
     });
   }

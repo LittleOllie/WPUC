@@ -33,7 +33,9 @@
       <div class="intro-splash-inner">
         <img src="assets/lo.png" alt="Little Ollie" class="intro-splash-lo" width="400" height="120" />
         <span class="intro-splash-x" aria-hidden="true">×</span>
-        <img src="assets/ddg.png" alt="DDG" class="intro-splash-ddg" width="120" height="120" />
+        <span class="ddg-skull-wrap ddg-skull-wrap--intro">
+          <img src="assets/ddg.png" alt="DDG" />
+        </span>
         <p id="welcomeLine" class="intro-welcome" aria-live="polite" hidden></p>
         <p id="introSplashLoading" class="intro-splash-loading">Loading…</p>
         <button type="button" id="introPlayBtn" class="btn-primary intro-play-btn" disabled>
@@ -51,7 +53,9 @@
       <div class="co-brand-bar" aria-label="LO x DDG">
         <img src="assets/lo.png" alt="LO" class="co-brand-img co-brand-lo" width="120" height="40" />
         <span class="co-brand-x" aria-hidden="true">×</span>
-        <img src="assets/ddg.png" alt="DDG" class="co-brand-img co-brand-ddg" width="40" height="40" />
+        <span class="ddg-skull-wrap ddg-skull-wrap--cobrand">
+          <img src="assets/ddg.png" alt="DDG" />
+        </span>
       </div>
       <p id="gameHandleBar" class="game-handle-bar" aria-live="polite" hidden></p>
       <div class="hud hud-overlay">
@@ -78,7 +82,9 @@
             <div class="overlay-card-brand" aria-hidden="true">
               <img src="assets/lo.png" alt="" class="overlay-brand-lo" />
               <span class="co-brand-x">×</span>
-              <img src="assets/ddg.png" alt="" class="overlay-brand-ddg" />
+              <span class="ddg-skull-wrap ddg-skull-wrap--overlay">
+                <img src="assets/ddg.png" alt="" />
+              </span>
             </div>
             <p id="loadingText" class="loading-text" style="display: none">Loading…</p>
             <h2 class="ready-title">Ready?</h2>
@@ -87,13 +93,17 @@
               <span class="btn-primary-content">
                 <img src="assets/lo.png" alt="" class="btn-brand-lo" />
                 <span class="btn-primary-text">Start</span>
-                <img src="assets/ddg.png" alt="" class="btn-brand-ddg" />
+                <span class="ddg-skull-wrap ddg-skull-wrap--btn">
+                  <img src="assets/ddg.png" alt="" />
+                </span>
               </span>
             </button>
           </div>
           <div class="overlay-card overlay-card--gameover hidden" id="gameOverCard">
             <div class="overlay-card-ddg-watermark" aria-hidden="true">
-              <img src="assets/ddg.png" alt="" />
+              <span class="ddg-skull-wrap ddg-skull-wrap--watermark">
+                <img src="assets/ddg.png" alt="" />
+              </span>
             </div>
             <div class="overlay-card-gameover-body">
               <h2 id="gameOverTitle">Game Over</h2>
@@ -109,6 +119,9 @@
       </div>
     </div>
 
+    <button type="button" id="gameHowToBtn" class="btn-help btn-help--corner" aria-label="How to play" title="How to play">
+      <span aria-hidden="true">?</span>
+    </button>
     <button type="button" id="gameBackBtn" class="btn-back btn-back--corner" aria-label="Back to menu" title="Back to menu">
       <span class="btn-back-arrow" aria-hidden="true">←</span>
     </button>
@@ -128,7 +141,9 @@
       <div class="modal-brand-strip" aria-hidden="true">
         <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
         <span class="modal-brand-x">×</span>
-        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
+          <img src="assets/ddg.png" alt="" width="46" height="46" />
+        </span>
       </div>
       <div class="modal-header">
         <h2 id="usernameModalTitle" class="modal-title">Welcome</h2>
@@ -174,7 +189,9 @@
       <div class="modal-brand-strip" aria-hidden="true">
         <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
         <span class="modal-brand-x">×</span>
-        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
+          <img src="assets/ddg.png" alt="" width="46" height="46" />
+        </span>
       </div>
       <div class="modal-header">
         <h2 id="howToModalTitle" class="modal-title">How to play</h2>
@@ -213,8 +230,8 @@
               <span id="howtoTextGolden">Golden bubble (+5, +1 bubble, shield charge)</span>
             </span>
             <span class="howto-chip">
-              <img id="howtoImgFish" src="assets/cup_red.png" alt="" />
-              <span id="howtoTextFish">Red fish (+8 score)</span>
+              <img id="howtoImgFish" src="assets/ddg.png" alt="" />
+              <span id="howtoTextFish">DDG skull (+8 score)</span>
             </span>
           </div>
         </section>
@@ -264,7 +281,9 @@
       <div class="modal-brand-strip" aria-hidden="true">
         <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
         <span class="modal-brand-x">×</span>
-        <img src="assets/ddg.png" alt="" class="modal-brand-ddg" width="48" height="48" />
+        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
+          <img src="assets/ddg.png" alt="" width="46" height="46" />
+        </span>
       </div>
       <div class="modal-header">
         <h2 id="characterSelectTitle" class="modal-title">Choose your Lord of chaos</h2>
