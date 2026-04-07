@@ -662,16 +662,33 @@ body {
   pointer-events: none;
 }
 
-/* Game Over: don’t vertically center a tall card (pushes content under notch); pin with safe-area padding */
-#overlay:has(.overlay-card--gameover:not(.hidden)) {
+/* Game Over: escape the letterboxed canvas — it’s sized with dvh/vw math and can sit *under*
+   Safari’s bottom chrome, clipping submit + Play Again. Pin #overlay to the visible viewport
+   (svh + safe-area) and scroll the overlay, not a nested card. */
+body.game-over-active #overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  /* svh = smallest viewport (URL bar expanded); avoids content ending up behind the toolbar */
+  height: 100dvh;
+  height: min(100svh, 100dvh);
+  max-height: -webkit-fill-available;
+  z-index: 100;
+  display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: max(8px, env(safe-area-inset-top, 0px));
-  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
   box-sizing: border-box;
   pointer-events: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+  padding-right: max(8px, env(safe-area-inset-right, 0px));
 }
 
 .overlay-card {
@@ -735,19 +752,26 @@ body.game-over-active .canvas-wrap::before {
   display: none;
 }
 
-/* Game Over: LO×DDG + subtle DDG watermark — scroll when content is taller than viewport (iPhone) */
+/* Game Over: LO×DDG + subtle DDG watermark — outer #overlay scrolls on iPhone (see body.game-over-active #overlay) */
 .overlay-card--gameover {
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   max-height: min(88vh, 88dvh);
+  max-height: min(85svh, calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
   z-index: 10;
   background: rgba(8, 12, 24, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.85),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Single scroll surface: fixed overlay scrolls; drop inner max-height to avoid nested scroll + clipping */
+body.game-over-active #overlay .overlay-card--gameover {
+  max-height: none;
+  overflow: visible;
 }
 
 .overlay-card-brand--gameover {
