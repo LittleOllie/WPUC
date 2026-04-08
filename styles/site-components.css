@@ -1,0 +1,358 @@
+/**
+ * Little Ollie — shared UI components (tokens from site-brand.css)
+ * Hub pages use site-hub.css; load this for compose-only pages (e.g. share list).
+ */
+
+/* --- Typography utilities (opt-in) --- */
+.lo-type-display {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-display);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.lo-type-section {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-section);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
+.lo-type-body {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-body);
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.lo-type-caption {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-xs);
+  letter-spacing: 0.02em;
+}
+
+/* --- Composable buttons --- */
+.lo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--lo-font);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    filter 0.15s ease;
+}
+
+.lo-btn--block {
+  width: 100%;
+}
+
+.lo-btn--yellow {
+  background: var(--lo-gradient-yellow);
+  color: var(--lo-ink);
+  box-shadow: var(--lo-shadow-btn);
+  border-radius: var(--lo-radius-lg);
+  min-height: 48px;
+  padding: 14px 28px;
+  font-size: var(--lo-text-md);
+  font-weight: 800;
+}
+
+.lo-btn--yellow:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--lo-shadow-btn-hover);
+}
+
+.lo-btn--yellow:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--lo-shadow-btn-active);
+}
+
+.lo-btn--yellow-sm {
+  background: var(--lo-gradient-yellow);
+  color: var(--lo-ink);
+  box-shadow: var(--lo-shadow-btn-yellow-sm);
+  border-radius: var(--lo-radius-sm);
+  min-height: 44px;
+  padding: 12px 22px;
+  font-size: var(--lo-text-md);
+  font-weight: 700;
+}
+
+.lo-btn--yellow-sm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--lo-shadow-btn-yellow-sm-hover);
+}
+
+.lo-btn--yellow-sm:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.lo-btn--blue-sm {
+  background: var(--lo-gradient-blue-solid);
+  color: var(--lo-text-on-dark);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+  border-radius: var(--lo-radius-sm);
+  min-height: 44px;
+  padding: 12px 18px;
+  font-size: var(--lo-text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lo-btn--blue-sm:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.lo-btn--danger-sm {
+  background: rgba(220, 80, 80, 0.95);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: var(--lo-text-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: filter 0.12s ease;
+}
+
+.lo-btn--danger-sm:hover {
+  filter: brightness(1.05);
+}
+
+.lo-btn:focus-visible {
+  outline: 2px solid var(--lo-focus-blue);
+  outline-offset: 3px;
+}
+
+.lo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Panels & inputs --- */
+.lo-panel-light {
+  background: var(--lo-surface-light);
+  border-radius: var(--lo-radius-card);
+  padding: var(--lo-space-card);
+  border: 1px solid var(--lo-border-ink);
+  box-shadow: var(--lo-shadow-panel-light);
+}
+
+.lo-input {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-md);
+  padding: 12px 16px;
+  border: 2px solid var(--lo-border-ink-strong);
+  border-radius: var(--lo-radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lo-input:focus {
+  border-color: var(--lo-yellow);
+  box-shadow: var(--lo-shadow-input-focus);
+}
+
+/* ========== Share list page (scoped) ========== */
+body.lo-page-share {
+  margin: 0;
+  padding: 0;
+  font-family: var(--lo-font);
+  background: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-bg-bottom) 100%);
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--lo-ink);
+}
+
+body.lo-page-share * {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body.lo-page-share .container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+}
+
+body.lo-page-share h1 {
+  font-size: var(--lo-text-display);
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 28px 0;
+  color: var(--lo-ink);
+  letter-spacing: 0.02em;
+}
+
+body.lo-page-share h2 {
+  font-size: var(--lo-text-section);
+  font-weight: 800;
+  margin: 0 0 14px 0;
+  letter-spacing: 0.02em;
+}
+
+/* .section kept for share.js querySelector; .lo-panel-light adds surface */
+body.lo-page-share .section.lo-panel-light {
+  margin-bottom: var(--lo-space-section-gap);
+}
+
+body.lo-page-share .section.hidden {
+  display: none;
+}
+
+body.lo-page-share .input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+body.lo-page-share #listItemInput {
+  flex: 1;
+  min-width: 0;
+}
+
+body.lo-page-share #listItemInput {
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-md);
+  padding: 12px 16px;
+  border: 2px solid var(--lo-border-ink-strong);
+  border-radius: var(--lo-radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.lo-page-share #listItemInput:focus {
+  border-color: var(--lo-yellow);
+  box-shadow: var(--lo-shadow-input-focus);
+}
+
+body.lo-page-share #shareUrl {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--lo-font);
+  font-size: var(--lo-text-sm);
+  border: 2px solid var(--lo-border-ink-strong);
+  border-radius: var(--lo-radius-sm);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--lo-ink);
+  word-break: break-all;
+  padding: 12px 16px;
+}
+
+body.lo-page-share #listItems,
+body.lo-page-share #viewListItems {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+}
+
+body.lo-page-share #listItems li,
+body.lo-page-share #viewListItems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: var(--lo-surface-light-soft);
+  border: 2px solid var(--lo-border-ink);
+  border-radius: var(--lo-radius-sm);
+  font-size: var(--lo-text-md);
+}
+
+body.lo-page-share .share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+body.lo-page-share .qr-container {
+  text-align: center;
+}
+
+body.lo-page-share #qrcode {
+  display: inline-block;
+  padding: 16px;
+  background: #fff;
+  border-radius: var(--lo-radius-sm);
+  box-shadow: var(--lo-shadow-qr);
+}
+
+body.lo-page-share .url-container {
+  width: 100%;
+}
+
+body.lo-page-share .url-container label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: var(--lo-text-sm);
+}
+
+body.lo-page-share .url-box {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+body.lo-page-share .hint {
+  font-size: var(--lo-text-xs);
+  color: var(--lo-ink-muted);
+  margin: 8px 0 0 0;
+}
+
+body.lo-page-share .footer {
+  text-align: center;
+  margin-top: 28px;
+}
+
+body.lo-page-share .back-link {
+  color: var(--lo-ink-soft);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: var(--lo-text-sm);
+}
+
+body.lo-page-share .back-link:hover {
+  color: var(--lo-ink);
+  text-decoration: underline;
+}
+
+body.lo-page-share .back-link:focus-visible {
+  outline: 2px solid var(--lo-focus-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  body.lo-page-share .container {
+    padding: 16px;
+  }
+
+  body.lo-page-share .share-options {
+    gap: 20px;
+  }
+
+  body.lo-page-share #qrcode {
+    padding: 12px;
+  }
+
+  body.lo-page-share .url-box {
+    flex-direction: column;
+  }
+
+  body.lo-page-share .lo-btn--blue-sm {
+    width: 100%;
+  }
+}

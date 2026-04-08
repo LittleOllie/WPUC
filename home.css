@@ -1,8 +1,10 @@
+/* Tokens: load styles/site-brand.css before this file (see index.html). */
+
 html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    font-family: Arial, sans-serif;
+    font-family: var(--lo-font);
     width: 100%;
     height: 100%;
 }
@@ -10,6 +12,7 @@ html, body {
 .sky {
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     background-image: url("assets/mainbg.webp");
     background-size: cover;
     background-position: center;
@@ -69,20 +72,34 @@ html, body {
 }
 
 #enterBtn {
-    font-family: "Fredoka", sans-serif;
-    background: #ffdd33;
+    font-family: var(--lo-font);
+    background: var(--lo-gradient-yellow);
+    color: var(--lo-ink);
     border: none;
     padding: 18px 48px;
-    font-size: 22px;
-    font-weight: bold;
-    border-radius: 18px;
+    font-size: clamp(1.1rem, 2.8vw, 1.375rem);
+    font-weight: 800;
+    border-radius: var(--lo-radius-lg);
     cursor: pointer;
-    box-shadow: 0 8px 0 #d4b300;
-    transition: transform 0.2s ease;
+    box-shadow: var(--lo-shadow-btn);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.02em;
+    min-height: 52px;
 }
 
 #enterBtn:hover {
     transform: scale(1.06);
+    box-shadow: var(--lo-shadow-btn-hover);
+}
+
+#enterBtn:active {
+    transform: scale(1.02);
+    box-shadow: var(--lo-shadow-btn-active);
+}
+
+#enterBtn:focus-visible {
+    outline: 3px solid var(--lo-yellow);
+    outline-offset: 3px;
 }
 
 /* Swing animation */
@@ -169,13 +186,14 @@ html, body {
     .button-area {
         left: 50%;
         right: auto;
-        bottom: 24px;
+        bottom: max(24px, env(safe-area-inset-bottom, 0px));
         transform: translateX(-50%);
     }
 
     #enterBtn {
-        font-size: 18px;
+        font-size: 1.05rem;
         padding: 14px 32px;
         white-space: nowrap;
+        min-height: 48px;
     }
 }

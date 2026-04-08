@@ -7,27 +7,29 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles/site-brand.css" />
+<link rel="stylesheet" href="styles/site-components.css" />
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <link rel="stylesheet" href="share.css" />
 
 </head>
-<body>
+<body class="lo-page-share">
 
 <div class="container">
   <h1>📋 Share Your List</h1>
   
-  <div class="section">
+  <div class="section lo-panel-light">
     <h2>Create List</h2>
     <div class="input-group">
       <input type="text" id="listItemInput" placeholder="Add an item..." maxlength="100" />
-      <button id="addItemBtn" type="button">Add</button>
+      <button id="addItemBtn" type="button" class="lo-btn lo-btn--yellow-sm">Add</button>
     </div>
     <ul id="listItems"></ul>
-    <button id="shareBtn" type="button" class="btn-share" disabled>Generate Share Link</button>
+    <button id="shareBtn" type="button" class="lo-btn lo-btn--yellow lo-btn--block" disabled>Generate Share Link</button>
   </div>
 
-  <div id="shareSection" class="section hidden">
+  <div id="shareSection" class="section lo-panel-light hidden">
     <h2>Share Your List</h2>
     <div class="share-options">
       <div class="qr-container">
@@ -38,18 +40,18 @@
         <label>Shareable URL:</label>
         <div class="url-box">
           <input type="text" id="shareUrl" readonly />
-          <button id="copyUrlBtn" type="button" class="btn-copy">Copy</button>
+          <button id="copyUrlBtn" type="button" class="lo-btn lo-btn--blue-sm">Copy</button>
         </div>
         <p class="hint">Send this link to your friend</p>
       </div>
     </div>
-    <button id="newListBtn" type="button" class="btn-new">Create New List</button>
+    <button id="newListBtn" type="button" class="lo-btn lo-btn--yellow lo-btn--block">Create New List</button>
   </div>
 
-  <div id="viewSection" class="section hidden">
+  <div id="viewSection" class="section lo-panel-light hidden">
     <h2>Shared List</h2>
     <ul id="viewListItems"></ul>
-    <button id="backBtn" type="button" class="btn-back">← Back</button>
+    <button id="backBtn" type="button" class="lo-btn lo-btn--yellow lo-btn--block">← Back</button>
   </div>
 
   <div class="footer">

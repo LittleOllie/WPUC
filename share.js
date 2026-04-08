@@ -21,7 +21,7 @@ function updateListDisplay() {
     li.textContent = item;
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remove";
-    removeBtn.className = "remove-btn";
+    removeBtn.className = "lo-btn lo-btn--danger-sm remove-btn";
     removeBtn.addEventListener("click", () => {
       itemsArray.splice(index, 1);
       updateListDisplay();

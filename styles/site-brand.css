@@ -1,0 +1,83 @@
+/**
+ * Little Ollie — shared design tokens (hub, share, marketing pages)
+ * Games keep their own CSS; UI chrome should reference these where linked.
+ */
+:root {
+  /* Brand */
+  --lo-blue: #4c6fff;
+  --lo-blue-mid: #3a5aee;
+  --lo-blue-dark: #334ddc;
+  --lo-yellow: #ffdd55;
+  --lo-yellow-light: #ffe986;
+  --lo-yellow-press: #d4b300;
+  --lo-ink: #1a1a2e;
+  --lo-bg-top: #6de0ff;
+  --lo-bg-bottom: #4c6fff;
+
+  /* Surfaces */
+  --lo-glass: rgba(0, 0, 0, 0.35);
+  --lo-glass-border: rgba(255, 255, 255, 0.12);
+  --lo-overlay-top: rgba(0, 0, 0, 0.25);
+  --lo-overlay-mid: rgba(0, 0, 0, 0.45);
+  --lo-overlay-bottom: rgba(0, 0, 0, 0.65);
+  --lo-text-on-dark: #ffffff;
+  --lo-text-muted: rgba(255, 255, 255, 0.88);
+  --lo-text-subtle: rgba(255, 255, 255, 0.78);
+
+  /* Text on light surfaces (share, forms) */
+  --lo-ink-muted: rgba(26, 26, 46, 0.58);
+  --lo-ink-soft: rgba(26, 26, 46, 0.82);
+  --lo-border-ink: rgba(26, 26, 46, 0.12);
+  --lo-border-ink-strong: rgba(26, 26, 46, 0.18);
+
+  /* Surfaces — light UI on gradient */
+  --lo-surface-light: rgba(255, 255, 255, 0.96);
+  --lo-surface-light-soft: rgba(255, 255, 255, 0.85);
+
+  /* Brand gradients (buttons, CTAs) */
+  --lo-gradient-yellow: linear-gradient(180deg, var(--lo-yellow-light) 0%, var(--lo-yellow) 90%);
+  --lo-gradient-blue: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-blue) 90%);
+  --lo-gradient-blue-solid: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-blue) 100%);
+
+  /* Elevation */
+  --lo-radius-sm: 12px;
+  --lo-radius-md: 14px;
+  --lo-radius-lg: 16px;
+  --lo-radius-xl: 20px;
+  --lo-radius-card: 24px;
+  --lo-shadow-btn: 0 6px 0 rgba(0, 0, 0, 0.55), 0 12px 26px rgba(0, 0, 0, 0.45);
+  --lo-shadow-btn-hover: 0 10px 0 rgba(0, 0, 0, 0.6), 0 18px 36px rgba(0, 0, 0, 0.6);
+  --lo-shadow-btn-active: 0 4px 0 rgba(0, 0, 0, 0.5), 0 10px 24px rgba(0, 0, 0, 0.5);
+  --lo-shadow-card: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--lo-glass-border);
+  --lo-shadow-back: 0 4px 0 rgba(0, 0, 0, 0.55), 0 10px 22px rgba(0, 0, 0, 0.4);
+  --lo-shadow-back-hover: 0 7px 0 rgba(0, 0, 0, 0.6), 0 14px 28px rgba(0, 0, 0, 0.6);
+  --lo-shadow-back-active: 0 3px 0 rgba(0, 0, 0, 0.5), 0 8px 18px rgba(0, 0, 0, 0.5);
+  /* Compact yellow CTA (toolbar / inline) */
+  --lo-shadow-btn-yellow-sm: 0 4px 0 var(--lo-yellow-press), 0 8px 18px rgba(0, 0, 0, 0.12);
+  --lo-shadow-btn-yellow-sm-hover: 0 5px 0 var(--lo-yellow-press), 0 10px 22px rgba(0, 0, 0, 0.14);
+  --lo-shadow-panel-light: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --lo-shadow-qr: 0 6px 0 rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.1);
+  --lo-shadow-input-focus: 0 0 0 3px rgba(255, 221, 85, 0.35);
+
+  /* Focus rings */
+  --lo-focus-yellow: var(--lo-yellow);
+  --lo-focus-blue: var(--lo-blue);
+
+  /* Type scale (Fredoka) */
+  --lo-font: "Fredoka", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --lo-text-xs: 0.75rem;
+  --lo-text-sm: 0.875rem;
+  --lo-text-body: 0.9375rem;
+  --lo-text-md: 1rem;
+  --lo-text-lg: 1.0625rem;
+  --lo-text-title: clamp(1.375rem, 4vw, 1.625rem);
+  --lo-text-hero: clamp(1.75rem, 5vw, 2rem);
+  --lo-text-display: clamp(1.5rem, 5vw, 2rem);
+  --lo-text-section: clamp(1.125rem, 3vw, 1.5rem);
+
+  /* Spacing rhythm */
+  --lo-space-page: clamp(16px, 4vw, 32px);
+  --lo-space-card: clamp(20px, 4vw, 28px);
+  --lo-stack-gap: 12px;
+  --lo-space-section-gap: 22px;
+}
