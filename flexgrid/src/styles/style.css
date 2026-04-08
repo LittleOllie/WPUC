@@ -27,6 +27,36 @@
   flex-shrink: 0;
   margin-left: auto;
 }
+
+/* Hub: return to Little Ollie links page (same folder level as flexgrid/) */
+.hubBackLink{
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  transition: background .15s ease, border-color .15s ease, transform .08s ease;
+  white-space: nowrap;
+}
+.hubBackLink:hover{
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.35);
+}
+.hubBackLink:active{
+  transform: scale(.98);
+}
+.hubBackLink:focus-visible{
+  outline: 2px solid rgba(109,224,255,.95);
+  outline-offset: 2px;
+}
 .settingsTopBtn{
   flex-shrink: 0;
   width: 44px;
@@ -1149,6 +1179,7 @@ body.dark .traitOrderHeaderHint{
   .stepIndicator { gap: 4px; }
   .stepItem { font-size: 15px; }
   .stepConnector { display: none; }
+  .hubBackLink { font-size: 14px; padding: 7px 10px; }
 }
 
 /* Step navigation */
@@ -1162,6 +1193,15 @@ body.dark .traitOrderHeaderHint{
 }
 .stepNav .btn:only-child {
   margin-left: auto;
+}
+@media (max-width: 520px) {
+  .stepNav {
+    flex-wrap: wrap;
+  }
+  .stepNav .btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
 }
 
 /* Global status bar - visible on all steps */
@@ -2368,6 +2408,26 @@ body.dark .tile[data-kind="empty"]{
   border-radius: 24px;
   padding: 32px 36px;
   box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  position: relative;
+}
+.disclaimer-back-link{
+  display: inline-flex;
+  align-items: center;
+  margin: -8px 0 12px;
+  font-weight: 800;
+  font-size: 16px;
+  color: rgba(255,255,255,.95);
+  text-decoration: none;
+  padding: 6px 4px;
+  border-radius: 8px;
+  transition: background .15s ease;
+}
+.disclaimer-back-link:hover{
+  background: rgba(0,0,0,.12);
+}
+.disclaimer-back-link:focus-visible{
+  outline: 2px solid rgba(255,221,85,.95);
+  outline-offset: 2px;
 }
 .disclaimer-header{
   width: 100%;

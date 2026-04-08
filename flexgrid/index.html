@@ -54,6 +54,7 @@
   <!-- Welcome disclaimer (shown on every visit; Continue only hides until next load) -->
   <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
     <div class="disclaimer-modal">
+      <a href="../links.html" class="disclaimer-back-link">← Back to links</a>
       <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
       <div class="disclaimer-content">
         <h2 class="disclaimer-title">👋 Welcome to Little Ollie Flex Grid!</h2>
@@ -102,6 +103,7 @@
 
     <!-- Step indicator + theme toggle -->
     <div class="stepBar">
+    <a href="../links.html" class="hubBackLink">← Links</a>
     <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
       <span class="stepItem" data-step="1">1. Wallets</span>
       <span class="stepConnector">→</span>
@@ -226,6 +228,10 @@
         <div class="buildGridRow">
           <button id="gridBuildBtn" class="btn" type="button" disabled>🧩 Build Grid</button>
         </div>
+        <div class="stepNav" role="group" aria-label="Step navigation">
+          <button type="button" id="collectionsBackBtn" class="btn btnSmall">← Wallets</button>
+          <button type="button" id="collectionsNextBtn" class="btn btnSmall">Continue to grid →</button>
+        </div>
       </div>
       </div>
     </section>
@@ -234,6 +240,7 @@
     <!-- STEP 3: Grid Builder (retry + grid shown below) -->
     <div id="screen-grid" class="screen" style="display:none;">
     <div class="buildExportRow" id="buildExportRow">
+      <button type="button" id="gridBackBtn" class="btn btnSmall">← Collections</button>
       <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
       <button id="removeUnloadedBtn" class="btn" type="button" style="display:none;">🗑️ Remove unloaded & reshuffle</button>
       <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Import Image / Logo</button>

@@ -150,6 +150,43 @@ body {
   display: none;
 }
 
+/* LO Arcade — leave DDG splash */
+.intro-back-to-arcade {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s ease, transform 0.12s ease;
+  touch-action: manipulation;
+}
+
+.intro-back-to-arcade:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.intro-back-to-arcade:active {
+  transform: scale(0.98);
+}
+
+.intro-back-to-arcade:focus-visible {
+  outline: 2px solid var(--lo-yellow, #ffdd55);
+  outline-offset: 2px;
+}
+
 .intro-splash-inner {
   display: flex;
   flex-direction: column;

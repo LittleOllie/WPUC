@@ -14,7 +14,8 @@
       default: return 180;
     }
   }
-  const PUZZLE_IMAGE_NAMES = Array.from({ length: 100 }, (_, i) => String(i + 1));
+  /* PNGs live in ../../assets/ as 51.png … 100.png */
+  const PUZZLE_IMAGE_NAMES = Array.from({ length: 50 }, (_, i) => String(i + 51));
 
   const canvas = document.getElementById("puzzle-canvas");
   const boardWrap = document.getElementById("puzzle-board-wrap");
@@ -458,7 +459,7 @@
   function getImageSrc() {
     return typeof currentImage === "string" && currentImage.startsWith("data:")
       ? currentImage
-      : "assets/" + currentImage + ".png";
+      : "../../assets/" + currentImage + ".png";
   }
 
   function runWithImage() {

@@ -70,7 +70,7 @@ function loadImage(name){
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
-    img.src = `./assets/${name}.webp`;
+    img.src = `../../assets/${name}.webp`;
   });
 }
 
