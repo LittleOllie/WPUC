@@ -4,7 +4,8 @@ A small **LO Labs–style** utility: enter an Ethereum wallet and see **OGENIE**
 
 - **Frontend:** plain HTML, CSS, and JavaScript (`public/`)
 - **Backend:** Cloudflare Worker (`src/index.js`) using **Alchemy Ethereum Mainnet NFT API**
-- **Contracts:** OGENIE `0x5aDc3753e8ee8D284D231A38794F688aC30541C5` · CERT `0x0C212fdB58d31e36039EfA2c85DFB0482Af8F2ee`
+- **Contracts (see `wrangler.toml`):** OGENIE `0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd` · CERT `0x0C212fdB58d31e36039EfA2c85DFB0482Af8F2ee`
+- **CERT supply cap:** `CERT_MAX_TOKEN_ID` (default `1000`) — OGENIE IDs above this have no matching CERT; the UI and `/api/token` reflect that.
 
 The Alchemy API key is **never** committed to the repo. It is read at runtime from the Worker secret **`ALCHEMY_API_KEY`**.
 
@@ -82,7 +83,7 @@ Replace `YOUR_WORKER_URL` and optionally the address:
 curl "https://YOUR_WORKER_URL/api/wallet?address=0x0000000000000000000000000000000000000001"
 ```
 
-You should get JSON with `wallet`, `ogenies`, `certs`, `matched`, `missingCerts`, and `missingOgenies`.
+You should get JSON with `wallet`, `certMaxTokenId`, `ogenies`, `certs`, `matched`, `missingCerts`, `noCert` (OGENIEs above the CERT cap with no on-chain CERT), and `missingOgenies`.
 
 For a quick browser test, open the same URL (with a real wallet that holds NFTs) in the address bar.
 
@@ -107,7 +108,9 @@ Save the file. The script picks the API base automatically:
 
 After `[assets]` is deployed, **you do not need a separate host** for the UI: the Worker URL serves `index.html` at `/`.
 
-If you still use **GitHub Pages** or another static host, upload the **contents** of `public/` and keep **`WORKER_ORIGIN`** in `app.js` pointing at your Worker.
+If you use **GitHub Pages** as a **project site** (`https://YOURNAME.github.io/REPO/`), `index.html` loads a small script that sets `<base href="…">` so `style.css`, `app.js`, and images resolve under `/REPO/` instead of the site root (which would 404). The API still calls **`WORKER_ORIGIN`** from `public/app.js` (CORS is open on the Worker).
+
+If you still use another static host, upload the **contents** of `public/` and keep **`WORKER_ORIGIN`** in `app.js` pointing at your Worker.
 
 ---
 
@@ -157,19 +160,24 @@ Returns JSON:
 ```json
 {
   "wallet": "0x...",
+  "certMaxTokenId": 1000,
   "ogenies": [12, 287],
   "certs": [287],
-  "matched": [287],
+  "matched": [{ "tokenId": 287, "imageOgenie": "...", "imageCert": "..." }],
   "missingCerts": [
     {
       "tokenId": 12,
       "counterpartOwner": "0xabc...",
-      "opensea": "https://opensea.io/0xabc..."
+      "opensea": "https://opensea.io/0xabc...",
+      "openseaNft": "https://opensea.io/item/ethereum/0x.../12"
     }
   ],
+  "noCert": [{ "tokenId": 1298, "image": "..." }],
   "missingOgenies": []
 }
 ```
+
+`GET /api/token?id=` returns `noCertForId: true` and `cert: null` when the token ID is **above** `CERT_MAX_TOKEN_ID` (OGENIE-only result).
 
 Very large token IDs may appear as **decimal strings** instead of numbers so values are not rounded by JSON.
 

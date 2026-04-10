@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- GitHub Pages project sites live under /repo-name/ — set base so css/js/images resolve. -->
+    <script>
+      (function () {
+        if (document.querySelector("base[data-ogt-base]")) return;
+        var p = window.location.pathname;
+        if (p === "/" || p === "") return;
+        var href;
+        if (p.endsWith("/")) href = p;
+        else if (/\.html?$/i.test(p)) href = p.replace(/\/[^/]+$/, "/");
+        else href = p + "/";
+        var b = document.createElement("base");
+        b.href = href;
+        b.setAttribute("data-ogt-base", "1");
+        var m = document.head.querySelector("meta[charset]");
+        if (m) document.head.insertBefore(b, m.nextSibling);
+        else document.head.insertBefore(b, document.head.firstChild);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cert Checker</title>
     <meta
