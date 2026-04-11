@@ -93,6 +93,8 @@ var FLEX_CANVAS_SIZE_FALLBACK = 4096;
 var FLEX_MOBILE_EXPORT_MAX = 2048;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
+/** Max fraction of brand cell height for pblo — matches `.flex-tile__brand-pblo` in CSS. */
+var FLEX_BRAND_PBLO_MAX_FRAC = 0.52;
 /** JPEG export: high visual quality, much smaller than PNG at8k. */
 var FLEX_EXPORT_JPEG_QUALITY = 0.94;
 
@@ -218,6 +220,14 @@ function getFlexBrandImageUrl() {
     return new URL("ogtriple.png", window.location.href).href;
   } catch {
     return "ogtriple.png";
+  }
+}
+
+function getFlexPbloImageUrl() {
+  try {
+    return new URL("pblo.png", window.location.href).href;
+  } catch {
+    return "pblo.png";
   }
 }
 
@@ -486,6 +496,36 @@ function flexDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
   ctx.restore();
 }
 
+/** Download JPEG: pblo full-width on top, ogtriple cover below (same as preview grid). */
+function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
+  var pbloCap = ch * FLEX_BRAND_PBLO_MAX_FRAC;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cellX, cellY, cw, ch);
+  ctx.clip();
+  ctx.fillStyle = FLEX_BRAND_CELL_BG;
+  ctx.fillRect(cellX, cellY, cw, ch);
+  var yNext = cellY;
+  if (pbloImg && pbloImg.naturalWidth > 0) {
+    var piw = pbloImg.naturalWidth;
+    var pih = pbloImg.naturalHeight;
+    var drawW = cw;
+    var drawH = (pih / piw) * drawW;
+    if (drawH > pbloCap) {
+      drawH = pbloCap;
+      drawW = (piw / pih) * drawH;
+    }
+    var ox = cellX + (cw - drawW) / 2;
+    ctx.drawImage(pbloImg, ox, yNext, drawW, drawH);
+    yNext += drawH;
+  }
+  var subH = cellY + ch - yNext;
+  if (subH > 0) {
+    flexDrawCover(ctx, ogImg, cellX, yNext, cw, subH, FLEX_BRAND_CELL_BG);
+  }
+  ctx.restore();
+}
+
 function flexComputeGrid(totalCells) {
   var cols = Math.ceil(Math.sqrt(totalCells));
   var rows = Math.ceil(totalCells / cols);
@@ -657,14 +697,23 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       row = Math.floor(i / cols);
       x = col * cw;
       y = row * ch;
-      bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
       var slotUrl = slots[i];
-      var img = null;
-      if (slotUrl) {
-        img = await flexLoadImageWithFallbacks(slotUrl);
+      if (i === 0) {
+        var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+        var ogM = null;
+        if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
+        flexDrawBrandCellExport(ctx, ogM, pbloM, x, y, cw, ch);
+        flexReleaseImageElement(pbloM);
+        flexReleaseImageElement(ogM);
+      } else {
+        bg = "#ffffff";
+        var img = null;
+        if (slotUrl) {
+          img = await flexLoadImageWithFallbacks(slotUrl);
+        }
+        flexDrawCover(ctx, img, x, y, cw, ch, bg);
+        flexReleaseImageElement(img);
       }
-      flexDrawCover(ctx, img, x, y, cw, ch, bg);
-      flexReleaseImageElement(img);
       if ((i & 3) === 3) {
         await new Promise(function (r) {
           setTimeout(r, 0);
@@ -694,14 +743,28 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       var su = slots[i];
       loadedSlots.push(su ? loadedMap[su] || null : null);
     }
+    var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
     for (i = 0; i < cells; i++) {
       col = i % cols;
       row = Math.floor(i / cols);
       x = col * cw;
       y = row * ch;
-      bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
-      flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+      if (i === 0) {
+        flexDrawBrandCellExport(
+          ctx,
+          loadedSlots[0] || null,
+          pbloD,
+          x,
+          y,
+          cw,
+          ch
+        );
+      } else {
+        bg = "#ffffff";
+        flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+      }
     }
+    flexReleaseImageElement(pbloD);
   }
   return canvas;
 }
@@ -770,12 +833,37 @@ function renderFlexPreviewGrid() {
     var cell = document.createElement("div");
     cell.className = "flex-tile";
     cell.dataset.index = String(i);
-    if (i === 0) cell.classList.add("flex-tile--brand");
     var url = st.slots[i];
-    if (url) {
+    if (i === 0) {
+      cell.classList.add("flex-tile--brand");
+      if (url) {
+        var stack = document.createElement("div");
+        stack.className = "flex-tile__brand-stack";
+        var pbloImg = document.createElement("img");
+        pbloImg.className = "flex-tile__brand-pblo";
+        pbloImg.alt = "";
+        pbloImg.setAttribute("aria-hidden", "true");
+        pbloImg.draggable = false;
+        pbloImg.src = getFlexPbloImageUrl();
+        var brandImg = document.createElement("img");
+        brandImg.alt = "";
+        brandImg.draggable = false;
+        brandImg.className = "flex-tile__img";
+        if (flexIsMemoryConstrainedDevice()) {
+          brandImg.setAttribute("data-flex-src", url);
+        } else {
+          brandImg.src = url;
+        }
+        stack.appendChild(pbloImg);
+        stack.appendChild(brandImg);
+        cell.appendChild(stack);
+      } else {
+        cell.classList.add("flex-tile--empty");
+      }
+    } else if (url) {
       var img = document.createElement("img");
       img.alt = "";
-      img.draggable = i !== 0;
+      img.draggable = true;
       img.className = "flex-tile__img";
       if (flexIsMemoryConstrainedDevice()) {
         img.setAttribute("data-flex-src", url);
