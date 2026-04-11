@@ -19,7 +19,11 @@ function getApiBase() {
 
 function apiUrl(pathAndQuery) {
   var base = getApiBase().replace(/\/$/, "");
-  return (base ? base : "") + pathAndQuery;
+  if (base) return base + pathAndQuery;
+  if (typeof window !== "undefined" && window.location && window.location.origin) {
+    return window.location.origin.replace(/\/$/, "") + pathAndQuery;
+  }
+  return pathAndQuery;
 }
 
 /**
@@ -483,6 +487,14 @@ function flexLoadImageWithFallbacks(rawUrl) {
   });
 }
 
+/** ~1% larger, centered — removes faint seams between cells in downloaded grid. */
+function flexExportCellRect(x, y, w, h) {
+  var bleed = 0.01;
+  var ox = w * (bleed / 2);
+  var oy = h * (bleed / 2);
+  return { x: x - ox, y: y - oy, w: w * (1 + bleed), h: h * (1 + bleed) };
+}
+
 function flexDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
   var backdrop = cellBackdrop || "#ffffff";
   ctx.save();
@@ -687,12 +699,13 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
     row = Math.floor(i / cols);
     x = col * cw;
     y = row * ch;
+    var cellR = flexExportCellRect(x, y, cw, ch);
     var slotUrl = slots[i];
     if (i === 0) {
       var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
       var ogM = null;
       if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
-      flexDrawBrandCellExport(ctx, ogM, pbloM, x, y, cw, ch);
+      flexDrawBrandCellExport(ctx, ogM, pbloM, cellR.x, cellR.y, cellR.w, cellR.h);
       flexReleaseImageElement(pbloM);
       flexReleaseImageElement(ogM);
     } else {
@@ -701,7 +714,7 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
       if (slotUrl) {
         img = await flexLoadImageWithFallbacks(slotUrl);
       }
-      flexDrawCover(ctx, img, x, y, cw, ch, bg);
+      flexDrawCover(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
       flexReleaseImageElement(img);
     }
     if ((i & 3) === 3) {
@@ -794,19 +807,20 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       row = Math.floor(i / cols);
       x = col * cw;
       y = row * ch;
+      var cellR2 = flexExportCellRect(x, y, cw, ch);
       if (i === 0) {
         flexDrawBrandCellExport(
           ctx,
           loadedSlots[0] || null,
           pbloD,
-          x,
-          y,
-          cw,
-          ch
+          cellR2.x,
+          cellR2.y,
+          cellR2.w,
+          cellR2.h
         );
       } else {
         bg = "#ffffff";
-        flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+        flexDrawCover(ctx, loadedSlots[i] || null, cellR2.x, cellR2.y, cellR2.w, cellR2.h, bg);
       }
     }
     flexReleaseImageElement(pbloD);

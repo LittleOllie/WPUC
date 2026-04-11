@@ -4347,6 +4347,14 @@ function drawPlaceholder(ctx, x, y, w, h) {
   // Intentionally blank
 }
 
+/** ~1% larger, centered — kills faint gaps between tiles in exported JPEG. */
+function exportTileDrawRect(x, y, w, h) {
+  const bleed = 0.01;
+  const ox = w * (bleed / 2);
+  const oy = h * (bleed / 2);
+  return { x: x - ox, y: y - oy, w: w * (1 + bleed), h: h * (1 + bleed) };
+}
+
 /** Match CSS object-fit: cover; object-position: center (no stretch). */
 function drawImageCover(ctx, img, dx, dy, dw, dh) {
   const nw = img.naturalWidth;
@@ -4480,17 +4488,18 @@ async function exportPNG() {
       const y = pad + (tr.top - gridRect.top);
       const w = tr.width;
       const h = tr.height;
+      const { x: dx, y: dy, w: dw, h: dh } = exportTileDrawRect(x, y, w, h);
 
       const img = tile.querySelector("img");
       if (!isImgUsable(img)) {
-        drawPlaceholder(ctx, x, y, w, h);
+        drawPlaceholder(ctx, dx, dy, dw, dh);
         continue;
       }
 
       try {
-        drawImageCover(ctx, img, x, y, w, h);
+        drawImageCover(ctx, img, dx, dy, dw, dh);
       } catch (e) {
-        drawPlaceholder(ctx, x, y, w, h);
+        drawPlaceholder(ctx, dx, dy, dw, dh);
       }
     }
 
@@ -4501,9 +4510,11 @@ async function exportPNG() {
       const wx = pad + (fr.left - gridRect.left);
       const wy = pad + (fr.top - gridRect.top);
       const ww = fr.width;
+      const wh0 = fr.height;
+      const { x: wmx, y: wmy, w: wmw } = exportTileDrawRect(wx, wy, ww, wh0);
       const ratio = wmImg.naturalHeight / wmImg.naturalWidth;
-      const wh = Math.round(ww * ratio);
-      ctx.drawImage(wmImg, wx, wy, ww, wh);
+      const wmH = Math.round(wmw * ratio);
+      ctx.drawImage(wmImg, wmx, wmy, wmw, wmH);
     } catch (e) {
       console.warn("Watermark PNG failed to load for export:", e);
     }
