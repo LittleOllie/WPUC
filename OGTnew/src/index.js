@@ -128,6 +128,64 @@ function extractImageFromMetadata(data) {
   return null;
 }
 
+/** OpenSea-style attributes from Alchemy owned NFT object (withMetadata). */
+function extractTraitsFromNft(nft) {
+  if (!nft || typeof nft !== "object") return [];
+  const out = [];
+  const seen = new Set();
+  const pushPair = (tt, v) => {
+    if (tt == null || !String(tt).trim()) return;
+    const key = String(tt).trim() + "\0" + String(v ?? "");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ trait_type: String(tt).trim(), value: v != null ? v : "" });
+  };
+
+  const ingestAttributes = (attrs) => {
+    if (!Array.isArray(attrs)) return;
+    for (const a of attrs) {
+      if (a && typeof a === "object") {
+        const tt = a.trait_type ?? a.traitType ?? a.name;
+        pushPair(tt, a.value ?? a.string_value);
+      }
+    }
+  };
+
+  /** Some collections use ERC-1155-style `properties: { "Background": "Blue" }`. */
+  const ingestProperties = (props) => {
+    if (!props || typeof props !== "object" || Array.isArray(props)) return;
+    for (const k of Object.keys(props)) {
+      const v = props[k];
+      if (v != null && typeof v !== "object") pushPair(k, v);
+    }
+  };
+
+  /** Alchemy often returns `metadata` / `raw.metadata` as a JSON string. */
+  const ingestMetaBlob = (blob) => {
+    if (blob == null) return;
+    if (typeof blob === "string") {
+      try {
+        ingestMetaBlob(JSON.parse(blob));
+      } catch {
+        /* not JSON */
+      }
+      return;
+    }
+    if (typeof blob === "object") {
+      ingestAttributes(blob.attributes);
+      ingestAttributes(blob.traits);
+      ingestProperties(blob.properties);
+    }
+  };
+
+  ingestMetaBlob(nft.raw?.metadata);
+  ingestMetaBlob(nft.metadata);
+  ingestMetaBlob(nft.rawMetadata);
+  if (Array.isArray(nft.attributes)) ingestAttributes(nft.attributes);
+
+  return out;
+}
+
 async function safeGetNftMetadataImage(nftBase, contract, tokenIdStr) {
   try {
     const params = new URLSearchParams({
@@ -255,6 +313,7 @@ async function mapWithConcurrency(items, limit, asyncFn) {
  */
 async function fetchOwnedCollection(nftBase, owner, contract) {
   const idToImage = new Map();
+  const idToTraits = new Map();
   const idSet = new Set();
   let pageKey = null;
   const ownerNorm = normalizeAddr(owner);
@@ -265,6 +324,8 @@ async function fetchOwnedCollection(nftBase, owner, contract) {
       owner: ownerNorm,
       pageSize: "100",
       withMetadata: "true",
+      /** Slower IPFS / tokenUri hosts; default can leave `raw.metadata` empty. */
+      tokenUriTimeoutInMs: "15000",
     });
     params.append("contractAddresses[]", contractNorm);
     if (pageKey) params.set("pageKey", pageKey);
@@ -279,6 +340,8 @@ async function fetchOwnedCollection(nftBase, owner, contract) {
       idSet.add(key);
       const img = extractImageFromMetadata(nft);
       if (img) idToImage.set(key, img);
+      const traits = extractTraitsFromNft(nft);
+      idToTraits.set(key, traits);
     }
 
     pageKey = data.pageKey || null;
@@ -291,7 +354,7 @@ async function fetchOwnedCollection(nftBase, owner, contract) {
     return 0;
   });
 
-  return { idKeys, idToImage };
+  return { idKeys, idToImage, idToTraits };
 }
 
 function normalizePath(pathname) {
@@ -490,8 +553,16 @@ export default {
         const oSet = new Set(ogenieCol.idKeys);
         const cSet = new Set(certCol.idKeys);
 
-        const ogenies = ogenieCol.idKeys.map(tokenIdStrToJson);
-        const certs = certCol.idKeys.map(tokenIdStrToJson);
+        const ogenies = ogenieCol.idKeys.map((id) => ({
+          tokenId: tokenIdStrToJson(id),
+          image: ogenieCol.idToImage.get(id) ?? null,
+          traits: ogenieCol.idToTraits.get(id) ?? [],
+        }));
+        const certs = certCol.idKeys.map((id) => ({
+          tokenId: tokenIdStrToJson(id),
+          image: certCol.idToImage.get(id) ?? null,
+          traits: certCol.idToTraits.get(id) ?? [],
+        }));
 
         const matched = [];
         for (const id of ogenieCol.idKeys) {

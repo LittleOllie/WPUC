@@ -77,8 +77,773 @@ function setGlobalLoading(on) {
 
 var WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
 
+/** Last successful /api/wallet payload (for Flex Your Genies — no refetch). */
+var lastWalletApiData = null;
+
+/** Flex grid editor: { slots: (string|null)[], cols, rows } */
+var flexEditorState = null;
+var flexLastExportDataUrl = null;
+var flexDnDFromIndex = null;
+
+var FLEX_MAX_NFT_TILES = 100;
+/** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
+var FLEX_CANVAS_SIZE = 8192;
+var FLEX_CANVAS_SIZE_FALLBACK = 4096;
+/** Same as --og-lime / ogtriple wordmark yellow. */
+var FLEX_BRAND_CELL_BG = "#dfff00";
+/** JPEG export: high visual quality, much smaller than PNG at8k. */
+var FLEX_EXPORT_JPEG_QUALITY = 0.94;
+
 function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
+}
+
+/** Normalize API item: `{ tokenId, image, traits }` or legacy numeric id. */
+function normalizeWalletNftEntry(x) {
+  if (x && typeof x === "object" && "tokenId" in x) {
+    return {
+      tokenId: x.tokenId,
+      image: x.image || null,
+      traits: Array.isArray(x.traits) ? x.traits : [],
+    };
+  }
+  return { tokenId: x, image: null, traits: [] };
+}
+
+function normalizeWalletNftList(arr) {
+  var out = [];
+  var i;
+  for (i = 0; i < (arr || []).length; i++) {
+    out.push(normalizeWalletNftEntry(arr[i]));
+  }
+  return out;
+}
+
+function sortWalletNftEntries(entries) {
+  return entries.slice().sort(function (a, b) {
+    try {
+      var ba = BigInt(String(a.tokenId));
+      var bb = BigInt(String(b.tokenId));
+      if (ba < bb) return -1;
+      if (ba > bb) return 1;
+      return 0;
+    } catch {
+      return String(a.tokenId).localeCompare(String(b.tokenId));
+    }
+  });
+}
+
+function hideFlexActions() {
+  lastWalletApiData = null;
+}
+
+function flexSyncGenerateButtonState() {
+  var co = document.getElementById("flex-opt-ogenies");
+  var cc = document.getElementById("flex-opt-certs");
+  var gen = document.getElementById("flex-generate-btn");
+  if (!gen) return;
+  var on = !!(co && co.checked) || !!(cc && cc.checked);
+  gen.disabled = !on;
+}
+
+function flexSetDownloadButtonReady(ready) {
+  var dl = document.getElementById("flex-download-btn");
+  if (!dl) return;
+  if (ready) {
+    dl.classList.remove("hidden");
+    dl.disabled = false;
+  } else {
+    dl.classList.add("hidden");
+    dl.disabled = true;
+  }
+}
+
+function flexWaitForPreviewGridImages() {
+  return new Promise(function (resolve) {
+    var grid = document.getElementById("flex-preview-grid");
+    if (!grid) {
+      resolve();
+      return;
+    }
+    var imgs = grid.querySelectorAll("img.flex-tile__img");
+    if (imgs.length === 0) {
+      resolve();
+      return;
+    }
+    var remaining = imgs.length;
+    function oneDone() {
+      remaining--;
+      if (remaining <= 0) resolve();
+    }
+    var i;
+    for (i = 0; i < imgs.length; i++) {
+      var im = imgs[i];
+      if (im.complete) oneDone();
+      else {
+        im.addEventListener("load", oneDone, { once: true });
+        im.addEventListener("error", oneDone, { once: true });
+      }
+    }
+  });
+}
+
+function openFlexModal() {
+  if (!lastWalletApiData) return;
+  resetFlexModalOutput();
+  populateFlexTraitSelect();
+  var co = document.getElementById("flex-opt-ogenies");
+  var cc = document.getElementById("flex-opt-certs");
+  if (co) co.checked = false;
+  if (cc) cc.checked = false;
+  flexSyncGenerateButtonState();
+  setFlexModalOpen(true);
+}
+
+function getFlexBrandImageUrl() {
+  try {
+    return new URL("ogtriple.png", window.location.href).href;
+  } catch {
+    return "ogtriple.png";
+  }
+}
+
+/** OGENIE block then CERT block; capped. Each item has image + traits for sorting. */
+function collectFlexItems(data, wantOgenies, wantCerts) {
+  var out = [];
+  if (wantOgenies) {
+    normalizeWalletNftList(data.ogenies).forEach(function (e) {
+      if (e.image) {
+        out.push({
+          tokenId: e.tokenId,
+          image: String(e.image),
+          traits: e.traits || [],
+          kind: "ogenie",
+        });
+      }
+    });
+  }
+  if (wantCerts) {
+    normalizeWalletNftList(data.certs).forEach(function (e) {
+      if (e.image) {
+        out.push({
+          tokenId: e.tokenId,
+          image: String(e.image),
+          traits: e.traits || [],
+          kind: "cert",
+        });
+      }
+    });
+  }
+  return out.slice(0, FLEX_MAX_NFT_TILES);
+}
+
+function collectTraitTypesFromItems(items) {
+  var seen = {};
+  var list = [];
+  var i;
+  var j;
+  for (i = 0; i < items.length; i++) {
+    var traits = items[i].traits || [];
+    for (j = 0; j < traits.length; j++) {
+      var tt = traits[j].trait_type || traits[j].traitType;
+      if (tt && !seen[tt]) {
+        seen[tt] = true;
+        list.push(String(tt));
+      }
+    }
+  }
+  list.sort(function (a, b) {
+    return a.localeCompare(b, undefined, { sensitivity: "base" });
+  });
+  return list;
+}
+
+/** Display label: first character uppercase, rest lowercase (metadata keys stay raw in option value). */
+function flexFormatTraitLabel(raw) {
+  if (raw == null || typeof raw !== "string") return "";
+  var s = raw.trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/** Trait type names from OGENIE + CERT metadata in the wallet (Background, Clothing, etc.). */
+function populateFlexTraitSelect() {
+  var sel = document.getElementById("flex-trait-sort");
+  if (!sel || !lastWalletApiData) return;
+  var og = normalizeWalletNftList(lastWalletApiData.ogenies);
+  var ce = normalizeWalletNftList(lastWalletApiData.certs);
+  var types = collectTraitTypesFromItems(og.concat(ce));
+  var keep = sel.value;
+  sel.innerHTML = "";
+  var randOpt = document.createElement("option");
+  randOpt.value = "random";
+  randOpt.textContent = "Random order";
+  sel.appendChild(randOpt);
+  var t;
+  for (t = 0; t < types.length; t++) {
+    var o = document.createElement("option");
+    o.value = "trait:" + types[t];
+    o.textContent = flexFormatTraitLabel(types[t]);
+    sel.appendChild(o);
+  }
+  var ok = false;
+  for (t = 0; t < sel.options.length; t++) {
+    if (sel.options[t].value === keep) {
+      ok = true;
+      break;
+    }
+  }
+  sel.value = ok ? keep : "random";
+}
+
+function flexTraitValue(traits, traitType) {
+  if (!traits || !traitType) return "";
+  var j;
+  for (j = 0; j < traits.length; j++) {
+    var tt = traits[j].trait_type || traits[j].traitType;
+    if (tt === traitType) {
+      var v = traits[j].value;
+      return v != null ? String(v) : "";
+    }
+  }
+  return "";
+}
+
+/** Sort value for a flex row: item traits, or same-token OGENIE traits for CERTs. */
+function flexTraitValueForSort(item, traitKey, walletData) {
+  var v = flexTraitValue(item.traits, traitKey);
+  if (v !== "") return v;
+  if (item.kind === "cert" && walletData && walletData.ogenies) {
+    var ogs = normalizeWalletNftList(walletData.ogenies);
+    var ti;
+    for (ti = 0; ti < ogs.length; ti++) {
+      if (String(ogs[ti].tokenId) === String(item.tokenId)) {
+        return flexTraitValue(ogs[ti].traits, traitKey);
+      }
+    }
+  }
+  return "";
+}
+
+function flexCompareTokenId(a, b) {
+  try {
+    var ba = BigInt(String(a.tokenId));
+    var bb = BigInt(String(b.tokenId));
+    if (ba < bb) return -1;
+    if (ba > bb) return 1;
+    return 0;
+  } catch {
+    return String(a.tokenId).localeCompare(String(b.tokenId));
+  }
+}
+
+/** OGENIEs always before CERTs when both are in the flex list. */
+function flexCompareKind(a, b) {
+  var oa = a.kind === "ogenie" ? 0 : 1;
+  var ob = b.kind === "ogenie" ? 0 : 1;
+  if (oa < ob) return -1;
+  if (oa > ob) return 1;
+  return 0;
+}
+
+function flexShuffleInPlace(arr) {
+  var i, j, tmp;
+  for (i = arr.length - 1; i > 0; i--) {
+    j = Math.floor(Math.random() * (i + 1));
+    tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+/** Shuffle within OGENIEs and within CERTs, then concatenate (OGENIE block first). */
+function flexShufflePreserveKind(items) {
+  var ogs = [];
+  var certs = [];
+  var ii;
+  for (ii = 0; ii < items.length; ii++) {
+    if (items[ii].kind === "ogenie") ogs.push(items[ii]);
+    else certs.push(items[ii]);
+  }
+  flexShuffleInPlace(ogs);
+  flexShuffleInPlace(certs);
+  return ogs.concat(certs);
+}
+
+function flexSortOrShuffle(items, sortKey, walletData) {
+  if (!sortKey || sortKey === "random") {
+    return flexShufflePreserveKind(items);
+  }
+  if (sortKey.indexOf("trait:") === 0) {
+    return applyFlexSort(items, sortKey, walletData);
+  }
+  return flexShufflePreserveKind(items);
+}
+
+function applyFlexSort(items, sortKey, walletData) {
+  var copy = items.slice();
+  if (!sortKey || sortKey.indexOf("trait:") !== 0) {
+    return copy.sort(function (a, b) {
+      var kc = flexCompareKind(a, b);
+      if (kc !== 0) return kc;
+      return flexCompareTokenId(a, b);
+    });
+  }
+  var key = sortKey.slice(6);
+  return copy.sort(function (a, b) {
+    var kc = flexCompareKind(a, b);
+    if (kc !== 0) return kc;
+    var va = flexTraitValueForSort(a, key, walletData);
+    var vb = flexTraitValueForSort(b, key, walletData);
+    var cmp = va.localeCompare(vb, undefined, { numeric: true, sensitivity: "base" });
+    if (cmp !== 0) return cmp;
+    return flexCompareTokenId(a, b);
+  });
+}
+
+function rebuildFlexSlotsFromSortedNfts(sortedItems) {
+  var brand = getFlexBrandImageUrl();
+  var urls = [brand].concat(
+    sortedItems.map(function (x) {
+      return x.image;
+    })
+  );
+  var g = flexComputeGrid(urls.length);
+  var cells = g.cols * g.rows;
+  var slots = [];
+  var i;
+  for (i = 0; i < cells; i++) {
+    slots.push(i < urls.length ? urls[i] : null);
+  }
+  flexEditorState = { slots: slots, cols: g.cols, rows: g.rows };
+}
+
+function flexLoadImageWithFallbacks(rawUrl) {
+  return new Promise(function (resolve) {
+    if (!rawUrl) {
+      resolve(null);
+      return;
+    }
+    var c = buildImageCandidates(String(rawUrl));
+    var tryList = [];
+    if (c.primary) tryList.push(c.primary);
+    var fi;
+    for (fi = 0; fi < c.fallbacks.length; fi++) {
+      tryList.push(c.fallbacks[fi]);
+    }
+    var idx = 0;
+    function tryNext() {
+      if (idx >= tryList.length) {
+        resolve(null);
+        return;
+      }
+      var u = tryList[idx++];
+      var img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        resolve(img);
+      };
+      img.onerror = function () {
+        tryNext();
+      };
+      img.src = u;
+    }
+    tryNext();
+  });
+}
+
+function flexDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
+  var backdrop = cellBackdrop || "#ffffff";
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = backdrop;
+  ctx.fillRect(x, y, w, h);
+  if (img && img.naturalWidth > 0) {
+    var iw = img.naturalWidth;
+    var ih = img.naturalHeight;
+    var scale = Math.max(w / iw, h / ih);
+    var tw = iw * scale;
+    var th = ih * scale;
+    ctx.drawImage(img, x + (w - tw) / 2, y + (h - th) / 2, tw, th);
+  }
+  ctx.restore();
+}
+
+function flexComputeGrid(totalCells) {
+  var cols = Math.ceil(Math.sqrt(totalCells));
+  var rows = Math.ceil(totalCells / cols);
+  return { cols: cols, rows: rows };
+}
+
+function flexCreateExportCanvas(W, H) {
+  var canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  return canvas;
+}
+
+async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
+  var unique = [];
+  var seen = {};
+  var ui;
+  for (ui = 0; ui < slots.length; ui++) {
+    var u = slots[ui];
+    if (u && !seen[u]) {
+      seen[u] = true;
+      unique.push(u);
+    }
+  }
+  var loadedMap = {};
+  await Promise.all(
+    unique.map(function (url) {
+      return flexLoadImageWithFallbacks(url).then(function (img) {
+        loadedMap[url] = img;
+      });
+    })
+  );
+  var loadedSlots = [];
+  for (ui = 0; ui < slots.length; ui++) {
+    var su = slots[ui];
+    loadedSlots.push(su ? loadedMap[su] || null : null);
+  }
+  var sizeTry = [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048];
+  var ti;
+  var canvas = null;
+  var ctx = null;
+  var W = 0;
+  var H = 0;
+  for (ti = 0; ti < sizeTry.length; ti++) {
+    W = sizeTry[ti];
+    H = sizeTry[ti];
+    canvas = flexCreateExportCanvas(W, H);
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas = null;
+      continue;
+    }
+    ctx = canvas.getContext("2d");
+    if (!ctx) {
+      canvas = null;
+      continue;
+    }
+    break;
+  }
+  if (!ctx || !canvas) throw new Error("Canvas not supported.");
+  ctx.imageSmoothingEnabled = true;
+  if ("imageSmoothingQuality" in ctx) {
+    ctx.imageSmoothingQuality = "high";
+  }
+  var cw = W / cols;
+  var ch = H / rows;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  var i;
+  var cells = cols * rows;
+  for (i = 0; i < cells; i++) {
+    var col = i % cols;
+    var row = Math.floor(i / cols);
+    var x = col * cw;
+    var y = row * ch;
+    var bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
+    flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+  }
+  return canvas;
+}
+
+function setFlexModalOpen(on) {
+  var modal = document.getElementById("flex-modal");
+  if (!modal) return;
+  if (on) {
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("flex-modal-active");
+  } else {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("flex-modal-active");
+  }
+}
+
+function resetFlexModalOutput() {
+  var err = document.getElementById("flex-error");
+  var wrap = document.getElementById("flex-preview-wrap");
+  var grid = document.getElementById("flex-preview-grid");
+  if (err) {
+    err.textContent = "";
+    err.classList.remove("is-visible");
+  }
+  if (wrap) wrap.classList.add("hidden");
+  flexSetDownloadButtonReady(false);
+  if (grid) grid.innerHTML = "";
+  flexEditorState = null;
+  flexLastExportDataUrl = null;
+  flexDnDFromIndex = null;
+}
+
+function flexSetTileEmptyClass(cell, hasImg) {
+  if (hasImg) cell.classList.remove("flex-tile--empty");
+  else cell.classList.add("flex-tile--empty");
+}
+
+/** Swap tile DOM only (keeps <img> nodes — no decode flicker on reorder). */
+function flexSwapPreviewTileContents(i, j) {
+  var grid = document.getElementById("flex-preview-grid");
+  if (!grid || !flexEditorState) return;
+  var cellI = grid.querySelector('.flex-tile[data-index="' + i + '"]');
+  var cellJ = grid.querySelector('.flex-tile[data-index="' + j + '"]');
+  if (!cellI || !cellJ) return;
+  var imgI = cellI.querySelector(".flex-tile__img");
+  var imgJ = cellJ.querySelector(".flex-tile__img");
+  if (imgI) cellI.removeChild(imgI);
+  if (imgJ) cellJ.removeChild(imgJ);
+  if (imgJ) cellI.appendChild(imgJ);
+  if (imgI) cellJ.appendChild(imgI);
+  flexSetTileEmptyClass(cellI, !!cellI.querySelector(".flex-tile__img"));
+  flexSetTileEmptyClass(cellJ, !!cellJ.querySelector(".flex-tile__img"));
+}
+
+function renderFlexPreviewGrid() {
+  if (!flexEditorState) return;
+  var el = document.getElementById("flex-preview-grid");
+  if (!el) return;
+  var st = flexEditorState;
+  el.style.gridTemplateColumns = "repeat(" + st.cols + ", 1fr)";
+  el.innerHTML = "";
+  var i;
+  for (i = 0; i < st.slots.length; i++) {
+    var cell = document.createElement("div");
+    cell.className = "flex-tile";
+    cell.dataset.index = String(i);
+    if (i === 0) cell.classList.add("flex-tile--brand");
+    var url = st.slots[i];
+    if (url) {
+      var img = document.createElement("img");
+      img.src = url;
+      img.alt = "";
+      img.draggable = i !== 0;
+      img.className = "flex-tile__img";
+      cell.appendChild(img);
+    } else {
+      cell.classList.add("flex-tile--empty");
+    }
+    el.appendChild(cell);
+  }
+}
+
+function flexRefreshPreviewFromSlots() {
+  if (!flexEditorState) return Promise.resolve();
+  return flexBuildGridCanvasFromSlots(
+    flexEditorState.slots,
+    flexEditorState.cols,
+    flexEditorState.rows
+  )
+    .then(function (canvas) {
+      var dataUrl;
+      try {
+        dataUrl = canvas.toDataURL("image/jpeg", FLEX_EXPORT_JPEG_QUALITY);
+      } catch (se) {
+        throw new Error(
+          "Could not export image (browser blocked cross-origin art). Try a different browser or VPN."
+        );
+      }
+      flexLastExportDataUrl = dataUrl;
+      var wrap = document.getElementById("flex-preview-wrap");
+      if (wrap) wrap.classList.remove("hidden");
+    })
+    .catch(function (e) {
+      var msg = e instanceof Error ? e.message : String(e);
+      var errEl = document.getElementById("flex-error");
+      if (errEl) {
+        errEl.textContent = msg;
+        errEl.classList.add("is-visible");
+      }
+      return Promise.reject(e);
+    });
+}
+
+async function runFlexGenerate() {
+  var errEl = document.getElementById("flex-error");
+  if (!lastWalletApiData) {
+    if (errEl) {
+      errEl.textContent = "Load a wallet first.";
+      errEl.classList.add("is-visible");
+    }
+    return;
+  }
+  var wantO = document.getElementById("flex-opt-ogenies");
+  var wantC = document.getElementById("flex-opt-certs");
+  var o = wantO && wantO.checked;
+  var c = wantC && wantC.checked;
+  if (!o && !c) {
+    if (errEl) {
+      errEl.textContent = "Select OGENIES and/or CERTS.";
+      errEl.classList.add("is-visible");
+    }
+    return;
+  }
+  var items = collectFlexItems(lastWalletApiData, o, c);
+  if (items.length === 0) {
+    if (errEl) {
+      errEl.textContent = "No image URLs in that selection.";
+      errEl.classList.add("is-visible");
+    }
+    return;
+  }
+  if (errEl) errEl.classList.remove("is-visible");
+  if (errEl) errEl.textContent = "";
+  var sortSel = document.getElementById("flex-trait-sort");
+  var sortKey =
+    sortSel && sortSel.value ? sortSel.value : "random";
+  var sorted = flexSortOrShuffle(items, sortKey, lastWalletApiData);
+  rebuildFlexSlotsFromSortedNfts(sorted);
+  var previewWrap = document.getElementById("flex-preview-wrap");
+  if (previewWrap) previewWrap.classList.remove("hidden");
+  flexSetDownloadButtonReady(false);
+  renderFlexPreviewGrid();
+  setGlobalLoading(true);
+  try {
+    await flexRefreshPreviewFromSlots();
+    await flexWaitForPreviewGridImages();
+    flexSetDownloadButtonReady(true);
+  } catch {
+    flexSetDownloadButtonReady(false);
+  } finally {
+    setGlobalLoading(false);
+  }
+}
+
+function setupFlexYourGeniesUi() {
+  var walletResults = document.getElementById("wallet-results");
+  var modal = document.getElementById("flex-modal");
+  var closeBtn = document.getElementById("flex-modal-close");
+  var backdrop = document.getElementById("flex-modal-backdrop");
+  var genBtn = document.getElementById("flex-generate-btn");
+  if (walletResults) {
+    walletResults.addEventListener("click", function (ev) {
+      var btn = ev.target.closest("#flex-open-btn");
+      if (!btn || !walletResults.contains(btn)) return;
+      ev.preventDefault();
+      openFlexModal();
+    });
+  }
+  function closeModal() {
+    setFlexModalOpen(false);
+    resetFlexModalOutput();
+  }
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (backdrop) backdrop.addEventListener("click", closeModal);
+  if (genBtn) genBtn.addEventListener("click", runFlexGenerate);
+  var co = document.getElementById("flex-opt-ogenies");
+  var cc = document.getElementById("flex-opt-certs");
+  if (co) co.addEventListener("change", flexSyncGenerateButtonState);
+  if (cc) cc.addEventListener("change", flexSyncGenerateButtonState);
+  var traitSel = document.getElementById("flex-trait-sort");
+  if (traitSel) {
+    traitSel.addEventListener("change", function () {
+      if (!flexEditorState || !lastWalletApiData) return;
+      var wo = document.getElementById("flex-opt-ogenies");
+      var wc = document.getElementById("flex-opt-certs");
+      var items = collectFlexItems(
+        lastWalletApiData,
+        wo && wo.checked,
+        wc && wc.checked
+      );
+      if (items.length === 0) return;
+      var sk = traitSel.value || "random";
+      var sorted = flexSortOrShuffle(items, sk, lastWalletApiData);
+      rebuildFlexSlotsFromSortedNfts(sorted);
+      flexSetDownloadButtonReady(false);
+      renderFlexPreviewGrid();
+      flexRefreshPreviewFromSlots()
+        .then(function () {
+          return flexWaitForPreviewGridImages();
+        })
+        .then(function () {
+          flexSetDownloadButtonReady(true);
+        })
+        .catch(function () {
+          flexSetDownloadButtonReady(false);
+        });
+    });
+  }
+  var previewGrid = document.getElementById("flex-preview-grid");
+  if (previewGrid) {
+    previewGrid.addEventListener("dragstart", function (e) {
+      var cell = e.target.closest(".flex-tile");
+      if (!cell || !previewGrid.contains(cell)) return;
+      var i = parseInt(cell.dataset.index, 10);
+      if (i === 0 || !flexEditorState || !flexEditorState.slots[i]) {
+        e.preventDefault();
+        return;
+      }
+      flexDnDFromIndex = i;
+      e.dataTransfer.effectAllowed = "move";
+      try {
+        e.dataTransfer.setData("text/plain", String(i));
+      } catch {
+        /* IE / older */
+      }
+      cell.classList.add("flex-tile--dragging");
+    });
+    previewGrid.addEventListener("dragend", function (e) {
+      var cell = e.target.closest(".flex-tile");
+      if (cell) cell.classList.remove("flex-tile--dragging");
+      flexDnDFromIndex = null;
+    });
+    previewGrid.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    previewGrid.addEventListener("drop", function (e) {
+      e.preventDefault();
+      var cell = e.target.closest(".flex-tile");
+      if (!cell || !previewGrid.contains(cell) || !flexEditorState) return;
+      var j = parseInt(cell.dataset.index, 10);
+      var i = flexDnDFromIndex;
+      if (i === null || i === undefined || j === 0 || i === 0) return;
+      if (i === j) return;
+      var tmp = flexEditorState.slots[i];
+      flexEditorState.slots[i] = flexEditorState.slots[j];
+      flexEditorState.slots[j] = tmp;
+      flexDnDFromIndex = null;
+      flexSwapPreviewTileContents(i, j);
+      flexLastExportDataUrl = null;
+    });
+  }
+  var flexDl = document.getElementById("flex-download-btn");
+  if (flexDl) {
+    flexDl.addEventListener("click", function () {
+      if (!flexEditorState) return;
+      function triggerDownload() {
+        if (!flexLastExportDataUrl) return;
+        var a = document.createElement("a");
+        a.href = flexLastExportDataUrl;
+        a.download = "ogtriple-flex.jpg";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      if (flexLastExportDataUrl) {
+        triggerDownload();
+        return;
+      }
+      setGlobalLoading(true);
+      flexRefreshPreviewFromSlots()
+        .then(function () {
+          triggerDownload();
+        })
+        .finally(function () {
+          setGlobalLoading(false);
+        });
+    });
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    if (modal && modal.classList.contains("is-open")) closeModal();
+  });
 }
 
 /**
@@ -372,6 +1137,7 @@ function renderWalletResults(container, data) {
   var html = "";
 
   if (!hasAny) {
+    hideFlexActions();
     html +=
       '<p class="empty-hint prominent">No NFTs found for this wallet in OGENIE or CERT on mainnet.</p>';
     container.innerHTML = html;
@@ -387,6 +1153,9 @@ function renderWalletResults(container, data) {
     '<button type="button" class="filter-btn" data-filter="unmatched-genies" role="tab" aria-pressed="false">Unmatched Genies</button>' +
     '<button type="button" class="filter-btn" data-filter="unmatched-certs" role="tab" aria-pressed="false">Unmatched certs</button>' +
     '<button type="button" class="filter-btn" data-filter="ogenies" role="tab" aria-pressed="false">Ogenies</button>' +
+    "</div>" +
+    '<div id="flex-actions" class="flex-actions">' +
+    '<button type="button" id="flex-open-btn" class="btn-primary flex-open-btn">Flex Your Genies</button>' +
     "</div>";
 
   html += '<div class="wallet-section-wrap" data-wallet-section="matched">';
@@ -469,6 +1238,9 @@ function renderWalletResults(container, data) {
       applyWalletFilter(container, t.getAttribute("data-filter"));
     });
   }
+
+  lastWalletApiData = data;
+  populateFlexTraitSelect();
 }
 
 function renderTokenResults(container, data) {
@@ -553,6 +1325,7 @@ function renderTokenResults(container, data) {
 }
 
 async function checkWallet() {
+  hideFlexActions();
   var input = document.getElementById("wallet-input");
   var btn = document.getElementById("check-wallet-btn");
   var statusEl = document.getElementById("wallet-status");
@@ -615,6 +1388,7 @@ async function checkWallet() {
 }
 
 async function findTokenMatch() {
+  hideFlexActions();
   var input = document.getElementById("token-input");
   var btn = document.getElementById("find-match-btn");
   var statusEl = document.getElementById("token-status");
@@ -699,3 +1473,5 @@ document.getElementById("find-match-btn").addEventListener("click", findTokenMat
 document.getElementById("token-input").addEventListener("keydown", function (e) {
   if (e.key === "Enter") findTokenMatch();
 });
+
+setupFlexYourGeniesUi();

@@ -94,11 +94,72 @@
       </section>
 
       <main id="wallet-results" class="results-block hidden" aria-live="polite"></main>
+
       <main id="token-results" class="results-block hidden" aria-live="polite"></main>
 
       <footer class="footer">
         <p>Little Ollie–inspired styling · Not affiliated with OpenSea or Alchemy</p>
       </footer>
+    </div>
+
+    <div
+      id="flex-modal"
+      class="flex-modal"
+      aria-hidden="true"
+      aria-labelledby="flex-modal-title"
+      role="dialog"
+    >
+      <div id="flex-modal-backdrop" class="flex-modal__backdrop"></div>
+      <div class="flex-modal__panel">
+        <button type="button" id="flex-modal-close" class="flex-modal__close" aria-label="Close">
+          ×
+        </button>
+        <h2 id="flex-modal-title" class="flex-modal__title">Flex Your Genies</h2>
+        <p class="flex-modal__lede">Select Collection below.</p>
+        <div class="flex-modal__collection-row" role="group" aria-label="Collections to include">
+          <label class="flex-collection-pill">
+            <input type="checkbox" id="flex-opt-ogenies" class="flex-collection-pill__input" />
+            <span class="flex-collection-pill__label">Ogenies</span>
+          </label>
+          <label class="flex-collection-pill">
+            <input type="checkbox" id="flex-opt-certs" class="flex-collection-pill__input" checked />
+            <span class="flex-collection-pill__label">Certs</span>
+          </label>
+        </div>
+        <div class="flex-modal__sort">
+          <label class="flex-modal__sort-label" for="flex-trait-sort"
+            >Layout
+            <span class="flex-modal__sort-note"
+              >(Random default; traits sort OGENIEs then CERTs)</span
+            ></label
+          >
+          <select id="flex-trait-sort" class="flex-modal__select" aria-label="Trait to sort flex grid"></select>
+        </div>
+        <button
+          type="button"
+          id="flex-generate-btn"
+          class="btn-primary flex-modal__generate"
+          disabled
+        >
+          Generate FlexGrid
+        </button>
+        <p id="flex-error" class="flex-modal__error" role="alert"></p>
+        <div id="flex-preview-wrap" class="flex-preview-wrap hidden">
+          <p class="flex-preview-label">Flex grid</p>
+          <p class="flex-preview-hint">
+            Drag tiles to reorder (top-left branding is fixed). Download matches this layout as a high-quality JPEG.
+          </p>
+          <div id="flex-preview-grid" class="flex-preview-grid"></div>
+          <button
+            type="button"
+            id="flex-download-btn"
+            class="btn-primary flex-modal__download hidden"
+            disabled
+          >
+            Download Image
+          </button>
+        </div>
+      </div>
     </div>
 
     <div
