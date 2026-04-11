@@ -85,15 +85,20 @@ var flexEditorState = null;
 var flexLastExportDataUrl = null;
 var flexDnDFromIndex = null;
 
-var FLEX_MAX_NFT_TILES = 100;
-/** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
-var FLEX_CANVAS_SIZE = 8192;
+/** Upper bound for flex grid NFT count (brand tile + this many collection cells max). */
+var FLEX_MAX_NFT_TILES = 100000;
+/**
+ * Desktop export normally preloads all unique art in parallel for speed. Above this count, draw one cell at a time so large grids (e.g. 800+) do not run out of memory.
+ */
+var FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP = 80;
 var FLEX_CANVAS_SIZE_FALLBACK = 4096;
 /** Mobile Safari kills tabs under memory pressure; cap canvas + never hold all decoded NFTs at once. */
 var FLEX_MOBILE_EXPORT_MAX = 2048;
+/** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
+var FLEX_CANVAS_SIZE = 8192;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
-/** Max fraction of brand cell height for pblo — matches `.flex-tile__brand-pblo` in CSS. */
+/** Max fraction of brand cell height for the pblo band — matches `.flex-tile__brand-stack` max-height in CSS. */
 var FLEX_BRAND_PBLO_MAX_FRAC = 0.52;
 /** JPEG export: high visual quality, much smaller than PNG at8k. */
 var FLEX_EXPORT_JPEG_QUALITY = 0.94;
@@ -215,11 +220,12 @@ function openFlexModal() {
   setFlexModalOpen(true);
 }
 
-function getFlexBrandImageUrl() {
+/** Artwork under pblo in the flex grid preview + JPEG export (not the site header logo). */
+function getFlexGridBrandImageUrl() {
   try {
-    return new URL("ogtriple.png", window.location.href).href;
+    return new URL("ogtriplegrid.png", window.location.href).href;
   } catch {
-    return "ogtriple.png";
+    return "ogtriplegrid.png";
   }
 }
 
@@ -427,7 +433,7 @@ function applyFlexSort(items, sortKey, walletData) {
 }
 
 function rebuildFlexSlotsFromSortedNfts(sortedItems) {
-  var brand = getFlexBrandImageUrl();
+  var brand = getFlexGridBrandImageUrl();
   var urls = [brand].concat(
     sortedItems.map(function (x) {
       return x.image;
@@ -496,7 +502,27 @@ function flexDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
   ctx.restore();
 }
 
-/** Download JPEG: pblo full-width on top, ogtriple cover below (same as preview grid). */
+/** Letterbox / full image inside rect (same idea as CSS object-fit: contain). */
+function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
+  var backdrop = cellBackdrop || "#ffffff";
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = backdrop;
+  ctx.fillRect(x, y, w, h);
+  if (img && img.naturalWidth > 0) {
+    var iw = img.naturalWidth;
+    var ih = img.naturalHeight;
+    var scale = Math.min(w / iw, h / ih);
+    var tw = iw * scale;
+    var th = ih * scale;
+    ctx.drawImage(img, x + (w - tw) / 2, y + (h - th) / 2, tw, th);
+  }
+  ctx.restore();
+}
+
+/** Download JPEG: ogtriplegrid fills tile (contain), pblo drawn on top (same as preview grid). */
 function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
   var pbloCap = ch * FLEX_BRAND_PBLO_MAX_FRAC;
   ctx.save();
@@ -505,7 +531,7 @@ function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
   ctx.clip();
   ctx.fillStyle = FLEX_BRAND_CELL_BG;
   ctx.fillRect(cellX, cellY, cw, ch);
-  var yNext = cellY;
+  flexDrawContain(ctx, ogImg, cellX, cellY, cw, ch, FLEX_BRAND_CELL_BG);
   if (pbloImg && pbloImg.naturalWidth > 0) {
     var piw = pbloImg.naturalWidth;
     var pih = pbloImg.naturalHeight;
@@ -515,13 +541,8 @@ function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
       drawH = pbloCap;
       drawW = (piw / pih) * drawH;
     }
-    var ox = cellX + (cw - drawW) / 2;
-    ctx.drawImage(pbloImg, ox, yNext, drawW, drawH);
-    yNext += drawH;
-  }
-  var subH = cellY + ch - yNext;
-  if (subH > 0) {
-    flexDrawCover(ctx, ogImg, cellX, yNext, cw, subH, FLEX_BRAND_CELL_BG);
+    var px = cellX + (cw - drawW) / 2;
+    ctx.drawImage(pbloImg, px, cellY, drawW, drawH);
   }
   ctx.restore();
 }
@@ -652,6 +673,45 @@ function flexAwaitPreviewGridLoads(gridEl) {
   });
 }
 
+/** Load each cell’s art, draw, then release — keeps peak memory low for huge grids. */
+async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch) {
+  var cells = cols * rows;
+  var i;
+  var col;
+  var row;
+  var x;
+  var y;
+  var bg;
+  for (i = 0; i < cells; i++) {
+    col = i % cols;
+    row = Math.floor(i / cols);
+    x = col * cw;
+    y = row * ch;
+    var slotUrl = slots[i];
+    if (i === 0) {
+      var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+      var ogM = null;
+      if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
+      flexDrawBrandCellExport(ctx, ogM, pbloM, x, y, cw, ch);
+      flexReleaseImageElement(pbloM);
+      flexReleaseImageElement(ogM);
+    } else {
+      bg = "#ffffff";
+      var img = null;
+      if (slotUrl) {
+        img = await flexLoadImageWithFallbacks(slotUrl);
+      }
+      flexDrawCover(ctx, img, x, y, cw, ch, bg);
+      flexReleaseImageElement(img);
+    }
+    if ((i & 3) === 3) {
+      await new Promise(function (r) {
+        setTimeout(r, 0);
+      });
+    }
+  }
+}
+
 async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
   var cells = cols * rows;
   var sizeTry = flexExportCanvasSizeCandidates(slots.length);
@@ -690,36 +750,21 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
   var x;
   var y;
   var bg;
-
-  if (flexIsMemoryConstrainedDevice()) {
-    for (i = 0; i < cells; i++) {
-      col = i % cols;
-      row = Math.floor(i / cols);
-      x = col * cw;
-      y = row * ch;
-      var slotUrl = slots[i];
-      if (i === 0) {
-        var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
-        var ogM = null;
-        if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
-        flexDrawBrandCellExport(ctx, ogM, pbloM, x, y, cw, ch);
-        flexReleaseImageElement(pbloM);
-        flexReleaseImageElement(ogM);
-      } else {
-        bg = "#ffffff";
-        var img = null;
-        if (slotUrl) {
-          img = await flexLoadImageWithFallbacks(slotUrl);
-        }
-        flexDrawCover(ctx, img, x, y, cw, ch, bg);
-        flexReleaseImageElement(img);
-      }
-      if ((i & 3) === 3) {
-        await new Promise(function (r) {
-          setTimeout(r, 0);
-        });
-      }
+  var seenForCap = {};
+  var uniqueCount = 0;
+  for (i = 0; i < slots.length; i++) {
+    var uc = slots[i];
+    if (uc && !seenForCap[uc]) {
+      seenForCap[uc] = true;
+      uniqueCount++;
     }
+  }
+  var useSequential =
+    flexIsMemoryConstrainedDevice() ||
+    uniqueCount > FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP;
+
+  if (useSequential) {
+    await flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch);
   } else {
     var unique = [];
     var seen = {};
@@ -804,6 +849,164 @@ function flexSetTileEmptyClass(cell, hasImg) {
   else cell.classList.add("flex-tile--empty");
 }
 
+/**
+ * Detach live preview <img> nodes keyed by slot URL so trait reorder can reparent them
+ * (avoids white flash from destroying elements and reloading bitmaps).
+ * Call while flexEditorState still reflects the grid before rebuildFlexSlotsFromSortedNfts.
+ */
+function flexHarvestPreviewDomPool() {
+  var grid = document.getElementById("flex-preview-grid");
+  var pool = { pblo: null, byUrl: {} };
+  if (!grid || !flexEditorState || !flexEditorState.slots) return pool;
+  var slots = flexEditorState.slots;
+  var cells = grid.querySelectorAll(".flex-tile");
+  var i;
+  for (i = 0; i < cells.length; i++) {
+    var cell = cells[i];
+    var idx = parseInt(cell.dataset.index, 10);
+    if (isNaN(idx)) continue;
+    var url = slots[idx];
+    if (!url) continue;
+    if (idx === 0) {
+      if (!pool.pblo) {
+        var p = cell.querySelector(".flex-tile__brand-pblo");
+        if (p && p.parentNode) {
+          p.parentNode.removeChild(p);
+          pool.pblo = p;
+        }
+      }
+      var bimg = cell.querySelector(".flex-tile__img");
+      if (bimg && bimg.parentNode) {
+        bimg.parentNode.removeChild(bimg);
+        pool.byUrl[url] = bimg;
+      }
+    } else {
+      var img = cell.querySelector(".flex-tile__img");
+      if (img && img.parentNode) {
+        img.parentNode.removeChild(img);
+        pool.byUrl[url] = img;
+      }
+    }
+  }
+  return pool;
+}
+
+function flexTakePooledImg(pool, url) {
+  if (!pool || !pool.byUrl || !url) return null;
+  var el = pool.byUrl[url];
+  if (el) delete pool.byUrl[url];
+  return el;
+}
+
+function flexTakePooledPblo(pool) {
+  if (!pool || !pool.pblo) return null;
+  var p = pool.pblo;
+  pool.pblo = null;
+  return p;
+}
+
+function flexDrainUnusedDomPool(pool) {
+  if (!pool) return;
+  if (pool.byUrl) {
+    var k;
+    for (k in pool.byUrl) {
+      if (Object.prototype.hasOwnProperty.call(pool.byUrl, k)) {
+        flexReleaseImageElement(pool.byUrl[k]);
+      }
+    }
+    pool.byUrl = {};
+  }
+  if (pool.pblo) {
+    flexReleaseImageElement(pool.pblo);
+    pool.pblo = null;
+  }
+}
+
+/** Viewport rects keyed by slot image URL (before a layout reorder). */
+function flexCapturePreviewTileRectsByUrl() {
+  var grid = document.getElementById("flex-preview-grid");
+  var map = {};
+  if (!grid || !flexEditorState || !flexEditorState.slots) return map;
+  var cells = grid.querySelectorAll(".flex-tile");
+  var i;
+  for (i = 0; i < cells.length; i++) {
+    var cell = cells[i];
+    var idx = parseInt(cell.dataset.index, 10);
+    if (isNaN(idx)) continue;
+    var url = flexEditorState.slots[idx];
+    if (!url) continue;
+    map[url] = cell.getBoundingClientRect();
+  }
+  return map;
+}
+
+/** FLIP: tiles with the same image URL slide from their old grid cell to the new one. */
+function flexAnimatePreviewGridFlip(oldRectsByUrl) {
+  var grid = document.getElementById("flex-preview-grid");
+  if (!grid || !flexEditorState || !flexEditorState.slots) return;
+  if (
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
+  if (!oldRectsByUrl || typeof oldRectsByUrl !== "object") return;
+  var cells = grid.querySelectorAll(".flex-tile");
+  var toAnimate = [];
+  var i;
+  for (i = 0; i < cells.length; i++) {
+    var cell = cells[i];
+    var idx = parseInt(cell.dataset.index, 10);
+    if (isNaN(idx)) continue;
+    var url = flexEditorState.slots[idx];
+    if (!url) continue;
+    var oldR = oldRectsByUrl[url];
+    if (!oldR) continue;
+    var neu = cell.getBoundingClientRect();
+    var dx = oldR.left - neu.left;
+    var dy = oldR.top - neu.top;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
+    cell.style.transform = "translate(" + dx + "px, " + dy + "px)";
+    cell.style.transition = "none";
+    cell.classList.add("flex-tile--reordering");
+    toAnimate.push(cell);
+  }
+  if (toAnimate.length === 0) return;
+  void grid.offsetHeight;
+  requestAnimationFrame(function () {
+    var dur = "0.38s";
+    var ease = "cubic-bezier(0.22, 1, 0.36, 1)";
+    for (i = 0; i < toAnimate.length; i++) {
+      toAnimate[i].style.transition = "transform " + dur + " " + ease;
+      toAnimate[i].style.transform = "";
+    }
+    var cleaned = new WeakSet();
+    function finishOne(c) {
+      if (!c || cleaned.has(c)) return;
+      cleaned.add(c);
+      c.style.transition = "";
+      c.style.transform = "";
+      c.classList.remove("flex-tile--reordering");
+    }
+    var t;
+    for (t = 0; t < toAnimate.length; t++) {
+      toAnimate[t].addEventListener(
+        "transitionend",
+        function (ev) {
+          if (ev.propertyName !== "transform") return;
+          finishOne(ev.currentTarget);
+        },
+        { once: true }
+      );
+    }
+    window.setTimeout(function () {
+      for (t = 0; t < toAnimate.length; t++) {
+        finishOne(toAnimate[t]);
+      }
+    }, 500);
+  });
+}
+
 /** Swap tile DOM only (keeps <img> nodes — no decode flicker on reorder). */
 function flexSwapPreviewTileContents(i, j) {
   var grid = document.getElementById("flex-preview-grid");
@@ -821,10 +1024,19 @@ function flexSwapPreviewTileContents(i, j) {
   flexSetTileEmptyClass(cellJ, !!cellJ.querySelector(".flex-tile__img"));
 }
 
-function renderFlexPreviewGrid() {
+/**
+ * @param {{ pblo: HTMLImageElement | null, byUrl: Object.<string, HTMLImageElement> } | null | undefined} [domPool]
+ *        From flexHarvestPreviewDomPool(); reused nodes keep decoded bitmaps (no white flash).
+ */
+function renderFlexPreviewGrid(domPool) {
   if (!flexEditorState) return;
   var el = document.getElementById("flex-preview-grid");
   if (!el) return;
+  var pool =
+    domPool && typeof domPool === "object"
+      ? domPool
+      : { pblo: null, byUrl: {} };
+  if (!pool.byUrl) pool.byUrl = {};
   var st = flexEditorState;
   el.style.gridTemplateColumns = "repeat(" + st.cols + ", 1fr)";
   el.innerHTML = "";
@@ -839,43 +1051,61 @@ function renderFlexPreviewGrid() {
       if (url) {
         var stack = document.createElement("div");
         stack.className = "flex-tile__brand-stack";
-        var pbloImg = document.createElement("img");
+        var pbloImg = flexTakePooledPblo(pool);
+        if (!pbloImg) {
+          pbloImg = document.createElement("img");
+          pbloImg.src = getFlexPbloImageUrl();
+        }
         pbloImg.className = "flex-tile__brand-pblo";
         pbloImg.alt = "";
         pbloImg.setAttribute("aria-hidden", "true");
         pbloImg.draggable = false;
-        pbloImg.src = getFlexPbloImageUrl();
-        var brandImg = document.createElement("img");
-        brandImg.alt = "";
-        brandImg.draggable = false;
-        brandImg.className = "flex-tile__img";
-        if (flexIsMemoryConstrainedDevice()) {
-          brandImg.setAttribute("data-flex-src", url);
+        var brandImg = flexTakePooledImg(pool, url);
+        if (!brandImg) {
+          brandImg = document.createElement("img");
+          brandImg.className = "flex-tile__img";
+          brandImg.alt = "";
+          brandImg.draggable = false;
+          if (flexIsMemoryConstrainedDevice()) {
+            brandImg.setAttribute("data-flex-src", url);
+          } else {
+            brandImg.src = url;
+          }
         } else {
-          brandImg.src = url;
+          brandImg.className = "flex-tile__img";
+          brandImg.alt = "";
+          brandImg.draggable = false;
         }
         stack.appendChild(pbloImg);
-        stack.appendChild(brandImg);
+        cell.appendChild(brandImg);
         cell.appendChild(stack);
       } else {
         cell.classList.add("flex-tile--empty");
       }
     } else if (url) {
-      var img = document.createElement("img");
-      img.alt = "";
-      img.draggable = true;
-      img.className = "flex-tile__img";
-      if (flexIsMemoryConstrainedDevice()) {
-        img.setAttribute("data-flex-src", url);
+      var img = flexTakePooledImg(pool, url);
+      if (!img) {
+        img = document.createElement("img");
+        img.className = "flex-tile__img";
+        img.alt = "";
+        if (flexIsMemoryConstrainedDevice()) {
+          img.setAttribute("data-flex-src", url);
+        } else {
+          img.src = url;
+        }
       } else {
-        img.src = url;
+        img.className = "flex-tile__img";
+        img.alt = "";
       }
+      img.draggable = true;
       cell.appendChild(img);
     } else {
       cell.classList.add("flex-tile--empty");
     }
+    flexSetTileEmptyClass(cell, !!cell.querySelector(".flex-tile__img"));
     el.appendChild(cell);
   }
+  flexDrainUnusedDomPool(pool);
 }
 
 function flexRefreshPreviewFromSlots() {
@@ -1004,9 +1234,14 @@ function setupFlexYourGeniesUi() {
       if (items.length === 0) return;
       var sk = traitSel.value || "random";
       var sorted = flexSortOrShuffle(items, sk, lastWalletApiData);
+      var oldRects = flexCapturePreviewTileRectsByUrl();
+      var domPool = flexHarvestPreviewDomPool();
       rebuildFlexSlotsFromSortedNfts(sorted);
       flexSetDownloadButtonReady(false);
-      renderFlexPreviewGrid();
+      renderFlexPreviewGrid(domPool);
+      requestAnimationFrame(function () {
+        flexAnimatePreviewGridFlip(oldRects);
+      });
       var gridEl = document.getElementById("flex-preview-grid");
       flexAwaitPreviewGridLoads(gridEl)
         .then(function () {
