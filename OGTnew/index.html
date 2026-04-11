@@ -12,6 +12,12 @@
     />
     <link rel="icon" href="ogtriplelogo.png" type="image/png" sizes="any" />
     <link rel="apple-touch-icon" href="ogtriplelogo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -45,36 +51,57 @@
         </p>
       </header>
 
-      <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
-        <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
-        <label class="field-label" for="wallet-input">Wallet address</label>
-        <div class="input-row">
-          <input
-            id="wallet-input"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="0x…"
-          />
-          <button type="button" id="check-wallet-btn" class="btn-primary">Check My Wallet</button>
-        </div>
-        <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
-      </section>
+      <section
+        class="lookup-shell"
+        id="lookup-shell"
+        aria-label="Wallet and token lookup"
+      >
+        <button
+          type="button"
+          class="lookup-shell__toggle"
+          id="lookup-shell-toggle"
+          aria-expanded="true"
+          aria-controls="lookup-shell-body"
+        >
+          <span class="lookup-shell__title-wrap">
+            <span class="lookup-shell__title">Wallet &amp; Token Lookup</span>
+            <span class="lookup-shell__meta" id="lookup-shell-meta" hidden></span>
+          </span>
+          <span class="lookup-shell__chevron" aria-hidden="true"></span>
+        </button>
+        <div class="lookup-shell__body" id="lookup-shell-body">
+          <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
+            <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
+            <label class="field-label" for="wallet-input">Wallet address</label>
+            <div class="input-row">
+              <input
+                id="wallet-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="0x…"
+              />
+              <button type="button" id="check-wallet-btn" class="btn-primary">Check My Wallet</button>
+            </div>
+            <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
+          </section>
 
-      <section class="panel mode-panel" aria-labelledby="token-mode-title">
-        <h2 id="token-mode-title" class="mode-title">Token lookup</h2>
-        <label class="field-label" for="token-input">Token ID</label>
-        <div class="input-row">
-          <input
-            id="token-input"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            placeholder="e.g. 287"
-          />
-          <button type="button" id="find-match-btn" class="btn-primary">Find Match</button>
+          <section class="panel mode-panel" aria-labelledby="token-mode-title">
+            <h2 id="token-mode-title" class="mode-title">Token lookup</h2>
+            <label class="field-label" for="token-input">Token ID</label>
+            <div class="input-row">
+              <input
+                id="token-input"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="e.g. 287"
+              />
+              <button type="button" id="find-match-btn" class="btn-primary">Find Match</button>
+            </div>
+            <div id="token-status" class="status" role="status" aria-live="polite"></div>
+          </section>
         </div>
-        <div id="token-status" class="status" role="status" aria-live="polite"></div>
       </section>
 
       <main id="wallet-results" class="results-block hidden" aria-live="polite"></main>
@@ -82,7 +109,7 @@
       <main id="token-results" class="results-block hidden" aria-live="polite"></main>
 
       <footer class="footer">
-        <p>Little Ollie–inspired styling · Not affiliated with OpenSea or Alchemy</p>
+        <p>Powered By Little Ollie Labs</p>
       </footer>
     </div>
 

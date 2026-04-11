@@ -16,7 +16,8 @@
   --ok: #5ee3a4;
   --btn-primary-depth: #4d5a00;
   --radius: 16px;
-  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Same stack as .brand-bar__tagline (“lo × ogtriple media”) site-wide */
+  --font: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 *,
@@ -97,6 +98,7 @@ body {
 
 .brand-bar__tagline {
   margin: 0.75rem 0 0;
+  font-family: var(--font);
   font-size: 0.8rem;
   letter-spacing: 0.16em;
   text-transform: lowercase;
@@ -142,6 +144,126 @@ body {
 
 .mode-panel {
   margin-bottom: 1rem;
+}
+
+.lookup-shell {
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.lookup-shell__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: var(--bg-panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.lookup-shell__toggle:hover {
+  background: rgba(223, 255, 0, 0.06);
+}
+
+.lookup-shell.is-collapsed .lookup-shell__toggle {
+  border-bottom: none;
+}
+
+.lookup-shell.is-collapsed .lookup-shell__body {
+  display: none;
+}
+
+.lookup-shell__title-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.lookup-shell__title {
+  color: var(--og-lime);
+}
+
+.lookup-shell__meta {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.lookup-shell__chevron {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--og-lime-muted);
+  border-bottom: 2px solid var(--og-lime-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.lookup-shell.is-collapsed .lookup-shell__chevron {
+  transform: rotate(-45deg);
+}
+
+.lookup-shell__body {
+  padding: 0 0 0.25rem;
+}
+
+.lookup-shell__body .mode-panel {
+  margin: 0.85rem 1rem 1rem;
+  box-shadow: none;
+}
+
+.lookup-shell__body .mode-panel:last-child {
+  margin-bottom: 1rem;
+}
+
+.wallet-stats {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-panel-2);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.wallet-stats__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.25rem;
+}
+
+.wallet-stats .wallet-stats__matched,
+.wallet-stats .wallet-stats__ogenies,
+.wallet-stats .wallet-stats__certs {
+  color: var(--text);
+}
+
+.wallet-stats strong {
+  color: var(--og-lime);
+  font-weight: 800;
+}
+
+.wallet-stats__sep {
+  color: var(--text-muted);
+  user-select: none;
 }
 
 .mode-title {
@@ -1125,6 +1247,11 @@ body.flex-modal-active {
 .flex-tile--reordering {
   z-index: 4;
   pointer-events: none;
+  will-change: transform;
+}
+
+.flex-tile--shuffle-in {
+  will-change: opacity, transform;
 }
 
 .flex-tile__img {

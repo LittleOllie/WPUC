@@ -940,7 +940,7 @@ function flexCapturePreviewTileRectsByUrl() {
   return map;
 }
 
-/** FLIP: tiles with the same image URL slide from their old grid cell to the new one. */
+/** FLIP + stagger: same image URL glides from old cell to new; big moves lead for a fluid shuffle. */
 function flexAnimatePreviewGridFlip(oldRectsByUrl) {
   var grid = document.getElementById("flex-preview-grid");
   if (!grid || !flexEditorState || !flexEditorState.slots) return;
@@ -952,7 +952,8 @@ function flexAnimatePreviewGridFlip(oldRectsByUrl) {
   }
   if (!oldRectsByUrl || typeof oldRectsByUrl !== "object") return;
   var cells = grid.querySelectorAll(".flex-tile");
-  var toAnimate = [];
+  var flipItems = [];
+  var fadeIn = [];
   var i;
   for (i = 0; i < cells.length; i++) {
     var cell = cells[i];
@@ -961,49 +962,103 @@ function flexAnimatePreviewGridFlip(oldRectsByUrl) {
     var url = flexEditorState.slots[idx];
     if (!url) continue;
     var oldR = oldRectsByUrl[url];
-    if (!oldR) continue;
     var neu = cell.getBoundingClientRect();
+    if (!oldR) {
+      cell.classList.add("flex-tile--shuffle-in");
+      cell.style.opacity = "0";
+      cell.style.transform = "scale(0.96)";
+      cell.style.transition = "none";
+      fadeIn.push(cell);
+      continue;
+    }
     var dx = oldR.left - neu.left;
     var dy = oldR.top - neu.top;
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
-    cell.style.transform = "translate(" + dx + "px, " + dy + "px)";
-    cell.style.transition = "none";
-    cell.classList.add("flex-tile--reordering");
-    toAnimate.push(cell);
+    flipItems.push({
+      cell: cell,
+      dx: dx,
+      dy: dy,
+      dist2: dx * dx + dy * dy,
+    });
   }
-  if (toAnimate.length === 0) return;
+  flipItems.sort(function (a, b) {
+    return b.dist2 - a.dist2;
+  });
+  for (i = 0; i < flipItems.length; i++) {
+    var it = flipItems[i];
+    it.cell.style.transform =
+      "translate(" + it.dx + "px, " + it.dy + "px)";
+    it.cell.style.transition = "none";
+    it.cell.style.transitionDelay = "";
+    it.cell.classList.add("flex-tile--reordering");
+  }
   void grid.offsetHeight;
+  var durMs = 460;
+  var staggerMs = 11;
+  var maxStagger = 380;
   requestAnimationFrame(function () {
-    var dur = "0.38s";
-    var ease = "cubic-bezier(0.22, 1, 0.36, 1)";
-    for (i = 0; i < toAnimate.length; i++) {
-      toAnimate[i].style.transition = "transform " + dur + " " + ease;
-      toAnimate[i].style.transform = "";
-    }
-    var cleaned = new WeakSet();
-    function finishOne(c) {
-      if (!c || cleaned.has(c)) return;
-      cleaned.add(c);
-      c.style.transition = "";
-      c.style.transform = "";
-      c.classList.remove("flex-tile--reordering");
-    }
-    var t;
-    for (t = 0; t < toAnimate.length; t++) {
-      toAnimate[t].addEventListener(
-        "transitionend",
-        function (ev) {
-          if (ev.propertyName !== "transform") return;
-          finishOne(ev.currentTarget);
-        },
-        { once: true }
-      );
-    }
-    window.setTimeout(function () {
-      for (t = 0; t < toAnimate.length; t++) {
-        finishOne(toAnimate[t]);
+    requestAnimationFrame(function () {
+      var ease = "cubic-bezier(0.25, 0.82, 0.2, 1)";
+      for (i = 0; i < flipItems.length; i++) {
+        var c = flipItems[i].cell;
+        var delay = Math.min(i * staggerMs, maxStagger);
+        c.style.transition =
+          "transform " + durMs + "ms " + ease + " " + delay + "ms";
+        c.style.transform = "";
       }
-    }, 500);
+      var cleaned = new WeakSet();
+      function finishFlip(c) {
+        if (!c || cleaned.has(c)) return;
+        cleaned.add(c);
+        c.style.transition = "";
+        c.style.transitionDelay = "";
+        c.style.transform = "";
+        c.classList.remove("flex-tile--reordering");
+      }
+      var t;
+      for (t = 0; t < flipItems.length; t++) {
+        flipItems[t].cell.addEventListener(
+          "transitionend",
+          function (ev) {
+            if (ev.propertyName !== "transform") return;
+            finishFlip(ev.currentTarget);
+          },
+          { once: true }
+        );
+      }
+      window.setTimeout(function () {
+        for (t = 0; t < flipItems.length; t++) {
+          finishFlip(flipItems[t].cell);
+        }
+      }, durMs + maxStagger + 80);
+
+      if (fadeIn.length > 0) {
+        requestAnimationFrame(function () {
+          var fe = "cubic-bezier(0.25, 0.82, 0.35, 1)";
+          var fi;
+          for (fi = 0; fi < fadeIn.length; fi++) {
+            var fc = fadeIn[fi];
+            var fiDelay = Math.min(fi * 18, 220);
+            fc.style.transition =
+              "opacity 0.38s " + fe + " " + fiDelay + "ms, transform 0.42s " +
+              fe +
+              " " +
+              fiDelay +
+              "ms";
+            fc.style.opacity = "1";
+            fc.style.transform = "";
+          }
+          window.setTimeout(function () {
+            for (fi = 0; fi < fadeIn.length; fi++) {
+              var fcc = fadeIn[fi];
+              fcc.style.transition = "";
+              fcc.style.transitionDelay = "";
+              fcc.classList.remove("flex-tile--shuffle-in");
+            }
+          }, 520);
+        });
+      }
+    });
   });
 }
 
@@ -1239,9 +1294,7 @@ function setupFlexYourGeniesUi() {
       rebuildFlexSlotsFromSortedNfts(sorted);
       flexSetDownloadButtonReady(false);
       renderFlexPreviewGrid(domPool);
-      requestAnimationFrame(function () {
-        flexAnimatePreviewGridFlip(oldRects);
-      });
+      flexAnimatePreviewGridFlip(oldRects);
       var gridEl = document.getElementById("flex-preview-grid");
       flexAwaitPreviewGridLoads(gridEl)
         .then(function () {
@@ -1614,6 +1667,87 @@ function applyWalletFilter(container, filter) {
   }
 }
 
+function walletStatsHtml(matchedLen, ogeniesLen, certsLen) {
+  var oo = ogeniesLen !== 1 ? "s" : "";
+  var co = certsLen !== 1 ? "s" : "";
+  return (
+    '<div class="wallet-stats" role="status" aria-live="polite">' +
+    '<span class="wallet-stats__line">' +
+    '<span class="wallet-stats__ogenies"><strong>' +
+    String(ogeniesLen) +
+    "</strong> Total Genie" +
+    oo +
+    "</span>" +
+    '<span class="wallet-stats__sep" aria-hidden="true">·</span>' +
+    '<span class="wallet-stats__certs"><strong>' +
+    String(certsLen) +
+    "</strong> Total Cert" +
+    co +
+    "</span>" +
+    '<span class="wallet-stats__sep" aria-hidden="true">·</span>' +
+    '<span class="wallet-stats__matched"><strong>' +
+    String(matchedLen) +
+    "</strong> Total Matched" +
+    "</span>" +
+    "</span></div>"
+  );
+}
+
+function updateLookupShellMetaFromWalletData(data) {
+  var matched = (data && data.matched) || [];
+  var ogenies = (data && data.ogenies) || [];
+  var certs = (data && data.certs) || [];
+  var meta = document.getElementById("lookup-shell-meta");
+  if (!meta) return;
+  meta.textContent =
+    " · " +
+    ogenies.length +
+    " Total Genie" +
+    (ogenies.length !== 1 ? "s" : "") +
+    " · " +
+    certs.length +
+    " Total Cert" +
+    (certs.length !== 1 ? "s" : "") +
+    " · " +
+    matched.length +
+    " Total Matched";
+  meta.hidden = false;
+}
+
+function clearLookupShellMeta() {
+  var meta = document.getElementById("lookup-shell-meta");
+  if (!meta) return;
+  meta.textContent = "";
+  meta.hidden = true;
+}
+
+function setLookupShellCollapsed(collapsed) {
+  var shell = document.getElementById("lookup-shell");
+  var btn = document.getElementById("lookup-shell-toggle");
+  if (!shell || !btn) return;
+  shell.classList.toggle("is-collapsed", !!collapsed);
+  btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
+function collapseLookupShellAfterWalletCheck() {
+  var results = document.getElementById("wallet-results");
+  setLookupShellCollapsed(true);
+  if (results && !results.classList.contains("hidden")) {
+    window.requestAnimationFrame(function () {
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+}
+
+function setupLookupShell() {
+  var shell = document.getElementById("lookup-shell");
+  var toggle = document.getElementById("lookup-shell-toggle");
+  if (!shell || !toggle) return;
+  toggle.addEventListener("click", function () {
+    setLookupShellCollapsed(!shell.classList.contains("is-collapsed"));
+  });
+}
+
 function renderWalletResults(container, data) {
   var matched = data.matched || [];
   var missingCerts = data.missingCerts || [];
@@ -1629,13 +1763,16 @@ function renderWalletResults(container, data) {
   if (!hasAny) {
     hideFlexActions();
     html +=
+      walletStatsHtml(0, 0, 0) +
       '<p class="empty-hint prominent">No NFTs found for this wallet in OGENIE or CERT on mainnet.</p>';
     container.innerHTML = html;
     container.classList.remove("hidden");
+    updateLookupShellMetaFromWalletData(data);
     return;
   }
 
   html +=
+    walletStatsHtml(matched.length, ogenies.length, certs.length) +
     '<div class="wallet-filter" role="tablist" aria-label="Filter wallet results">' +
     '<span class="wallet-filter-label">View:</span>' +
     '<button type="button" class="filter-btn is-active" data-filter="all" role="tab" aria-pressed="true">ALL</button>' +
@@ -1729,6 +1866,7 @@ function renderWalletResults(container, data) {
     });
   }
 
+  updateLookupShellMetaFromWalletData(data);
   lastWalletApiData = data;
   populateFlexTraitSelect();
 }
@@ -1832,12 +1970,16 @@ async function checkWallet() {
     setStatus(statusEl, "error", "Enter a wallet address.");
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";
+    clearLookupShellMeta();
+    setLookupShellCollapsed(false);
     return;
   }
   if (!isValidWallet(raw)) {
     setStatus(statusEl, "error", "Invalid wallet — use a 0x + 40 hex character address.");
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";
+    clearLookupShellMeta();
+    setLookupShellCollapsed(false);
     return;
   }
 
@@ -1867,10 +2009,13 @@ async function checkWallet() {
     }
     setStatus(statusEl, "", "");
     renderWalletResults(resultsEl, data);
+    collapseLookupShellAfterWalletCheck();
   } catch (e) {
     var msg = e instanceof Error ? e.message : String(e);
     setStatus(statusEl, "error", msg);
     resultsEl.classList.add("hidden");
+    clearLookupShellMeta();
+    setLookupShellCollapsed(false);
   } finally {
     setGlobalLoading(false);
     btn.disabled = false;
@@ -1889,6 +2034,7 @@ async function findTokenMatch() {
   walletResultsEl.classList.add("hidden");
   walletResultsEl.innerHTML = "";
   setStatus(walletStatusEl, "", "");
+  clearLookupShellMeta();
 
   var raw = (input.value || "").trim();
   if (!raw) {
@@ -1965,3 +2111,4 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
 });
 
 setupFlexYourGeniesUi();
+setupLookupShell();
