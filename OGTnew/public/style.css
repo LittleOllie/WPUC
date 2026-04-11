@@ -168,18 +168,12 @@ body {
 .input-row {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.75rem;
 }
 
-@media (min-width: 520px) {
-  .input-row {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .input-row input {
-    flex: 1;
-  }
+.input-row .btn-primary {
+  width: 100%;
 }
 
 input[type="text"] {
@@ -278,19 +272,19 @@ input[type="text"]:focus {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.55rem;
   margin-bottom: 1.15rem;
-  padding: 0.65rem 0.85rem;
+  padding: 0.75rem 0.95rem;
   background: var(--bg-panel-2);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
 }
 
 .wallet-filter-label {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-muted);
-  margin-right: 0.15rem;
+  margin-right: 0.2rem;
 }
 
 .filter-btn {
@@ -298,9 +292,9 @@ input[type="text"]:focus {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.86rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  padding: 0.42rem 0.85rem;
+  padding: 0.52rem 1.05rem;
   border-radius: 999px;
   font-family: inherit;
   transition:
@@ -325,11 +319,19 @@ input[type="text"]:focus {
   display: none !important;
 }
 
+.unmatched-sub.hidden {
+  display: none !important;
+}
+
 .wallet-section-wrap {
   margin-bottom: 0.25rem;
 }
 
-.wallet-section-wrap .section-title:first-of-type {
+.wallet-section-wrap[data-wallet-section="matched"] > .section-title {
+  margin-top: 0;
+}
+
+.wallet-section-wrap[data-wallet-section="unmatched"] > .unmatched-sub:first-child .section-title {
   margin-top: 0;
 }
 
@@ -510,6 +512,28 @@ input[type="text"]:focus {
   inset: 0;
   border-radius: inherit;
   overflow: hidden;
+}
+
+/* Missing-from-wallet preview: light red wash so it reads as “not yours” */
+.nft-thumb--counterpart .nft-thumb__counterpart-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: rgba(200, 48, 58, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 90, 0.22);
+  transition:
+    background 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.nft-thumb--counterpart:hover .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart:focus-within .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart.is-revealed .nft-thumb__counterpart-visual::after {
+  background: rgba(200, 48, 58, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 90, 90, 0.14);
 }
 
 .nft-thumb__counterpart-visual--empty {
@@ -728,4 +752,79 @@ input[type="text"]:focus {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Full-screen loader: ogtriple pops in and spins on the spot */
+.global-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.22s ease,
+    visibility 0.22s ease;
+}
+
+.global-loading.is-active {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.global-loading__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.global-loading__spin-wrap {
+  position: relative;
+  z-index: 1;
+  transform: scale(0.65);
+  opacity: 0;
+}
+
+.global-loading.is-active .global-loading__spin-wrap {
+  animation: global-loading-pop 0.4s cubic-bezier(0.34, 1.35, 0.64, 1) forwards;
+}
+
+.global-loading__img {
+  display: block;
+  width: min(120px, 32vw);
+  height: auto;
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55));
+}
+
+.global-loading.is-active .global-loading__img {
+  animation: global-loading-spin 1.05s linear infinite;
+}
+
+@keyframes global-loading-pop {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes global-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-loading.is-active .global-loading__spin-wrap {
+    animation: none;
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  .global-loading.is-active .global-loading__img {
+    animation: global-loading-spin 2.5s linear infinite;
+  }
 }

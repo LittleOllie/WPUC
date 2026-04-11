@@ -59,6 +59,22 @@ function setStatus(el, type, message) {
   el.textContent = message || "";
 }
 
+function setGlobalLoading(on) {
+  var el = document.getElementById("global-loading");
+  if (!el) return;
+  if (on) {
+    el.classList.add("is-active");
+    el.setAttribute("aria-busy", "true");
+    el.setAttribute("aria-label", "Loading");
+    el.removeAttribute("aria-hidden");
+  } else {
+    el.classList.remove("is-active");
+    el.removeAttribute("aria-busy");
+    el.removeAttribute("aria-label");
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
 var WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
 
 function isValidWallet(s) {
@@ -243,9 +259,6 @@ function renderWalletCardMissingCert(item) {
     escapeHtml(tid) +
     "</p>" +
     '<p class="wallet-card__badge wallet-card__badge--bad">❌ Missing CERT</p>' +
-    '<p class="wallet-card__meta">CERT holder: <span class="mono">' +
-    escapeHtml(shortAddress(item.counterpartOwner)) +
-    "</span></p>" +
     "</div>" +
     "</article>"
   );
@@ -289,13 +302,25 @@ function renderWalletCardExtraCert(item) {
     '<p class="wallet-card__id">#' +
     escapeHtml(tid) +
     "</p>" +
-    '<p class="wallet-card__badge wallet-card__badge--extra">🧾 Extra CERT</p>' +
-    '<p class="wallet-card__meta">OGENIE holder: <span class="mono">' +
-    escapeHtml(shortAddress(item.counterpartOwner)) +
-    "</span></p>" +
+    '<p class="wallet-card__badge wallet-card__badge--extra">❌ Missing OGENIE</p>' +
     "</div>" +
     "</article>"
   );
+}
+
+function applyWalletFilterShowSubs(subs, showKeys) {
+  var si;
+  var sub;
+  var key;
+  for (si = 0; si < subs.length; si++) {
+    sub = subs[si];
+    key = sub.getAttribute("data-unmatched-sub");
+    if (showKeys.indexOf(key) !== -1) {
+      sub.classList.remove("hidden");
+    } else {
+      sub.classList.add("hidden");
+    }
+  }
 }
 
 function applyWalletFilter(container, filter) {
@@ -310,15 +335,27 @@ function applyWalletFilter(container, filter) {
     btn.setAttribute("aria-pressed", on ? "true" : "false");
   }
   if (!m || !u) return;
+
+  var subs = u.querySelectorAll("[data-unmatched-sub]");
   if (filter === "all") {
     m.classList.remove("hidden");
     u.classList.remove("hidden");
+    applyWalletFilterShowSubs(subs, ["missing-ogenie", "missing-cert", "no-cert-id"]);
   } else if (filter === "matched") {
     m.classList.remove("hidden");
     u.classList.add("hidden");
-  } else if (filter === "unmatched") {
+  } else if (filter === "unmatched-genies") {
     m.classList.add("hidden");
     u.classList.remove("hidden");
+    applyWalletFilterShowSubs(subs, ["missing-cert"]);
+  } else if (filter === "unmatched-certs") {
+    m.classList.add("hidden");
+    u.classList.remove("hidden");
+    applyWalletFilterShowSubs(subs, ["missing-ogenie"]);
+  } else if (filter === "ogenies") {
+    m.classList.add("hidden");
+    u.classList.remove("hidden");
+    applyWalletFilterShowSubs(subs, ["no-cert-id"]);
   }
 }
 
@@ -343,11 +380,13 @@ function renderWalletResults(container, data) {
   }
 
   html +=
-    '<div class="wallet-filter" role="tablist" aria-label="Show matched or unmatched">' +
+    '<div class="wallet-filter" role="tablist" aria-label="Filter wallet results">' +
     '<span class="wallet-filter-label">View:</span>' +
-    '<button type="button" class="filter-btn is-active" data-filter="all" role="tab" aria-pressed="true">All</button>' +
+    '<button type="button" class="filter-btn is-active" data-filter="all" role="tab" aria-pressed="true">ALL</button>' +
     '<button type="button" class="filter-btn" data-filter="matched" role="tab" aria-pressed="false">Matched</button>' +
-    '<button type="button" class="filter-btn" data-filter="unmatched" role="tab" aria-pressed="false">Unmatched</button>' +
+    '<button type="button" class="filter-btn" data-filter="unmatched-genies" role="tab" aria-pressed="false">Unmatched Genies</button>' +
+    '<button type="button" class="filter-btn" data-filter="unmatched-certs" role="tab" aria-pressed="false">Unmatched certs</button>' +
+    '<button type="button" class="filter-btn" data-filter="ogenies" role="tab" aria-pressed="false">Ogenies</button>' +
     "</div>";
 
   html += '<div class="wallet-section-wrap" data-wallet-section="matched">';
@@ -367,18 +406,22 @@ function renderWalletResults(container, data) {
   html += "</div></div>";
 
   html += '<div class="wallet-section-wrap" data-wallet-section="unmatched">';
-  html += '<h3 class="section-title">Extra CERTs</h3><div class="wallet-grid">';
+  html +=
+    '<div class="unmatched-sub" data-unmatched-sub="missing-ogenie">' +
+    '<h3 class="section-title">Missing OGENIEs</h3><div class="wallet-grid">';
   if (missingOgenies.length === 0) {
     html +=
-      '<p class="empty-hint">None — no CERTs without a matching OGENIE.</p>';
+      '<p class="empty-hint">None — no CERTs in your wallet are missing their OGENIE.</p>';
   } else {
     for (var k = 0; k < missingOgenies.length; k++) {
       html += renderWalletCardExtraCert(missingOgenies[k]);
     }
   }
-  html += "</div>";
+  html += "</div></div>";
 
-  html += '<h3 class="section-title">Missing CERTs</h3><div class="wallet-grid">';
+  html +=
+    '<div class="unmatched-sub" data-unmatched-sub="missing-cert">' +
+    '<h3 class="section-title">Missing CERTs</h3><div class="wallet-grid">';
   if (missingCerts.length === 0) {
     if (ogenies.length === 0) {
       html +=
@@ -395,9 +438,10 @@ function renderWalletResults(container, data) {
       html += renderWalletCardMissingCert(missingCerts[j]);
     }
   }
-  html += "</div>";
+  html += "</div></div>";
 
   html +=
+    '<div class="unmatched-sub" data-unmatched-sub="no-cert-id">' +
     '<h3 class="section-title">No CERT for this ID</h3>' +
     '<p class="section-blurb">The OGTriple CERT collection was only minted for token IDs 1–' +
     escapeHtml(String(certMaxTokenId != null ? certMaxTokenId : 1000)) +
@@ -411,7 +455,7 @@ function renderWalletResults(container, data) {
       html += renderWalletCardNoCert(noCert[nc], certMaxTokenId);
     }
   }
-  html += "</div></div>";
+  html += "</div></div></div>";
 
   container.innerHTML = html;
   container.classList.remove("hidden");
@@ -538,6 +582,7 @@ async function checkWallet() {
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
+  setGlobalLoading(true);
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
 
@@ -564,6 +609,7 @@ async function checkWallet() {
     setStatus(statusEl, "error", msg);
     resultsEl.classList.add("hidden");
   } finally {
+    setGlobalLoading(false);
     btn.disabled = false;
   }
 }
@@ -592,6 +638,7 @@ async function findTokenMatch() {
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
+  setGlobalLoading(true);
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
 
@@ -618,6 +665,7 @@ async function findTokenMatch() {
     setStatus(statusEl, "error", msg);
     resultsEl.classList.add("hidden");
   } finally {
+    setGlobalLoading(false);
     btn.disabled = false;
   }
 }

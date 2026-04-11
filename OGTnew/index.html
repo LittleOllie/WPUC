@@ -47,7 +47,6 @@
 
       <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
         <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
-        <p class="mode-desc">See images, complete sets, missing certs, and extra certs.</p>
         <label class="field-label" for="wallet-input">Wallet address</label>
         <div class="input-row">
           <input
@@ -56,17 +55,14 @@
             autocomplete="off"
             spellcheck="false"
             placeholder="0x…"
-            aria-describedby="wallet-hint"
           />
           <button type="button" id="check-wallet-btn" class="btn-primary">Check My Wallet</button>
         </div>
-        <p id="wallet-hint" class="hint">Ethereum mainnet · Alchemy NFT API</p>
         <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
       </section>
 
       <section class="panel mode-panel" aria-labelledby="token-mode-title">
         <h2 id="token-mode-title" class="mode-title">Token lookup</h2>
-        <p class="mode-desc">Compare OGENIE &amp; CERT for a single ID.</p>
         <label class="field-label" for="token-input">Token ID</label>
         <div class="input-row">
           <input
@@ -75,11 +71,9 @@
             inputmode="numeric"
             autocomplete="off"
             placeholder="e.g. 287"
-            aria-describedby="token-hint"
           />
           <button type="button" id="find-match-btn" class="btn-primary">Find Match</button>
         </div>
-        <p id="token-hint" class="hint">Decimal or 0x hex</p>
         <div id="token-status" class="status" role="status" aria-live="polite"></div>
       </section>
 
@@ -89,6 +83,24 @@
       <footer class="footer">
         <p>Little Ollie–inspired styling · Not affiliated with OpenSea or Alchemy</p>
       </footer>
+    </div>
+
+    <div
+      id="global-loading"
+      class="global-loading"
+      aria-hidden="true"
+    >
+      <div class="global-loading__backdrop" aria-hidden="true"></div>
+      <div class="global-loading__spin-wrap">
+        <img
+          class="global-loading__img"
+          src="ogtriple.png"
+          width="120"
+          height="120"
+          alt=""
+          decoding="async"
+        />
+      </div>
     </div>
 
     <script src="app.js"></script>
