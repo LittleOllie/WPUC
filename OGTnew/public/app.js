@@ -89,6 +89,9 @@ var FLEX_MAX_NFT_TILES = 100;
 /** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
 var FLEX_CANVAS_SIZE = 8192;
 var FLEX_CANVAS_SIZE_FALLBACK = 4096;
+/** Mobile Safari kills tabs under memory pressure; avoid 8k canvas + parallel decodes on phones. */
+var FLEX_MOBILE_EXPORT_MAX = 2048;
+var FLEX_MOBILE_IMAGE_LOAD_BATCH = 4;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
 /** JPEG export: high visual quality, much smaller than PNG at8k. */
@@ -485,6 +488,69 @@ function flexCreateExportCanvas(W, H) {
   return canvas;
 }
 
+function flexIsMemoryConstrainedDevice() {
+  if (typeof navigator === "undefined") return false;
+  var ua = navigator.userAgent || "";
+  if (/iPhone|iPod/i.test(ua)) return true;
+  if (/Android/i.test(ua) && /Mobile/i.test(ua)) return true;
+  if (/iPad/i.test(ua)) return true;
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+  if (typeof window !== "undefined") {
+    try {
+      if (window.matchMedia("(max-width: 768px)").matches) return true;
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  return false;
+}
+
+function flexExportCanvasSizeCandidates() {
+  if (flexIsMemoryConstrainedDevice()) {
+    return [FLEX_MOBILE_EXPORT_MAX, 1536, 1024];
+  }
+  return [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048];
+}
+
+function flexReleaseCanvasMemory(canvas) {
+  if (!canvas) return;
+  try {
+    canvas.width = 0;
+    canvas.height = 0;
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+async function flexLoadImagesForExport(uniqueUrls) {
+  var loadedMap = {};
+  var n = uniqueUrls.length;
+  if (n === 0) return loadedMap;
+  if (!flexIsMemoryConstrainedDevice()) {
+    await Promise.all(
+      uniqueUrls.map(function (url) {
+        return flexLoadImageWithFallbacks(url).then(function (img) {
+          loadedMap[url] = img;
+        });
+      })
+    );
+    return loadedMap;
+  }
+  var batch = Math.max(1, FLEX_MOBILE_IMAGE_LOAD_BATCH);
+  var i;
+  for (i = 0; i < n; i += batch) {
+    var slice = uniqueUrls.slice(i, i + batch);
+    await Promise.all(
+      slice.map(function (url) {
+        return flexLoadImageWithFallbacks(url).then(function (img) {
+          loadedMap[url] = img;
+        });
+      })
+    );
+  }
+  return loadedMap;
+}
+
 async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
   var unique = [];
   var seen = {};
@@ -496,20 +562,13 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       unique.push(u);
     }
   }
-  var loadedMap = {};
-  await Promise.all(
-    unique.map(function (url) {
-      return flexLoadImageWithFallbacks(url).then(function (img) {
-        loadedMap[url] = img;
-      });
-    })
-  );
+  var loadedMap = await flexLoadImagesForExport(unique);
   var loadedSlots = [];
   for (ui = 0; ui < slots.length; ui++) {
     var su = slots[ui];
     loadedSlots.push(su ? loadedMap[su] || null : null);
   }
-  var sizeTry = [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048];
+  var sizeTry = flexExportCanvasSizeCandidates();
   var ti;
   var canvas = null;
   var ctx = null;
@@ -644,10 +703,12 @@ function flexRefreshPreviewFromSlots() {
       try {
         dataUrl = canvas.toDataURL("image/jpeg", FLEX_EXPORT_JPEG_QUALITY);
       } catch (se) {
+        flexReleaseCanvasMemory(canvas);
         throw new Error(
           "Could not export image (browser blocked cross-origin art). Try a different browser or VPN."
         );
       }
+      flexReleaseCanvasMemory(canvas);
       flexLastExportDataUrl = dataUrl;
       var wrap = document.getElementById("flex-preview-wrap");
       if (wrap) wrap.classList.remove("hidden");
