@@ -89,9 +89,8 @@ var FLEX_MAX_NFT_TILES = 100;
 /** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
 var FLEX_CANVAS_SIZE = 8192;
 var FLEX_CANVAS_SIZE_FALLBACK = 4096;
-/** Mobile Safari kills tabs under memory pressure; avoid 8k canvas + parallel decodes on phones. */
+/** Mobile Safari kills tabs under memory pressure; cap canvas + never hold all decoded NFTs at once. */
 var FLEX_MOBILE_EXPORT_MAX = 2048;
-var FLEX_MOBILE_IMAGE_LOAD_BATCH = 4;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
 /** JPEG export: high visual quality, much smaller than PNG at8k. */
@@ -173,15 +172,27 @@ function flexWaitForPreviewGridImages() {
       resolve();
       return;
     }
-    var remaining = imgs.length;
-    function oneDone() {
-      remaining--;
-      if (remaining <= 0) resolve();
-    }
+    var pending = [];
     var i;
+    var im;
     for (i = 0; i < imgs.length; i++) {
-      var im = imgs[i];
-      if (im.complete) oneDone();
+      im = imgs[i];
+      if (im.getAttribute("data-flex-src")) continue;
+      pending.push(im);
+    }
+    var n = pending.length;
+    if (n === 0) {
+      resolve();
+      return;
+    }
+    var left = n;
+    function oneDone() {
+      left--;
+      if (left <= 0) resolve();
+    }
+    for (i = 0; i < n; i++) {
+      im = pending[i];
+      if (im.complete && im.src) oneDone();
       else {
         im.addEventListener("load", oneDone, { once: true });
         im.addEventListener("error", oneDone, { once: true });
@@ -505,11 +516,33 @@ function flexIsMemoryConstrainedDevice() {
   return false;
 }
 
-function flexExportCanvasSizeCandidates() {
+function flexExportCanvasSizeCandidates(slotsLen) {
+  var n = typeof slotsLen === "number" ? slotsLen : 0;
   if (flexIsMemoryConstrainedDevice()) {
+    if (n > 49) return [1024, 896, 768];
+    if (n > 36) return [1280, 1024, 896];
+    if (n > 24) return [1536, 1280, 1024];
     return [FLEX_MOBILE_EXPORT_MAX, 1536, 1024];
   }
   return [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048];
+}
+
+function flexPreviewConcurrentLoads() {
+  var ua = navigator.userAgent || "";
+  if (/iPhone|iPod/i.test(ua)) return 1;
+  return 2;
+}
+
+function flexReleaseImageElement(img) {
+  if (!img) return;
+  try {
+    img.onload = null;
+    img.onerror = null;
+    img.src = "";
+    img.removeAttribute("src");
+  } catch (e) {
+    /* ignore */
+  }
 }
 
 function flexReleaseCanvasMemory(canvas) {
@@ -522,53 +555,66 @@ function flexReleaseCanvasMemory(canvas) {
   }
 }
 
-async function flexLoadImagesForExport(uniqueUrls) {
-  var loadedMap = {};
-  var n = uniqueUrls.length;
-  if (n === 0) return loadedMap;
-  if (!flexIsMemoryConstrainedDevice()) {
-    await Promise.all(
-      uniqueUrls.map(function (url) {
-        return flexLoadImageWithFallbacks(url).then(function (img) {
-          loadedMap[url] = img;
-        });
-      })
+/** Stagger preview <img> loads on mobile so dozens of NFTs are not decoded at once. */
+function flexAwaitPreviewGridLoads(gridEl) {
+  return new Promise(function (resolve) {
+    if (!gridEl) {
+      resolve();
+      return;
+    }
+    if (!flexIsMemoryConstrainedDevice()) {
+      resolve();
+      return;
+    }
+    var imgs = Array.prototype.slice.call(
+      gridEl.querySelectorAll("img.flex-tile__img[data-flex-src]")
     );
-    return loadedMap;
-  }
-  var batch = Math.max(1, FLEX_MOBILE_IMAGE_LOAD_BATCH);
-  var i;
-  for (i = 0; i < n; i += batch) {
-    var slice = uniqueUrls.slice(i, i + batch);
-    await Promise.all(
-      slice.map(function (url) {
-        return flexLoadImageWithFallbacks(url).then(function (img) {
-          loadedMap[url] = img;
-        });
-      })
-    );
-  }
-  return loadedMap;
+    var n = imgs.length;
+    if (n === 0) {
+      resolve();
+      return;
+    }
+    var concurrency = flexPreviewConcurrentLoads();
+    var completed = 0;
+    var nextIndex = 0;
+    function tryFinish() {
+      completed++;
+      if (completed >= n) resolve();
+    }
+    function launchOne() {
+      if (nextIndex >= n) return;
+      var img = imgs[nextIndex++];
+      var u = img.getAttribute("data-flex-src");
+      img.removeAttribute("data-flex-src");
+      img.addEventListener(
+        "load",
+        function () {
+          tryFinish();
+          launchOne();
+        },
+        { once: true }
+      );
+      img.addEventListener(
+        "error",
+        function () {
+          tryFinish();
+          launchOne();
+        },
+        { once: true }
+      );
+      img.src = u;
+    }
+    var initial = Math.min(concurrency, n);
+    var j;
+    for (j = 0; j < initial; j++) {
+      launchOne();
+    }
+  });
 }
 
 async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
-  var unique = [];
-  var seen = {};
-  var ui;
-  for (ui = 0; ui < slots.length; ui++) {
-    var u = slots[ui];
-    if (u && !seen[u]) {
-      seen[u] = true;
-      unique.push(u);
-    }
-  }
-  var loadedMap = await flexLoadImagesForExport(unique);
-  var loadedSlots = [];
-  for (ui = 0; ui < slots.length; ui++) {
-    var su = slots[ui];
-    loadedSlots.push(su ? loadedMap[su] || null : null);
-  }
-  var sizeTry = flexExportCanvasSizeCandidates();
+  var cells = cols * rows;
+  var sizeTry = flexExportCanvasSizeCandidates(slots.length);
   var ti;
   var canvas = null;
   var ctx = null;
@@ -599,14 +645,63 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   var i;
-  var cells = cols * rows;
-  for (i = 0; i < cells; i++) {
-    var col = i % cols;
-    var row = Math.floor(i / cols);
-    var x = col * cw;
-    var y = row * ch;
-    var bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
-    flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+  var col;
+  var row;
+  var x;
+  var y;
+  var bg;
+
+  if (flexIsMemoryConstrainedDevice()) {
+    for (i = 0; i < cells; i++) {
+      col = i % cols;
+      row = Math.floor(i / cols);
+      x = col * cw;
+      y = row * ch;
+      bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
+      var slotUrl = slots[i];
+      var img = null;
+      if (slotUrl) {
+        img = await flexLoadImageWithFallbacks(slotUrl);
+      }
+      flexDrawCover(ctx, img, x, y, cw, ch, bg);
+      flexReleaseImageElement(img);
+      if ((i & 3) === 3) {
+        await new Promise(function (r) {
+          setTimeout(r, 0);
+        });
+      }
+    }
+  } else {
+    var unique = [];
+    var seen = {};
+    for (i = 0; i < slots.length; i++) {
+      var u = slots[i];
+      if (u && !seen[u]) {
+        seen[u] = true;
+        unique.push(u);
+      }
+    }
+    var loadedMap = {};
+    await Promise.all(
+      unique.map(function (url) {
+        return flexLoadImageWithFallbacks(url).then(function (im) {
+          loadedMap[url] = im;
+        });
+      })
+    );
+    var loadedSlots = [];
+    for (i = 0; i < slots.length; i++) {
+      var su = slots[i];
+      loadedSlots.push(su ? loadedMap[su] || null : null);
+    }
+    for (i = 0; i < cells; i++) {
+      col = i % cols;
+      row = Math.floor(i / cols);
+      x = col * cw;
+      y = row * ch;
+      bg = i === 0 ? FLEX_BRAND_CELL_BG : "#ffffff";
+      flexDrawCover(ctx, loadedSlots[i] || null, x, y, cw, ch, bg);
+    }
   }
   return canvas;
 }
@@ -679,10 +774,14 @@ function renderFlexPreviewGrid() {
     var url = st.slots[i];
     if (url) {
       var img = document.createElement("img");
-      img.src = url;
       img.alt = "";
       img.draggable = i !== 0;
       img.className = "flex-tile__img";
+      if (flexIsMemoryConstrainedDevice()) {
+        img.setAttribute("data-flex-src", url);
+      } else {
+        img.src = url;
+      }
       cell.appendChild(img);
     } else {
       cell.classList.add("flex-tile--empty");
@@ -765,6 +864,9 @@ async function runFlexGenerate() {
   renderFlexPreviewGrid();
   setGlobalLoading(true);
   try {
+    await flexAwaitPreviewGridLoads(
+      document.getElementById("flex-preview-grid")
+    );
     await flexRefreshPreviewFromSlots();
     await flexWaitForPreviewGridImages();
     flexSetDownloadButtonReady(true);
@@ -817,7 +919,11 @@ function setupFlexYourGeniesUi() {
       rebuildFlexSlotsFromSortedNfts(sorted);
       flexSetDownloadButtonReady(false);
       renderFlexPreviewGrid();
-      flexRefreshPreviewFromSlots()
+      var gridEl = document.getElementById("flex-preview-grid");
+      flexAwaitPreviewGridLoads(gridEl)
+        .then(function () {
+          return flexRefreshPreviewFromSlots();
+        })
         .then(function () {
           return flexWaitForPreviewGridImages();
         })
