@@ -85,6 +85,16 @@
       ) {
         return s;
       }
+      /* Same-origin static assets in /public must not use worker proxy (breaks grid branding). */
+      if (typeof global.location !== "undefined" && global.location.href) {
+        var pageLoc = new URL(global.location.href);
+        if (parsed.origin === pageLoc.origin) {
+          var path = parsed.pathname || "";
+          if (/quirkieslogo\.png$/i.test(path) || /pblo\.png$/i.test(path)) {
+            return s;
+          }
+        }
+      }
     } catch (e) {
       /* not absolute */
     }

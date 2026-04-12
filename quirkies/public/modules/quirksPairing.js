@@ -68,6 +68,7 @@ function parseIdBigint(id) {
  *   unmatchedQuirklingsHigh: object[],
  *   unmatchedQuirklingsMissingQuirkie: object[],
  *   loneQuirkies: object[],
+ *   unmatchedInx: object[],
  * }}
  */
 export function pairQuirksWalletData(walletPayload) {
@@ -164,11 +165,31 @@ export function pairQuirksWalletData(walletPayload) {
     return idStr(a).localeCompare(idStr(b));
   });
 
+  /** INX with no pair row (no Quirkie+Quirkling pair for that token id). */
+  const unmatchedInx = [];
+  for (const x of inxList) {
+    const sid = idStr(x);
+    if (!pairedQuirkieIds.has(sid)) {
+      unmatchedInx.push(x);
+    }
+  }
+  unmatchedInx.sort((a, b) => {
+    const ba = parseIdBigint(a.tokenId);
+    const bb = parseIdBigint(b.tokenId);
+    if (ba != null && bb != null) {
+      if (ba < bb) return -1;
+      if (ba > bb) return 1;
+      return 0;
+    }
+    return idStr(a).localeCompare(idStr(b));
+  });
+
   return {
     pairs,
     unmatchedQuirklingsHigh,
     unmatchedQuirklingsMissingQuirkie,
     loneQuirkies,
+    unmatchedInx,
   };
 }
 
@@ -195,6 +216,7 @@ export function shuffleQuirksPairing(pairing) {
     unmatchedQuirklingsMissingQuirkie: shuffleInPlace(
       pairing.unmatchedQuirklingsMissingQuirkie.slice()
     ),
+    unmatchedInx: shuffleInPlace((pairing.unmatchedInx || []).slice()),
   };
 }
 
@@ -237,21 +259,53 @@ function compareTokenIdStr(a, b) {
   return String(a).localeCompare(String(b));
 }
 
-/** Sort matched pairs by a trait on the Quirkies side, then token id. */
+/**
+ * Sort pairing buckets by trait (canonical key on each entry’s traits), then token id.
+ * Applies to matched pairs (Quirkie traits), lone Quirkies, and unmatched Quirklings
+ * (quirking metadata), so trait layout works for Group sets, sections, and grouped units.
+ */
 export function sortPairingByQuirkieTrait(pairing, traitKey) {
-  const pairs = pairing.pairs.slice().sort((a, b) => {
-    const va = traitValCanonical(a.quirkie?.traits, traitKey);
-    const vb = traitValCanonical(b.quirkie?.traits, traitKey);
+  function cmpByTraitThenId(traitsA, traitsB, idA, idB) {
+    const va = traitValCanonical(traitsA, traitKey);
+    const vb = traitValCanonical(traitsB, traitKey);
     const c = va.localeCompare(vb, undefined, {
       numeric: true,
       sensitivity: "base",
     });
     if (c !== 0) return c;
-    return compareTokenIdStr(a.tokenId, b.tokenId);
-  });
+    return compareTokenIdStr(idA, idB);
+  }
+
+  const pairs = pairing.pairs.slice().sort((a, b) =>
+    cmpByTraitThenId(a.quirkie?.traits, b.quirkie?.traits, a.tokenId, b.tokenId)
+  );
+
+  const loneQuirkies = pairing.loneQuirkies.slice().sort((a, b) =>
+    cmpByTraitThenId(a.traits, b.traits, a.tokenId, b.tokenId)
+  );
+
+  const unmatchedQuirklingsMissingQuirkie =
+    pairing.unmatchedQuirklingsMissingQuirkie.slice().sort((a, b) =>
+      cmpByTraitThenId(a.traits, b.traits, a.tokenId, b.tokenId)
+    );
+
+  const unmatchedQuirklingsHigh = pairing.unmatchedQuirklingsHigh
+    .slice()
+    .sort((a, b) =>
+      cmpByTraitThenId(a.traits, b.traits, a.tokenId, b.tokenId)
+    );
+
+  const unmatchedInx = (pairing.unmatchedInx || []).slice().sort((a, b) =>
+    cmpByTraitThenId(a.traits, b.traits, a.tokenId, b.tokenId)
+  );
+
   return {
     ...pairing,
     pairs,
+    loneQuirkies,
+    unmatchedQuirklingsMissingQuirkie,
+    unmatchedQuirklingsHigh,
+    unmatchedInx,
   };
 }
 
@@ -344,6 +398,9 @@ function buildQuirksGridSequenceSections(pairing, opts, cap) {
     for (const p of pairing.pairs) {
       if (p.inx && p.inx.image) pushIfImage(out, p.inx, "inx-section");
     }
+    for (const x of pairing.unmatchedInx || []) {
+      pushIfImage(out, x, "inx-section");
+    }
   }
 
   return out.slice(0, cap);
@@ -387,6 +444,11 @@ export function buildQuirksGridSequence(pairing, opts, maxTiles) {
     }
     for (const ql of pairing.unmatchedQuirklingsHigh) {
       pushIfImage(out, ql, "quirking-high");
+    }
+  }
+  if (wantInx) {
+    for (const x of pairing.unmatchedInx || []) {
+      pushIfImage(out, x, "inx");
     }
   }
 

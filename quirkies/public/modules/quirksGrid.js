@@ -83,7 +83,36 @@ function quirksUseFlatMode() {
   }
 }
 
+/** Local /public branding files — NftImageLoader proxies other URLs via /api/img and breaks these. */
+function quirksIsLocalBrandingAssetUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  const s = url.trim();
+  if (s.indexOf("quirkieslogo.png") !== -1) return true;
+  if (s.indexOf("pblo.png") !== -1) return true;
+  return false;
+}
+
 function quirksBindGridImage(img, rawUrl, slotIndex) {
+  if (quirksIsLocalBrandingAssetUrl(String(rawUrl || ""))) {
+    img.removeAttribute("data-nft-c");
+    img.removeAttribute("data-nft-ci");
+    img.decoding = "async";
+    img.referrerPolicy = "strict-origin-when-cross-origin";
+    img.src = String(rawUrl).trim();
+    img.onload = function () {
+      if (typeof window.__nftImgLoad === "function") {
+        window.__nftImgLoad(img);
+      } else {
+        const t = img.closest && img.closest(".quirks-tile");
+        if (t && t.classList) t.classList.add("is-loaded");
+      }
+    };
+    img.onerror = function () {
+      const t = img.closest && img.closest(".quirks-tile");
+      if (t && t.classList) t.classList.add("is-loaded");
+    };
+    return;
+  }
   const NL =
     typeof window !== "undefined" && window.NftImageLoader;
   if (NL && typeof NL.applyToGridImg === "function") {
@@ -336,6 +365,21 @@ function quirksGetGridLayoutMode() {
   return el && el.value === "sections" ? "sections" : "grouped";
 }
 
+/** True when 2+ collection checkboxes are on (multi-collection grid). */
+function quirksBrandingIsMultiCollection() {
+  const ids = [
+    "quirks-opt-quirkies",
+    "quirks-opt-quirkkids",
+    "quirks-opt-quirklings",
+    "quirks-opt-inx",
+  ];
+  let n = 0;
+  for (let i = 0; i < ids.length; i++) {
+    if (document.getElementById(ids[i])?.checked) n++;
+  }
+  return n >= 2;
+}
+
 function quirksBuildItemList(data, wantQ, wantKid, wantQl, wantIx, sortKey) {
   const gridLayout = quirksGetGridLayoutMode();
   if (quirksUseFlatMode()) {
@@ -374,18 +418,357 @@ function quirksComputeGrid(totalCells) {
   return { cols, rows };
 }
 
+function quirksItemIdStr(it) {
+  return String(it.tokenId != null ? it.tokenId : "");
+}
+
+/**
+ * Build horizontal layout units from the existing paired sequence (quirksPairing output).
+ * Triple: Quirkie + QuirkKid + Quirkling; pair: Quirkie + Quirkling or lone Quirkie + QuirkKid.
+ */
+function buildLayoutUnitsFromGroupedSequence(items) {
+  const out = [];
+  let i = 0;
+  while (i < items.length) {
+    const it = items[i];
+    const k = it.kind;
+    const id = quirksItemIdStr(it);
+    const next = items[i + 1];
+    const next2 = items[i + 2];
+    const idNext = next ? quirksItemIdStr(next) : "";
+    const idNext2 = next2 ? quirksItemIdStr(next2) : "";
+    if (
+      k === "quirkie-pair" &&
+      next?.kind === "quirkkid-pair" &&
+      next2?.kind === "quirking-pair" &&
+      id === idNext &&
+      id === idNext2
+    ) {
+      out.push({ type: "triple", width: 3, items: [it, next, next2] });
+      i += 3;
+      continue;
+    }
+    if (k === "quirkie-pair" && next?.kind === "quirking-pair" && id === idNext) {
+      out.push({ type: "pair", width: 2, items: [it, next] });
+      i += 2;
+      continue;
+    }
+    if (k === "quirkie-lone" && next?.kind === "quirkkid-lone" && id === idNext) {
+      out.push({ type: "pair", width: 2, items: [it, next] });
+      i += 2;
+      continue;
+    }
+    out.push({ type: "single", width: 1, items: [it] });
+    i += 1;
+  }
+  return out;
+}
+
+function packLayoutUnitsIntoRows(units, cols) {
+  const rows = [];
+  let row = [];
+  let used = 0;
+  for (let u = 0; u < units.length; u++) {
+    const unit = units[u];
+    const w = unit.width;
+    if (w > cols) {
+      if (row.length) {
+        rows.push(row);
+        row = [];
+        used = 0;
+      }
+      rows.push([unit]);
+      continue;
+    }
+    if (used + w > cols && used > 0) {
+      rows.push(row);
+      row = [];
+      used = 0;
+    }
+    row.push(unit);
+    used += w;
+  }
+  if (row.length) rows.push(row);
+  return rows;
+}
+
+function quirksRepackGroupedUnits() {
+  const st = quirksEditorState;
+  if (!st || st.mode !== "grouped" || !Array.isArray(st.units)) return;
+  const totalW = st.units.reduce((s, u) => s + u.width, 0);
+  const cols = Math.max(3, Math.ceil(Math.sqrt(totalW)));
+  st.packed = packLayoutUnitsIntoRows(st.units, cols);
+  st.cols = cols;
+  st.rows = st.packed.length;
+}
+
+function quirksUnitStableKey(unit) {
+  return unit.items
+    .map((it) => quirksProxyKidCdnForCanvas(it.image))
+    .join("|");
+}
+
+function quirksFlipKeyForCell(st, cell) {
+  if (!st || !cell) return null;
+  if (st.mode === "grouped") {
+    const ui = parseInt(cell.dataset.unitIndex, 10);
+    if (isNaN(ui) || !st.units[ui]) return null;
+    return quirksUnitStableKey(st.units[ui]);
+  }
+  const idx = parseInt(cell.dataset.index, 10);
+  if (isNaN(idx)) return null;
+  const url = st.slots[idx];
+  return url || null;
+}
+
+function quirksRenderBrandOverlay() {
+  const overlay = document.getElementById("quirks-preview-brand-overlay");
+  if (!overlay) return;
+  overlay.innerHTML = "";
+  const multi = quirksBrandingIsMultiCollection();
+  overlay.classList.toggle("quirks-preview-brand-overlay--pblo-only", multi);
+  if (!multi) {
+    /* Logo + pblo live in the first grid cell (firstCellBrand). */
+    return;
+  }
+  const pblo = document.createElement("img");
+  pblo.src = getQuirksPbloImageUrl();
+  pblo.alt = "";
+  pblo.className = "quirks-preview-brand-overlay__pblo";
+  pblo.setAttribute("aria-hidden", "true");
+  pblo.decoding = "async";
+  overlay.appendChild(pblo);
+}
+
+/**
+ * Corner watermark: multi-collection only (pblo, one column wide).
+ * Single-collection branding is drawn in the first grid cell, not here.
+ */
+async function quirksDrawBrandWatermark(ctx, canvasW, canvasH, opts) {
+  const o = opts && typeof opts === "object" ? opts : {};
+  const multi =
+    o.multiCollection != null
+      ? o.multiCollection
+      : quirksBrandingIsMultiCollection();
+  const cols = Math.max(1, typeof o.cols === "number" ? o.cols : 1);
+  if (!multi) return;
+  const pbloOnly = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
+  if (!pbloOnly || pbloOnly.naturalWidth <= 0) {
+    quirksReleaseImageElement(pbloOnly);
+    return;
+  }
+  const cellW = canvasW / cols;
+  const bx = 0;
+  const by = 0;
+  const drawW = cellW;
+  const piw = pbloOnly.naturalWidth;
+  const pih = pbloOnly.naturalHeight;
+  const drawH = (pih / piw) * drawW;
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+  ctx.shadowBlur = Math.max(4, canvasW * 0.004);
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1;
+  ctx.drawImage(pbloOnly, bx, by, drawW, drawH);
+  ctx.restore();
+  quirksReleaseImageElement(pbloOnly);
+}
+
+function quirksGroupedExportUniqueUrlCount(state) {
+  const seen = {};
+  let n = 0;
+  const units = state.units || [];
+  for (let u = 0; u < units.length; u++) {
+    const unit = units[u];
+    const items = unit.items || [];
+    for (let j = 0; j < items.length; j++) {
+      const url = quirksProxyKidCdnForCanvas(items[j].image);
+      if (url && !seen[url]) {
+        seen[url] = true;
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
+async function quirksBuildGroupedExportCanvas(state) {
+  const packed = state.packed;
+  const cols = state.cols;
+  const rows = packed.length;
+  const cellCount = Math.max(1, cols * rows);
+  const sizeTry = quirksExportCanvasSizeCandidates(cellCount);
+  let canvas = null;
+  let ctx = null;
+  let W = 0;
+  let H = 0;
+  for (let ti = 0; ti < sizeTry.length; ti++) {
+    W = sizeTry[ti];
+    H = sizeTry[ti];
+    canvas = quirksCreateExportCanvas(W, H);
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas = null;
+      continue;
+    }
+    ctx = canvas.getContext("2d");
+    if (!ctx) {
+      canvas = null;
+      continue;
+    }
+    break;
+  }
+  if (!ctx || !canvas) throw new Error("Canvas not supported.");
+  ctx.imageSmoothingEnabled = true;
+  if ("imageSmoothingQuality" in ctx) {
+    ctx.imageSmoothingQuality = "high";
+  }
+  const cw = W / cols;
+  const ch = H / rows;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  const uniqueCount = quirksGroupedExportUniqueUrlCount(state);
+  const useSequential =
+    quirksIsMemoryConstrainedDevice() ||
+    uniqueCount > QUIRKS_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP;
+
+  if (useSequential) {
+    for (let r = 0; r < packed.length; r++) {
+      const rowUnits = packed[r];
+      let col = 0;
+      for (let u = 0; u < rowUnits.length; u++) {
+        const unit = rowUnits[u];
+        const uw = unit.width;
+        const x = col * cw;
+        const y = r * ch;
+        const cellW = uw * cw;
+        const cellR = quirksExportCellRect(x, y, cellW, ch);
+        const nSub = unit.items.length;
+        const subW = cellR.w / nSub;
+        for (let si = 0; si < nSub; si++) {
+          const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
+          const img = await quirksLoadImageWithFallbacks(url);
+          quirksDrawCover(
+            ctx,
+            img,
+            cellR.x + si * subW,
+            cellR.y,
+            subW,
+            cellR.h,
+            "#ffffff"
+          );
+          quirksReleaseImageElement(img);
+        }
+        col += uw;
+      }
+      if ((r & 3) === 3) {
+        await new Promise((res) => setTimeout(res, 0));
+      }
+    }
+  } else {
+    const urls = [];
+    const seen = {};
+    for (let u = 0; u < state.units.length; u++) {
+      const unit = state.units[u];
+      for (let j = 0; j < unit.items.length; j++) {
+        const uu = quirksProxyKidCdnForCanvas(unit.items[j].image);
+        if (uu && !seen[uu]) {
+          seen[uu] = true;
+          urls.push(uu);
+        }
+      }
+    }
+    const loadedMap = {};
+    await Promise.all(
+      urls.map((url) =>
+        quirksLoadImageWithFallbacks(url).then((im) => {
+          loadedMap[url] = im;
+        })
+      )
+    );
+    for (let r = 0; r < packed.length; r++) {
+      const rowUnits = packed[r];
+      let col = 0;
+      for (let u = 0; u < rowUnits.length; u++) {
+        const unit = rowUnits[u];
+        const uw = unit.width;
+        const x = col * cw;
+        const y = r * ch;
+        const cellW = uw * cw;
+        const cellR = quirksExportCellRect(x, y, cellW, ch);
+        const nSub = unit.items.length;
+        const subW = cellR.w / nSub;
+        for (let si = 0; si < nSub; si++) {
+          const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
+          const img = url ? loadedMap[url] || null : null;
+          quirksDrawCover(
+            ctx,
+            img,
+            cellR.x + si * subW,
+            cellR.y,
+            subW,
+            cellR.h,
+            "#ffffff"
+          );
+        }
+        col += uw;
+      }
+    }
+  }
+  await quirksDrawBrandWatermark(ctx, W, H, {
+    multiCollection: quirksBrandingIsMultiCollection(),
+    cols: state.cols,
+  });
+  return canvas;
+}
+
 function quirksRebuildSlotsFromSorted(sortedItems) {
-  const brand = getQuirksGridBrandImageUrl();
-  const urls = [brand].concat(
-    sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image))
-  );
+  const gridLayout = quirksGetGridLayoutMode();
+  const wantQ = document.getElementById("quirks-opt-quirkies")?.checked;
+  const wantQl = document.getElementById("quirks-opt-quirklings")?.checked;
+
+  if (
+    gridLayout === "grouped" &&
+    wantQ &&
+    wantQl &&
+    !quirksUseFlatMode()
+  ) {
+    const units = buildLayoutUnitsFromGroupedSequence(sortedItems);
+    const totalW = units.reduce((s, u) => s + u.width, 0);
+    const cols = Math.max(3, Math.ceil(Math.sqrt(totalW)));
+    const packed = packLayoutUnitsIntoRows(units, cols);
+    quirksEditorState = {
+      mode: "grouped",
+      units,
+      packed,
+      cols,
+      rows: packed.length,
+      gridLayout,
+      firstCellBrand: false,
+    };
+    return;
+  }
+
+  const multi = quirksBrandingIsMultiCollection();
+  const itemUrls = sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image));
+  const urls = multi
+    ? itemUrls
+    : [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(
+        itemUrls
+      );
   const g = quirksComputeGrid(urls.length);
   const cells = g.cols * g.rows;
   const slots = [];
   for (let i = 0; i < cells; i++) {
     slots.push(i < urls.length ? urls[i] : null);
   }
-  quirksEditorState = { slots, cols: g.cols, rows: g.rows };
+  quirksEditorState = {
+    mode: "flat",
+    slots,
+    cols: g.cols,
+    rows: g.rows,
+    gridLayout,
+    firstCellBrand: !multi,
+  };
 }
 
 function setGlobalLoadingQuirks(on) {
@@ -450,6 +833,8 @@ function resetQuirksModalOutput() {
   if (wrap) wrap.classList.add("hidden");
   quirksSetDownloadButtonReady(false);
   if (grid) grid.innerHTML = "";
+  const brandOv = document.getElementById("quirks-preview-brand-overlay");
+  if (brandOv) brandOv.innerHTML = "";
   quirksEditorState = null;
   quirksLastExportDataUrl = null;
   quirksDnDFromIndex = null;
@@ -674,7 +1059,15 @@ function quirksExportCanvasSizeCandidates(slotsLen) {
   return [QUIRKS_CANVAS_SIZE, QUIRKS_CANVAS_SIZE_FALLBACK, 2048];
 }
 
-async function quirksExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch) {
+async function quirksExportGridDrawCellsSequential(
+  ctx,
+  slots,
+  cols,
+  rows,
+  cw,
+  ch,
+  firstCellBrand
+) {
   const cells = cols * rows;
   for (let i = 0; i < cells; i++) {
     const col = i % cols;
@@ -683,11 +1076,19 @@ async function quirksExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, c
     const y = row * ch;
     const cellR = quirksExportCellRect(x, y, cw, ch);
     const slotUrl = slots[i];
-    if (i === 0) {
+    if (i === 0 && firstCellBrand) {
       const pbloM = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
       let bIm = null;
       if (slotUrl) bIm = await quirksLoadImageWithFallbacks(slotUrl);
-      quirksDrawBrandCellExport(ctx, bIm, pbloM, cellR.x, cellR.y, cellR.w, cellR.h);
+      quirksDrawBrandCellExport(
+        ctx,
+        bIm,
+        pbloM,
+        cellR.x,
+        cellR.y,
+        cellR.w,
+        cellR.h
+      );
       quirksReleaseImageElement(pbloM);
       quirksReleaseImageElement(bIm);
     } else {
@@ -703,7 +1104,7 @@ async function quirksExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, c
   }
 }
 
-async function quirksBuildGridCanvasFromSlots(slots, cols, rows) {
+async function quirksBuildGridCanvasFromSlots(slots, cols, rows, firstCellBrand) {
   const cells = cols * rows;
   const sizeTry = quirksExportCanvasSizeCandidates(slots.length);
   let canvas = null;
@@ -748,7 +1149,15 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows) {
     uniqueCount > QUIRKS_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP;
 
   if (useSequential) {
-    await quirksExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch);
+    await quirksExportGridDrawCellsSequential(
+      ctx,
+      slots,
+      cols,
+      rows,
+      cw,
+      ch,
+      !!firstCellBrand
+    );
   } else {
     const unique = [];
     const seen = {};
@@ -779,7 +1188,7 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows) {
       const x = col * cw;
       const y = row * ch;
       const cellR2 = quirksExportCellRect(x, y, cw, ch);
-      if (i === 0) {
+      if (i === 0 && firstCellBrand) {
         quirksDrawBrandCellExport(
           ctx,
           loadedSlots[0] || null,
@@ -803,6 +1212,12 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows) {
       }
     }
     quirksReleaseImageElement(pbloD);
+  }
+  if (quirksBrandingIsMultiCollection()) {
+    await quirksDrawBrandWatermark(ctx, W, H, {
+      multiCollection: true,
+      cols,
+    });
   }
   return canvas;
 }
@@ -848,11 +1263,17 @@ function quirksWaitForPreviewGridImages() {
 
 function quirksRefreshPreviewFromSlots() {
   if (!quirksEditorState) return Promise.resolve();
-  return quirksBuildGridCanvasFromSlots(
-    quirksEditorState.slots,
-    quirksEditorState.cols,
-    quirksEditorState.rows
-  )
+  const st = quirksEditorState;
+  const build =
+    st.mode === "grouped"
+      ? quirksBuildGroupedExportCanvas(st)
+      : quirksBuildGridCanvasFromSlots(
+          st.slots,
+          st.cols,
+          st.rows,
+          !!st.firstCellBrand
+        );
+  return build
     .then((canvas) => {
       let dataUrl;
       try {
@@ -882,8 +1303,32 @@ function quirksRefreshPreviewFromSlots() {
 function quirksHarvestPreviewDomPool() {
   const grid = document.getElementById("quirks-preview-grid");
   const pool = { pblo: null, byUrl: {} };
-  if (!grid || !quirksEditorState?.slots) return pool;
-  const slots = quirksEditorState.slots;
+  if (!grid || !quirksEditorState) return pool;
+  const st = quirksEditorState;
+  if (st.mode === "grouped") {
+    const cells = grid.querySelectorAll(".quirks-tile[data-unit-index]");
+    for (let c = 0; c < cells.length; c++) {
+      const cell = cells[c];
+      const ui = parseInt(cell.dataset.unitIndex, 10);
+      if (isNaN(ui) || !st.units[ui]) continue;
+      const unit = st.units[ui];
+      const imgs = cell.querySelectorAll("img.quirks-tile__img");
+      for (let ii = 0; ii < imgs.length; ii++) {
+        const img = imgs[ii];
+        const item = unit.items[ii];
+        if (!item) continue;
+        const url = quirksProxyKidCdnForCanvas(item.image);
+        if (!url) continue;
+        if (img.parentNode) {
+          img.parentNode.removeChild(img);
+          pool.byUrl[url] = img;
+        }
+      }
+    }
+    return pool;
+  }
+  const slots = st.slots;
+  if (!slots) return pool;
   const cells = grid.querySelectorAll(".quirks-tile");
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];
@@ -891,7 +1336,7 @@ function quirksHarvestPreviewDomPool() {
     if (isNaN(idx)) continue;
     const url = slots[idx];
     if (!url) continue;
-    if (idx === 0) {
+    if (idx === 0 && st.firstCellBrand) {
       if (!pool.pblo) {
         const p = cell.querySelector(".quirks-tile__brand-pblo");
         if (p?.parentNode) {
@@ -904,12 +1349,12 @@ function quirksHarvestPreviewDomPool() {
         bimg.parentNode.removeChild(bimg);
         pool.byUrl[url] = bimg;
       }
-    } else {
-      const img = cell.querySelector(".quirks-tile__img");
-      if (img?.parentNode) {
-        img.parentNode.removeChild(img);
-        pool.byUrl[url] = img;
-      }
+      continue;
+    }
+    const img = cell.querySelector(".quirks-tile__img");
+    if (img?.parentNode) {
+      img.parentNode.removeChild(img);
+      pool.byUrl[url] = img;
     }
   }
   return pool;
@@ -945,39 +1390,37 @@ function quirksDrainUnusedDomPool(pool) {
   }
 }
 
-function quirksCapturePreviewTileRectsByUrl() {
+function quirksCapturePreviewTileRectsForFlip() {
   const grid = document.getElementById("quirks-preview-grid");
   const map = {};
-  if (!grid || !quirksEditorState?.slots) return map;
+  if (!grid || !quirksEditorState) return map;
+  const st = quirksEditorState;
   const cells = grid.querySelectorAll(".quirks-tile");
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];
-    const idx = parseInt(cell.dataset.index, 10);
-    if (isNaN(idx)) continue;
-    const url = quirksEditorState.slots[idx];
-    if (!url) continue;
-    map[url] = cell.getBoundingClientRect();
+    const key = quirksFlipKeyForCell(st, cell);
+    if (!key) continue;
+    map[key] = cell.getBoundingClientRect();
   }
   return map;
 }
 
-function quirksAnimatePreviewGridFlip(oldRectsByUrl) {
+function quirksAnimatePreviewGridFlip(oldRectsMap) {
   const grid = document.getElementById("quirks-preview-grid");
-  if (!grid || !quirksEditorState?.slots) return;
+  if (!grid || !quirksEditorState) return;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
     return;
   }
-  if (!oldRectsByUrl || typeof oldRectsByUrl !== "object") return;
+  if (!oldRectsMap || typeof oldRectsMap !== "object") return;
+  const st = quirksEditorState;
   const cells = grid.querySelectorAll(".quirks-tile");
   const flipItems = [];
   const fadeIn = [];
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];
-    const idx = parseInt(cell.dataset.index, 10);
-    if (isNaN(idx)) continue;
-    const url = quirksEditorState.slots[idx];
-    if (!url) continue;
-    const oldR = oldRectsByUrl[url];
+    const key = quirksFlipKeyForCell(st, cell);
+    if (!key) continue;
+    const oldR = oldRectsMap[key];
     const neu = cell.getBoundingClientRect();
     if (!oldR) {
       cell.classList.add("quirks-tile--shuffle-in");
@@ -1064,7 +1507,10 @@ function quirksAnimatePreviewGridFlip(oldRectsByUrl) {
 
 function quirksSwapPreviewTileContents(i, j) {
   const grid = document.getElementById("quirks-preview-grid");
-  if (!grid || !quirksEditorState) return;
+  if (!grid || !quirksEditorState || quirksEditorState.mode !== "flat") {
+    return;
+  }
+  if (quirksEditorState.firstCellBrand && (i === 0 || j === 0)) return;
   const cellI = grid.querySelector(`.quirks-tile[data-index="${i}"]`);
   const cellJ = grid.querySelector(`.quirks-tile[data-index="${j}"]`);
   if (!cellI || !cellJ) return;
@@ -1090,14 +1536,55 @@ function renderQuirksPreviewGrid(domPool) {
   const st = quirksEditorState;
   el.style.gridTemplateColumns = `repeat(${st.cols}, 1fr)`;
   el.innerHTML = "";
-  for (let i = 0; i < st.slots.length; i++) {
-    const cell = document.createElement("div");
-    cell.className = "quirks-tile";
-    cell.dataset.index = String(i);
-    const url = st.slots[i];
-    if (i === 0) {
-      cell.classList.add("quirks-tile--brand");
-      if (url) {
+  if (st.mode === "grouped") {
+    let slotCounter = 0;
+    for (let r = 0; r < st.packed.length; r++) {
+      const row = st.packed[r];
+      for (let c = 0; c < row.length; c++) {
+        const unit = row[c];
+        const uIdx = st.units.indexOf(unit);
+        const cell = document.createElement("div");
+        cell.className = "quirks-tile";
+        if (unit.width === 2) cell.classList.add("quirks-tile--span2");
+        else if (unit.width === 3) cell.classList.add("quirks-tile--span3");
+        cell.dataset.unitIndex = String(uIdx);
+        const loadEl = document.createElement("span");
+        loadEl.className = "quirks-tile__loading";
+        loadEl.setAttribute("aria-hidden", "true");
+        cell.appendChild(loadEl);
+        const strip = document.createElement("div");
+        strip.className = "quirks-tile__strip";
+        for (let si = 0; si < unit.items.length; si++) {
+          const item = unit.items[si];
+          const url = quirksProxyKidCdnForCanvas(item.image);
+          let img = quirksTakePooledImg(pool, url);
+          if (!img) {
+            img = document.createElement("img");
+            img.className = "quirks-tile__img";
+            img.alt = "";
+            quirksBindGridImage(img, url, slotCounter++);
+          } else {
+            img.className = "quirks-tile__img";
+            img.alt = "";
+            quirksBindGridImage(img, url, slotCounter++);
+          }
+          img.draggable = true;
+          strip.appendChild(img);
+        }
+        cell.appendChild(strip);
+        quirksSetTileEmptyClass(cell, unit.items.length > 0);
+        el.appendChild(cell);
+      }
+    }
+  } else {
+    for (let i = 0; i < st.slots.length; i++) {
+      const cell = document.createElement("div");
+      cell.className = "quirks-tile";
+      cell.dataset.index = String(i);
+      const url = st.slots[i];
+      const isBrandCell = st.firstCellBrand && i === 0;
+      if (isBrandCell && url) {
+        cell.classList.add("quirks-tile--brand");
         const loadEl = document.createElement("span");
         loadEl.className = "quirks-tile__loading";
         loadEl.setAttribute("aria-hidden", "true");
@@ -1129,34 +1616,37 @@ function renderQuirksPreviewGrid(domPool) {
         stack.appendChild(pbloImg);
         cell.appendChild(brandImg);
         cell.appendChild(stack);
+      } else if (url) {
+        const loadEl = document.createElement("span");
+        loadEl.className = "quirks-tile__loading";
+        loadEl.setAttribute("aria-hidden", "true");
+        cell.appendChild(loadEl);
+        let img = quirksTakePooledImg(pool, url);
+        if (!img) {
+          img = document.createElement("img");
+          img.className = "quirks-tile__img";
+          img.alt = "";
+          quirksBindGridImage(img, url, i);
+        } else {
+          img.className = "quirks-tile__img";
+          img.alt = "";
+          quirksBindGridImage(img, url, i);
+        }
+        img.draggable = true;
+        cell.appendChild(img);
       } else {
         cell.classList.add("quirks-tile--empty");
       }
-    } else if (url) {
-      const loadEl = document.createElement("span");
-      loadEl.className = "quirks-tile__loading";
-      loadEl.setAttribute("aria-hidden", "true");
-      cell.appendChild(loadEl);
-      let img = quirksTakePooledImg(pool, url);
-      if (!img) {
-        img = document.createElement("img");
-        img.className = "quirks-tile__img";
-        img.alt = "";
-        quirksBindGridImage(img, url, i);
-      } else {
-        img.className = "quirks-tile__img";
-        img.alt = "";
-        quirksBindGridImage(img, url, i);
-      }
-      img.draggable = true;
-      cell.appendChild(img);
-    } else {
-      cell.classList.add("quirks-tile--empty");
+      quirksSetTileEmptyClass(cell, !!cell.querySelector(".quirks-tile__img"));
+      el.appendChild(cell);
     }
-    quirksSetTileEmptyClass(cell, !!cell.querySelector(".quirks-tile__img"));
-    el.appendChild(cell);
   }
   quirksDrainUnusedDomPool(pool);
+  const stage = document.querySelector(".quirks-preview-stage");
+  if (stage) {
+    stage.style.setProperty("--quirks-grid-cols", String(st.cols));
+  }
+  quirksRenderBrandOverlay();
 }
 
 function populateQuirksTraitSelect() {
@@ -1402,6 +1892,7 @@ function setupQuirksBuilderUi() {
   function onQuirksCollectionChange() {
     quirksSyncGenerateButtonState();
     if (quirksWalletData) populateQuirksTraitSelect();
+    if (quirksEditorState) quirksRenderBrandOverlay();
   }
   [
     "quirks-opt-quirkies",
@@ -1432,7 +1923,7 @@ function setupQuirksBuilderUi() {
         traitSel.value || "random"
       );
       if (items.length === 0) return;
-      const oldRects = quirksCapturePreviewTileRectsByUrl();
+      const oldRects = quirksCapturePreviewTileRectsForFlip();
       const domPool = quirksHarvestPreviewDomPool();
       quirksRebuildSlotsFromSorted(items);
       quirksSetDownloadButtonReady(false);
@@ -1456,8 +1947,33 @@ function setupQuirksBuilderUi() {
     previewGrid.addEventListener("dragstart", (e) => {
       const cell = e.target.closest(".quirks-tile");
       if (!cell || !previewGrid.contains(cell)) return;
+      const st = quirksEditorState;
+      if (!st) {
+        e.preventDefault();
+        return;
+      }
+      if (st.mode === "grouped") {
+        const u = parseInt(cell.dataset.unitIndex, 10);
+        if (isNaN(u) || !st.units[u]) {
+          e.preventDefault();
+          return;
+        }
+        quirksDnDFromIndex = u;
+        e.dataTransfer.effectAllowed = "move";
+        try {
+          e.dataTransfer.setData("text/plain", String(u));
+        } catch {
+          /* ignore */
+        }
+        cell.classList.add("quirks-tile--dragging");
+        return;
+      }
       const i = parseInt(cell.dataset.index, 10);
-      if (i === 0 || !quirksEditorState?.slots[i]) {
+      if (isNaN(i) || !st.slots[i]) {
+        e.preventDefault();
+        return;
+      }
+      if (st.firstCellBrand && i === 0) {
         e.preventDefault();
         return;
       }
@@ -1483,13 +1999,29 @@ function setupQuirksBuilderUi() {
       e.preventDefault();
       const cell = e.target.closest(".quirks-tile");
       if (!cell || !previewGrid.contains(cell) || !quirksEditorState) return;
+      const st = quirksEditorState;
+      if (st.mode === "grouped") {
+        const j = parseInt(cell.dataset.unitIndex, 10);
+        const i = quirksDnDFromIndex;
+        if (i == null || isNaN(j) || !st.units[j]) return;
+        if (i === j) return;
+        const tmp = st.units[i];
+        st.units[i] = st.units[j];
+        st.units[j] = tmp;
+        quirksRepackGroupedUnits();
+        quirksDnDFromIndex = null;
+        renderQuirksPreviewGrid();
+        quirksLastExportDataUrl = null;
+        return;
+      }
       const j = parseInt(cell.dataset.index, 10);
       const i = quirksDnDFromIndex;
-      if (i == null || j === 0 || i === 0) return;
+      if (i == null || isNaN(j)) return;
+      if (st.firstCellBrand && j === 0) return;
       if (i === j) return;
-      const tmp = quirksEditorState.slots[i];
-      quirksEditorState.slots[i] = quirksEditorState.slots[j];
-      quirksEditorState.slots[j] = tmp;
+      const tmp = st.slots[i];
+      st.slots[i] = st.slots[j];
+      st.slots[j] = tmp;
       quirksDnDFromIndex = null;
       quirksSwapPreviewTileContents(i, j);
       quirksLastExportDataUrl = null;

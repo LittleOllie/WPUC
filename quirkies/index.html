@@ -291,8 +291,18 @@
         <p id="quirks-error" class="quirks-modal__error" role="alert"></p>
         <div id="quirks-preview-wrap" class="quirks-preview-wrap hidden">
           <p class="quirks-preview-label">Preview</p>
-          <p class="quirks-preview-hint">Drag tiles to reorder (top-left branding is fixed).</p>
-          <div id="quirks-preview-grid" class="quirks-preview-grid"></div>
+          <p class="quirks-preview-hint">
+            Drag tiles to reorder. One collection: logo + pblo in the first tile (fixed). Multiple
+            collections: pblo overlay only, one column wide.
+          </p>
+          <div class="quirks-preview-stage">
+            <div
+              id="quirks-preview-brand-overlay"
+              class="quirks-preview-brand-overlay"
+              aria-hidden="true"
+            ></div>
+            <div id="quirks-preview-grid" class="quirks-preview-grid"></div>
+          </div>
           <button
             type="button"
             id="quirks-download-btn"
