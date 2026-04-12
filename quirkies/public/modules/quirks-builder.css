@@ -148,11 +148,34 @@ body.quirks-modal-active {
   color: var(--qk-accent-strong);
 }
 
-.quirks-modal__lede {
+.quirks-modal__intro {
   margin: 0 0 1rem;
+}
+
+.quirks-modal__intro .quirks-modal__lede {
+  margin: 0 0 0.5rem;
+}
+
+.quirks-modal__lede {
   font-size: 0.86rem;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.quirks-modal__note {
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.quirks-modal__note:last-child {
+  margin-bottom: 0;
+}
+
+.quirks-modal__note strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .quirks-modal__collection-row {

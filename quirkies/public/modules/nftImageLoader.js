@@ -71,8 +71,24 @@
   }
 
   function proxify(u) {
-    if (!u || u.indexOf("/api/img") === 0) return u;
-    return apiUrl("/api/img?url=" + encodeURIComponent(u));
+    if (!u || typeof u !== "string") return u;
+    var s = u.trim();
+    if (!s) return s;
+    if (s.indexOf("/api/img") === 0) {
+      return apiUrl(s);
+    }
+    try {
+      var parsed = new URL(s);
+      if (
+        parsed.pathname === "/api/img" &&
+        parsed.search.indexOf("url=") !== -1
+      ) {
+        return s;
+      }
+    } catch (e) {
+      /* not absolute */
+    }
+    return apiUrl("/api/img?url=" + encodeURIComponent(s));
   }
 
   function extractIpfsPath(u) {

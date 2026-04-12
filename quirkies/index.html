@@ -227,10 +227,17 @@
           />
         </div>
         <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
-        <p class="quirks-modal__lede">
-          Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.
-          <code>?quirksFlat=1</code> lists NFTs without pairing rules.
-        </p>
+        <div class="quirks-modal__intro">
+          <p class="quirks-modal__lede">
+            Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.
+          </p>
+          <p class="quirks-modal__note">
+            After you tap <strong>Generate grid</strong>, please wait up to a minute while tiles load — art is often fetched from IPFS and can be slow.
+          </p>
+          <p class="quirks-modal__note">
+            Some NFTs may not show a preview; metadata and IPFS gateways are not always reliable. We’re aware and working on it.
+          </p>
+        </div>
         <div class="quirks-modal__collection-row" role="group" aria-label="Collections to include">
           <label class="quirks-collection-pill">
             <input type="checkbox" id="quirks-opt-quirkies" class="quirks-collection-pill__input" />

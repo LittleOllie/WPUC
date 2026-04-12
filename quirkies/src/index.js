@@ -106,13 +106,22 @@ function shouldProxyImageUrlForClient(u) {
   return isIpfsLikeImageUrl(u) || isQuirkiesQuirkKidCdnUrl(u);
 }
 
-/** Route IPFS + QuirkKid S3 through Worker proxy (CORS-safe canvas); other HTTPS unchanged. */
-function proxiedImageUrlForClient(rawUrl) {
+/**
+ * Route IPFS + QuirkKid S3 through Worker proxy (CORS-safe canvas); other HTTPS unchanged.
+ * @param {string | null | undefined} assetOrigin Request origin (e.g. https://….workers.dev).
+ *  When the UI is on GitHub Pages, relative /api/img would hit the wrong host — always pass origin from fetch().
+ */
+function proxiedImageUrlForClient(rawUrl, assetOrigin) {
   if (!rawUrl || typeof rawUrl !== "string") return null;
   const n = normalizeImageUrl(rawUrl.trim());
   if (!n) return null;
   if (!shouldProxyImageUrlForClient(n)) return n;
-  return `/api/img?url=${encodeURIComponent(n)}`;
+  const q = `?url=${encodeURIComponent(n)}`;
+  if (assetOrigin && typeof assetOrigin === "string") {
+    const base = assetOrigin.replace(/\/$/, "");
+    return `${base}/api/img${q}`;
+  }
+  return `/api/img${q}`;
 }
 
 function extractImageFromMetadata(data) {
@@ -859,13 +868,13 @@ function requireQuirksAlchemyEnv(env) {
   };
 }
 
-function rowFromCol(col, id) {
+function rowFromCol(col, id, assetOrigin) {
   const rawImg = col.idToImage.get(id) ?? null;
   const rawKid = col.idToKidImage?.get(id) ?? null;
   return {
     tokenId: tokenIdStrToJson(id),
-    image: rawImg ? proxiedImageUrlForClient(rawImg) : null,
-    kidImage: rawKid ? proxiedImageUrlForClient(rawKid) : null,
+    image: rawImg ? proxiedImageUrlForClient(rawImg, assetOrigin) : null,
+    kidImage: rawKid ? proxiedImageUrlForClient(rawKid, assetOrigin) : null,
     traits: col.idToTraits.get(id) ?? [],
   };
 }
@@ -873,6 +882,7 @@ function rowFromCol(col, id) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const assetOrigin = url.origin;
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -916,7 +926,7 @@ export default {
         }
         const rawImage = extractImageFromMetadata(meta);
         return json({
-          image: rawImage ? proxiedImageUrlForClient(rawImage) : null,
+          image: rawImage ? proxiedImageUrlForClient(rawImage, assetOrigin) : null,
           rawImage,
         });
       } catch (err) {
@@ -973,8 +983,8 @@ export default {
 
         const quirkie = {
           owner: qOwner,
-          image: qImg ? proxiedImageUrlForClient(qImg) : null,
-          kidImage: qKid ? proxiedImageUrlForClient(qKid) : null,
+          image: qImg ? proxiedImageUrlForClient(qImg, assetOrigin) : null,
+          kidImage: qKid ? proxiedImageUrlForClient(qKid, assetOrigin) : null,
           opensea: qOwner ? `https://opensea.io/${qOwner}` : null,
           openseaNft: openseaEthereumItemUrl(QUIRKIES, tid),
         };
@@ -983,7 +993,7 @@ export default {
         if (inPairRange) {
           quirking = {
             owner: qlOwner,
-            image: qlImg ? proxiedImageUrlForClient(qlImg) : null,
+            image: qlImg ? proxiedImageUrlForClient(qlImg, assetOrigin) : null,
             opensea: qlOwner ? `https://opensea.io/${qlOwner}` : null,
             openseaNft: openseaEthereumItemUrl(QUIRKLINGS, tid),
           };
@@ -996,7 +1006,7 @@ export default {
           const iImg = results[iOff + 1];
           inx = {
             owner: iOwner,
-            image: iImg ? proxiedImageUrlForClient(iImg) : null,
+            image: iImg ? proxiedImageUrlForClient(iImg, assetOrigin) : null,
             opensea: iOwner ? `https://opensea.io/${iOwner}` : null,
             openseaNft: openseaEthereumItemUrl(INX, tid),
           };
@@ -1091,12 +1101,14 @@ export default {
         const inxSet = new Set(inxCol.idKeys);
 
         const quirkies = quirkiesCol.idKeys.map((id) =>
-          rowFromCol(quirkiesCol, id)
+          rowFromCol(quirkiesCol, id, assetOrigin)
         );
         const quirklings = quirklingsCol.idKeys.map((id) =>
-          rowFromCol(quirklingsCol, id)
+          rowFromCol(quirklingsCol, id, assetOrigin)
         );
-        const inxList = inxCol.idKeys.map((id) => rowFromCol(inxCol, id));
+        const inxList = inxCol.idKeys.map((id) =>
+          rowFromCol(inxCol, id, assetOrigin)
+        );
 
         const matched = [];
         for (const id of quirkiesCol.idKeys) {
@@ -1108,11 +1120,13 @@ export default {
           }
           if (bi > PAIR_MAX_TOKEN_ID) continue;
           if (!qlSet.has(id)) continue;
-          const inxRow = inxSet.has(id) ? rowFromCol(inxCol, id) : null;
+          const inxRow = inxSet.has(id)
+            ? rowFromCol(inxCol, id, assetOrigin)
+            : null;
           matched.push({
             tokenId: tokenIdStrToJson(id),
-            quirkie: rowFromCol(quirkiesCol, id),
-            quirking: rowFromCol(quirklingsCol, id),
+            quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
+            quirking: rowFromCol(quirklingsCol, id, assetOrigin),
             inx: inxRow,
             openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
             openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
@@ -1180,12 +1194,13 @@ export default {
         );
         const missingQuirkie = missingQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaNft: missingQuirkieRows[i].openseaNft,
           counterpartImage: proxiedImageUrlForClient(
-            missingQuirkieRows[i].counterpartImage
+            missingQuirkieRows[i].counterpartImage,
+            assetOrigin
           ),
         }));
 
@@ -1202,24 +1217,25 @@ export default {
         );
         const loneQuirkies = loneQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirkie: rowFromCol(quirkiesCol, id),
+          quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaNft: loneQuirkieRows[i].openseaNft,
           counterpartImage: proxiedImageUrlForClient(
-            loneQuirkieRows[i].counterpartImage
+            loneQuirkieRows[i].counterpartImage,
+            assetOrigin
           ),
         }));
 
         const quirklingsHigh = highQuirklingIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
         }));
 
         const inxOnly = inxOnlyIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          inx: rowFromCol(inxCol, id),
+          inx: rowFromCol(inxCol, id, assetOrigin),
           openseaInx: INX ? openseaEthereumItemUrl(INX, id) : null,
         }));
 

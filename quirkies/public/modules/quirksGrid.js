@@ -1,6 +1,6 @@
 /**
  * Quirks Builder — isolated clone of Flex grid UX for Quirkies / Quirklings / INX.
- * Pairing rules live in ./quirksPairing.js. Add ?quirksFlat=1 to skip pairing (API smoke test).
+ * Pairing rules live in ./quirksPairing.js. Dev-only: URL ?quirksFlat=1 skips pairing (smoke test).
  */
 import {
   pairQuirksWalletData,
@@ -38,13 +38,20 @@ function apiUrl(pathAndQuery) {
   return pathAndQuery;
 }
 
-/** QuirkKid S3 has no CORS; same-origin /api/img keeps canvas export working on production. */
+/** QuirkKid S3 has no CORS; Worker /api/img — API may return absolute proxy URLs. */
 function quirksProxyKidCdnForCanvas(rawUrl) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
   const s = rawUrl.trim();
-  if (s.indexOf("/api/img") === 0) return s;
+  if (s.indexOf("/api/img") === 0) return apiUrl(s);
   try {
-    const h = new URL(s).hostname.toLowerCase();
+    const parsed = new URL(s);
+    if (
+      parsed.pathname === "/api/img" &&
+      parsed.search.indexOf("url=") !== -1
+    ) {
+      return s;
+    }
+    const h = parsed.hostname.toLowerCase();
     if (h === "quirkids-images.s3.ap-southeast-2.amazonaws.com") {
       return apiUrl("/api/img?url=" + encodeURIComponent(s));
     }
