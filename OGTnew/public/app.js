@@ -898,6 +898,22 @@ function maybeShowWelcomeModal() {
   setWelcomeModalOpen(true);
 }
 
+/**
+ * Hub lives at repo /links.html. On Cloudflare Workers (*.workers.dev) that file may not exist — use main site menu.
+ */
+function setupBackToMenu() {
+  var a = document.querySelector(".back-to-menu");
+  if (!a) return;
+  try {
+    var h = window.location.hostname || "";
+    if (/\.workers\.dev$/i.test(h)) {
+      a.href = "https://littleollielabs.com/links.html";
+    }
+  } catch (e) {
+    /* keep default href */
+  }
+}
+
 function setupWelcomeModal() {
   var modal = document.getElementById("welcome-modal");
   if (!modal) return;
@@ -1880,7 +1896,7 @@ function renderWalletResults(container, data) {
     '<button type="button" class="filter-btn" data-filter="matched" role="tab" aria-pressed="false">Matched</button>' +
     '<button type="button" class="filter-btn" data-filter="unmatched-genies" role="tab" aria-pressed="false">Unmatched Genies</button>' +
     '<button type="button" class="filter-btn" data-filter="unmatched-certs" role="tab" aria-pressed="false">Unmatched certs</button>' +
-    '<button type="button" class="filter-btn" data-filter="ogenies" role="tab" aria-pressed="false">Ogenies</button>' +
+    '<button type="button" class="filter-btn" data-filter="ogenies" role="tab" aria-pressed="false">OGENIES</button>' +
     "</div>" +
     '<div id="flex-actions" class="flex-actions">' +
     '<button type="button" id="flex-open-btn" class="btn-primary flex-open-btn">Flex Your Genies</button>' +
@@ -2220,6 +2236,7 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
 
 window.setGlobalLoading = setGlobalLoading;
 
+setupBackToMenu();
 setupWelcomeModal();
 setupFlexYourGeniesUi();
 setupLookupShell();
