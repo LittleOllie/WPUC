@@ -6,9 +6,11 @@
     <title>Quirks Set Checker</title>
     <meta
       name="description"
-      content="Match Quirkies and Quirklings by token ID — wallet scan or single ID lookup. Optional INX."
+      content="Quirkies × Quirklings × QuirKid × INX — wallet scan or token lookup by ID on Ethereum."
     />
-    <link rel="icon" href="quirkieslogo.png" type="image/png" sizes="any" />
+    <link rel="icon" href="quirkieslogo.png?v=2" type="image/png" sizes="any" />
+    <link rel="shortcut icon" href="quirkieslogo.png?v=2" type="image/png" />
+    <link rel="apple-touch-icon" href="quirkieslogo.png?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://ipfs.io" />
@@ -22,6 +24,9 @@
   </head>
   <body>
     <div class="page">
+      <nav class="page-nav" aria-label="Site navigation">
+        <a href="../../links.html" class="back-to-menu">← Back to menu</a>
+      </nav>
       <div class="brand-bar">
         <div class="brand-bar__logos">
           <img
@@ -45,7 +50,18 @@
 
       <header class="hero">
         <p class="eyebrow">LO Labs utility · Quirks</p>
-        <h1>Quirkies × Quirklings</h1>
+        <div class="hero__headline">
+          <h1>Quirkies × Quirklings × QuirKid × INX</h1>
+          <button
+            type="button"
+            class="hero__info-btn"
+            id="welcome-info-btn"
+            aria-label="About this app"
+            title="About this app"
+          >
+            <span class="hero__info-icon" aria-hidden="true">i</span>
+          </button>
+        </div>
         <p class="lede">
           Scan a wallet for paired sets (matching token IDs 1–5000), or look up one token ID. Quirklings above ID 5000 are shown as unpaired. Optional INX when held.
         </p>
@@ -115,6 +131,59 @@
     </div>
 
     <div
+      id="welcome-modal"
+      class="welcome-modal"
+      aria-hidden="true"
+      aria-labelledby="welcome-modal-title"
+      aria-describedby="welcome-modal-desc"
+      role="dialog"
+    >
+      <div id="welcome-modal-backdrop" class="welcome-modal__backdrop"></div>
+      <div class="welcome-modal__panel">
+        <button
+          type="button"
+          id="welcome-modal-close"
+          class="welcome-modal__close"
+          aria-label="Close welcome message"
+        >
+          ×
+        </button>
+        <div class="welcome-modal__brands">
+          <img
+            class="welcome-modal__brand-img welcome-modal__brand-img--lo"
+            src="lo.png"
+            width="200"
+            height="64"
+            alt="Little Ollie"
+          />
+          <span class="welcome-modal__brand-x" aria-hidden="true">×</span>
+          <img
+            class="welcome-modal__brand-img welcome-modal__brand-img--qk"
+            src="quirkieslogo.png"
+            width="96"
+            height="96"
+            alt="Quirkies"
+          />
+        </div>
+        <h2 id="welcome-modal-title" class="welcome-modal__title">Welcome</h2>
+        <div id="welcome-modal-desc" class="welcome-modal__body">
+          <p class="welcome-modal__lede">
+            Match <strong>QUIRKIES</strong> and <strong>QUIRKLINGS</strong> by token ID (1–5000). Optional
+            <strong>INX</strong> and <strong>QuirkKid</strong> companion art.
+          </p>
+          <ul class="welcome-modal__list">
+            <li><strong>Wallet</strong> — See what you hold: pairs, gaps, and high-ID Quirklings.</li>
+            <li><strong>Token lookup</strong> — One ID: Quirkie, QuirkKid, Quirkling, and INX side by side.</li>
+            <li><strong>Grid builder</strong> — After a wallet check, build a shareable grid; sort, drag, download.</li>
+          </ul>
+        </div>
+        <button type="button" id="welcome-modal-got-it" class="btn-primary welcome-modal__cta">
+          Got it
+        </button>
+      </div>
+    </div>
+
+    <div
       id="quirks-modal"
       class="quirks-modal"
       aria-hidden="true"
@@ -145,7 +214,7 @@
         </div>
         <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
         <p class="quirks-modal__lede">
-          Build a shareable grid from this wallet’s Quirkies, QuirkKids (companion art), Quirklings, and INX.
+          Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.
           <code>?quirksFlat=1</code> lists NFTs without pairing rules.
         </p>
         <div class="quirks-modal__collection-row" role="group" aria-label="Collections to include">
@@ -155,7 +224,7 @@
           </label>
           <label class="quirks-collection-pill">
             <input type="checkbox" id="quirks-opt-quirkkids" class="quirks-collection-pill__input" />
-            <span class="quirks-collection-pill__label">QuirkKids</span>
+            <span class="quirks-collection-pill__label">QuirKid</span>
           </label>
           <label class="quirks-collection-pill">
             <input type="checkbox" id="quirks-opt-quirklings" class="quirks-collection-pill__input" />
@@ -180,7 +249,7 @@
           </label>
           <label class="quirks-layout-choice">
             <input type="radio" name="quirks-grid-layout" id="quirks-layout-sections" value="sections" />
-            <span>Separate sections (all Quirkies, then all QuirkKids, then Quirklings, then INX)</span>
+            <span>Separate sections (all Quirkies, then all QuirKid, then Quirklings, then INX)</span>
           </label>
         </div>
         <div class="quirks-modal__sort">

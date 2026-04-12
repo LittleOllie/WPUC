@@ -6,7 +6,7 @@ compatibility_date = "2024-10-01"
 QUIRKIES_CONTRACT = "0xd4b7d9bb20fa20ddada9ecef8a7355ca983cccb1"
 QUIRKLINGS_CONTRACT = "0x8F1B132E9fD2b9A2B210bAA186BF1Ae650AdF7ac"
 INX_CONTRACT = "0x1Dafd82031eff6863AdF3a25907310FaEE72Ca5f"
-# Optional: separate QuirkKids collection with matching token IDs to Quirkies (overrides metadata kid art when held).
+# Optional: separate QuirKid collection contract with matching token IDs to Quirkies (overrides metadata kid art when held).
 # QUIRKKIDS_CONTRACT = "0x0000000000000000000000000000000000000000"
 
 # ALCHEMY_API_KEY (exact name — copy from Alchemy dashboard → app → API key):

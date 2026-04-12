@@ -16,6 +16,8 @@
   --btn-primary-depth: #4c1d95;
   --radius: 16px;
   --font: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --lo-brand-logo-height: 5rem;
+  --lo-modal-brand-logo-height: 4rem;
 }
 
 *,
@@ -54,6 +56,36 @@ body {
   padding: 1rem 1rem 2.75rem;
 }
 
+.page-nav {
+  margin: 0 0 0.75rem;
+  text-align: left;
+}
+
+.back-to-menu {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--og-lime-muted);
+  text-decoration: none;
+  padding: 0.35rem 0.5rem 0.35rem 0;
+  margin: -0.35rem 0 -0.35rem -0.25rem;
+  border-radius: 8px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.back-to-menu:hover {
+  color: var(--og-lime);
+  background: rgba(196, 181, 253, 0.12);
+}
+
+.back-to-menu:focus-visible {
+  outline: 2px solid var(--og-lime);
+  outline-offset: 2px;
+}
+
 .brand-bar {
   text-align: center;
   padding: 0.5rem 0 1.35rem;
@@ -70,19 +102,19 @@ body {
 }
 
 .brand-bar__img {
-  height: auto;
   display: block;
+  flex-shrink: 0;
+  height: var(--lo-brand-logo-height);
+  width: auto;
+  max-height: var(--lo-brand-logo-height);
+  object-fit: contain;
 }
 
 .brand-bar__img--lo {
-  max-height: 3.5rem;
-  width: auto;
-  max-width: min(250px, 88vw);
+  max-width: min(380px, 92vw);
 }
 
 .brand-bar__img--og {
-  max-height: 5rem;
-  width: auto;
   max-width: min(140px, 32vw);
 }
 
@@ -118,11 +150,114 @@ body {
   font-weight: 600;
 }
 
-.hero h1 {
+.hero__headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.65rem;
   margin: 0 0 0.65rem;
+}
+
+.hero__headline h1 {
+  margin: 0;
   font-size: clamp(1.4rem, 4.5vw, 1.9rem);
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.hero__info-btn {
+  position: relative;
+  z-index: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 181, 253, 0.55);
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--og-lime);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+  animation: quirks-hero-info-glow 2.2s ease-in-out infinite;
+}
+
+.hero__info-btn::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(196, 181, 253, 0.65);
+  pointer-events: none;
+  z-index: -1;
+  animation: quirks-hero-info-pulse-ring 2.2s ease-out infinite;
+}
+
+.hero__info-btn:hover {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: var(--og-lime);
+  color: var(--text);
+}
+
+.hero__info-btn:focus-visible {
+  outline: 2px solid var(--og-lime);
+  outline-offset: 3px;
+}
+
+@keyframes quirks-hero-info-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(196, 181, 253, 0.35),
+      0 0 12px rgba(167, 139, 250, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(196, 181, 253, 0.12),
+      0 0 18px rgba(167, 139, 250, 0.28);
+  }
+}
+
+@keyframes quirks-hero-info-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  70%,
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__info-btn {
+    animation: none;
+    box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.35);
+  }
+
+  .hero__info-btn::after {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+    inset: -2px;
+  }
+}
+
+.hero__info-icon {
+  position: relative;
+  top: 0.5px;
 }
 
 .lede {
@@ -1032,19 +1167,19 @@ body.flex-modal-active {
 }
 
 .flex-modal__brand-img {
-  height: auto;
   display: block;
+  flex-shrink: 0;
+  height: var(--lo-modal-brand-logo-height);
+  width: auto;
+  max-height: var(--lo-modal-brand-logo-height);
+  object-fit: contain;
 }
 
 .flex-modal__brand-img--lo {
-  max-height: 3rem;
-  width: auto;
-  max-width: min(230px, 62vw);
+  max-width: min(380px, 92vw);
 }
 
 .flex-modal__brand-img--og {
-  max-height: 4rem;
-  width: auto;
   max-width: min(112px, 28vw);
 }
 

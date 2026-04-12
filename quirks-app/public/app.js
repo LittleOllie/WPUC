@@ -1,5 +1,5 @@
 /**
- * Quirks Set Checker — standalone app (Quirkies × Quirklings × INX).
+ * Quirks Set Checker — standalone app (Quirkies × Quirklings × QuirKid × INX).
  */
 function getApiBase() {
   return "";
@@ -15,6 +15,8 @@ function apiUrl(pathAndQuery) {
 }
 
 var WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
+
+var WELCOME_SEEN_KEY = "quirks-set-checker-welcome-v1";
 
 function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
@@ -64,6 +66,100 @@ function setGlobalLoading(on) {
 }
 
 window.setGlobalLoading = setGlobalLoading;
+
+function welcomeModalHasBeenSeen() {
+  try {
+    if (localStorage.getItem(WELCOME_SEEN_KEY) === "1") return true;
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    if (sessionStorage.getItem(WELCOME_SEEN_KEY) === "1") return true;
+  } catch (e2) {
+    /* ignore */
+  }
+  return false;
+}
+
+function markWelcomeModalSeen() {
+  try {
+    localStorage.setItem(WELCOME_SEEN_KEY, "1");
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    sessionStorage.setItem(WELCOME_SEEN_KEY, "1");
+  } catch (e2) {
+    /* ignore */
+  }
+}
+
+function setWelcomeModalOpen(on) {
+  var modal = document.getElementById("welcome-modal");
+  if (!modal) return;
+  if (on) {
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("welcome-modal-active");
+    var cta = document.getElementById("welcome-modal-got-it");
+    if (cta) cta.focus();
+  } else {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("welcome-modal-active");
+  }
+}
+
+function dismissWelcomeModal() {
+  markWelcomeModalSeen();
+  setWelcomeModalOpen(false);
+}
+
+function maybeShowWelcomeModal() {
+  if (welcomeModalHasBeenSeen()) return;
+  setWelcomeModalOpen(true);
+}
+
+function setupBackToMenu() {
+  var a = document.querySelector(".back-to-menu");
+  if (!a) return;
+  try {
+    var h = window.location.hostname || "";
+    if (/\.workers\.dev$/i.test(h)) {
+      a.href = "https://littleollielabs.com/links.html";
+    }
+  } catch (e) {
+    /* keep default href */
+  }
+}
+
+function setupWelcomeModal() {
+  var modal = document.getElementById("welcome-modal");
+  if (!modal) return;
+  var closeBtn = document.getElementById("welcome-modal-close");
+  var backdrop = document.getElementById("welcome-modal-backdrop");
+  var gotIt = document.getElementById("welcome-modal-got-it");
+  if (closeBtn) closeBtn.addEventListener("click", dismissWelcomeModal);
+  if (backdrop) backdrop.addEventListener("click", dismissWelcomeModal);
+  if (gotIt) gotIt.addEventListener("click", dismissWelcomeModal);
+  var infoBtn = document.getElementById("welcome-info-btn");
+  if (infoBtn) {
+    infoBtn.addEventListener("click", function () {
+      setWelcomeModalOpen(true);
+    });
+  }
+  document.addEventListener(
+    "keydown",
+    function (ev) {
+      if (ev.key !== "Escape") return;
+      if (!modal.classList.contains("is-open")) return;
+      ev.preventDefault();
+      dismissWelcomeModal();
+    },
+    true
+  );
+  maybeShowWelcomeModal();
+}
 
 function normalizeMediaUrl(u) {
   if (!u || typeof u !== "string") return null;
@@ -398,8 +494,8 @@ function applyWalletFilter(container, filter) {
     m.classList.remove("hidden");
     u.classList.remove("hidden");
     applyWalletFilterShowSubs(subs, [
-      "missing-quirkie",
       "lone-quirkie",
+      "missing-quirkie",
       "high-quirkling",
       "inx-only",
     ]);
@@ -506,8 +602,8 @@ function renderWalletResults(container, data) {
     '<span class="wallet-filter-label">View:</span>' +
     '<button type="button" class="filter-btn is-active" data-filter="all" role="tab" aria-pressed="true">All</button>' +
     '<button type="button" class="filter-btn" data-filter="matched" role="tab" aria-pressed="false">Matched</button>' +
-    '<button type="button" class="filter-btn" data-filter="missing-quirkie" role="tab" aria-pressed="false">Missing Quirkie</button>' +
     '<button type="button" class="filter-btn" data-filter="lone-quirkie" role="tab" aria-pressed="false">Missing Quirkling</button>' +
+    '<button type="button" class="filter-btn" data-filter="missing-quirkie" role="tab" aria-pressed="false">Missing Quirkie</button>' +
     '<button type="button" class="filter-btn" data-filter="high-quirkling" role="tab" aria-pressed="false">High ID</button>' +
     '<button type="button" class="filter-btn" data-filter="inx-only" role="tab" aria-pressed="false">INX only</button>' +
     "</div>" +
@@ -527,6 +623,18 @@ function renderWalletResults(container, data) {
 
   html += '<div class="wallet-section-wrap" data-wallet-section="unmatched">';
   html +=
+    '<div class="unmatched-sub" data-unmatched-sub="lone-quirkie">' +
+    '<h3 class="section-title">Quirkie without Quirkling</h3><div class="wallet-grid">';
+  if (loneQuirkies.length === 0) {
+    html += '<p class="empty-hint">None.</p>';
+  } else {
+    for (var j = 0; j < loneQuirkies.length; j++) {
+      html += renderLoneQuirkieCard(loneQuirkies[j]);
+    }
+  }
+  html += "</div></div>";
+
+  html +=
     '<div class="unmatched-sub" data-unmatched-sub="missing-quirkie">' +
     '<h3 class="section-title">Quirkling without Quirkie</h3><p class="section-blurb">You hold a Quirkling in the 1–' +
     escapeHtml(String(data.pairMaxTokenId != null ? data.pairMaxTokenId : 5000)) +
@@ -537,18 +645,6 @@ function renderWalletResults(container, data) {
   } else {
     for (var k = 0; k < missingQuirkie.length; k++) {
       html += renderMissingQuirkieCard(missingQuirkie[k]);
-    }
-  }
-  html += "</div></div>";
-
-  html +=
-    '<div class="unmatched-sub" data-unmatched-sub="lone-quirkie">' +
-    '<h3 class="section-title">Quirkie without Quirkling</h3><div class="wallet-grid">';
-  if (loneQuirkies.length === 0) {
-    html += '<p class="empty-hint">None.</p>';
-  } else {
-    for (var j = 0; j < loneQuirkies.length; j++) {
-      html += renderLoneQuirkieCard(loneQuirkies[j]);
     }
   }
   html += "</div></div>";
@@ -838,4 +934,6 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
   if (e.key === "Enter") findTokenMatch();
 });
 
+setupBackToMenu();
+setupWelcomeModal();
 setupLookupShell();

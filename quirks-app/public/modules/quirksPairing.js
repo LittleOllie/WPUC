@@ -273,15 +273,9 @@ export function collectQuirksItemsFlat(
 ) {
   const cap = typeof maxTiles === "number" ? maxTiles : 100000;
   const out = [];
-  if (wantQuirkies) {
-    for (const e of normList(data?.quirkies)) {
-      pushIfImage(out, e, "quirkie");
-    }
-  }
-  if (wantQuirkKid) {
-    for (const e of normList(data?.quirkies)) {
-      pushKidIfPresent(out, e, "quirkkid");
-    }
+  for (const e of normList(data?.quirkies)) {
+    if (wantQuirkies) pushIfImage(out, e, "quirkie");
+    if (wantQuirkKid) pushKidIfPresent(out, e, "quirkkid");
   }
   if (wantQuirklings) {
     for (const e of normList(data?.quirklings)) {
@@ -297,7 +291,7 @@ export function collectQuirksItemsFlat(
 }
 
 /**
- * One block per collection: all Quirkies, then all QuirkKids, then Quirklings, then INX.
+ * One block per collection: all Quirkies, then all QuirKid, then Quirklings, then INX.
  */
 function buildQuirksGridSequenceSections(pairing, opts, cap) {
   const { wantQuirkies, wantQuirkKid, wantQuirklings, wantInx } = opts;
@@ -341,7 +335,7 @@ function buildQuirksGridSequenceSections(pairing, opts, cap) {
 
 /**
  * Build ordered grid items: paired blocks (quirkie → optional quirkkid → quirking → optional INX),
- * then lone quirkies (+ optional kids), then low-ID unmatched quirklings, then high-ID quirklings.
+ * then per-ID lone quirkies (quirkie → quirkkid when both selected), then low-ID unmatched quirklings, then high-ID quirklings.
  */
 export function buildQuirksGridSequence(pairing, opts, maxTiles) {
   const cap = typeof maxTiles === "number" ? maxTiles : 100000;
@@ -367,15 +361,9 @@ export function buildQuirksGridSequence(pairing, opts, maxTiles) {
       pushIfImage(out, p.inx, "inx");
     }
   }
-  if (wantQuirkies) {
-    for (const q of pairing.loneQuirkies) {
-      pushIfImage(out, q, "quirkie-lone");
-    }
-  }
-  if (wantQuirkKid) {
-    for (const q of pairing.loneQuirkies) {
-      pushKidIfPresent(out, q, "quirkkid-lone");
-    }
+  for (const q of pairing.loneQuirkies) {
+    if (wantQuirkies) pushIfImage(out, q, "quirkie-lone");
+    if (wantQuirkKid) pushKidIfPresent(out, q, "quirkkid-lone");
   }
   if (wantQuirklings) {
     for (const ql of pairing.unmatchedQuirklingsMissingQuirkie) {

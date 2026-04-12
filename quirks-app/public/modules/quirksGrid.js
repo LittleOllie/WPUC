@@ -1424,6 +1424,8 @@ function setupQuirksBuilderUi() {
   }
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
+    const welcome = document.getElementById("welcome-modal");
+    if (welcome && welcome.classList.contains("is-open")) return;
     if (modal?.classList.contains("is-open")) closeModal();
   });
 }
