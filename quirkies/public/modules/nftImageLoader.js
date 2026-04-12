@@ -5,6 +5,9 @@
 (function (global) {
   "use strict";
 
+  /** Same Worker as app.js — required when UI is served from GitHub Pages. */
+  var WORKER_ORIGIN = "https://quirks-set-checker.littleollienft.workers.dev";
+
   var CACHE_LS_KEY = "quirks-nft-img-v1";
   var CACHE_MAX_KEYS = 400;
   var FIRST_EAGER_COUNT = 20;
@@ -28,7 +31,19 @@
   ];
 
   function getApiBase() {
-    return "";
+    var loc = global.location;
+    if (!WORKER_ORIGIN) return "";
+    if (!loc) return WORKER_ORIGIN;
+    if (loc.protocol === "file:") return WORKER_ORIGIN;
+    try {
+      if (loc.hostname === new URL(WORKER_ORIGIN).hostname) return "";
+    } catch (e) {
+      /* ignore */
+    }
+    if (loc.hostname === "localhost" || loc.hostname === "127.0.0.1") {
+      return WORKER_ORIGIN;
+    }
+    return WORKER_ORIGIN;
   }
 
   function apiUrl(pathAndQuery) {
@@ -57,7 +72,7 @@
 
   function proxify(u) {
     if (!u || u.indexOf("/api/img") === 0) return u;
-    return "/api/img?url=" + encodeURIComponent(u);
+    return apiUrl("/api/img?url=" + encodeURIComponent(u));
   }
 
   function extractIpfsPath(u) {

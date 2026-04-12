@@ -12,7 +12,7 @@ import {
   quirksTraitCanonicalKey,
 } from "./quirksPairing.js";
 
-const WORKER_ORIGIN = "";
+const WORKER_ORIGIN = "https://quirks-set-checker.littleollienft.workers.dev";
 
 function getApiBase() {
   const loc = window.location;

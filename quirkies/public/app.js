@@ -1,8 +1,22 @@
 /**
  * Quirks Set Checker — standalone app (Quirkies × Quirklings × QuirKid × INX).
+ * GitHub Pages has no /api/*; static hosting must call the Worker origin (same pattern as ogt/public/app.js).
  */
+var WORKER_ORIGIN = "https://quirks-set-checker.littleollienft.workers.dev";
+
 function getApiBase() {
-  return "";
+  var loc = window.location;
+  if (!WORKER_ORIGIN) return "";
+  if (loc.protocol === "file:") return WORKER_ORIGIN;
+  try {
+    if (loc.hostname === new URL(WORKER_ORIGIN).hostname) return "";
+  } catch (e) {
+    /* ignore */
+  }
+  if (loc.hostname === "localhost" || loc.hostname === "127.0.0.1") {
+    return WORKER_ORIGIN;
+  }
+  return WORKER_ORIGIN;
 }
 
 function apiUrl(pathAndQuery) {
