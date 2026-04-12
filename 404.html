@@ -6,13 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
       (function () {
+        var CANON = "OGTnew";
+        var SEG_LC = "ogtnew";
+
         var loc = window.location;
         var p = loc.pathname;
         var segs = p.split("/");
 
-        function ogtSegmentIndex() {
+        function appSegmentIndex() {
           for (var i = 0; i < segs.length; i++) {
-            if (segs[i].toLowerCase() === "ogt") return i;
+            if (segs[i].toLowerCase() === SEG_LC) return i;
           }
           return -1;
         }
@@ -28,7 +31,7 @@
           });
         }
 
-        /** GitHub Pages serves folder apps at /ogt/; /ogt without slash often 404s. */
+        /** GitHub Pages directory URLs need a trailing slash; bare /OGTnew often 404s. */
         function expandWithSlashVariants(paths) {
           var out = [];
           paths.forEach(function (path) {
@@ -46,16 +49,16 @@
         }
 
         async function run() {
-          var idx = ogtSegmentIndex();
+          var idx = appSegmentIndex();
           if (idx === -1) return;
 
           var nonEmpty = segs.filter(Boolean);
           if (
             nonEmpty.length === 1 &&
-            /^ogt$/i.test(nonEmpty[0]) &&
+            new RegExp("^" + SEG_LC + "$", "i").test(nonEmpty[0]) &&
             !p.endsWith("/")
           ) {
-            loc.replace(loc.origin + "/ogt/" + loc.search + loc.hash);
+            loc.replace(loc.origin + "/" + CANON + "/" + loc.search + loc.hash);
             return;
           }
 
@@ -68,17 +71,18 @@
             return next;
           }
 
-          var ogtPaths = [];
-          ["ogt", "OGT"].forEach(function (v) {
+          var tryPaths = [];
+          [CANON, "ogtnew"].forEach(function (v) {
             var path = buildPath(v);
-            if (ogtPaths.indexOf(path) === -1) ogtPaths.push(path);
+            if (tryPaths.indexOf(path) === -1) tryPaths.push(path);
           });
-          ogtPaths = expandWithSlashVariants(ogtPaths);
-          ogtPaths.sort(function (a, b) {
+          tryPaths = expandWithSlashVariants(tryPaths);
+          tryPaths.sort(function (a, b) {
             function rank(path) {
               var r = 0;
               if (!path.endsWith("/")) r += 2;
-              if (path.indexOf("/OGT") !== -1 || /\/OGT$/i.test(path)) r += 1;
+              if (path.indexOf("/" + CANON) === -1 && path.toLowerCase().indexOf(SEG_LC) !== -1)
+                r += 1;
               return r;
             }
             return rank(a) - rank(b);
@@ -86,8 +90,8 @@
 
           var changed = false;
           for (var j = 0; j < segs.length; j++) {
-            if (segs[j].toLowerCase() === "ogt" && segs[j] !== "ogt") {
-              segs[j] = "ogt";
+            if (segs[j].toLowerCase() === SEG_LC && segs[j] !== CANON) {
+              segs[j] = CANON;
               changed = true;
             }
           }
@@ -105,7 +109,7 @@
             if (
               lastSeg === idx &&
               !next.endsWith("/") &&
-              segs[idx].toLowerCase() === "ogt"
+              segs[idx].toLowerCase() === SEG_LC
             ) {
               next += "/";
             }
@@ -113,8 +117,8 @@
             return;
           }
 
-          for (var i = 0; i < ogtPaths.length; i++) {
-            var path = ogtPaths[i];
+          for (var i = 0; i < tryPaths.length; i++) {
+            var path = tryPaths[i];
             try {
               if (await tryFetch(path, "HEAD")) {
                 loc.replace(loc.origin + path + loc.search + loc.hash);

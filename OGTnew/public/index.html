@@ -38,12 +38,47 @@
   </head>
   <body>
     <script>
-      if (window.location.pathname.endsWith("index.html")) {
-        var cleanPath = window.location.pathname.replace(/index.html/, "");
-        window.location.replace(
-          cleanPath + window.location.search + window.location.hash
-        );
-      }
+      (function () {
+        var loc = window.location;
+        var p = loc.pathname;
+        var segs = p.split("/");
+        var changed = false;
+        var idxApp = -1;
+        for (var i = 0; i < segs.length; i++) {
+          if (segs[i].toLowerCase() === "ogtnew") idxApp = i;
+        }
+        for (var i = 0; i < segs.length; i++) {
+          if (segs[i].toLowerCase() === "ogtnew" && segs[i] !== "OGTnew") {
+            segs[i] = "OGTnew";
+            changed = true;
+          }
+        }
+        if (changed) {
+          var next = segs.join("/");
+          if (next === "") next = "/";
+          if (p.endsWith("/") && !next.endsWith("/")) next += "/";
+          var lastSeg = -1;
+          for (var k = segs.length - 1; k >= 0; k--) {
+            if (segs[k]) {
+              lastSeg = k;
+              break;
+            }
+          }
+          if (
+            lastSeg === idxApp &&
+            !next.endsWith("/") &&
+            segs[idxApp] === "OGTnew"
+          ) {
+            next += "/";
+          }
+          loc.replace(loc.origin + next + loc.search + loc.hash);
+          return;
+        }
+        if (p.endsWith("index.html")) {
+          var cleanPath = p.replace(/index.html/, "");
+          loc.replace(cleanPath + loc.search + loc.hash);
+        }
+      })();
     </script>
     <div class="page">
       <nav class="page-nav" aria-label="Site navigation">
