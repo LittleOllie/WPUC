@@ -45,7 +45,18 @@
 
       <header class="hero">
         <p class="eyebrow">LO Labs utility · V2</p>
-        <h1>OGENIE × CERT Set Checker</h1>
+        <div class="hero__headline">
+          <h1>OGENIE × CERT Set Checker</h1>
+          <button
+            type="button"
+            class="hero__info-btn"
+            id="welcome-info-btn"
+            aria-label="About this app"
+            title="About this app"
+          >
+            <span class="hero__info-icon" aria-hidden="true">i</span>
+          </button>
+        </div>
         <p class="lede">
           Scan a wallet for paired sets, or look up one token ID to see OGENIE &amp; CERT side by side.
         </p>
@@ -111,6 +122,58 @@
       <footer class="footer">
         <p>Powered By Little Ollie Labs</p>
       </footer>
+    </div>
+
+    <div
+      id="welcome-modal"
+      class="welcome-modal"
+      aria-hidden="true"
+      aria-labelledby="welcome-modal-title"
+      aria-describedby="welcome-modal-desc"
+      role="dialog"
+    >
+      <div id="welcome-modal-backdrop" class="welcome-modal__backdrop"></div>
+      <div class="welcome-modal__panel">
+        <button
+          type="button"
+          id="welcome-modal-close"
+          class="welcome-modal__close"
+          aria-label="Close welcome message"
+        >
+          ×
+        </button>
+        <div class="welcome-modal__brands">
+          <img
+            class="welcome-modal__brand-img welcome-modal__brand-img--lo"
+            src="lo.png"
+            width="200"
+            height="64"
+            alt="Little Ollie"
+          />
+          <span class="welcome-modal__brand-x" aria-hidden="true">×</span>
+          <img
+            class="welcome-modal__brand-img welcome-modal__brand-img--og"
+            src="ogtriplelogo.png"
+            width="96"
+            height="96"
+            alt="ogtriple media"
+          />
+        </div>
+        <h2 id="welcome-modal-title" class="welcome-modal__title">Welcome</h2>
+        <div id="welcome-modal-desc" class="welcome-modal__body">
+          <p class="welcome-modal__lede">
+            Match <strong>Ogenies</strong> and <strong>Certs</strong> by token ID on Ethereum.
+          </p>
+          <ul class="welcome-modal__list">
+            <li><strong>Wallet</strong> — See what you hold and how IDs pair up.</li>
+            <li><strong>Token lookup</strong> — One ID: both collections side by side.</li>
+            <li><strong>Flex Your Genies</strong> — Grid from your wallet; sort, drag, download.</li>
+          </ul>
+        </div>
+        <button type="button" id="welcome-modal-got-it" class="btn-primary welcome-modal__cta">
+          Got it
+        </button>
+      </div>
     </div>
 
     <div

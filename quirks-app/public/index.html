@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quirks Set Checker</title>
+    <meta
+      name="description"
+      content="Match Quirkies and Quirklings by token ID — wallet scan or single ID lookup. Optional INX."
+    />
+    <link rel="icon" href="quirkieslogo.png" type="image/png" sizes="any" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://ipfs.io" />
+    <link rel="dns-prefetch" href="https://cloudflare-ipfs.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="modules/quirks-builder.css" />
+  </head>
+  <body>
+    <div class="page">
+      <div class="brand-bar">
+        <div class="brand-bar__logos">
+          <img
+            class="brand-bar__img brand-bar__img--lo"
+            src="lo.png"
+            width="200"
+            height="64"
+            alt="Little Ollie"
+          />
+          <span class="brand-bar__x" aria-hidden="true">×</span>
+          <img
+            class="brand-bar__img brand-bar__img--og"
+            src="quirkieslogo.png"
+            width="96"
+            height="96"
+            alt="Quirkies"
+          />
+        </div>
+        <p class="brand-bar__tagline">lo × quirks</p>
+      </div>
+
+      <header class="hero">
+        <p class="eyebrow">LO Labs utility · Quirks</p>
+        <h1>Quirkies × Quirklings</h1>
+        <p class="lede">
+          Scan a wallet for paired sets (matching token IDs 1–5000), or look up one token ID. Quirklings above ID 5000 are shown as unpaired. Optional INX when held.
+        </p>
+      </header>
+
+      <section
+        class="lookup-shell"
+        id="lookup-shell"
+        aria-label="Wallet and token lookup"
+      >
+        <button
+          type="button"
+          class="lookup-shell__toggle"
+          id="lookup-shell-toggle"
+          aria-expanded="true"
+          aria-controls="lookup-shell-body"
+        >
+          <span class="lookup-shell__title-wrap">
+            <span class="lookup-shell__title">Wallet &amp; Token Lookup</span>
+            <span class="lookup-shell__meta" id="lookup-shell-meta" hidden></span>
+          </span>
+          <span class="lookup-shell__chevron" aria-hidden="true"></span>
+        </button>
+        <div class="lookup-shell__body" id="lookup-shell-body">
+          <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
+            <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
+            <label class="field-label" for="wallet-input">Wallet address</label>
+            <div class="input-row">
+              <input
+                id="wallet-input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="0x…"
+              />
+              <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet</button>
+            </div>
+            <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
+          </section>
+
+          <section class="panel mode-panel" aria-labelledby="token-mode-title">
+            <h2 id="token-mode-title" class="mode-title">Token lookup</h2>
+            <label class="field-label" for="token-input">Token ID</label>
+            <div class="input-row">
+              <input
+                id="token-input"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="e.g. 42"
+              />
+              <button type="button" id="find-match-btn" class="btn-primary">Look up</button>
+            </div>
+            <div id="token-status" class="status" role="status" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <main id="wallet-results" class="results-block hidden" aria-live="polite"></main>
+
+      <main id="token-results" class="results-block hidden" aria-live="polite"></main>
+
+      <footer class="footer">
+        <p class="footer__credit">Powered By Little Ollie Labs</p>
+        <p class="footer__meta">Quirks Set Checker · Ethereum mainnet</p>
+      </footer>
+    </div>
+
+    <div
+      id="quirks-modal"
+      class="quirks-modal"
+      aria-hidden="true"
+      aria-labelledby="quirks-modal-title"
+      role="dialog"
+    >
+      <div id="quirks-modal-backdrop" class="quirks-modal__backdrop"></div>
+      <div class="quirks-modal__panel">
+        <button type="button" id="quirks-modal-close" class="quirks-modal__close" aria-label="Close">
+          ×
+        </button>
+        <div class="quirks-modal__brands">
+          <img
+            class="quirks-modal__brand-img quirks-modal__brand-img--lo"
+            src="lo.png"
+            width="200"
+            height="64"
+            alt="Little Ollie"
+          />
+          <span class="quirks-modal__brand-x" aria-hidden="true">×</span>
+          <img
+            class="quirks-modal__brand-img quirks-modal__brand-img--qk"
+            src="quirkieslogo.png"
+            width="96"
+            height="96"
+            alt="Quirkies"
+          />
+        </div>
+        <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
+        <p class="quirks-modal__lede">
+          Build a shareable grid from this wallet’s Quirkies, QuirkKids (companion art), Quirklings, and INX.
+          <code>?quirksFlat=1</code> lists NFTs without pairing rules.
+        </p>
+        <div class="quirks-modal__collection-row" role="group" aria-label="Collections to include">
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirkies" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">Quirkies</span>
+          </label>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirkkids" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">QuirkKids</span>
+          </label>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirklings" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">Quirklings</span>
+          </label>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-inx" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">INX</span>
+          </label>
+        </div>
+        <div class="quirks-modal__layout-row" role="radiogroup" aria-label="Grid layout">
+          <span class="quirks-modal__layout-label">Tile order</span>
+          <label class="quirks-layout-choice">
+            <input
+              type="radio"
+              name="quirks-grid-layout"
+              id="quirks-layout-grouped"
+              value="grouped"
+              checked
+            />
+            <span>Group sets (Quirkie → QuirkKid → Quirkling → INX per ID)</span>
+          </label>
+          <label class="quirks-layout-choice">
+            <input type="radio" name="quirks-grid-layout" id="quirks-layout-sections" value="sections" />
+            <span>Separate sections (all Quirkies, then all QuirkKids, then Quirklings, then INX)</span>
+          </label>
+        </div>
+        <div class="quirks-modal__sort">
+          <label class="quirks-modal__sort-label" for="quirks-trait-sort"
+            >Layout
+            <span class="quirks-modal__sort-note">(Random default)</span></label
+          >
+          <select id="quirks-trait-sort" class="quirks-modal__select" aria-label="Trait to sort grid"></select>
+        </div>
+        <button
+          type="button"
+          id="quirks-generate-btn"
+          class="btn-primary quirks-modal__generate"
+          disabled
+        >
+          Generate grid
+        </button>
+        <p id="quirks-error" class="quirks-modal__error" role="alert"></p>
+        <div id="quirks-preview-wrap" class="quirks-preview-wrap hidden">
+          <p class="quirks-preview-label">Preview</p>
+          <p class="quirks-preview-hint">Drag tiles to reorder (top-left branding is fixed).</p>
+          <div id="quirks-preview-grid" class="quirks-preview-grid"></div>
+          <button
+            type="button"
+            id="quirks-download-btn"
+            class="btn-primary quirks-modal__download hidden"
+            disabled
+          >
+            Download Image
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="global-loading" class="global-loading" aria-hidden="true">
+      <div class="global-loading__backdrop" aria-hidden="true"></div>
+      <div class="global-loading__spin-wrap">
+        <img
+          class="global-loading__img"
+          src="quirkieslogo.png"
+          width="120"
+          height="120"
+          alt=""
+          decoding="async"
+        />
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script type="module" src="modules/quirksGrid.js"></script>
+  </body>
+</html>

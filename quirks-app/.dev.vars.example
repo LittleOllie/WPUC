@@ -1,0 +1,10 @@
+# ── Important ─────────────────────────────────────────────────────────────
+# Wrangler does NOT read this file. Copy it to `.dev.vars` (same folder as wrangler.toml):
+#   cp .dev.vars.example .dev.vars
+# Then put your key on the line below (no quotes). Or use a `.env` file instead (Wrangler 4+).
+#
+# Filename must be exactly:  .dev.vars   or   .env
+# NOT: .dev.vars.example  (this file is only a template)
+# ─────────────────────────────────────────────────────────────────────────
+
+ALCHEMY_API_KEY=zCTxPsA9se37RsVWGJCRZ

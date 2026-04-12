@@ -1,22 +1,20 @@
-/* OGT × LO — ogtriple lime (#dfff00) on near-black */
+/* Quirks checker — violet accent on near-black (standalone app) */
 
 :root {
-  --bg-deep: #0a0a0a;
-  --bg-panel: #141414;
-  --bg-panel-2: #0e0e0e;
-  --border-subtle: rgba(223, 255, 0, 0.14);
-  --og-lime: #dfff00;
-  --og-lime-muted: rgba(223, 255, 0, 0.55);
-  /* kept for existing selectors; now maps to ogtriple palette */
+  --bg-deep: #0a0814;
+  --bg-panel: #14121e;
+  --bg-panel-2: #0e0c18;
+  --border-subtle: rgba(167, 139, 250, 0.22);
+  --og-lime: #c4b5fd;
+  --og-lime-muted: rgba(196, 181, 253, 0.55);
   --lo-yellow: var(--og-lime);
-  --lo-blue: #c4c4c4;
+  --lo-blue: #a78bfa;
   --text: #f2f2f2;
   --text-muted: #9a9a9a;
   --danger: #ff7a7a;
   --ok: #5ee3a4;
-  --btn-primary-depth: #4d5a00;
+  --btn-primary-depth: #4c1d95;
   --radius: 16px;
-  /* Same stack as .brand-bar__tagline (“lo × ogtriple media”) site-wide */
   --font: "Outfit", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -37,7 +35,7 @@ body {
   background:
     radial-gradient(
       ellipse 110% 75% at 50% -8%,
-      rgba(223, 255, 0, 0.07) 0%,
+      rgba(167, 139, 250, 0.09) 0%,
       transparent 52%
     ),
     radial-gradient(
@@ -120,60 +118,11 @@ body {
   font-weight: 600;
 }
 
-.hero__headline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem 0.65rem;
+.hero h1 {
   margin: 0 0 0.65rem;
-}
-
-.hero__headline h1 {
-  margin: 0;
   font-size: clamp(1.4rem, 4.5vw, 1.9rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-}
-
-.hero__info-btn {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  border: 1px solid rgba(223, 255, 0, 0.45);
-  background: rgba(223, 255, 0, 0.1);
-  color: var(--og-lime);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1rem;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1;
-  flex-shrink: 0;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.hero__info-btn:hover {
-  background: rgba(223, 255, 0, 0.2);
-  border-color: var(--og-lime);
-  color: var(--text);
-}
-
-.hero__info-btn:focus-visible {
-  outline: 2px solid var(--og-lime);
-  outline-offset: 3px;
-}
-
-.hero__info-icon {
-  position: relative;
-  top: 0.5px;
 }
 
 .lede {
@@ -755,11 +704,13 @@ input[type="text"]:focus {
 }
 
 .nft-thumb__counterpart-img {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  opacity: 0.52;
+  opacity: 0.78;
   transition: opacity 0.22s ease;
 }
 
@@ -905,6 +856,18 @@ input[type="text"]:focus {
   border-top: 3px solid var(--lo-blue);
 }
 
+.token-side--quirkie {
+  border-top: 3px solid var(--og-lime);
+}
+
+.token-side--quirking {
+  border-top: 3px solid #818cf8;
+}
+
+.token-side--inx {
+  border-top: 3px solid #f472b6;
+}
+
 .token-side .nft-thumb {
   max-width: 200px;
   margin: 0 auto 0.75rem;
@@ -951,6 +914,21 @@ input[type="text"]:focus {
   color: var(--text-muted);
 }
 
+.footer__credit {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.footer__meta {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -975,161 +953,6 @@ input[type="text"]:focus {
 
 body.flex-modal-active {
   overflow: hidden;
-}
-
-body.welcome-modal-active {
-  overflow: hidden;
-}
-
-/* First-visit intro (above flex modal and loading overlay when stacked) */
-.welcome-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 10050;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.25rem;
-  padding-top: max(1.25rem, env(safe-area-inset-top));
-  overflow-y: auto;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-}
-
-.welcome-modal.is-open {
-  pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
-}
-
-.welcome-modal__backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(5px);
-}
-
-.welcome-modal__panel {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: min(92vw, 520px);
-  margin-bottom: 2rem;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
-  padding: 1.35rem 1.25rem 1.35rem;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
-}
-
-.welcome-modal__close {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-muted);
-  font-size: 1.35rem;
-  line-height: 1;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  font-family: inherit;
-}
-
-.welcome-modal__close:hover {
-  color: var(--text);
-  background: rgba(223, 255, 0, 0.12);
-}
-
-.welcome-modal__brands {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem 0.85rem;
-  margin: 0 2.75rem 0.85rem 0;
-}
-
-.welcome-modal__brand-img {
-  height: auto;
-  display: block;
-}
-
-.welcome-modal__brand-img--lo {
-  max-height: 3rem;
-  width: auto;
-  max-width: min(230px, 62vw);
-}
-
-.welcome-modal__brand-img--og {
-  max-height: 4rem;
-  width: auto;
-  max-width: min(112px, 28vw);
-}
-
-.welcome-modal__brand-x {
-  font-size: 1.6rem;
-  font-weight: 200;
-  color: var(--og-lime);
-  line-height: 1;
-  user-select: none;
-}
-
-.welcome-modal__title {
-  margin: 0 2.25rem 0.65rem 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--og-lime);
-}
-
-.welcome-modal__body {
-  margin: 0 0 1.1rem;
-}
-
-.welcome-modal__lede {
-  margin: 0 0 0.85rem;
-  font-size: 0.92rem;
-  color: var(--text);
-  line-height: 1.5;
-}
-
-.welcome-modal__lede strong {
-  color: var(--og-lime);
-  font-weight: 600;
-}
-
-.welcome-modal__list {
-  margin: 0 0 0.85rem;
-  padding: 0 0 0 1.15rem;
-  font-size: 0.86rem;
-  color: var(--text-muted);
-  line-height: 1.55;
-}
-
-.welcome-modal__list li {
-  margin-bottom: 0.55rem;
-}
-
-.welcome-modal__list li:last-child {
-  margin-bottom: 0;
-}
-
-.welcome-modal__list strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.welcome-modal__cta {
-  width: 100%;
-  margin-top: 0.15rem;
 }
 
 .flex-modal {
@@ -1398,7 +1221,7 @@ body.welcome-modal-active {
   overflow: hidden;
 }
 
-/* ogtriplegrid: full tile, contain so the whole asset fits the square */
+/* Brand tile: full cell, contain so the whole asset fits the square */
 .flex-tile--brand > .flex-tile__img {
   position: absolute;
   inset: 0;
@@ -1500,7 +1323,7 @@ body.welcome-modal-active {
   margin-top: 0.85rem;
 }
 
-/* Full-screen loader: ogtriple pops in and spins on the spot */
+/* Full-screen loader: brand logo spins on the spot */
 .global-loading {
   position: fixed;
   inset: 0;

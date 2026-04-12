@@ -81,6 +81,9 @@ function setGlobalLoading(on) {
 
 var WALLET_RE = /^0x[a-fA-F0-9]{40}$/;
 
+/** Shown once per browser (localStorage); sessionStorage fallback if storage is blocked. */
+var WELCOME_SEEN_KEY = "ogt-cert-checker-welcome-v1";
+
 /** Last successful /api/wallet payload (for Flex Your Genies — no refetch). */
 var lastWalletApiData = null;
 
@@ -842,6 +845,87 @@ function setFlexModalOpen(on) {
   }
 }
 
+function welcomeModalHasBeenSeen() {
+  try {
+    if (localStorage.getItem(WELCOME_SEEN_KEY) === "1") return true;
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    if (sessionStorage.getItem(WELCOME_SEEN_KEY) === "1") return true;
+  } catch (e2) {
+    /* ignore */
+  }
+  return false;
+}
+
+function markWelcomeModalSeen() {
+  try {
+    localStorage.setItem(WELCOME_SEEN_KEY, "1");
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    sessionStorage.setItem(WELCOME_SEEN_KEY, "1");
+  } catch (e2) {
+    /* ignore */
+  }
+}
+
+function setWelcomeModalOpen(on) {
+  var modal = document.getElementById("welcome-modal");
+  if (!modal) return;
+  if (on) {
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("welcome-modal-active");
+    var cta = document.getElementById("welcome-modal-got-it");
+    if (cta) cta.focus();
+  } else {
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("welcome-modal-active");
+  }
+}
+
+function dismissWelcomeModal() {
+  markWelcomeModalSeen();
+  setWelcomeModalOpen(false);
+}
+
+function maybeShowWelcomeModal() {
+  if (welcomeModalHasBeenSeen()) return;
+  setWelcomeModalOpen(true);
+}
+
+function setupWelcomeModal() {
+  var modal = document.getElementById("welcome-modal");
+  if (!modal) return;
+  var closeBtn = document.getElementById("welcome-modal-close");
+  var backdrop = document.getElementById("welcome-modal-backdrop");
+  var gotIt = document.getElementById("welcome-modal-got-it");
+  if (closeBtn) closeBtn.addEventListener("click", dismissWelcomeModal);
+  if (backdrop) backdrop.addEventListener("click", dismissWelcomeModal);
+  if (gotIt) gotIt.addEventListener("click", dismissWelcomeModal);
+  var infoBtn = document.getElementById("welcome-info-btn");
+  if (infoBtn) {
+    infoBtn.addEventListener("click", function () {
+      setWelcomeModalOpen(true);
+    });
+  }
+  document.addEventListener(
+    "keydown",
+    function (ev) {
+      if (ev.key !== "Escape") return;
+      if (!modal.classList.contains("is-open")) return;
+      ev.preventDefault();
+      dismissWelcomeModal();
+    },
+    true
+  );
+  maybeShowWelcomeModal();
+}
+
 function resetFlexModalOutput() {
   var err = document.getElementById("flex-error");
   var wrap = document.getElementById("flex-preview-wrap");
@@ -1399,6 +1483,8 @@ function setupFlexYourGeniesUi() {
   }
   document.addEventListener("keydown", function (ev) {
     if (ev.key !== "Escape") return;
+    var welcome = document.getElementById("welcome-modal");
+    if (welcome && welcome.classList.contains("is-open")) return;
     if (modal && modal.classList.contains("is-open")) closeModal();
   });
 }
@@ -1776,6 +1862,7 @@ function renderWalletResults(container, data) {
 
   if (!hasAny) {
     hideFlexActions();
+    container.removeAttribute("data-last-wallet");
     html +=
       walletStatsHtml(0, 0, 0) +
       '<p class="empty-hint prominent">No NFTs found for this wallet in OGENIE or CERT on mainnet.</p>';
@@ -1882,6 +1969,11 @@ function renderWalletResults(container, data) {
 
   updateLookupShellMetaFromWalletData(data);
   lastWalletApiData = data;
+  if (data.wallet) {
+    container.setAttribute("data-last-wallet", String(data.wallet));
+  } else {
+    container.removeAttribute("data-last-wallet");
+  }
   populateFlexTraitSelect();
 }
 
@@ -2004,6 +2096,7 @@ async function checkWallet() {
   setGlobalLoading(true);
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
+  resultsEl.removeAttribute("data-last-wallet");
 
   try {
     var res = await fetch(url, { method: "GET" });
@@ -2047,6 +2140,7 @@ async function findTokenMatch() {
 
   walletResultsEl.classList.add("hidden");
   walletResultsEl.innerHTML = "";
+  walletResultsEl.removeAttribute("data-last-wallet");
   setStatus(walletStatusEl, "", "");
   clearLookupShellMeta();
 
@@ -2124,5 +2218,8 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
   if (e.key === "Enter") findTokenMatch();
 });
 
+window.setGlobalLoading = setGlobalLoading;
+
+setupWelcomeModal();
 setupFlexYourGeniesUi();
 setupLookupShell();
