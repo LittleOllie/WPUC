@@ -9,19 +9,77 @@
         var loc = window.location;
         var p = loc.pathname;
         var segs = p.split("/");
-        var changed = false;
-        for (var i = 0; i < segs.length; i++) {
-          if (segs[i].toLowerCase() === "ogt" && segs[i] !== "ogt") {
-            segs[i] = "ogt";
-            changed = true;
+
+        function ogtSegmentIndex() {
+          for (var i = 0; i < segs.length; i++) {
+            if (segs[i].toLowerCase() === "ogt") return i;
+          }
+          return -1;
+        }
+
+        function tryFetch(path, method) {
+          return fetch(path, {
+            method: method,
+            redirect: "follow",
+            credentials: "same-origin",
+            cache: "no-store",
+          }).then(function (r) {
+            return r.ok || r.status === 304 || (r.status >= 200 && r.status < 400);
+          });
+        }
+
+        async function run() {
+          var idx = ogtSegmentIndex();
+          if (idx === -1) return;
+
+          function buildPath(segmentValue) {
+            var copy = segs.slice();
+            copy[idx] = segmentValue;
+            var next = copy.join("/");
+            if (next === "") next = "/";
+            if (p.endsWith("/") && !next.endsWith("/")) next += "/";
+            return next;
+          }
+
+          var ogtPaths = [];
+          ["ogt", "OGT"].forEach(function (v) {
+            var path = buildPath(v);
+            if (ogtPaths.indexOf(path) === -1) ogtPaths.push(path);
+          });
+
+          var changed = false;
+          for (var j = 0; j < segs.length; j++) {
+            if (segs[j].toLowerCase() === "ogt" && segs[j] !== "ogt") {
+              segs[j] = "ogt";
+              changed = true;
+            }
+          }
+          if (changed) {
+            var next = segs.join("/");
+            if (next === "") next = "/";
+            if (p.endsWith("/") && !next.endsWith("/")) next += "/";
+            loc.replace(loc.origin + next + loc.search + loc.hash);
+            return;
+          }
+
+          for (var i = 0; i < ogtPaths.length; i++) {
+            var path = ogtPaths[i];
+            try {
+              if (await tryFetch(path, "HEAD")) {
+                loc.replace(loc.origin + path + loc.search + loc.hash);
+                return;
+              }
+            } catch (e) {}
+            try {
+              if (await tryFetch(path, "GET")) {
+                loc.replace(loc.origin + path + loc.search + loc.hash);
+                return;
+              }
+            } catch (e2) {}
           }
         }
-        if (changed) {
-          var next = segs.join("/");
-          if (next === "") next = "/";
-          if (p.endsWith("/") && !next.endsWith("/")) next += "/";
-          loc.replace(loc.origin + next + loc.search + loc.hash);
-        }
+
+        run();
       })();
     </script>
   </head>
