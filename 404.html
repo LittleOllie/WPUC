@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Page not found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      (function () {
+        var loc = window.location;
+        var p = loc.pathname;
+        var segs = p.split("/");
+        var changed = false;
+        for (var i = 0; i < segs.length; i++) {
+          if (segs[i].toLowerCase() === "ogt" && segs[i] !== "ogt") {
+            segs[i] = "ogt";
+            changed = true;
+          }
+        }
+        if (changed) {
+          var next = segs.join("/");
+          if (next === "") next = "/";
+          if (p.endsWith("/") && !next.endsWith("/")) next += "/";
+          loc.replace(loc.origin + next + loc.search + loc.hash);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Page not found.</p>
+  </body>
+</html>

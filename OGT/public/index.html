@@ -37,6 +37,31 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <script>
+      (function () {
+        var loc = window.location;
+        var p = loc.pathname;
+        var segs = p.split("/");
+        var changed = false;
+        for (var i = 0; i < segs.length; i++) {
+          if (segs[i].toLowerCase() === "ogt" && segs[i] !== "ogt") {
+            segs[i] = "ogt";
+            changed = true;
+          }
+        }
+        if (changed) {
+          var next = segs.join("/");
+          if (next === "") next = "/";
+          if (p.endsWith("/") && !next.endsWith("/")) next += "/";
+          loc.replace(loc.origin + next + loc.search + loc.hash);
+          return;
+        }
+        if (p.endsWith("index.html")) {
+          var cleanPath = p.replace(/index.html/, "");
+          loc.replace(cleanPath + loc.search + loc.hash);
+        }
+      })();
+    </script>
     <div class="page">
       <nav class="page-nav" aria-label="Site navigation">
         <a href="../../links.html" class="back-to-menu">← Back to menu</a>

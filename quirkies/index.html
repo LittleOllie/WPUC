@@ -2,39 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- GitHub Pages project sites live under /repo-name/ — set base so css/js/images resolve. -->
-    <script>
-      (function () {
-        if (document.querySelector("base[data-ogt-base]")) return;
-        var p = window.location.pathname;
-        if (p === "/" || p === "") return;
-        var href;
-        if (p.endsWith("/")) href = p;
-        else if (/\.html?$/i.test(p)) href = p.replace(/\/[^/]+$/, "/");
-        else href = p + "/";
-        var b = document.createElement("base");
-        b.href = href;
-        b.setAttribute("data-ogt-base", "1");
-        var m = document.head.querySelector("meta[charset]");
-        if (m) document.head.insertBefore(b, m.nextSibling);
-        else document.head.insertBefore(b, document.head.firstChild);
-      })();
-    </script>
+    <!-- GitHub Pages: /quirkies/ loads this file; assets live in public/. -->
+    <base href="public/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OGENIE X CERT CHECKER</title>
+    <title>Quirks Set Checker</title>
     <meta
       name="description"
-      content="Match OGENIE and CERT NFTs by token ID — wallet scan or single ID lookup."
+      content="Quirkies × Quirklings × QuirKid × INX — wallet scan or token lookup by ID on Ethereum."
     />
-    <link rel="icon" href="ogtriplelogo.png" type="image/png" sizes="any" />
-    <link rel="apple-touch-icon" href="ogtriplelogo.png" />
+    <link rel="icon" href="quirkieslogo.png?v=2" type="image/png" sizes="any" />
+    <link rel="shortcut icon" href="quirkieslogo.png?v=2" type="image/png" />
+    <link rel="apple-touch-icon" href="quirkieslogo.png?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://ipfs.io" />
+    <link rel="dns-prefetch" href="https://cloudflare-ipfs.com" />
+    <link rel="dns-prefetch" href="https://nftstorage.link" />
+    <link rel="dns-prefetch" href="https://w3s.link" />
+    <link rel="dns-prefetch" href="https://dweb.link" />
+    <link rel="dns-prefetch" href="https://gateway.pinata.cloud" />
     <link
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="modules/quirks-builder.css" />
   </head>
   <body>
     <script>
@@ -61,19 +53,19 @@
           <span class="brand-bar__x" aria-hidden="true">×</span>
           <img
             class="brand-bar__img brand-bar__img--og"
-            src="ogtriplelogo.png"
+            src="quirkieslogo.png"
             width="96"
             height="96"
-            alt="ogtriple media"
+            alt="Quirkies"
           />
         </div>
-        <p class="brand-bar__tagline">lo × ogtriple media</p>
+        <p class="brand-bar__tagline">lo × quirks</p>
       </div>
 
       <header class="hero">
-        <p class="eyebrow">LO Labs utility · V2</p>
+        <p class="eyebrow">LO Labs utility · Quirks</p>
         <div class="hero__headline">
-          <h1>OGENIE X CERT CHECKER</h1>
+          <h1>Quirkies × Quirklings × QuirKid × INX</h1>
           <button
             type="button"
             class="hero__info-btn"
@@ -85,7 +77,7 @@
           </button>
         </div>
         <p class="lede">
-          Scan a wallet for paired sets, or look up one token ID to see OGENIE &amp; CERT side by side.
+          Scan a wallet for paired sets (matching token IDs 1–5000), or look up one token ID. Quirklings above ID 5000 are shown as unpaired. Optional INX when held.
         </p>
       </header>
 
@@ -119,7 +111,7 @@
                 spellcheck="false"
                 placeholder="0x…"
               />
-              <button type="button" id="check-wallet-btn" class="btn-primary">Check My Wallet</button>
+              <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet</button>
             </div>
             <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
           </section>
@@ -133,9 +125,9 @@
                 type="text"
                 inputmode="numeric"
                 autocomplete="off"
-                placeholder="e.g. 287"
+                placeholder="e.g. 42"
               />
-              <button type="button" id="find-match-btn" class="btn-primary">Find Match</button>
+              <button type="button" id="find-match-btn" class="btn-primary">Look up</button>
             </div>
             <div id="token-status" class="status" role="status" aria-live="polite"></div>
           </section>
@@ -147,7 +139,8 @@
       <main id="token-results" class="results-block hidden" aria-live="polite"></main>
 
       <footer class="footer">
-        <p>Powered By Little Ollie Labs</p>
+        <p class="footer__credit">Powered By Little Ollie Labs</p>
+        <p class="footer__meta">Quirks Set Checker · Ethereum mainnet</p>
       </footer>
     </div>
 
@@ -179,22 +172,23 @@
           />
           <span class="welcome-modal__brand-x" aria-hidden="true">×</span>
           <img
-            class="welcome-modal__brand-img welcome-modal__brand-img--og"
-            src="ogtriplelogo.png"
+            class="welcome-modal__brand-img welcome-modal__brand-img--qk"
+            src="quirkieslogo.png"
             width="96"
             height="96"
-            alt="ogtriple media"
+            alt="Quirkies"
           />
         </div>
         <h2 id="welcome-modal-title" class="welcome-modal__title">Welcome</h2>
         <div id="welcome-modal-desc" class="welcome-modal__body">
           <p class="welcome-modal__lede">
-            Match <strong>OGENIES</strong> and <strong>CERTS</strong> by token ID on Ethereum.
+            Match <strong>QUIRKIES</strong> and <strong>QUIRKLINGS</strong> by token ID (1–5000). Optional
+            <strong>INX</strong> and <strong>QuirkKid</strong> companion art.
           </p>
           <ul class="welcome-modal__list">
-            <li><strong>Wallet</strong> — See what you hold and how IDs pair up.</li>
-            <li><strong>Token lookup</strong> — One ID: both collections side by side.</li>
-            <li><strong>Flex Your Genies</strong> — Grid from your wallet; sort, drag, download.</li>
+            <li><strong>Wallet</strong> — See what you hold: pairs, gaps, and high-ID Quirklings.</li>
+            <li><strong>Token lookup</strong> — One ID: Quirkie, QuirkKid, Quirkling, and INX side by side.</li>
+            <li><strong>Grid builder</strong> — After a wallet check, build a shareable grid; sort, drag, download.</li>
           </ul>
         </div>
         <button type="button" id="welcome-modal-got-it" class="btn-primary welcome-modal__cta">
@@ -204,74 +198,98 @@
     </div>
 
     <div
-      id="flex-modal"
-      class="flex-modal"
+      id="quirks-modal"
+      class="quirks-modal"
       aria-hidden="true"
-      aria-labelledby="flex-modal-title"
+      aria-labelledby="quirks-modal-title"
       role="dialog"
     >
-      <div id="flex-modal-backdrop" class="flex-modal__backdrop"></div>
-      <div class="flex-modal__panel">
-        <button type="button" id="flex-modal-close" class="flex-modal__close" aria-label="Close">
+      <div id="quirks-modal-backdrop" class="quirks-modal__backdrop"></div>
+      <div class="quirks-modal__panel">
+        <button type="button" id="quirks-modal-close" class="quirks-modal__close" aria-label="Close">
           ×
         </button>
-        <div class="flex-modal__brands">
+        <div class="quirks-modal__brands">
           <img
-            class="flex-modal__brand-img flex-modal__brand-img--lo"
+            class="quirks-modal__brand-img quirks-modal__brand-img--lo"
             src="lo.png"
             width="200"
             height="64"
             alt="Little Ollie"
           />
-          <span class="flex-modal__brand-x" aria-hidden="true">×</span>
+          <span class="quirks-modal__brand-x" aria-hidden="true">×</span>
           <img
-            class="flex-modal__brand-img flex-modal__brand-img--og"
-            src="ogtriplelogo.png"
+            class="quirks-modal__brand-img quirks-modal__brand-img--qk"
+            src="quirkieslogo.png"
             width="96"
             height="96"
-            alt="ogtriple media"
+            alt="Quirkies"
           />
         </div>
-        <h2 id="flex-modal-title" class="flex-modal__title">Flex Your Genies</h2>
-        <p class="flex-modal__lede">Select Collection below.</p>
-        <div class="flex-modal__collection-row" role="group" aria-label="Collections to include">
-          <label class="flex-collection-pill">
-            <input type="checkbox" id="flex-opt-ogenies" class="flex-collection-pill__input" />
-            <span class="flex-collection-pill__label">OGENIES</span>
+        <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
+        <p class="quirks-modal__lede">
+          Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.
+          <code>?quirksFlat=1</code> lists NFTs without pairing rules.
+        </p>
+        <div class="quirks-modal__collection-row" role="group" aria-label="Collections to include">
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirkies" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">Quirkies</span>
           </label>
-          <label class="flex-collection-pill">
-            <input type="checkbox" id="flex-opt-certs" class="flex-collection-pill__input" />
-            <span class="flex-collection-pill__label">Certs</span>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirkkids" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">QuirKid</span>
+          </label>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-quirklings" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">Quirklings</span>
+          </label>
+          <label class="quirks-collection-pill">
+            <input type="checkbox" id="quirks-opt-inx" class="quirks-collection-pill__input" />
+            <span class="quirks-collection-pill__label">INX</span>
           </label>
         </div>
-        <div class="flex-modal__sort">
-          <label class="flex-modal__sort-label" for="flex-trait-sort"
+        <div class="quirks-modal__layout-row" role="radiogroup" aria-label="Grid layout">
+          <span class="quirks-modal__layout-label">Tile order</span>
+          <label class="quirks-layout-choice">
+            <input
+              type="radio"
+              name="quirks-grid-layout"
+              id="quirks-layout-grouped"
+              value="grouped"
+              checked
+            />
+            <span>Group sets (Quirkie → QuirkKid → Quirkling → INX per ID)</span>
+          </label>
+          <label class="quirks-layout-choice">
+            <input type="radio" name="quirks-grid-layout" id="quirks-layout-sections" value="sections" />
+            <span>Separate sections (all Quirkies, then all QuirKid, then Quirklings, then INX)</span>
+          </label>
+        </div>
+        <div class="quirks-modal__sort">
+          <label class="quirks-modal__sort-label" for="quirks-trait-sort"
             >Layout
-            <span class="flex-modal__sort-note"
-              >(Random default; traits sort OGENIEs then CERTs)</span
-            ></label
+            <span class="quirks-modal__sort-note">(Random default)</span></label
           >
-          <select id="flex-trait-sort" class="flex-modal__select" aria-label="Trait to sort flex grid"></select>
+          <select id="quirks-trait-sort" class="quirks-modal__select" aria-label="Trait to sort grid"></select>
         </div>
         <button
           type="button"
-          id="flex-generate-btn"
-          class="btn-primary flex-modal__generate"
+          id="quirks-generate-btn"
+          class="btn-primary quirks-modal__generate"
           disabled
         >
-          Generate FlexGrid
+          Generate grid
         </button>
-        <p id="flex-error" class="flex-modal__error" role="alert"></p>
-        <div id="flex-preview-wrap" class="flex-preview-wrap hidden">
-          <p class="flex-preview-label">Flex grid</p>
-          <p class="flex-preview-hint">
-            Drag tiles to reorder (top-left branding is fixed).
-          </p>
-          <div id="flex-preview-grid" class="flex-preview-grid"></div>
+        <p id="quirks-error" class="quirks-modal__error" role="alert"></p>
+        <div id="quirks-preview-wrap" class="quirks-preview-wrap hidden">
+          <p class="quirks-preview-label">Preview</p>
+          <p class="quirks-preview-hint">Drag tiles to reorder (top-left branding is fixed).</p>
+          <div id="quirks-preview-grid" class="quirks-preview-grid"></div>
           <button
             type="button"
-            id="flex-download-btn"
-            class="btn-primary flex-modal__download hidden"
+            id="quirks-download-btn"
+            class="btn-primary quirks-modal__download hidden"
             disabled
           >
             Download Image
@@ -280,16 +298,12 @@
       </div>
     </div>
 
-    <div
-      id="global-loading"
-      class="global-loading"
-      aria-hidden="true"
-    >
+    <div id="global-loading" class="global-loading" aria-hidden="true">
       <div class="global-loading__backdrop" aria-hidden="true"></div>
       <div class="global-loading__spin-wrap">
         <img
           class="global-loading__img"
-          src="ogtriplelogo.png"
+          src="quirkieslogo.png"
           width="120"
           height="120"
           alt=""
@@ -298,6 +312,8 @@
       </div>
     </div>
 
+    <script src="modules/nftImageLoader.js"></script>
     <script src="app.js"></script>
+    <script type="module" src="modules/quirksGrid.js"></script>
   </body>
 </html>
