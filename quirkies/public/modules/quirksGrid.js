@@ -114,20 +114,25 @@ function quirksBindGridImage(img, rawUrl, slotIndex) {
   }
 }
 
-function getQuirksGridBrandImageUrl() {
+/** Resolve filenames in `public/` — must follow <base href>, not location (e.g. /quirkies/ vs /quirkies/public/). */
+function quirksPublicAssetUrl(filename) {
   try {
-    return new URL("quirkieslogo.png", window.location.href).href;
+    const base =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : window.location.href;
+    return new URL(filename, base).href;
   } catch {
-    return "quirkieslogo.png";
+    return filename;
   }
 }
 
+function getQuirksGridBrandImageUrl() {
+  return quirksPublicAssetUrl("quirkieslogo.png");
+}
+
 function getQuirksPbloImageUrl() {
-  try {
-    return new URL("pblo.png", window.location.href).href;
-  } catch {
-    return "pblo.png";
-  }
+  return quirksPublicAssetUrl("pblo.png");
 }
 
 function normalizeWalletNftEntry(x) {
