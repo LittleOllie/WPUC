@@ -977,6 +977,57 @@ function emptyOwnedCollection() {
   };
 }
 __name(emptyOwnedCollection, "emptyOwnedCollection");
+var MAX_WALLETS_PER_SCAN = 12;
+function collectWalletAddressesFromSearchParams(searchParams) {
+  const rawList = searchParams.getAll("address");
+  const out = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const raw of rawList) {
+    for (const piece of String(raw || "").split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean)) {
+      const a = normalizeAddr(piece);
+      if (!isValidEthAddress(a)) continue;
+      const low = a.toLowerCase();
+      if (seen.has(low)) continue;
+      seen.add(low);
+      out.push(a);
+      if (out.length >= MAX_WALLETS_PER_SCAN) return out;
+    }
+  }
+  return out;
+}
+__name(collectWalletAddressesFromSearchParams, "collectWalletAddressesFromSearchParams");
+function mergeOwnedCollections(into, from) {
+  if (!from?.idKeys?.length) return into;
+  if (!into?.idKeys) into = emptyOwnedCollection();
+  const idToImage = new Map(into.idToImage);
+  const idToKidImage = new Map(into.idToKidImage);
+  const idToTraits = new Map(into.idToTraits);
+  const idSet = new Set(into.idKeys);
+  for (const id of from.idKeys) {
+    idSet.add(id);
+    if (from.idToImage.has(id) && !idToImage.has(id)) {
+      idToImage.set(id, from.idToImage.get(id));
+    }
+    if (from.idToKidImage.has(id) && !idToKidImage.has(id)) {
+      idToKidImage.set(id, from.idToKidImage.get(id));
+    }
+    if (from.idToTraits.has(id) && !idToTraits.has(id)) {
+      idToTraits.set(id, from.idToTraits.get(id));
+    }
+  }
+  const idKeys = [...idSet].sort((x, y) => {
+    try {
+      const cmp = BigInt(x) - BigInt(y);
+      if (cmp < 0n) return -1;
+      if (cmp > 0n) return 1;
+      return 0;
+    } catch {
+      return String(x).localeCompare(String(y));
+    }
+  });
+  return { idKeys, idToImage, idToTraits, idToKidImage };
+}
+__name(mergeOwnedCollections, "mergeOwnedCollections");
 var PAIR_MAX_TOKEN_ID = 5000n;
 function requireQuirksAlchemyEnv(env) {
   const key = env.ALCHEMY_API_KEY;
@@ -1183,23 +1234,50 @@ var src_default = {
     }
     if (path === "/api/wallet") {
       try {
-        const addressRaw = url.searchParams.get("address");
-        if (!addressRaw || !String(addressRaw).trim()) {
-          return json({ error: "Missing wallet address" }, 400);
-        }
-        const address = normalizeAddr(addressRaw.trim());
-        if (!isValidEthAddress(address)) {
-          return json({ error: "Invalid wallet address" }, 400);
+        const addresses = collectWalletAddressesFromSearchParams(
+          url.searchParams
+        );
+        if (!addresses.length) {
+          return json(
+            {
+              error: "Missing or invalid wallet address(es)",
+              hint: "Use ?address=0x\u2026&address=0x\u2026 or comma-separated values."
+            },
+            400
+          );
         }
         const envCheck = requireQuirksAlchemyEnv(env);
         if (!envCheck.ok) return envCheck.response;
         const { nftBase, QUIRKIES, QUIRKLINGS, INX, QUIRKKIDS } = envCheck;
-        const inxPromise = INX ? fetchOwnedCollection(nftBase, address, INX) : Promise.resolve(emptyOwnedCollection());
-        const [quirkiesCol, quirklingsCol, inxCol] = await Promise.all([
-          fetchOwnedCollection(nftBase, address, QUIRKIES),
-          fetchOwnedCollection(nftBase, address, QUIRKLINGS),
-          inxPromise
-        ]);
+        let quirkiesCol = emptyOwnedCollection();
+        let quirklingsCol = emptyOwnedCollection();
+        let inxCol = emptyOwnedCollection();
+        let kidsMerged = emptyOwnedCollection();
+        const perWallet = await Promise.all(
+          addresses.map(async (address) => {
+            const inxP = INX ? fetchOwnedCollection(nftBase, address, INX) : Promise.resolve(emptyOwnedCollection());
+            const [q, ql, ix] = await Promise.all([
+              fetchOwnedCollection(nftBase, address, QUIRKIES),
+              fetchOwnedCollection(nftBase, address, QUIRKLINGS),
+              inxP
+            ]);
+            let kids = emptyOwnedCollection();
+            if (QUIRKKIDS && normalizeAddr(QUIRKKIDS) !== normalizeAddr(QUIRKIES)) {
+              kids = await fetchOwnedCollection(
+                nftBase,
+                address,
+                QUIRKKIDS
+              );
+            }
+            return { q, ql, ix, kids };
+          })
+        );
+        for (const row of perWallet) {
+          quirkiesCol = mergeOwnedCollections(quirkiesCol, row.q);
+          quirklingsCol = mergeOwnedCollections(quirklingsCol, row.ql);
+          inxCol = mergeOwnedCollections(inxCol, row.ix);
+          kidsMerged = mergeOwnedCollections(kidsMerged, row.kids);
+        }
         await Promise.all([
           hydrateMissingCollectionImages(nftBase, QUIRKIES, quirkiesCol),
           hydrateMissingCollectionImages(nftBase, QUIRKLINGS, quirklingsCol),
@@ -1207,14 +1285,13 @@ var src_default = {
         ]);
         await hydrateQuirkKidImagesFromMetadata(nftBase, QUIRKIES, quirkiesCol);
         if (QUIRKKIDS && normalizeAddr(QUIRKKIDS) !== normalizeAddr(QUIRKIES)) {
-          const kidsCol = await fetchOwnedCollection(
+          await hydrateMissingCollectionImages(
             nftBase,
-            address,
-            QUIRKKIDS
+            QUIRKKIDS,
+            kidsMerged
           );
-          await hydrateMissingCollectionImages(nftBase, QUIRKKIDS, kidsCol);
           for (const id of quirkiesCol.idKeys) {
-            const im = kidsCol.idToImage.get(id);
+            const im = kidsMerged.idToImage.get(id);
             if (im) quirkiesCol.idToKidImage.set(id, im);
           }
         }
@@ -1362,7 +1439,8 @@ var src_default = {
         }));
         const pairMaxJson = PAIR_MAX_TOKEN_ID <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(PAIR_MAX_TOKEN_ID) : PAIR_MAX_TOKEN_ID.toString(10);
         return json({
-          wallet: address,
+          wallet: addresses.join(","),
+          wallets: addresses,
           pairMaxTokenId: pairMaxJson,
           contracts: {
             quirkies: QUIRKIES,
@@ -1447,7 +1525,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-YNEHAW/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-uTo6dM/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -1479,7 +1557,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-YNEHAW/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-uTo6dM/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

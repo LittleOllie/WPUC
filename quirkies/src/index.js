@@ -1027,6 +1027,61 @@ function emptyOwnedCollection() {
   };
 }
 
+const MAX_WALLETS_PER_SCAN = 12;
+
+function collectWalletAddressesFromSearchParams(searchParams) {
+  const rawList = searchParams.getAll("address");
+  const out = [];
+  const seen = new Set();
+  for (const raw of rawList) {
+    for (const piece of String(raw || "")
+      .split(/[\s,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      const a = normalizeAddr(piece);
+      if (!isValidEthAddress(a)) continue;
+      const low = a.toLowerCase();
+      if (seen.has(low)) continue;
+      seen.add(low);
+      out.push(a);
+      if (out.length >= MAX_WALLETS_PER_SCAN) return out;
+    }
+  }
+  return out;
+}
+
+function mergeOwnedCollections(into, from) {
+  if (!from?.idKeys?.length) return into;
+  if (!into?.idKeys) into = emptyOwnedCollection();
+  const idToImage = new Map(into.idToImage);
+  const idToKidImage = new Map(into.idToKidImage);
+  const idToTraits = new Map(into.idToTraits);
+  const idSet = new Set(into.idKeys);
+  for (const id of from.idKeys) {
+    idSet.add(id);
+    if (from.idToImage.has(id) && !idToImage.has(id)) {
+      idToImage.set(id, from.idToImage.get(id));
+    }
+    if (from.idToKidImage.has(id) && !idToKidImage.has(id)) {
+      idToKidImage.set(id, from.idToKidImage.get(id));
+    }
+    if (from.idToTraits.has(id) && !idToTraits.has(id)) {
+      idToTraits.set(id, from.idToTraits.get(id));
+    }
+  }
+  const idKeys = [...idSet].sort((x, y) => {
+    try {
+      const cmp = BigInt(x) - BigInt(y);
+      if (cmp < 0n) return -1;
+      if (cmp > 0n) return 1;
+      return 0;
+    } catch {
+      return String(x).localeCompare(String(y));
+    }
+  });
+  return { idKeys, idToImage, idToTraits, idToKidImage };
+}
+
 const PAIR_MAX_TOKEN_ID = 5000n;
 
 function requireQuirksAlchemyEnv(env) {
@@ -1290,15 +1345,17 @@ export default {
 
     if (path === "/api/wallet") {
       try {
-        const addressRaw = url.searchParams.get("address");
-
-        if (!addressRaw || !String(addressRaw).trim()) {
-          return json({ error: "Missing wallet address" }, 400);
-        }
-
-        const address = normalizeAddr(addressRaw.trim());
-        if (!isValidEthAddress(address)) {
-          return json({ error: "Invalid wallet address" }, 400);
+        const addresses = collectWalletAddressesFromSearchParams(
+          url.searchParams
+        );
+        if (!addresses.length) {
+          return json(
+            {
+              error: "Missing or invalid wallet address(es)",
+              hint: "Use ?address=0x…&address=0x… or comma-separated values.",
+            },
+            400
+          );
         }
 
         const envCheck = requireQuirksAlchemyEnv(env);
@@ -1306,15 +1363,42 @@ export default {
 
         const { nftBase, QUIRKIES, QUIRKLINGS, INX, QUIRKKIDS } = envCheck;
 
-        const inxPromise = INX
-          ? fetchOwnedCollection(nftBase, address, INX)
-          : Promise.resolve(emptyOwnedCollection());
+        let quirkiesCol = emptyOwnedCollection();
+        let quirklingsCol = emptyOwnedCollection();
+        let inxCol = emptyOwnedCollection();
+        let kidsMerged = emptyOwnedCollection();
 
-        const [quirkiesCol, quirklingsCol, inxCol] = await Promise.all([
-          fetchOwnedCollection(nftBase, address, QUIRKIES),
-          fetchOwnedCollection(nftBase, address, QUIRKLINGS),
-          inxPromise,
-        ]);
+        const perWallet = await Promise.all(
+          addresses.map(async (address) => {
+            const inxP = INX
+              ? fetchOwnedCollection(nftBase, address, INX)
+              : Promise.resolve(emptyOwnedCollection());
+            const [q, ql, ix] = await Promise.all([
+              fetchOwnedCollection(nftBase, address, QUIRKIES),
+              fetchOwnedCollection(nftBase, address, QUIRKLINGS),
+              inxP,
+            ]);
+            let kids = emptyOwnedCollection();
+            if (
+              QUIRKKIDS &&
+              normalizeAddr(QUIRKKIDS) !== normalizeAddr(QUIRKIES)
+            ) {
+              kids = await fetchOwnedCollection(
+                nftBase,
+                address,
+                QUIRKKIDS
+              );
+            }
+            return { q, ql, ix, kids };
+          })
+        );
+
+        for (const row of perWallet) {
+          quirkiesCol = mergeOwnedCollections(quirkiesCol, row.q);
+          quirklingsCol = mergeOwnedCollections(quirklingsCol, row.ql);
+          inxCol = mergeOwnedCollections(inxCol, row.ix);
+          kidsMerged = mergeOwnedCollections(kidsMerged, row.kids);
+        }
 
         await Promise.all([
           hydrateMissingCollectionImages(nftBase, QUIRKIES, quirkiesCol),
@@ -1330,14 +1414,13 @@ export default {
           QUIRKKIDS &&
           normalizeAddr(QUIRKKIDS) !== normalizeAddr(QUIRKIES)
         ) {
-          const kidsCol = await fetchOwnedCollection(
+          await hydrateMissingCollectionImages(
             nftBase,
-            address,
-            QUIRKKIDS
+            QUIRKKIDS,
+            kidsMerged
           );
-          await hydrateMissingCollectionImages(nftBase, QUIRKKIDS, kidsCol);
           for (const id of quirkiesCol.idKeys) {
-            const im = kidsCol.idToImage.get(id);
+            const im = kidsMerged.idToImage.get(id);
             if (im) quirkiesCol.idToKidImage.set(id, im);
           }
         }
@@ -1507,7 +1590,8 @@ export default {
             : PAIR_MAX_TOKEN_ID.toString(10);
 
         return json({
-          wallet: address,
+          wallet: addresses.join(","),
+          wallets: addresses,
           pairMaxTokenId: pairMaxJson,
           contracts: {
             quirkies: QUIRKIES,

@@ -36,6 +36,53 @@ function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
 }
 
+/** Split textarea / pasted list into unique valid0x addresses (max 12). */
+function parseWalletAddressesFromInput(raw) {
+  var s = String(raw || "").trim();
+  if (!s) return [];
+  var parts = s.split(/[\s,;]+/g);
+  var out = [];
+  var seen = {};
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i].trim();
+    if (!p) continue;
+    if (!isValidWallet(p)) continue;
+    var low = p.toLowerCase();
+    if (seen[low]) continue;
+    seen[low] = true;
+    out.push(p);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+function walletPayloadCacheKey(data) {
+  if (!data) return "";
+  if (data.wallets && Array.isArray(data.wallets) && data.wallets.length) {
+    return data.wallets
+      .map(function (x) {
+        return String(x).trim().toLowerCase();
+      })
+      .filter(function (x) {
+        return WALLET_RE.test(x);
+      })
+      .sort()
+      .join(",");
+  }
+  var w = data.wallet != null ? String(data.wallet).trim() : "";
+  if (!w) return "";
+  return w
+    .split(",")
+    .map(function (x) {
+      return x.trim().toLowerCase();
+    })
+    .filter(function (x) {
+      return WALLET_RE.test(x);
+    })
+    .sort()
+    .join(",");
+}
+
 function shortAddress(addr) {
   if (!addr || typeof addr !== "string") return "—";
   var a = addr.trim();
@@ -636,7 +683,23 @@ function updateLookupShellMeta(data) {
   var matched = (data && data.matched) || [];
   var q = (data && data.quirkies) || [];
   var ql = (data && data.quirklings) || [];
+  var nWallets = 1;
+  if (data && data.wallets && Array.isArray(data.wallets) && data.wallets.length) {
+    nWallets = data.wallets.length;
+  } else if (data && data.wallet && String(data.wallet).indexOf(",") !== -1) {
+    nWallets = String(data.wallet)
+      .split(",")
+      .map(function (x) {
+        return x.trim();
+      })
+      .filter(function (x) {
+        return isValidWallet(x);
+      }).length;
+    if (nWallets < 1) nWallets = 1;
+  }
+  var prefix = nWallets > 1 ? " · " + nWallets + " wallets" : "";
   meta.textContent =
+    prefix +
     " · " +
     matched.length +
     " matched · " +
@@ -703,6 +766,7 @@ function renderWalletResults(container, data) {
 
   if (!hasAny) {
     container.removeAttribute("data-last-wallet");
+    container.removeAttribute("data-wallets");
     try {
       window.__quirksWalletPayload = null;
       window.__quirksWalletPayloadAddress = null;
@@ -813,9 +877,12 @@ function renderWalletResults(container, data) {
   }
 
   updateLookupShellMeta(data);
-  if (data.wallet) {
-    container.setAttribute("data-last-wallet", String(data.wallet));
+  var cacheKey = walletPayloadCacheKey(data);
+  if (cacheKey) {
+    container.setAttribute("data-wallets", cacheKey);
+    container.setAttribute("data-last-wallet", cacheKey);
   } else {
+    container.removeAttribute("data-wallets");
     container.removeAttribute("data-last-wallet");
   }
 
@@ -825,7 +892,7 @@ function renderWalletResults(container, data) {
 
   try {
     window.__quirksWalletPayload = data;
-    window.__quirksWalletPayloadAddress = String(data.wallet || "").toLowerCase();
+    window.__quirksWalletPayloadAddress = cacheKey;
     window.__quirksWalletContracts = data.contracts || {};
   } catch (e) {
     /* ignore */
@@ -1025,17 +1092,13 @@ async function checkWallet() {
   tokenResultsEl.innerHTML = "";
   setStatus(tokenStatusEl, "", "");
 
-  var raw = (input.value || "").trim();
-  if (!raw) {
-    setStatus(statusEl, "error", "Enter a wallet address.");
-    resultsEl.classList.add("hidden");
-    resultsEl.innerHTML = "";
-    clearLookupShellMeta();
-    setLookupShellCollapsed(false);
-    return;
-  }
-  if (!isValidWallet(raw)) {
-    setStatus(statusEl, "error", "Invalid wallet — use 0x + 40 hex characters.");
+  var addrs = parseWalletAddressesFromInput(input.value);
+  if (!addrs.length) {
+    setStatus(
+      statusEl,
+      "error",
+      "Enter at least one wallet — 0x + 40 hex characters. Separate multiple with comma, space, or new line (max 12)."
+    );
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";
     clearLookupShellMeta();
@@ -1043,7 +1106,11 @@ async function checkWallet() {
     return;
   }
 
-  var url = apiUrl("/api/wallet?address=" + encodeURIComponent(raw));
+  var params = new URLSearchParams();
+  for (var ai = 0; ai < addrs.length; ai++) {
+    params.append("address", addrs[ai]);
+  }
+  var url = apiUrl("/api/wallet?" + params.toString());
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
@@ -1051,6 +1118,7 @@ async function checkWallet() {
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
   resultsEl.removeAttribute("data-last-wallet");
+  resultsEl.removeAttribute("data-wallets");
 
   try {
     var res = await fetch(url, { method: "GET" });
@@ -1097,6 +1165,7 @@ async function findTokenMatch() {
   walletResultsEl.classList.add("hidden");
   walletResultsEl.innerHTML = "";
   walletResultsEl.removeAttribute("data-last-wallet");
+  walletResultsEl.removeAttribute("data-wallets");
   setStatus(walletStatusEl, "", "");
   clearLookupShellMeta();
 
@@ -1172,7 +1241,10 @@ async function findTokenMatch() {
 
 document.getElementById("check-wallet-btn").addEventListener("click", checkWallet);
 document.getElementById("wallet-input").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") checkWallet();
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    checkWallet();
+  }
 });
 
 document.getElementById("find-match-btn").addEventListener("click", findTokenMatch);

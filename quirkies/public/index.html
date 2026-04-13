@@ -75,7 +75,7 @@
           </button>
         </div>
         <p class="lede">
-          Scan a wallet or look up one token ID. Quirkies group with QuirkKid companion art by token ID; Quirklings appear as their own tiles (IDs 1–5000 first, then above 5000). INX when held.
+          Scan one or more wallets (combined holdings) or look up one token ID. Quirkies group with QuirkKid companion art by token ID; Quirklings appear as their own tiles (IDs 1–5000 first, then above 5000). INX when held.
         </p>
       </header>
 
@@ -100,17 +100,19 @@
         <div class="lookup-shell__body" id="lookup-shell-body">
           <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
             <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
-            <label class="field-label" for="wallet-input">Wallet address</label>
+            <label class="field-label" for="wallet-input">Wallet address(es)</label>
             <div class="input-row">
-              <input
+              <textarea
                 id="wallet-input"
-                type="text"
+                class="wallet-input-multiline"
+                rows="3"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder="0x…"
-              />
-              <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet</button>
+                placeholder="0x…&#10;0x… (one per line, or comma / space separated — up to 12)"
+              ></textarea>
+              <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet(s)</button>
             </div>
+            <p class="hint">Combined view: holdings from every address are merged (same token ID is not duplicated).</p>
             <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
           </section>
 

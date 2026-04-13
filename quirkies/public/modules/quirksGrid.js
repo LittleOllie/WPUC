@@ -2306,8 +2306,37 @@ function populateQuirksTraitSelect() {
   sel.value = ok ? keep : "random";
 }
 
-function quirksRefreshWalletInBackground(address) {
-  fetch(apiUrl("/api/wallet?address=" + encodeURIComponent(address)))
+function quirksNormalizeWalletCacheKey(cacheKey) {
+  const parts = String(cacheKey || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => /^0x[a-fA-F0-9]{40}$/.test(s));
+  return [...new Set(parts)].sort().join(",");
+}
+
+function quirksWalletApiUrlFromCacheKey(cacheKey) {
+  const norm = quirksNormalizeWalletCacheKey(cacheKey);
+  if (!norm) return null;
+  const params = new URLSearchParams();
+  for (const p of norm.split(",")) {
+    params.append("address", p);
+  }
+  return apiUrl("/api/wallet?" + params.toString());
+}
+
+function quirksCacheKeyFromWalletJson(data) {
+  if (!data) return "";
+  if (data.wallets && Array.isArray(data.wallets) && data.wallets.length) {
+    return quirksNormalizeWalletCacheKey(data.wallets.join(","));
+  }
+  return quirksNormalizeWalletCacheKey(data.wallet || "");
+}
+
+function quirksRefreshWalletInBackground(cacheKey) {
+  const url = quirksWalletApiUrlFromCacheKey(cacheKey);
+  if (!url) return;
+  const want = quirksNormalizeWalletCacheKey(cacheKey);
+  fetch(url)
     .then((res) => res.text())
     .then((text) => {
       let data;
@@ -2317,12 +2346,11 @@ function quirksRefreshWalletInBackground(address) {
         return;
       }
       if (!data || data.error) return;
-      const addr = String(data.wallet || "").toLowerCase();
-      if (addr !== String(address).toLowerCase()) return;
+      if (quirksCacheKeyFromWalletJson(data) !== want) return;
       quirksWalletData = data;
       try {
         window.__quirksWalletPayload = data;
-        window.__quirksWalletPayloadAddress = addr;
+        window.__quirksWalletPayloadAddress = want;
       } catch {
         /* ignore */
       }
@@ -2333,17 +2361,19 @@ function quirksRefreshWalletInBackground(address) {
 
 async function openQuirksModal() {
   const results = document.getElementById("wallet-results");
-  const w =
-    results?.getAttribute("data-last-wallet")?.trim() || "";
-  if (!w || !/^0x[a-fA-F0-9]{40}$/.test(w)) {
+  const raw =
+    results?.getAttribute("data-wallets")?.trim() ||
+    results?.getAttribute("data-last-wallet")?.trim() ||
+    "";
+  const cacheKey = quirksNormalizeWalletCacheKey(raw);
+  if (!cacheKey) {
     return;
   }
   resetQuirksModalOutput();
-  const wLower = w.toLowerCase();
   const cached =
     typeof window !== "undefined" &&
     window.__quirksWalletPayload &&
-    window.__quirksWalletPayloadAddress === wLower;
+    window.__quirksWalletPayloadAddress === cacheKey;
 
   if (cached) {
     quirksWalletData = window.__quirksWalletPayload;
@@ -2360,15 +2390,15 @@ async function openQuirksModal() {
     if (layoutGrouped) layoutGrouped.checked = true;
     quirksSyncGenerateButtonState();
     setQuirksModalOpen(true);
-    quirksRefreshWalletInBackground(w);
+    quirksRefreshWalletInBackground(cacheKey);
     return;
   }
 
   setGlobalLoadingQuirks(true);
   try {
-    const res = await fetch(
-      apiUrl("/api/wallet?address=" + encodeURIComponent(w))
-    );
+    const fetchUrl = quirksWalletApiUrlFromCacheKey(cacheKey);
+    if (!fetchUrl) throw new Error("Invalid wallet cache key.");
+    const res = await fetch(fetchUrl);
     const text = await res.text();
     let data;
     try {
@@ -2384,7 +2414,7 @@ async function openQuirksModal() {
     quirksWalletData = data;
     try {
       window.__quirksWalletPayload = data;
-      window.__quirksWalletPayloadAddress = String(data.wallet || "").toLowerCase();
+      window.__quirksWalletPayloadAddress = quirksCacheKeyFromWalletJson(data);
     } catch {
       /* ignore */
     }
@@ -2466,8 +2496,11 @@ async function runQuirksGenerate() {
       const gridForPreview = document.getElementById("quirks-preview-grid");
       await quirksAwaitQuirksGridPreflights(gridForPreview);
       await quirksAwaitPreviewGridLoads(gridForPreview);
-      await quirksRefreshPreviewFromSlots();
+      // Export must run after preview tiles have painted (or settled): session win
+      // URLs and stable loads align with what the user sees; otherwise parallel
+      // canvas Image() loads can race ahead and leave white cells (often QuirkKids).
       await quirksWaitForPreviewGridImages();
+      await quirksRefreshPreviewFromSlots();
       quirksSetDownloadButtonReady(true);
     } catch {
       quirksSetDownloadButtonReady(false);
@@ -2561,8 +2594,8 @@ function setupQuirksBuilderUi() {
         try {
           await quirksAwaitQuirksGridPreflights(gridEl);
           await quirksAwaitPreviewGridLoads(gridEl);
-          await quirksRefreshPreviewFromSlots();
           await quirksWaitForPreviewGridImages();
+          await quirksRefreshPreviewFromSlots();
           quirksSetDownloadButtonReady(true);
         } catch {
           quirksSetDownloadButtonReady(false);
@@ -2685,7 +2718,8 @@ function setupQuirksBuilderUi() {
         return;
       }
       setGlobalLoadingQuirks(true);
-      quirksRefreshPreviewFromSlots()
+      quirksWaitForPreviewGridImages()
+        .then(() => quirksRefreshPreviewFromSlots())
         .then(triggerDownload)
         .finally(() => setGlobalLoadingQuirks(false));
     });
