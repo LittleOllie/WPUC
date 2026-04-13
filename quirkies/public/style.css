@@ -906,6 +906,14 @@ span.btn-secondary--wallet-col.btn-secondary--disabled {
   pointer-events: auto;
 }
 
+/* Keep Retry above placeholder art and tappable while the thumb is in error state */
+.nft-thumb.is-broken .nft-thumb-fallback .nft-thumb__retry,
+.nft-thumb__counterpart-visual.is-broken .nft-thumb-fallback .nft-thumb__retry {
+  position: relative;
+  z-index: 6;
+  flex-shrink: 0;
+}
+
 .nft-thumb-fallback__msg {
   display: block;
   max-width: 100%;
@@ -991,6 +999,50 @@ span.btn-secondary--wallet-col.btn-secondary--disabled {
 .nft-thumb .nft-thumb__retry--floating:active,
 .nft-thumb__counterpart-visual .nft-thumb__retry--floating:active {
   transform: translateX(-50%) scale(0.98);
+}
+
+/* Round-arrow reload: always kept in DOM; not removed when an image loads (unlike Retry). */
+.nft-thumb__reload {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 14;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.75);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  font: inherit;
+  line-height: 0;
+  pointer-events: auto;
+}
+
+.nft-thumb__reload:hover {
+  background: rgba(30, 41, 59, 0.92);
+  color: #fff;
+}
+
+.nft-thumb__reload:focus-visible {
+  outline: 2px solid var(--og-lime);
+  outline-offset: 2px;
+}
+
+.nft-thumb__reload:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nft-thumb__reload:active {
+    transform: none;
+  }
 }
 
 .nft-thumb--empty {
@@ -1404,6 +1456,37 @@ span.btn-secondary--wallet-col.btn-secondary--disabled {
 .token-side .nft-thumb {
   max-width: 200px;
   margin: 0 auto 0.75rem;
+}
+
+/* INX slot with no token art: small Quirkies mark top-left (not INX / metadata placeholder). */
+.inx-missing-thumb {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 7.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 0.65rem 0.65rem;
+}
+
+.inx-missing-thumb__logo {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  width: 2.65rem;
+  height: auto;
+  max-height: 2.85rem;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.inx-missing-thumb__msg {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  text-align: center;
+  max-width: 11rem;
 }
 
 .token-side__label {

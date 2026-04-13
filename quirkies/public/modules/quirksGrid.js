@@ -86,6 +86,9 @@ const QUIRKS_EXPORT_JPEG_QUALITY = 0.94;
 const QUIRKS_EXPORT_IMAGE_TRY_MS = 12000;
 /** Cap wait when enabling download after preview paint (aligned with FlexGrid export wait). */
 const QUIRKS_PREVIEW_IMAGE_WAIT_MS = 12000;
+/** Sentinel wallet for token-ID-only FLECKS sessions (app token search). */
+const QUIRKS_TOKEN_SEARCH_WALLET_ADDR =
+  "0x0000000000000000000000000000000000000bad";
 /** Preview-only: probe each NFT candidate before assigning img.src (fail fast, avoid broken first paint). */
 const QUIRKS_IMAGE_PREFLIGHT_MS = 2600;
 
@@ -351,6 +354,13 @@ function quirksApplyNftGridImageAfterPreflight(
         window.__nftImgErr(img);
       }
     };
+    const tileMem = img.closest && img.closest(".quirks-tile");
+    if (
+      tileMem &&
+      typeof NL.ensureSlotReloadControl === "function"
+    ) {
+      NL.ensureSlotReloadControl(tileMem);
+    }
   } else {
     NL.applyToGridImg(img, rawUrl, slotIndex, r2Meta || null, {
       candidates: finalList,
@@ -768,6 +778,28 @@ function quirksBrandingIsMultiCollection() {
   return n >= 2;
 }
 
+function quirksIsTokenSearchWalletSession() {
+  try {
+    const a = String(window.__quirksWalletPayloadAddress || "").toLowerCase();
+    return a === QUIRKS_TOKEN_SEARCH_WALLET_ADDR.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Token lookup with Quirkie + QuirkKid + Quirkling only (INX off): use a full first tile for
+ * quirkieslogo + pblo (same as single-collection brand cell), not the slim multi overlay.
+ */
+function quirksUseQuirkTripleBrandSquareCell() {
+  if (!quirksIsTokenSearchWalletSession()) return false;
+  if (document.getElementById("quirks-opt-inx")?.checked) return false;
+  const wantQ = document.getElementById("quirks-opt-quirkies")?.checked;
+  const wantKid = document.getElementById("quirks-opt-quirkkids")?.checked;
+  const wantQl = document.getElementById("quirks-opt-quirklings")?.checked;
+  return !!(wantQ && wantKid && wantQl);
+}
+
 function quirksBuildItemList(data, wantQ, wantKid, wantQl, wantIx, sortKey) {
   const gridLayout = quirksGetGridLayoutMode();
   if (quirksUseFlatMode()) {
@@ -946,17 +978,32 @@ function quirksRenderBrandOverlay() {
   if (!overlay) return;
   overlay.innerHTML = "";
   const multi = quirksBrandingIsMultiCollection();
-  overlay.classList.toggle("quirks-preview-brand-overlay--pblo-only", multi);
-  if (!multi) {
+  const brandInCell = !!(quirksEditorState && quirksEditorState.firstCellBrand);
+  overlay.classList.toggle(
+    "quirks-preview-brand-overlay--pblo-only",
+    multi && !brandInCell
+  );
+  if (!multi || brandInCell) {
     /* Logo + pblo live in the first grid cell (firstCellBrand). */
     return;
   }
   const pblo = document.createElement("img");
-  pblo.src = getQuirksPbloImageUrl();
+  const pbloSrc = getQuirksPbloImageUrl();
+  pblo.src = pbloSrc;
   pblo.alt = "";
   pblo.className = "quirks-preview-brand-overlay__pblo";
   pblo.setAttribute("aria-hidden", "true");
   pblo.decoding = "async";
+  pblo.referrerPolicy = "strict-origin-when-cross-origin";
+  pblo.addEventListener(
+    "error",
+    () => {
+      if (pblo.getAttribute("data-quirks-pblo-fb") === "1") return;
+      pblo.setAttribute("data-quirks-pblo-fb", "1");
+      pblo.src = "pblo.png";
+    },
+    { once: true }
+  );
   overlay.appendChild(pblo);
 }
 
@@ -1156,7 +1203,8 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     gridLayout === "grouped" &&
     wantQ &&
     wantQl &&
-    !quirksUseFlatMode()
+    !quirksUseFlatMode() &&
+    !quirksUseQuirkTripleBrandSquareCell()
   ) {
     const units = buildLayoutUnitsFromGroupedSequence(sortedItems);
     const totalW = units.reduce((s, u) => s + u.width, 0);
@@ -1175,19 +1223,21 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   }
 
   const multi = quirksBrandingIsMultiCollection();
+  const brandSquare = quirksUseQuirkTripleBrandSquareCell();
   const itemUrls = sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image));
-  const urls = multi
-    ? itemUrls
-    : [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(
-        itemUrls
-      );
+  const urls =
+    !multi || brandSquare
+      ? [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(
+          itemUrls
+        )
+      : itemUrls;
   const g = quirksComputeGrid(urls.length);
   const cells = g.cols * g.rows;
   const slots = [];
   const slotR2Metas = [];
   for (let i = 0; i < cells; i++) {
     slots.push(i < urls.length ? urls[i] : null);
-    if (multi) {
+    if (multi && !brandSquare) {
       slotR2Metas.push(
         i < sortedItems.length ? quirksR2MetaForGridItem(sortedItems[i]) : null
       );
@@ -1209,7 +1259,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     cols: g.cols,
     rows: g.rows,
     gridLayout,
-    firstCellBrand: !multi,
+    firstCellBrand: !multi || brandSquare,
   };
 }
 
@@ -1354,6 +1404,29 @@ function quirksLoadImageWithFallbacks(rawUrl, r2Meta) {
       resolve(null);
       return;
     }
+    const s0 = String(rawUrl).trim();
+    /** Same-origin /public branding — load directly (no proxy pipeline, no CORS mode that breaks canvas/export). */
+    if (quirksIsLocalBrandingAssetUrl(s0)) {
+      const img = new Image();
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (ok && img.naturalWidth > 0) resolve(img);
+        else resolve(null);
+      };
+      const t = window.setTimeout(() => finish(false), QUIRKS_EXPORT_IMAGE_TRY_MS);
+      img.onload = () => {
+        window.clearTimeout(t);
+        finish(true);
+      };
+      img.onerror = () => {
+        window.clearTimeout(t);
+        finish(false);
+      };
+      img.src = s0;
+      return;
+    }
     const tryOne = (u, onOk, onFail) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -1487,7 +1560,7 @@ function quirksDrawBrandCellExport(ctx, brandImg, pbloImg, cellX, cellY, cw, ch)
       drawH = pbloCap;
       drawW = (piw / pih) * drawH;
     }
-    const px = cellX + (cw - drawW) / 2;
+    const px = cellX;
     ctx.drawImage(pbloImg, px, cellY, drawW, drawH);
   }
   ctx.restore();
@@ -1707,7 +1780,7 @@ async function quirksBuildGridCanvasFromSlots(
     }
     quirksReleaseImageElement(pbloD);
   }
-  if (quirksBrandingIsMultiCollection()) {
+  if (quirksBrandingIsMultiCollection() && !firstCellBrand) {
     await quirksDrawBrandWatermark(ctx, W, H, {
       multiCollection: true,
       cols,
@@ -2121,6 +2194,16 @@ function renderQuirksPreviewGrid(domPool) {
         if (!pbloImg) {
           pbloImg = document.createElement("img");
           pbloImg.src = getQuirksPbloImageUrl();
+          pbloImg.referrerPolicy = "strict-origin-when-cross-origin";
+          pbloImg.addEventListener(
+            "error",
+            () => {
+              if (pbloImg.getAttribute("data-quirks-pblo-fb") === "1") return;
+              pbloImg.setAttribute("data-quirks-pblo-fb", "1");
+              pbloImg.src = "pblo.png";
+            },
+            { once: true }
+          );
         }
         pbloImg.className = "quirks-tile__brand-pblo";
         pbloImg.alt = "";
@@ -2428,7 +2511,15 @@ function setupQuirksBuilderUi() {
   function onQuirksCollectionChange() {
     quirksSyncGenerateButtonState();
     if (quirksWalletData) populateQuirksTraitSelect();
-    if (quirksEditorState) quirksRenderBrandOverlay();
+    if (
+      quirksWalletData &&
+      quirksEditorState &&
+      quirksIsTokenSearchWalletSession()
+    ) {
+      void runQuirksGenerate();
+    } else if (quirksEditorState) {
+      quirksRenderBrandOverlay();
+    }
   }
   [
     "quirks-opt-quirkies",
@@ -2606,10 +2697,6 @@ function setupQuirksBuilderUi() {
     if (modal?.classList.contains("is-open")) closeModal();
   });
 }
-
-/** Sentinel address so builder accepts token-ID-only sessions without a wallet scan. */
-const QUIRKS_TOKEN_SEARCH_WALLET_ADDR =
-  "0x0000000000000000000000000000000000000bad";
 
 function quirksWalletPayloadFromTokenLookup(apiData) {
   const tid = apiData.tokenId;

@@ -24,6 +24,10 @@
       '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect fill="%231a1a1a" width="80" height="80" rx="6"/><path fill="%23333" d="M25 28h30v24H25z"/><circle fill="%23555" cx="32" cy="38" r="4"/><circle fill="%23555" cx="48" cy="38" r="4"/><path stroke="%23555" stroke-width="2" fill="none" d="M32 52c4 4 12 4 16 0"/></svg>'
     );
 
+  /** Inline SVG for per-slot reload (never stripped by onImgLoad — unlike .nft-thumb__retry). */
+  var RELOAD_BTN_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>';
+
   /** Enable: localStorage.setItem("quirksDebugExtNft","1") or window.__QUIRKS_DEBUG_EXT_NFT__ = true */
   function debugExternalMatch(msg, detail) {
     var on =
@@ -419,6 +423,135 @@
   var BG_RETRY_GAP_MS = 5200;
   /** If still broken after initial pass, one more full retry cycle (slow gateways). */
   var WALLET_AUTO_RETRY_DELAY_MS = 14000;
+  /**
+   * Wallet thumbs used to set img.src to buildImageCandidates[0] only (like grid before preflight).
+   * Grid preview probes with Image() and reorders — match that here so wallet and grid see the same art.
+   * Slightly longer than quirksGrid QUIRKS_IMAGE_PREFLIGHT_MS so slow /api/img still resolves.
+   */
+  var WALLET_PREFLIGHT_PROBE_MS = 3800;
+  /** @type {Map<string, Promise<boolean>>} */
+  var walletProbeInflight = new Map();
+
+  function probeImageDisplayable(url, timeoutMs) {
+    var s = String(url || "").trim();
+    if (!s || /^javascript:/i.test(s)) return Promise.resolve(false);
+    if (/^data:image\//i.test(s)) return Promise.resolve(true);
+    var norm = normalizeApiImgUrl(s);
+    if (!norm) return Promise.resolve(false);
+    var ex = walletProbeInflight.get(norm);
+    if (ex) return ex;
+    var p = new Promise(function (resolve) {
+      var im = new Image();
+      var settled = false;
+      function finish(ok) {
+        if (settled) return;
+        settled = true;
+        walletProbeInflight.delete(norm);
+        resolve(ok);
+      }
+      var t = global.setTimeout(function () {
+        finish(false);
+      }, timeoutMs);
+      im.onload = function () {
+        global.clearTimeout(t);
+        finish(true);
+      };
+      im.onerror = function () {
+        global.clearTimeout(t);
+        finish(false);
+      };
+      im.src = s;
+    });
+    walletProbeInflight.set(norm, p);
+    return p;
+  }
+
+  async function preflightWalletImg(img) {
+    if (!img || !img.getAttribute("data-nft-c")) return;
+    var raw = img.getAttribute("data-nft-c");
+    var list;
+    try {
+      list = JSON.parse(decodeURIComponent(raw));
+    } catch (e) {
+      return;
+    }
+    if (!Array.isArray(list) || !list.length) return;
+    var meta = {
+      contract: img.getAttribute("data-nft-contract"),
+      tokenId: img.getAttribute("data-nft-token-id"),
+      collection: img.getAttribute("data-nft-collection"),
+    };
+    list = dedupeStrings(list);
+    var slug = resolveCollectionSlugForCache(meta);
+    var tid = canonicalTokenIdStr(meta.tokenId);
+    var smart = slug && tid ? smartNftImageGet(slug, tid) : null;
+    if (smart && !isPlaceholderUrl(smart)) {
+      var sn = normalizeApiImgUrl(smart);
+      var wi = -1;
+      for (var j = 0; j < list.length; j++) {
+        if (normalizeApiImgUrl(list[j]) === sn) {
+          wi = j;
+          break;
+        }
+      }
+      if (wi >= 0) {
+        list = [list[wi]].concat(
+          list.filter(function (_, k) {
+            return k !== wi;
+          })
+        );
+      }
+    }
+    var startSrc = normalizeApiImgUrl(String(img.src || ""));
+    for (var i = 0; i < list.length; i++) {
+      var u = list[i];
+      if (!u) continue;
+      var ok = await probeImageDisplayable(u, WALLET_PREFLIGHT_PROBE_MS);
+      if (!img.parentElement) return;
+      if (ok) {
+        var winner = u;
+        var rest = list.filter(function (_, j) {
+          return j !== i;
+        });
+        var newList = dedupeStrings([winner].concat(rest));
+        img.setAttribute(
+          "data-nft-c",
+          encodeURIComponent(JSON.stringify(newList))
+        );
+        img.setAttribute("data-nft-ci", "0");
+        img.removeAttribute("data-nft-failed");
+        img.removeAttribute("data-nft-failed-gw");
+        var wn = normalizeApiImgUrl(winner);
+        if (startSrc !== wn) {
+          img.src = winner;
+        }
+        return;
+      }
+    }
+  }
+
+  function preflightWalletThumbs(root) {
+    if (!root || !root.querySelectorAll) return Promise.resolve();
+    var sel =
+      ".nft-thumb img[data-nft-c], img.nft-thumb__counterpart-img[data-nft-c]";
+    var arr = Array.prototype.slice.call(root.querySelectorAll(sel));
+    if (!arr.length) return Promise.resolve();
+    var limit = 8;
+    var ix = 0;
+    async function worker() {
+      while (true) {
+        var my = ix++;
+        if (my >= arr.length) break;
+        await preflightWalletImg(arr[my]);
+      }
+    }
+    var n = Math.min(limit, arr.length);
+    var starters = [];
+    for (var k = 0; k < n; k++) {
+      starters.push(worker());
+    }
+    return Promise.all(starters);
+  }
 
   function pumpBgRetry() {
     bgRetryTimer = null;
@@ -805,6 +938,33 @@
     return dedupeStrings(out);
   }
 
+  function urlPathnameLowerForRaster(u) {
+    if (!u || typeof u !== "string") return "";
+    try {
+      return new URL(String(u).trim().replace(/\+/g, "%20")).pathname.toLowerCase();
+    } catch (e0) {
+      return String(u).trim().split("?")[0].toLowerCase();
+    }
+  }
+
+  /** Deprioritize animation JSON / video URLs when ordering <img> candidates (align with worker extractImageFromMetadata). */
+  function isProbablyImgRasterUrl(u) {
+    if (!u || typeof u !== "string") return false;
+    var p = urlPathnameLowerForRaster(u);
+    return !/\.(json|mp4|webm|mov|m4v|glb|gltf|html|htm)(\?|$)/.test(p);
+  }
+
+  function prioritizeRasterCandidates(list) {
+    if (!list || list.length < 2) return list;
+    var ok = [];
+    var rest = [];
+    for (var ri = 0; ri < list.length; ri++) {
+      if (isProbablyImgRasterUrl(list[ri])) ok.push(list[ri]);
+      else rest.push(list[ri]);
+    }
+    return ok.length ? ok.concat(rest) : list;
+  }
+
   function expandCandidatesFromIpfsFirst(urls, meta) {
     if (!urls || !urls.length) return urls;
     var first = urls[0];
@@ -905,6 +1065,7 @@
     list = dedupeStrings(list);
     var ipfsPathOut = path || extractIpfsPath(primary) || null;
     list = mergePrependNormalizedUrls(list, prependSmart);
+    list = prioritizeRasterCandidates(list);
     return {
       primary: list[0] || null,
       candidates: list,
@@ -923,6 +1084,59 @@
     }
     if (p.classList && p.classList.contains("nft-thumb")) return p;
     return p;
+  }
+
+  function forceReloadNftImagesInScope(scope) {
+    if (!scope || !scope.querySelectorAll) return;
+    var imgs = scope.querySelectorAll("img[data-nft-c]");
+    var seenRoots = new Set();
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      img.removeAttribute("data-nft-fail-reason");
+      img.removeAttribute("data-nft-failed");
+      img.removeAttribute("data-nft-failed-gw");
+      img.removeAttribute("data-nft-ma");
+      img.removeAttribute("data-nft-bg-queued");
+      img.classList.remove("is-broken");
+      var r = findLoaderRoot(img);
+      if (r && r.classList) {
+        r.classList.remove("is-broken");
+        if (!seenRoots.has(r)) {
+          seenRoots.add(r);
+          var ph = r.querySelector && r.querySelector(".nft-thumb__failed-ph");
+          if (ph) ph.remove();
+        }
+      }
+      var raw = img.getAttribute("data-nft-c");
+      if (raw) {
+        try {
+          var list = JSON.parse(decodeURIComponent(raw));
+          if (Array.isArray(list) && list.length) {
+            img.setAttribute("data-nft-ci", "0");
+            img.src = cacheBustUrl(list[0]);
+            continue;
+          }
+        } catch (e) {
+          /* fall through */
+        }
+      }
+      if (img.src) img.src = cacheBustUrl(img.src);
+    }
+  }
+
+  function ensureSlotReloadControl(root) {
+    if (!root || !root.classList || !root.appendChild) return;
+    if (!root.querySelector("img[data-nft-c]")) return;
+    if (root.querySelector(".nft-thumb__reload")) return;
+    var doc = typeof global.document !== "undefined" ? global.document : null;
+    if (!doc) return;
+    var b = doc.createElement("button");
+    b.type = "button";
+    b.className = "nft-thumb__reload";
+    b.setAttribute("aria-label", "Reload images");
+    b.setAttribute("title", "Reload images");
+    b.innerHTML = RELOAD_BTN_SVG;
+    root.appendChild(b);
   }
 
   function cacheBustUrl(url) {
@@ -1099,13 +1313,24 @@
   function injectGridRetryButton(root) {
     if (!root || !root.classList) return;
     if (root.querySelector(".nft-thumb__retry--floating")) return;
+    /* Keep the in-fallback "Retry" from thumbHtml — it was being removed here and replaced
+     * with a floating duplicate, which sometimes left no visible control on red tiles. */
+    if (
+      root.querySelector(
+        ".nft-thumb-fallback .nft-thumb__retry:not(.nft-thumb__retry--metadata)"
+      )
+    ) {
+      return;
+    }
     var doc = typeof global.document !== "undefined" ? global.document : null;
     if (!doc) return;
     var stale = root.querySelectorAll(
       ".nft-thumb__retry:not(.nft-thumb__retry--metadata):not(.nft-thumb__retry--slot-action):not(.nft-thumb__retry--floating)"
     );
     for (var si = 0; si < stale.length; si++) {
-      stale[si].remove();
+      var st = stale[si];
+      if (st.closest && st.closest(".nft-thumb-fallback")) continue;
+      st.remove();
     }
     var b = doc.createElement("button");
     b.type = "button";
@@ -1180,7 +1405,7 @@
               break;
             }
           }
-          if (!stillNeed) {
+          if (!stillNeed && !root.classList.contains("is-broken")) {
             var tileBtns = root.querySelectorAll(".nft-thumb__retry");
             for (ii = 0; ii < tileBtns.length; ii++) tileBtns[ii].remove();
           }
@@ -1274,14 +1499,19 @@
     var metaAttempt = parseInt(img.getAttribute("data-nft-ma") || "0", 10);
     var contract = img.getAttribute("data-nft-contract");
     var tokenId = img.getAttribute("data-nft-token-id");
-    if (metaAttempt < 1 && contract && tokenId) {
-      img.setAttribute("data-nft-ma", "1");
+    if (metaAttempt < 2 && contract && tokenId) {
+      img.setAttribute("data-nft-ma", String(metaAttempt + 1));
+      var metaBust =
+        metaAttempt > 0
+          ? "&_nftmeta=" + encodeURIComponent(String(Date.now()))
+          : "";
       fetch(
         apiUrl(
           "/api/nft-metadata?contract=" +
             encodeURIComponent(contract) +
             "&tokenId=" +
-            encodeURIComponent(tokenId)
+            encodeURIComponent(tokenId) +
+            metaBust
         )
       )
         .then(function (r) {
@@ -1609,6 +1839,9 @@
       '<span class="nft-thumb-fallback__msg">No image</span>' +
       '<button type="button" class="nft-thumb__retry">Retry</button>' +
       "</div>" +
+      '<button type="button" class="nft-thumb__reload" aria-label="Reload image" title="Reload image">' +
+      RELOAD_BTN_SVG +
+      "</button>" +
       "</div>"
     );
   }
@@ -1702,6 +1935,9 @@
       '<span class="nft-thumb-fallback__msg">No image</span>' +
       '<button type="button" class="nft-thumb__retry">Retry</button>' +
       "</div>" +
+      '<button type="button" class="nft-thumb__reload" aria-label="Reload image" title="Reload image">' +
+      RELOAD_BTN_SVG +
+      "</button>" +
       "</div>"
     );
   }
@@ -1712,6 +1948,21 @@
 
   if (typeof global.document !== "undefined") {
     global.document.addEventListener("click", function (ev) {
+      var reloadHit = ev.target.closest(".nft-thumb__reload");
+      if (reloadHit) {
+        ev.preventDefault();
+        try {
+          ev.stopPropagation();
+        } catch (eSp) {
+          /* ignore */
+        }
+        var wrapR =
+          reloadHit.closest(".nft-thumb") ||
+          reloadHit.closest(".nft-thumb__counterpart-visual") ||
+          reloadHit.closest(".quirks-tile");
+        if (wrapR) forceReloadNftImagesInScope(wrapR);
+        return;
+      }
       var btn = ev.target.closest(".nft-thumb__retry");
       if (!btn) return;
       ev.preventDefault();
@@ -1886,6 +2137,8 @@
       onImgError(img);
     };
     img.src = b.candidates[0];
+    var tile = img.closest && img.closest(".quirks-tile");
+    if (tile) ensureSlotReloadControl(tile);
   }
 
   global.NftImageLoader = {
@@ -1910,5 +2163,8 @@
     NFT_PLACEHOLDER_SVG: NFT_PLACEHOLDER_SVG,
     FIRST_EAGER_COUNT: FIRST_EAGER_COUNT,
     GATEWAY_BASES: GATEWAY_BASES,
+    preflightWalletThumbs: preflightWalletThumbs,
+    forceReloadNftImagesInScope: forceReloadNftImagesInScope,
+    ensureSlotReloadControl: ensureSlotReloadControl,
   };
 })(typeof window !== "undefined" ? window : globalThis);

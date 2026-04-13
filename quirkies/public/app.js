@@ -74,6 +74,35 @@ function escapeAttr(s) {
   return escapeHtml(s).replace(/'/g, "&#39;");
 }
 
+/** Resolve a file in `public/` (same origin as the page). */
+function publicAssetHref(filename) {
+  try {
+    var base =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : typeof window !== "undefined"
+          ? window.location.href
+          : "";
+    return new URL(filename, base || "https://local.invalid/").href;
+  } catch (e) {
+    return filename;
+  }
+}
+
+/** Empty INX tile: Quirkies mark top-left (no metadata fetch / INX placeholder art). */
+function inxMissingThumbHtml(message) {
+  var logoSrc = publicAssetHref("quirkieslogo.png");
+  return (
+    '<div class="nft-thumb nft-thumb--empty inx-missing-thumb">' +
+    '<img src="' +
+    escapeAttr(logoSrc) +
+    '" alt="" class="inx-missing-thumb__logo" decoding="async" />' +
+    '<span class="inx-missing-thumb__msg">' +
+    escapeHtml(message || "No INX") +
+    "</span></div>"
+  );
+}
+
 function openSeaEthereumItem(contract, tokenId) {
   if (!contract || tokenId === undefined || tokenId === null) return null;
   return (
@@ -358,18 +387,13 @@ function renderMatchedCard(item, ctx) {
     osBtnFull(item.openseaQuirkling, "Quirkling")
   );
   var inxCol = "";
-  if (item.inx && item.inx.image) {
+  if (item.inx && c.inx) {
     inxCol = walletCol(
-      thumbHtml(item.inx.image, "INX " + tid, {
+      thumbHtml(item.inx.image ? item.inx.image : null, "INX " + tid, {
         contract: c.inx,
         tokenId: tid,
         imageIndex: ctx.nextImg(),
       }),
-      osBtnFull(item.openseaInx, "INX")
-    );
-  } else if (item.openseaInx) {
-    inxCol = walletCol(
-      '<div class="nft-thumb nft-thumb--empty"><span class="nft-thumb-fallback">No INX in wallet</span></div>',
       osBtnFull(item.openseaInx, "INX")
     );
   }
@@ -501,11 +525,15 @@ function renderInxOnlyCard(item, ctx) {
     '<article class="wallet-card wallet-card--info">' +
     '<div class="wallet-card__visuals wallet-card__visuals--single">' +
     walletCol(
-      thumbHtml(item.inx && item.inx.image, "INX " + tid, {
-        contract: c.inx,
-        tokenId: tid,
-        imageIndex: ctx.nextImg(),
-      }),
+      thumbHtml(
+        item.inx && item.inx.image ? item.inx.image : null,
+        "INX " + tid,
+        {
+          contract: c.inx,
+          tokenId: tid,
+          imageIndex: ctx.nextImg(),
+        }
+      ),
       osBtnFull(item.openseaInx, "INX")
     ) +
     "</div>" +
@@ -802,6 +830,18 @@ function renderWalletResults(container, data) {
   } catch (e) {
     /* ignore */
   }
+
+  var NL = typeof window !== "undefined" && window.NftImageLoader;
+  if (NL) {
+    window.requestAnimationFrame(function () {
+      if (typeof NL.preflightWalletThumbs === "function") {
+        void NL.preflightWalletThumbs(container);
+      }
+      if (typeof NL.retryAllMissingNftImages === "function") {
+        NL.retryAllMissingNftImages(container);
+      }
+    });
+  }
 }
 
 function renderTokenResults(container, data) {
@@ -864,6 +904,34 @@ function renderTokenResults(container, data) {
     if (kind === "quirkie") contractAddr = contracts.quirkies;
     else if (kind === "quirking") contractAddr = contracts.quirklings;
     else if (kind === "inx") contractAddr = contracts.inx;
+    if (kind === "inx" && !item.image) {
+      var ownerIx = item.owner;
+      var seaIx = item.opensea;
+      var nftIx = item.openseaNft;
+      return (
+        '<article class="token-side token-side--inx token-side--inx-missing">' +
+        inxMissingThumbHtml("No INX for this ID") +
+        '<h4 class="token-side__label">' +
+        escapeHtml(label) +
+        "</h4>" +
+        '<p class="token-side__owner mono" title="' +
+        escapeAttr(ownerIx || "") +
+        '">' +
+        escapeHtml(ownerIx ? shortAddress(ownerIx) : "—") +
+        "</p>" +
+        (seaIx
+          ? '<a class="btn-secondary" href="' +
+            escapeHtml(seaIx) +
+            '" target="_blank" rel="noopener noreferrer">Owner</a> '
+          : "") +
+        (nftIx
+          ? '<a class="btn-secondary" href="' +
+            escapeHtml(nftIx) +
+            '" target="_blank" rel="noopener noreferrer">OpenSea item</a>'
+          : "") +
+        "</article>"
+      );
+    }
     return (
       '<article class="token-side token-side--' +
       kind +
@@ -935,6 +1003,14 @@ function renderTokenResults(container, data) {
     "</div>" +
     verdict;
   container.classList.remove("hidden");
+  var NLtok = typeof window !== "undefined" && window.NftImageLoader;
+  if (NLtok) {
+    window.requestAnimationFrame(function () {
+      if (typeof NLtok.preflightWalletThumbs === "function") {
+        void NLtok.preflightWalletThumbs(container);
+      }
+    });
+  }
 }
 
 async function checkWallet() {
@@ -1088,6 +1164,7 @@ async function findTokenMatch() {
     var slot = ev.target.closest("[data-counterpart-slot]");
     if (!slot || !walletResults.contains(slot)) return;
     if (ev.target.closest(".nft-thumb__retry")) return;
+    if (ev.target.closest(".nft-thumb__reload")) return;
     if (ev.target.closest(".wallet-col__os a")) return;
     slot.classList.toggle("is-revealed");
   });

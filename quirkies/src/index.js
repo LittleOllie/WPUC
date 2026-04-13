@@ -89,6 +89,56 @@ function normalizeImageUrl(u) {
   return s;
 }
 
+function urlPathnameLower(u) {
+  if (!u || typeof u !== "string") return "";
+  try {
+    return new URL(u.trim()).pathname.toLowerCase();
+  } catch {
+    return u.trim().split("?")[0].toLowerCase();
+  }
+}
+
+/** Prefer URLs that are likely to render in an <img> (not animation JSON / video / 3D). */
+function isProbablyRasterImageUrl(u) {
+  if (!u || typeof u !== "string") return false;
+  const p = urlPathnameLower(u);
+  return !/\.(json|mp4|webm|mov|m4v|glb|gltf|html|htm)(\?|$)/.test(p);
+}
+
+function pickBestDisplayableImageUrl(rawCandidates) {
+  const normalized = [];
+  const seen = new Set();
+  for (const c of rawCandidates) {
+    if (typeof c !== "string" || !c.trim()) continue;
+    const n = normalizeImageUrl(c.trim());
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    normalized.push(n);
+  }
+  for (const n of normalized) {
+    if (isProbablyRasterImageUrl(n)) return n;
+  }
+  return normalized[0] || null;
+}
+
+function parseMetadataObjectMaybe(v) {
+  if (v && typeof v === "object") return v;
+  if (typeof v === "string") {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function alchemyNftMetadataRoot(data) {
+  if (!data || typeof data !== "object") return data;
+  if (data.nft && typeof data.nft === "object") return data.nft;
+  return data;
+}
+
 function isIpfsLikeImageUrl(u) {
   if (!u || typeof u !== "string") return false;
   const s = u.trim().toLowerCase();
@@ -108,12 +158,28 @@ function isQuirkiesQuirkKidCdnUrl(u) {
   }
 }
 
+/**
+ * Route almost all remote art through /api/img so the Worker fetches with retries, OpenSea-style
+ * headers, and IPFS gateway fallback — browser <img> to random HTTPS CDNs often 403s or times out.
+ */
 function shouldProxyImageUrlForClient(u) {
-  return isIpfsLikeImageUrl(u) || isQuirkiesQuirkKidCdnUrl(u);
+  if (!u || typeof u !== "string") return false;
+  const s = u.trim();
+  if (!s) return false;
+  const low = s.toLowerCase();
+  if (low.startsWith("data:") || low.startsWith("blob:")) return false;
+  if (/\/api\/img\?[^#]*\burl=/i.test(s)) return false;
+  if (isIpfsLikeImageUrl(u)) return true;
+  if (isQuirkiesQuirkKidCdnUrl(u)) return true;
+  try {
+    const p = new URL(s);
+    return p.protocol === "https:" || p.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Route IPFS + QuirkKid S3 through Worker proxy (CORS-safe canvas); other HTTPS unchanged.
  * @param {string | null | undefined} assetOrigin Request origin (e.g. https://….workers.dev).
  *  When the UI is on GitHub Pages, relative /api/img would hit the wrong host — always pass origin from fetch().
  */
@@ -155,14 +221,19 @@ function extractImageFromMetadata(data) {
   const candidates = [];
 
   const m = data.media;
-  if (Array.isArray(m) && m.length > 0) {
-    const first = m[0];
-    candidates.push(
-      first?.thumbnail,
-      first?.cachedUrl,
-      first?.gateway,
-      first?.raw
-    );
+  if (Array.isArray(m)) {
+    for (const item of m) {
+      if (!item || typeof item !== "object") continue;
+      candidates.push(
+        item.thumbnail,
+        item.cachedUrl,
+        item.gateway,
+        item.raw,
+        item.pngUrl,
+        item.thumbnailUrl,
+        item.uri
+      );
+    }
   }
 
   const img = data.image;
@@ -173,37 +244,54 @@ function extractImageFromMetadata(data) {
       img.pngUrl,
       img.thumbnailUrl,
       img.originalUrl,
-      img.webpUrl
+      img.webpUrl,
+      img.thumbnail
     );
   }
 
-  const rawMeta = data.raw?.metadata;
-  if (rawMeta && typeof rawMeta === "object") {
-    candidates.push(rawMeta.image, rawMeta.image_url, rawMeta.imageUrl);
+  for (const rawSrc of [data.raw?.metadata, data.rawMetadata]) {
+    const rawMeta = parseMetadataObjectMaybe(rawSrc);
+    if (!rawMeta || typeof rawMeta !== "object") continue;
+    candidates.push(
+      rawMeta.image,
+      rawMeta.image_url,
+      rawMeta.imageUrl,
+      rawMeta.animation_url
+    );
+    const anim = rawMeta.animation;
+    if (anim && typeof anim === "object") {
+      candidates.push(anim.url, anim.uri);
+    }
   }
 
   candidates.push(
+    data.animation_url,
+    data.animation?.url,
+    data.animation?.uri,
     data.openSeaMetadata?.imageUrl,
     data.contract?.openSeaMetadata?.imageUrl,
     data.displayImageUrl,
     data.imageUrl
   );
 
-  if (data.metadata && typeof data.metadata === "object") {
+  const topMeta = parseMetadataObjectMaybe(data.metadata);
+  if (topMeta && typeof topMeta === "object") {
+    candidates.push(
+      topMeta.image,
+      topMeta.image_url,
+      topMeta.imageUrl,
+      topMeta.animation_url
+    );
+  } else if (data.metadata && typeof data.metadata === "object") {
     candidates.push(
       data.metadata.image,
       data.metadata.image_url,
-      data.metadata.imageUrl
+      data.metadata.imageUrl,
+      data.metadata.animation_url
     );
   }
 
-  for (const c of candidates) {
-    if (typeof c === "string" && c.trim()) {
-      const n = normalizeImageUrl(c.trim());
-      if (n) return n;
-    }
-  }
-  return null;
+  return pickBestDisplayableImageUrl(candidates);
 }
 
 /**
@@ -370,7 +458,7 @@ async function safeGetNftMetadataImage(nftBase, contract, tokenIdStr) {
     });
     const res = await fetch(`${nftBase}/getNFTMetadata?${params.toString()}`);
     const data = await readAlchemyJson(res);
-    return extractImageFromMetadata(data);
+    return extractImageFromMetadata(alchemyNftMetadataRoot(data));
   } catch {
     return null;
   }
@@ -428,7 +516,8 @@ async function safeGetNftMetadataObject(nftBase, contract, tokenIdStr) {
     const res = await fetch(`${nftBase}/getNFTMetadata?${params.toString()}`);
     const text = await res.text();
     if (!res.ok) return null;
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    return alchemyNftMetadataRoot(data);
   } catch {
     return null;
   }
@@ -538,14 +627,19 @@ async function fetchOwnedCollection(nftBase, owner, contract) {
 }
 
 /**
- * Fill idToImage for tokens where list metadata had no URL (reduces “slow blank then loads” in UI).
+ * Fill or fix idToImage: missing URL, or list API pointed at animation JSON / video (common on Quirklings).
  */
 async function hydrateMissingCollectionImages(nftBase, contract, col) {
   if (!col?.idKeys?.length) return;
-  const missing = col.idKeys.filter((id) => !col.idToImage.get(id));
-  if (missing.length === 0) return;
+  const needs = col.idKeys.filter((id) => {
+    const u = col.idToImage.get(id);
+    if (!u) return true;
+    const n = normalizeImageUrl(String(u).trim()) || String(u).trim();
+    return !isProbablyRasterImageUrl(n);
+  });
+  if (needs.length === 0) return;
   await mapWithConcurrency(
-    missing,
+    needs,
     HYDRATE_IMAGE_CONCURRENCY,
     async (id) => {
       const img = await safeGetNftMetadataImage(nftBase, contract, id);
@@ -639,16 +733,61 @@ function sanitizeIpfsPathForGateway(ipfsPath) {
   return String(ipfsPath).replace(/^\/+/, "").trim();
 }
 
-function imgProxyHeadersForUrl(resourceUrl) {
+const IMG_PROXY_ACCEPT =
+  "image/avif,image/webp,image/apng,image/*,*/*;q=0.8";
+
+/**
+ * @param {string} resourceUrl
+ * @param {0|1|2|3} [variant=0] — rotate strategies when origins 403/timeout (Referer / UA sensitivity).
+ */
+function imgProxyHeadersForUrl(resourceUrl, variant = 0) {
   const u = String(resourceUrl || "");
-  if (/seadn\.io|looksrare|cdn\.blur\.io|openseauserdata\.com/i.test(u)) {
+  const v = variant | 0;
+  if (v === 2) {
     return {
       "User-Agent": IMG_PROXY_UA,
-      Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+      Accept: IMG_PROXY_ACCEPT,
+    };
+  }
+  if (v === 1) {
+    try {
+      const o = new URL(u);
+      return {
+        "User-Agent": IMG_PROXY_UA,
+        Accept: IMG_PROXY_ACCEPT,
+        Referer: `${o.origin}/`,
+      };
+    } catch {
+      return {
+        "User-Agent": IMG_PROXY_UA,
+        Accept: IMG_PROXY_ACCEPT,
+        Referer: "https://opensea.io/",
+      };
+    }
+  }
+  if (v === 3) {
+    return {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; Quirks-ImageProxy/1.0; +https://opensea.io/)",
+      Accept: IMG_PROXY_ACCEPT,
+    };
+  }
+  if (
+    /seadn\.io|looksrare|cdn\.blur\.io|openseauserdata\.com|arweave\.net|cloudinary\.com|googleusercontent\.com|storage\.googleapis\.com|nftstorage\.link|ipfs\.|pinata|dweb\.link|w3s\.link|alchemy\.com|manifoldcdn|lens\.xyz/i.test(
+      u
+    )
+  ) {
+    return {
+      "User-Agent": IMG_PROXY_UA,
+      Accept: IMG_PROXY_ACCEPT,
       Referer: "https://opensea.io/",
     };
   }
-  return { "User-Agent": "Quirks-ImageProxy/1.0" };
+  return {
+    "User-Agent": IMG_PROXY_UA,
+    Accept: IMG_PROXY_ACCEPT,
+    Referer: "https://opensea.io/",
+  };
 }
 
 function isOkImageResponse(res) {
@@ -669,13 +808,14 @@ function isOkImageResponse(res) {
   return true;
 }
 
-async function fetchWithImgTimeout(resource, timeoutMs) {
+async function fetchWithImgTimeout(resource, timeoutMs, headerVariant) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
+  const hv = headerVariant === undefined ? 0 : headerVariant;
   try {
     const res = await fetch(resource, {
       redirect: "follow",
-      headers: imgProxyHeadersForUrl(resource),
+      headers: imgProxyHeadersForUrl(resource, hv),
       signal: controller.signal,
     });
     clearTimeout(id);
@@ -717,14 +857,16 @@ async function tryIpfsGateways(ipfsPath) {
 
 async function tryDirectThenGateways(decodedUrl, ipfsPath) {
   if (/\/ipfs\//i.test(decodedUrl) || decodedUrl.startsWith("ipfs://")) {
-    try {
-      const norm = normalizeImageUrl(decodedUrl);
-      if (norm && /^https?:\/\//i.test(norm)) {
-        const res = await fetchWithImgTimeout(norm, IMG_PROXY_TIMEOUT_MS);
-        if (isOkImageResponse(res)) return res;
+    const norm = normalizeImageUrl(decodedUrl);
+    if (norm && /^https?:\/\//i.test(norm)) {
+      for (const hv of [0, 1, 2]) {
+        try {
+          const res = await fetchWithImgTimeout(norm, IMG_PROXY_TIMEOUT_MS, hv);
+          if (isOkImageResponse(res)) return res;
+        } catch {
+          /* try next header set */
+        }
       }
-    } catch {
-      /* fall through */
     }
   }
   if (ipfsPath) return tryIpfsGateways(ipfsPath);
@@ -732,13 +874,34 @@ async function tryDirectThenGateways(decodedUrl, ipfsPath) {
 }
 
 async function fetchHttpsImage(decodedUrl) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, 350));
+  const variants = [0, 1, 2, 3, 0, 1];
+  const delays = [0, 200, 400, 650, 900, 1200];
+  for (let attempt = 0; attempt < variants.length; attempt++) {
+    if (delays[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, delays[attempt]));
     }
     try {
-      const res = await fetchWithImgTimeout(decodedUrl, IMG_PROXY_TIMEOUT_MS);
+      let res = await fetchWithImgTimeout(
+        decodedUrl,
+        IMG_PROXY_TIMEOUT_MS,
+        variants[attempt]
+      );
       if (isOkImageResponse(res)) return res;
+      const st = res && res.status;
+      if (st === 429 || st === 503) {
+        const ra = res.headers.get("Retry-After");
+        let extra = 800;
+        if (ra && /^\d+$/.test(ra.trim())) {
+          extra = Math.min(8000, parseInt(ra.trim(), 10) * 1000);
+        }
+        await new Promise((r) => setTimeout(r, extra));
+        res = await fetchWithImgTimeout(
+          decodedUrl,
+          IMG_PROXY_TIMEOUT_MS,
+          variants[attempt]
+        );
+        if (isOkImageResponse(res)) return res;
+      }
     } catch {
       /* retry */
     }

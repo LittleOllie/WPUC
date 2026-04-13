@@ -438,7 +438,7 @@ body.quirks-modal-active {
   position: absolute;
   top: 0.45rem;
   left: 0.45rem;
-  z-index: 3;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -481,6 +481,8 @@ body.quirks-modal-active {
 }
 
 .quirks-preview-grid {
+  position: relative;
+  z-index: 0;
   display: grid;
   gap: 0;
   margin: 0;
@@ -509,7 +511,7 @@ body.quirks-modal-active {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 6;
+  z-index: 10;
   cursor: pointer;
   border: none;
   border-radius: 8px;
@@ -527,6 +529,14 @@ body.quirks-modal-active {
 
 .quirks-tile .nft-thumb__retry:hover {
   filter: brightness(1.08);
+}
+
+.quirks-tile .nft-thumb__reload {
+  top: 0.28rem;
+  right: 0.28rem;
+  width: clamp(1.6rem, 5.2vw, 2rem);
+  height: clamp(1.6rem, 5.2vw, 2rem);
+  z-index: 14;
 }
 
 .quirks-tile.is-broken .nft-thumb__retry {
@@ -587,7 +597,7 @@ body.quirks-modal-active {
   height: auto;
   max-height: 52%;
   object-fit: contain;
-  object-position: top center;
+  object-position: top left;
   flex-shrink: 0;
   pointer-events: none;
   display: block;
