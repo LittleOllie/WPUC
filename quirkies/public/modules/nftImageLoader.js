@@ -695,6 +695,15 @@
     if (s.indexOf("/api/img") === 0) {
       return normalizeApiImgUrl(apiUrl(s));
     }
+    /* Relative or absolute paths named like /public branding — never wrap in /api/img (Worker cannot fetch them). */
+    var tail = s.split("?")[0].split("#")[0].replace(/\\/g, "/");
+    var leaf = tail.replace(/\/+$/, "").split("/").pop();
+    if (leaf) {
+      var low = String(leaf).toLowerCase();
+      if (low === "quirkieslogo.png" || low === "pblo.png") {
+        return s;
+      }
+    }
     try {
       var parsed = new URL(s);
       if (

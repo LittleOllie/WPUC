@@ -476,7 +476,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
     img.removeAttribute("data-nft-c");
     img.removeAttribute("data-nft-ci");
     img.decoding = "async";
-    img.referrerPolicy = "strict-origin-when-cross-origin";
+    img.removeAttribute("referrerpolicy");
     img.src = String(rawUrl).trim();
     img.onload = function () {
       if (typeof window.__nftImgLoad === "function") {
@@ -548,25 +548,16 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
   }
 }
 
-/** Resolve filenames in `public/` — must follow <base href>, not location (e.g. /quirkies/ vs /quirkies/public/). */
-function quirksPublicAssetUrl(filename) {
-  try {
-    const base =
-      typeof document !== "undefined" && document.baseURI
-        ? document.baseURI
-        : window.location.href;
-    return new URL(filename, base).href;
-  } catch {
-    return filename;
-  }
-}
-
+/**
+ * Branding in `public/` — use the same relative URLs as index.html (`src="quirkieslogo.png"`).
+ * Resolving via `new URL(file, document.baseURI)` can diverge from `location.origin` (www vs bare * domain, file: opaque origins) and route art through /api/img, which breaks these assets.
+ */
 function getQuirksGridBrandImageUrl() {
-  return quirksPublicAssetUrl("quirkieslogo.png");
+  return "quirkieslogo.png";
 }
 
 function getQuirksPbloImageUrl() {
-  return quirksPublicAssetUrl("pblo.png");
+  return "pblo.png";
 }
 
 function normalizeWalletNftEntry(x) {
@@ -994,13 +985,12 @@ function quirksRenderBrandOverlay() {
   pblo.className = "quirks-preview-brand-overlay__pblo";
   pblo.setAttribute("aria-hidden", "true");
   pblo.decoding = "async";
-  pblo.referrerPolicy = "strict-origin-when-cross-origin";
   pblo.addEventListener(
     "error",
     () => {
       if (pblo.getAttribute("data-quirks-pblo-fb") === "1") return;
       pblo.setAttribute("data-quirks-pblo-fb", "1");
-      pblo.src = "pblo.png";
+      pblo.src = getQuirksPbloImageUrl() + "?r=1";
     },
     { once: true }
   );
@@ -1064,33 +1054,17 @@ async function quirksBuildGroupedExportCanvas(state) {
   const cols = state.cols;
   const rows = packed.length;
   const cellCount = Math.max(1, cols * rows);
-  const sizeTry = quirksExportCanvasSizeCandidates(cellCount);
-  let canvas = null;
-  let ctx = null;
-  let W = 0;
-  let H = 0;
-  for (let ti = 0; ti < sizeTry.length; ti++) {
-    W = sizeTry[ti];
-    H = sizeTry[ti];
-    canvas = quirksCreateExportCanvas(W, H);
-    if (canvas.width !== W || canvas.height !== H) {
-      canvas = null;
-      continue;
-    }
-    ctx = canvas.getContext("2d");
-    if (!ctx) {
-      canvas = null;
-      continue;
-    }
-    break;
-  }
-  if (!ctx || !canvas) throw new Error("Canvas not supported.");
+  const { canvas, ctx, W, H, cellPx } = quirksTryCreateFlushSquareCellCanvas(
+    cols,
+    rows,
+    cellCount
+  );
   ctx.imageSmoothingEnabled = true;
   if ("imageSmoothingQuality" in ctx) {
     ctx.imageSmoothingQuality = "high";
   }
-  const cw = W / cols;
-  const ch = H / rows;
+  const cw = cellPx;
+  const ch = cellPx;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   const uniqueCount = quirksGroupedExportUniqueUrlCount(state);
@@ -1117,7 +1091,7 @@ async function quirksBuildGroupedExportCanvas(state) {
             url,
             quirksR2MetaForGridItem(unit.items[si])
           );
-          quirksDrawCover(
+          quirksDrawContain(
             ctx,
             img,
             cellR.x + si * subW,
@@ -1173,7 +1147,7 @@ async function quirksBuildGroupedExportCanvas(state) {
         for (let si = 0; si < nSub; si++) {
           const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
           const img = url ? loadedMap[url] || null : null;
-          quirksDrawCover(
+          quirksDrawContain(
             ctx,
             img,
             cellR.x + si * subW,
@@ -1497,30 +1471,55 @@ function quirksLoadImageWithFallbacks(rawUrl, r2Meta) {
   });
 }
 
+/** Flush tile rect — no bleed (avoids gaps / overlap seams in the JPEG). */
 function quirksExportCellRect(x, y, w, h) {
-  const bleed = 0.01;
-  const ox = w * (bleed / 2);
-  const oy = h * (bleed / 2);
-  return { x: x - ox, y: y - oy, w: w * (1 + bleed), h: h * (1 + bleed) };
+  return { x, y, w, h };
 }
 
-function quirksDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
-  const backdrop = cellBackdrop || "#ffffff";
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  ctx.fillStyle = backdrop;
-  ctx.fillRect(x, y, w, h);
-  if (img && img.naturalWidth > 0) {
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
-    const scale = Math.max(w / iw, h / ih);
-    const tw = iw * scale;
-    const th = ih * scale;
-    ctx.drawImage(img, x + (w - tw) / 2, y + (h - th) / 2, tw, th);
+/**
+ * Export uses square cells edge-to-edge: W = cellPx×cols, H = cellPx×rows (not a square canvas unless cols === rows).
+ * Picks the largest cellPx that fits the pixel budget and browser canvas limits.
+ */
+function quirksExportPixelBudgets(slotsLen) {
+  const n = typeof slotsLen === "number" ? slotsLen : 0;
+  if (quirksIsMemoryConstrainedDevice()) {
+    if (n > 49) return [1024, 896, 768];
+    if (n > 36) return [1280, 1024, 896];
+    if (n > 24) return [1536, 1280, 1024];
+    return [QUIRKS_MOBILE_EXPORT_MAX, 1536, 1024];
   }
-  ctx.restore();
+  return [QUIRKS_CANVAS_SIZE, QUIRKS_CANVAS_SIZE_FALLBACK, 2048];
+}
+
+function quirksTryCreateFlushSquareCellCanvas(cols, rows, slotsLen) {
+  const c = Math.max(1, cols);
+  const r = Math.max(1, rows);
+  const budgets = quirksExportPixelBudgets(slotsLen);
+  const maxEdge = QUIRKS_CANVAS_SIZE;
+  for (let bi = 0; bi < budgets.length; bi++) {
+    const B = budgets[bi];
+    let cellPx = Math.floor(B / Math.max(c, r));
+    cellPx = Math.min(cellPx, Math.floor(maxEdge / c));
+    cellPx = Math.min(cellPx, Math.floor(maxEdge / r));
+    if (cellPx < 32) continue;
+    const W = cellPx * c;
+    const H = cellPx * r;
+    const canvas = quirksCreateExportCanvas(W, H);
+    if (canvas.width !== W || canvas.height !== H) continue;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
+    return { canvas, ctx, W, H, cellPx };
+  }
+  let cellPx = 32;
+  cellPx = Math.min(cellPx, Math.floor(maxEdge / c));
+  cellPx = Math.min(cellPx, Math.floor(maxEdge / r));
+  cellPx = Math.max(32, cellPx);
+  const W = cellPx * c;
+  const H = cellPx * r;
+  const canvas = quirksCreateExportCanvas(W, H);
+  const ctx = canvas && canvas.getContext("2d");
+  if (!ctx || !canvas) throw new Error("Canvas not supported.");
+  return { canvas, ctx, W, H, cellPx };
 }
 
 function quirksDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
@@ -1603,17 +1602,6 @@ function quirksReleaseCanvasMemory(canvas) {
   }
 }
 
-function quirksExportCanvasSizeCandidates(slotsLen) {
-  const n = typeof slotsLen === "number" ? slotsLen : 0;
-  if (quirksIsMemoryConstrainedDevice()) {
-    if (n > 49) return [1024, 896, 768];
-    if (n > 36) return [1280, 1024, 896];
-    if (n > 24) return [1536, 1280, 1024];
-    return [QUIRKS_MOBILE_EXPORT_MAX, 1536, 1024];
-  }
-  return [QUIRKS_CANVAS_SIZE, QUIRKS_CANVAS_SIZE_FALLBACK, 2048];
-}
-
 async function quirksExportGridDrawCellsSequential(
   ctx,
   slots,
@@ -1652,7 +1640,7 @@ async function quirksExportGridDrawCellsSequential(
       const bg = "#ffffff";
       let img = null;
       if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
-      quirksDrawCover(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
+      quirksDrawContain(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
       quirksReleaseImageElement(img);
     }
     if ((i & 3) === 3) {
@@ -1669,33 +1657,17 @@ async function quirksBuildGridCanvasFromSlots(
   slotR2Metas
 ) {
   const cells = cols * rows;
-  const sizeTry = quirksExportCanvasSizeCandidates(slots.length);
-  let canvas = null;
-  let ctx = null;
-  let W = 0;
-  let H = 0;
-  for (let ti = 0; ti < sizeTry.length; ti++) {
-    W = sizeTry[ti];
-    H = sizeTry[ti];
-    canvas = quirksCreateExportCanvas(W, H);
-    if (canvas.width !== W || canvas.height !== H) {
-      canvas = null;
-      continue;
-    }
-    ctx = canvas.getContext("2d");
-    if (!ctx) {
-      canvas = null;
-      continue;
-    }
-    break;
-  }
-  if (!ctx || !canvas) throw new Error("Canvas not supported.");
+  const { canvas, ctx, W, H, cellPx } = quirksTryCreateFlushSquareCellCanvas(
+    cols,
+    rows,
+    slots.length
+  );
   ctx.imageSmoothingEnabled = true;
   if ("imageSmoothingQuality" in ctx) {
     ctx.imageSmoothingQuality = "high";
   }
-  const cw = W / cols;
-  const ch = H / rows;
+  const cw = cellPx;
+  const ch = cellPx;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   const seenForCap = {};
@@ -1767,7 +1739,7 @@ async function quirksBuildGridCanvasFromSlots(
         );
       } else {
         const bg = "#ffffff";
-        quirksDrawCover(
+        quirksDrawContain(
           ctx,
           loadedSlots[i] || null,
           cellR2.x,
@@ -2194,13 +2166,12 @@ function renderQuirksPreviewGrid(domPool) {
         if (!pbloImg) {
           pbloImg = document.createElement("img");
           pbloImg.src = getQuirksPbloImageUrl();
-          pbloImg.referrerPolicy = "strict-origin-when-cross-origin";
           pbloImg.addEventListener(
             "error",
             () => {
               if (pbloImg.getAttribute("data-quirks-pblo-fb") === "1") return;
               pbloImg.setAttribute("data-quirks-pblo-fb", "1");
-              pbloImg.src = "pblo.png";
+              pbloImg.src = getQuirksPbloImageUrl() + "?r=1";
             },
             { once: true }
           );
