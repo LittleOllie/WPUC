@@ -418,13 +418,63 @@ function quirksComputeGrid(totalCells) {
   return { cols, rows };
 }
 
+/**
+ * Grouped layout uses width-2 units (Quirkie + QuirkKid). An odd column count leaves a
+ * permanent empty grid track on every row of pairs; use an even column count near √n
+ * (round down when ceil is odd so we stay closer to square, e.g. 9 → 8 not 10).
+ */
+function quirksGroupedGridColumnCount(totalW) {
+  const n = Math.max(1, totalW);
+  let c = Math.max(2, Math.ceil(Math.sqrt(n)));
+  if (c % 2 === 1) c = Math.max(2, c - 1);
+  return c;
+}
+
+function quirksRowUsedWidth(row) {
+  let s = 0;
+  for (let i = 0; i < row.length; i++) s += row[i].width;
+  return s;
+}
+
+/**
+ * Pull units from the next row into slack width so the preview grid does not show empty
+ * column tracks mid-grid (user OK with order shifting slightly across row boundaries).
+ */
+function quirksCompactPackedRows(rows, cols) {
+  const out = rows.map((r) => r.slice());
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < out.length - 1; i++) {
+      let used = quirksRowUsedWidth(out[i]);
+      while (used < cols) {
+        if (i + 1 >= out.length) break;
+        const nxt = out[i + 1];
+        if (!nxt.length) {
+          out.splice(i + 1, 1);
+          changed = true;
+          continue;
+        }
+        const j = nxt.findIndex((u) => used + u.width <= cols);
+        if (j === -1) break;
+        const u = nxt.splice(j, 1)[0];
+        out[i].push(u);
+        used += u.width;
+        changed = true;
+        if (!nxt.length) out.splice(i + 1, 1);
+      }
+    }
+  }
+  return out.filter((r) => r.length > 0);
+}
+
 function quirksItemIdStr(it) {
   return String(it.tokenId != null ? it.tokenId : "");
 }
 
 /**
- * Build horizontal layout units from the existing paired sequence (quirksPairing output).
- * Triple: Quirkie + QuirkKid + Quirkling; pair: Quirkie + Quirkling or lone Quirkie + QuirkKid.
+ * Build horizontal layout units from grouped sequence (quirksPairing output).
+ * Width-2: Quirkie + QuirkKid when both appear back-to-back for the same token id.
  */
 function buildLayoutUnitsFromGroupedSequence(items) {
   const out = [];
@@ -434,25 +484,7 @@ function buildLayoutUnitsFromGroupedSequence(items) {
     const k = it.kind;
     const id = quirksItemIdStr(it);
     const next = items[i + 1];
-    const next2 = items[i + 2];
     const idNext = next ? quirksItemIdStr(next) : "";
-    const idNext2 = next2 ? quirksItemIdStr(next2) : "";
-    if (
-      k === "quirkie-pair" &&
-      next?.kind === "quirkkid-pair" &&
-      next2?.kind === "quirking-pair" &&
-      id === idNext &&
-      id === idNext2
-    ) {
-      out.push({ type: "triple", width: 3, items: [it, next, next2] });
-      i += 3;
-      continue;
-    }
-    if (k === "quirkie-pair" && next?.kind === "quirking-pair" && id === idNext) {
-      out.push({ type: "pair", width: 2, items: [it, next] });
-      i += 2;
-      continue;
-    }
     if (k === "quirkie-lone" && next?.kind === "quirkkid-lone" && id === idNext) {
       out.push({ type: "pair", width: 2, items: [it, next] });
       i += 2;
@@ -489,14 +521,14 @@ function packLayoutUnitsIntoRows(units, cols) {
     used += w;
   }
   if (row.length) rows.push(row);
-  return rows;
+  return quirksCompactPackedRows(rows, cols);
 }
 
 function quirksRepackGroupedUnits() {
   const st = quirksEditorState;
   if (!st || st.mode !== "grouped" || !Array.isArray(st.units)) return;
   const totalW = st.units.reduce((s, u) => s + u.width, 0);
-  const cols = Math.max(3, Math.ceil(Math.sqrt(totalW)));
+  const cols = quirksGroupedGridColumnCount(totalW);
   st.packed = packLayoutUnitsIntoRows(st.units, cols);
   st.cols = cols;
   st.rows = st.packed.length;
@@ -734,7 +766,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   ) {
     const units = buildLayoutUnitsFromGroupedSequence(sortedItems);
     const totalW = units.reduce((s, u) => s + u.width, 0);
-    const cols = Math.max(3, Math.ceil(Math.sqrt(totalW)));
+    const cols = quirksGroupedGridColumnCount(totalW);
     const packed = packLayoutUnitsIntoRows(units, cols);
     quirksEditorState = {
       mode: "grouped",

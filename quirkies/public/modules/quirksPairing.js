@@ -1,8 +1,9 @@
 /**
  * Quirks Builder — pairing rules (isolated module).
- * - Quirkies + Quirklings pair when tokenId ≤ PAIR_MAX_TOKEN_ID and both exist.
- * - Quirklings with tokenId > PAIR_MAX_TOKEN_ID are never paired (high-id unmatched).
- * - INX attaches to a pair row when the wallet holds INX with the same tokenId (optional).
+ * - Quirkies + QuirkKids stay together per tokenId (same Quirkie entry / kid art).
+ * - Quirklings are never paired with Quirkies — they render as their own tiles (cleaner grid).
+ * - Quirklings with tokenId > PAIR_MAX_TOKEN_ID are listed after low-id Quirklings.
+ * - INX: all wallet INX are emitted after Quirkie/Quirkling blocks (no “pair row” attachment).
  * - QuirkKid: companion art on Quirkies (metadata / optional matching collection).
  */
 
@@ -77,15 +78,6 @@ export function pairQuirksWalletData(walletPayload) {
   const inxList = normList(walletPayload?.inx);
 
   const maxPair = BigInt(PAIR_MAX_TOKEN_ID);
-  const inxById = new Map();
-  for (const x of inxList) {
-    inxById.set(idStr(x), x);
-  }
-
-  const qById = new Map();
-  for (const q of quirkies) {
-    qById.set(idStr(q), q);
-  }
 
   const pairs = [];
   const unmatchedQuirklingsHigh = [];
@@ -97,40 +89,12 @@ export function pairQuirksWalletData(walletPayload) {
     if (bi == null) continue;
     if (bi > maxPair) {
       unmatchedQuirklingsHigh.push(ql);
-      continue;
-    }
-    const q = qById.get(sid);
-    if (q) {
-      pairs.push({
-        tokenId: sid,
-        quirkie: q,
-        quirking: ql,
-        inx: inxById.get(sid) || null,
-      });
     } else {
       unmatchedQuirklingsMissingQuirkie.push(ql);
     }
   }
 
-  const pairedQuirkieIds = new Set(pairs.map((p) => p.tokenId));
-  const loneQuirkies = [];
-  for (const q of quirkies) {
-    const sid = idStr(q);
-    if (!pairedQuirkieIds.has(sid)) {
-      loneQuirkies.push(q);
-    }
-  }
-
-  pairs.sort((a, b) => {
-    const ba = parseIdBigint(a.tokenId);
-    const bb = parseIdBigint(b.tokenId);
-    if (ba != null && bb != null) {
-      if (ba < bb) return -1;
-      if (ba > bb) return 1;
-      return 0;
-    }
-    return String(a.tokenId).localeCompare(String(b.tokenId));
-  });
+  const loneQuirkies = quirkies.slice();
 
   loneQuirkies.sort((a, b) => {
     const ba = parseIdBigint(a.tokenId);
@@ -165,14 +129,7 @@ export function pairQuirksWalletData(walletPayload) {
     return idStr(a).localeCompare(idStr(b));
   });
 
-  /** INX with no pair row (no Quirkie+Quirkling pair for that token id). */
-  const unmatchedInx = [];
-  for (const x of inxList) {
-    const sid = idStr(x);
-    if (!pairedQuirkieIds.has(sid)) {
-      unmatchedInx.push(x);
-    }
-  }
+  const unmatchedInx = inxList.slice();
   unmatchedInx.sort((a, b) => {
     const ba = parseIdBigint(a.tokenId);
     const bb = parseIdBigint(b.tokenId);
@@ -204,7 +161,7 @@ function shuffleInPlace(arr) {
 }
 
 /**
- * Random order while keeping pair triples / pair rows contiguous when flattened.
+ * Random order while keeping Quirkie + QuirkKid back-to-back for the same token id.
  */
 export function shuffleQuirksPairing(pairing) {
   return {
@@ -261,7 +218,7 @@ function compareTokenIdStr(a, b) {
 
 /**
  * Sort pairing buckets by trait (canonical key on each entry’s traits), then token id.
- * Applies to matched pairs (Quirkie traits), lone Quirkies, and unmatched Quirklings
+ * Applies to lone Quirkies, Quirklings (their own traits), and INX
  * (quirking metadata), so trait layout works for Group sets, sections, and grouped units.
  */
 export function sortPairingByQuirkieTrait(pairing, traitKey) {
@@ -368,25 +325,16 @@ function buildQuirksGridSequenceSections(pairing, opts, cap) {
   const out = [];
 
   if (wantQuirkies) {
-    for (const p of pairing.pairs) {
-      pushIfImage(out, p.quirkie, "quirkie-section");
-    }
     for (const q of pairing.loneQuirkies) {
       pushIfImage(out, q, "quirkie-section");
     }
   }
   if (wantQuirkKid) {
-    for (const p of pairing.pairs) {
-      pushKidIfPresent(out, p.quirkie, "quirkkid-section");
-    }
     for (const q of pairing.loneQuirkies) {
       pushKidIfPresent(out, q, "quirkkid-section");
     }
   }
   if (wantQuirklings) {
-    for (const p of pairing.pairs) {
-      pushIfImage(out, p.quirking, "quirking-section");
-    }
     for (const ql of pairing.unmatchedQuirklingsMissingQuirkie) {
       pushIfImage(out, ql, "quirking-section");
     }
@@ -395,9 +343,6 @@ function buildQuirksGridSequenceSections(pairing, opts, cap) {
     }
   }
   if (wantInx) {
-    for (const p of pairing.pairs) {
-      if (p.inx && p.inx.image) pushIfImage(out, p.inx, "inx-section");
-    }
     for (const x of pairing.unmatchedInx || []) {
       pushIfImage(out, x, "inx-section");
     }
@@ -407,8 +352,8 @@ function buildQuirksGridSequenceSections(pairing, opts, cap) {
 }
 
 /**
- * Build ordered grid items: paired blocks (quirkie → optional quirkkid → quirking → optional INX),
- * then per-ID lone quirkies (quirkie → quirkkid when both selected), then low-ID unmatched quirklings, then high-ID quirklings.
+ * Build ordered grid items: per Quirkie (quirkie → optional quirkkid when both selected),
+ * then low-ID Quirklings, then high-ID Quirklings, then all INX.
  */
 export function buildQuirksGridSequence(pairing, opts, maxTiles) {
   const cap = typeof maxTiles === "number" ? maxTiles : 100000;
@@ -426,14 +371,6 @@ export function buildQuirksGridSequence(pairing, opts, maxTiles) {
 
   const out = [];
 
-  for (const p of pairing.pairs) {
-    if (wantQuirkies) pushIfImage(out, p.quirkie, "quirkie-pair");
-    if (wantQuirkKid) pushKidIfPresent(out, p.quirkie, "quirkkid-pair");
-    if (wantQuirklings) pushIfImage(out, p.quirking, "quirking-pair");
-    if (wantInx && p.inx && p.inx.image) {
-      pushIfImage(out, p.inx, "inx");
-    }
-  }
   for (const q of pairing.loneQuirkies) {
     if (wantQuirkies) pushIfImage(out, q, "quirkie-lone");
     if (wantQuirkKid) pushKidIfPresent(out, q, "quirkkid-lone");

@@ -10,6 +10,8 @@ import {
 } from "./api.js";
 
 const DEV = window.location.hostname === "localhost";
+/** Max NFTs (including custom uploads) in one grid build / reorder. */
+const FLEX_GRID_MAX_NFTS = 900;
 const $ = (id) => document.getElementById(id);
 
 function getGridPrimary() {
@@ -3046,8 +3048,9 @@ function appendNewItemsToCurrentGridFromSelection() {
     denseCur.map((it) => getGridItemKey(it)).filter(Boolean)
   );
   let merged = getMergedSortedGridItems();
-  const HARD_CAP = 600;
-  if (merged.length > HARD_CAP) merged = merged.slice(0, HARD_CAP);
+  if (merged.length > FLEX_GRID_MAX_NFTS) {
+    merged = merged.slice(0, FLEX_GRID_MAX_NFTS);
+  }
   const additions = merged.filter((it) => !keys.has(getGridItemKey(it)));
   if (!additions.length) return false;
   state.currentGridItems = denseCur.concat(additions);
@@ -3380,8 +3383,9 @@ function buildGrid() {
 
   let items = getMergedSortedGridItems();
 
-  const HARD_CAP = 600;
-  if (items.length > HARD_CAP) items = items.slice(0, HARD_CAP);
+  if (items.length > FLEX_GRID_MAX_NFTS) {
+    items = items.slice(0, FLEX_GRID_MAX_NFTS);
+  }
 
   const requestedLayout = state.selectedLayout || "classic";
   const layoutId = resolveBuildLayoutId(items.length, requestedLayout);
@@ -3450,8 +3454,9 @@ function reorderGrid() {
   if (!hasItemsForBuild()) return;
 
   let items = getMergedSortedGridItems();
-  const HARD_CAP = 600;
-  if (items.length > HARD_CAP) items = items.slice(0, HARD_CAP);
+  if (items.length > FLEX_GRID_MAX_NFTS) {
+    items = items.slice(0, FLEX_GRID_MAX_NFTS);
+  }
 
   const meta = state.gridLayoutMeta;
   if (meta?.mode === "template" && meta.layoutId) {
