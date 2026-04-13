@@ -100,19 +100,36 @@
         <div class="lookup-shell__body" id="lookup-shell-body">
           <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
             <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
-            <label class="field-label" for="wallet-input">Wallet address(es)</label>
+            <label class="field-label" for="wallet-input">Wallet address</label>
+            <div id="wallet-rows" class="wallet-rows">
+              <div class="wallet-row">
+                <input
+                  type="text"
+                  id="wallet-input"
+                  class="wallet-row__input"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="0x…"
+                />
+                <button
+                  type="button"
+                  class="wallet-row__remove"
+                  hidden
+                  aria-label="Remove wallet"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <p class="wallet-add-wrap">
+              <button type="button" id="add-wallet-btn" class="btn-add-wallet">
+                + Add another wallet
+              </button>
+            </p>
             <div class="input-row">
-              <textarea
-                id="wallet-input"
-                class="wallet-input-multiline"
-                rows="3"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="0x…&#10;0x… (one per line, or comma / space separated — up to 12)"
-              ></textarea>
               <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet(s)</button>
             </div>
-            <p class="hint">Combined view: holdings from every address are merged (same token ID is not duplicated).</p>
+            <p class="hint">Combined view: holdings from every address are merged (same token ID is not duplicated). You can paste several addresses into one field (comma or space separated) or add rows — up to 12.</p>
             <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
           </section>
 
