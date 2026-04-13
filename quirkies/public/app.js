@@ -48,6 +48,20 @@ function formatTokenId(t) {
   return String(t);
 }
 
+/** True if token lookup has at least one image the FLECKS grid can use. */
+function tokenLookupHasGridableImages(data) {
+  if (!data) return false;
+  var q = data.quirkie;
+  var ql = data.quirking;
+  var ix = data.inx;
+  return !!(
+    (q && q.image) ||
+    (q && q.kidImage) ||
+    (ql && ql.image) ||
+    (ix && ix.image)
+  );
+}
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -58,6 +72,16 @@ function escapeHtml(s) {
 
 function escapeAttr(s) {
   return escapeHtml(s).replace(/'/g, "&#39;");
+}
+
+function openSeaEthereumItem(contract, tokenId) {
+  if (!contract || tokenId === undefined || tokenId === null) return null;
+  return (
+    "https://opensea.io/item/ethereum/" +
+    String(contract).toLowerCase() +
+    "/" +
+    encodeURIComponent(String(tokenId))
+  );
 }
 
 function setStatus(el, type, message) {
@@ -211,47 +235,105 @@ function osBtn(href, label) {
   );
 }
 
+/** Full-width OpenSea link under a wallet thumbnail (matches column width). */
+function osBtnFull(href, label) {
+  if (!href) {
+    return (
+      '<span class="btn-secondary btn-secondary--wallet-col btn-secondary--disabled">' +
+      escapeHtml(label) +
+      "</span>"
+    );
+  }
+  return (
+    '<a class="btn-secondary btn-secondary--wallet-col" href="' +
+    escapeHtml(href) +
+    '" target="_blank" rel="noopener noreferrer">' +
+    escapeHtml(label) +
+    "</a>"
+  );
+}
+
+function walletCol(thumbInnerHtml, osActionHtml) {
+  return (
+    '<div class="wallet-col">' +
+    '<div class="wallet-col__thumb">' +
+    thumbInnerHtml +
+    "</div>" +
+    '<div class="wallet-col__os">' +
+    (osActionHtml || "") +
+    "</div>" +
+    "</div>"
+  );
+}
+
 function renderCounterpartSlot(missingLabel, openseaNft, counterpartImageUrl, altForImage, meta) {
-  var findBtn = openseaNft
-    ? '<a class="nft-thumb__find" href="' +
-      escapeHtml(openseaNft) +
-      '" target="_blank" rel="noopener noreferrer">Open on OpenSea</a>'
-    : '<span class="nft-thumb__find nft-thumb__find--disabled">OpenSea</span>';
+  var findBlock = osBtnFull(openseaNft, "Open on OpenSea");
+  meta = Object.assign({}, meta || {});
+  if (altForImage) meta.alt = altForImage;
+  meta.isExternalMatch = true;
 
   var visual = "";
   var NL = typeof window !== "undefined" && window.NftImageLoader;
-  if (counterpartImageUrl && NL && typeof NL.counterpartThumbHtml === "function") {
-    visual = NL.counterpartThumbHtml(
-      counterpartImageUrl,
-      altForImage || "NFT",
-      meta || {}
-    );
-  } else if (counterpartImageUrl) {
-    visual =
-      '<div class="nft-thumb__counterpart-visual is-loaded">' +
-      '<img class="nft-thumb__counterpart-img" src="' +
-      escapeAttr(String(counterpartImageUrl)) +
-      '" alt="' +
-      escapeAttr(altForImage || "NFT") +
-      '" loading="lazy" decoding="async" referrerpolicy="no-referrer" />' +
-      '<div class="nft-thumb-fallback" aria-hidden="true">No image</div>' +
-      "</div>";
+  var hasCounterUrl =
+    counterpartImageUrl && String(counterpartImageUrl).trim() !== "";
+  if (hasCounterUrl) {
+    if (NL && typeof NL.counterpartThumbHtml === "function") {
+      visual = NL.counterpartThumbHtml(
+        counterpartImageUrl,
+        altForImage || "NFT",
+        meta || {}
+      );
+    } else {
+      visual =
+        '<div class="nft-thumb__counterpart-visual is-loaded">' +
+        '<img class="nft-thumb__counterpart-img" src="' +
+        escapeAttr(String(counterpartImageUrl)) +
+        '" alt="' +
+        escapeAttr(altForImage || "NFT") +
+        '" loading="lazy" decoding="async" referrerpolicy="no-referrer"' +
+        ' onload="window.__nftImgLoad(this)" onerror="window.__nftImgErr(this)" />' +
+        '<div class="nft-thumb-fallback" aria-hidden="true">' +
+        '<span class="nft-thumb-fallback__msg">No image</span>' +
+        '<button type="button" class="nft-thumb__retry">Retry</button>' +
+        "</div>" +
+        "</div>";
+    }
   }
   if (!visual) {
-    visual =
-      '<div class="nft-thumb__counterpart-visual nft-thumb__counterpart-visual--empty">' +
-      '<span class="nft-thumb-fallback">No preview</span></div>';
+    if (NL && typeof NL.counterpartFetchShellHtml === "function") {
+      visual = NL.counterpartFetchShellHtml(meta);
+    } else {
+      visual =
+        '<div class="nft-thumb__counterpart-visual nft-thumb__counterpart-visual--empty">' +
+        '<span class="nft-thumb-fallback">No preview</span></div>';
+    }
   }
 
+  var dbgCol = meta.collection ? escapeAttr(String(meta.collection)) : "";
+  var dbgTid =
+    meta.tokenId != null ? escapeAttr(String(meta.tokenId)) : "";
+  var dbgData =
+    (dbgCol ? ' data-debug-counterpart-collection="' + dbgCol + '"' : "") +
+    (dbgTid ? ' data-debug-counterpart-token-id="' + dbgTid + '"' : "");
+
   return (
-    '<div class="nft-thumb nft-thumb--counterpart" data-counterpart-slot tabindex="0" role="group" aria-label="' +
+    '<div class="wallet-col wallet-col--counterpart">' +
+    '<div class="wallet-col__thumb">' +
+    '<div class="nft-thumb nft-thumb--counterpart nft-thumb--counterpartExternal" data-counterpart-slot data-counterpart-owned="0"' +
+    dbgData +
+    ' tabindex="0" role="group" aria-label="' +
     escapeAttr(missingLabel) +
     '">' +
     visual +
     '<span class="nft-thumb__counterpart-label">' +
     escapeHtml(missingLabel) +
     "</span>" +
-    findBtn +
+    '<button type="button" class="nft-thumb__retry nft-thumb__retry--slot-action" aria-label="Retry loading this preview">Retry</button>' +
+    "</div>" +
+    "</div>" +
+    '<div class="wallet-col__os">' +
+    findBlock +
+    "</div>" +
     "</div>"
   );
 }
@@ -259,47 +341,54 @@ function renderCounterpartSlot(missingLabel, openseaNft, counterpartImageUrl, al
 function renderMatchedCard(item, ctx) {
   var tid = formatTokenId(item.tokenId);
   var c = (ctx && ctx.contracts) || {};
-  var inxBlock = "";
-  if (item.inx && item.inx.image) {
-    inxBlock = thumbHtml(item.inx.image, "INX " + tid, {
-      contract: c.inx,
-      tokenId: tid,
-      imageIndex: ctx.nextImg(),
-    });
-  } else if (item.openseaInx) {
-    inxBlock =
-      '<div class="nft-thumb nft-thumb--empty"><a class="nft-thumb__find" href="' +
-      escapeHtml(item.openseaInx) +
-      '" target="_blank" rel="noopener">INX on OpenSea</a></div>';
-  }
-  var links =
-    '<p class="wallet-card__links">' +
-    osBtn(item.openseaQuirkie, "Quirkie") +
-    " " +
-    osBtn(item.openseaQuirkling, "Quirkling") +
-    (item.openseaInx ? " " + osBtn(item.openseaInx, "INX") : "") +
-    "</p>";
-  return (
-    '<article class="wallet-card wallet-card--ok">' +
-    '<div class="wallet-card__visuals">' +
+  var qCol = walletCol(
     thumbHtml(item.quirkie && item.quirkie.image, "Quirkie " + tid, {
       contract: c.quirkies,
       tokenId: tid,
       imageIndex: ctx.nextImg(),
-    }) +
+    }),
+    osBtnFull(item.openseaQuirkie, "Quirkie")
+  );
+  var qlCol = walletCol(
     thumbHtml(item.quirking && item.quirking.image, "Quirkling " + tid, {
       contract: c.quirklings,
       tokenId: tid,
       imageIndex: ctx.nextImg(),
-    }) +
-    (inxBlock || "") +
+    }),
+    osBtnFull(item.openseaQuirkling, "Quirkling")
+  );
+  var inxCol = "";
+  if (item.inx && item.inx.image) {
+    inxCol = walletCol(
+      thumbHtml(item.inx.image, "INX " + tid, {
+        contract: c.inx,
+        tokenId: tid,
+        imageIndex: ctx.nextImg(),
+      }),
+      osBtnFull(item.openseaInx, "INX")
+    );
+  } else if (item.openseaInx) {
+    inxCol = walletCol(
+      '<div class="nft-thumb nft-thumb--empty"><span class="nft-thumb-fallback">No INX in wallet</span></div>',
+      osBtnFull(item.openseaInx, "INX")
+    );
+  }
+  var visualsClass =
+    "wallet-card__visuals" + (inxCol ? " wallet-card__visuals--triple" : "");
+  return (
+    '<article class="wallet-card wallet-card--ok">' +
+    '<div class="' +
+    visualsClass +
+    '">' +
+    qCol +
+    qlCol +
+    inxCol +
     "</div>" +
     '<div class="wallet-card__body">' +
     '<p class="wallet-card__id">#' +
     escapeHtml(tid) +
     "</p>" +
-    '<p class="wallet-card__badge wallet-card__badge--ok">✅ Matched pair</p>' +
-    links +
+    '<p class="wallet-card__badge wallet-card__badge--ok">\u2705 Matched pair</p>' +
     "</div>" +
     "</article>"
   );
@@ -311,19 +400,23 @@ function renderMissingQuirkieCard(item, ctx) {
   return (
     '<article class="wallet-card wallet-card--info">' +
     '<div class="wallet-card__visuals">' +
-    thumbHtml(item.quirking && item.quirking.image, "Quirkling " + tid, {
-      contract: c.quirklings,
-      tokenId: tid,
-      imageIndex: ctx.nextImg(),
-    }) +
+    walletCol(
+      thumbHtml(item.quirking && item.quirking.image, "Quirkling " + tid, {
+        contract: c.quirklings,
+        tokenId: tid,
+        imageIndex: ctx.nextImg(),
+      }),
+      osBtnFull(item.openseaQuirkling, "Quirkling")
+    ) +
     renderCounterpartSlot(
-      "Quirkie #" + tid + " (missing)",
+      "Quirkie #" + tid + " (not in wallet)",
       item.openseaNft || item.openseaQuirkie,
       item.counterpartImage,
       "Quirkie " + tid,
       {
-        contract: c.quirkies,
+        contract: item.counterpartContract || c.quirkies,
         tokenId: tid,
+        collection: item.counterpartCollection || "quirkies",
         imageIndex: ctx.nextImg(),
       }
     ) +
@@ -333,7 +426,6 @@ function renderMissingQuirkieCard(item, ctx) {
     escapeHtml(tid) +
     "</p>" +
     '<p class="wallet-card__badge wallet-card__badge--extra">Quirkling without Quirkie</p>' +
-    '<p class="wallet-card__links">' + osBtn(item.openseaQuirkling, "Your Quirkling") + "</p>" +
     "</div>" +
     "</article>"
   );
@@ -345,19 +437,23 @@ function renderLoneQuirkieCard(item, ctx) {
   return (
     '<article class="wallet-card wallet-card--warn">' +
     '<div class="wallet-card__visuals">' +
-    thumbHtml(item.quirkie && item.quirkie.image, "Quirkie " + tid, {
-      contract: c.quirkies,
-      tokenId: tid,
-      imageIndex: ctx.nextImg(),
-    }) +
+    walletCol(
+      thumbHtml(item.quirkie && item.quirkie.image, "Quirkie " + tid, {
+        contract: c.quirkies,
+        tokenId: tid,
+        imageIndex: ctx.nextImg(),
+      }),
+      osBtnFull(item.openseaQuirkie, "Quirkie")
+    ) +
     renderCounterpartSlot(
-      "Quirkling #" + tid + " (missing)",
+      "Quirkling #" + tid + " (not in wallet)",
       item.openseaNft || item.openseaQuirkling,
       item.counterpartImage,
       "Quirkling " + tid,
       {
-        contract: c.quirklings,
+        contract: item.counterpartContract || c.quirklings,
         tokenId: tid,
+        collection: item.counterpartCollection || "quirklings",
         imageIndex: ctx.nextImg(),
       }
     ) +
@@ -367,7 +463,6 @@ function renderLoneQuirkieCard(item, ctx) {
     escapeHtml(tid) +
     "</p>" +
     '<p class="wallet-card__badge wallet-card__badge--bad">Quirkie without Quirkling</p>' +
-    '<p class="wallet-card__links">' + osBtn(item.openseaQuirkie, "Your Quirkie") + "</p>" +
     "</div>" +
     "</article>"
   );
@@ -379,11 +474,14 @@ function renderHighQuirklingCard(item, ctx) {
   return (
     '<article class="wallet-card wallet-card--nocert">' +
     '<div class="wallet-card__visuals wallet-card__visuals--single">' +
-    thumbHtml(item.quirking && item.quirking.image, "Quirkling " + tid, {
-      contract: c.quirklings,
-      tokenId: tid,
-      imageIndex: ctx.nextImg(),
-    }) +
+    walletCol(
+      thumbHtml(item.quirking && item.quirking.image, "Quirkling " + tid, {
+        contract: c.quirklings,
+        tokenId: tid,
+        imageIndex: ctx.nextImg(),
+      }),
+      osBtnFull(item.openseaQuirkling, "Quirkling")
+    ) +
     "</div>" +
     '<div class="wallet-card__body">' +
     '<p class="wallet-card__id">#' +
@@ -391,7 +489,6 @@ function renderHighQuirklingCard(item, ctx) {
     "</p>" +
     '<p class="wallet-card__badge wallet-card__badge--nocert">Unpaired range</p>' +
     '<p class="wallet-card__meta">Quirklings with ID above 5000 are not paired with Quirkies by ID.</p>' +
-    '<p class="wallet-card__links">' + osBtn(item.openseaQuirkling, "OpenSea") + "</p>" +
     "</div>" +
     "</article>"
   );
@@ -403,18 +500,20 @@ function renderInxOnlyCard(item, ctx) {
   return (
     '<article class="wallet-card wallet-card--info">' +
     '<div class="wallet-card__visuals wallet-card__visuals--single">' +
-    thumbHtml(item.inx && item.inx.image, "INX " + tid, {
-      contract: c.inx,
-      tokenId: tid,
-      imageIndex: ctx.nextImg(),
-    }) +
+    walletCol(
+      thumbHtml(item.inx && item.inx.image, "INX " + tid, {
+        contract: c.inx,
+        tokenId: tid,
+        imageIndex: ctx.nextImg(),
+      }),
+      osBtnFull(item.openseaInx, "INX")
+    ) +
     "</div>" +
     '<div class="wallet-card__body">' +
     '<p class="wallet-card__id">#' +
     escapeHtml(tid) +
     "</p>" +
     '<p class="wallet-card__badge wallet-card__badge--extra">INX (no matched pair in wallet)</p>' +
-    '<p class="wallet-card__links">' + osBtn(item.openseaInx, "INX on OpenSea") + "</p>" +
     "</div>" +
     "</article>"
   );
@@ -579,6 +678,7 @@ function renderWalletResults(container, data) {
     try {
       window.__quirksWalletPayload = null;
       window.__quirksWalletPayloadAddress = null;
+      window.__quirksWalletContracts = {};
     } catch (e) {
       /* ignore */
     }
@@ -602,7 +702,10 @@ function renderWalletResults(container, data) {
     '<button type="button" class="filter-btn" data-filter="high-quirkling" role="tab" aria-pressed="false">High ID</button>' +
     '<button type="button" class="filter-btn" data-filter="inx-only" role="tab" aria-pressed="false">INX only</button>' +
     "</div>" +
-    '<div id="quirks-grid-actions" class="quirks-grid-actions"></div>';
+    '<div class="wallet-results-toolbar">' +
+    '<div id="quirks-grid-actions" class="quirks-grid-actions"></div>' +
+    '<button type="button" class="btn-secondary wallet-retry-missing-btn" id="wallet-retry-missing-btn">Retry missing images</button>' +
+    "</div>";
 
   html += '<div class="wallet-section-wrap" data-wallet-section="matched">';
   html += '<h3 class="section-title">Matched pairs (ID ≤ ' + escapeHtml(String(data.pairMaxTokenId != null ? data.pairMaxTokenId : 5000)) + ")</h3>";
@@ -695,6 +798,7 @@ function renderWalletResults(container, data) {
   try {
     window.__quirksWalletPayload = data;
     window.__quirksWalletPayloadAddress = String(data.wallet || "").toLowerCase();
+    window.__quirksWalletContracts = data.contracts || {};
   } catch (e) {
     /* ignore */
   }
@@ -709,6 +813,37 @@ function renderTokenResults(container, data) {
   var ix = data.inx;
   var contracts = data.contracts || {};
   var tokenImgSeq = 0;
+
+  function quirkKidCard(quirkieObj) {
+    if (!quirkieObj || !quirkieObj.kidImage) {
+      return (
+        '<article class="token-side token-side--quirkkid">' +
+        '<p class="token-side__label">QuirkKid</p>' +
+        '<p class="empty-hint">—</p></article>'
+      );
+    }
+    var owner = quirkieObj.owner;
+    return (
+      '<article class="token-side token-side--quirkkid">' +
+      thumbHtml(quirkieObj.kidImage, "QuirkKid " + tid, {
+        collection: "quirkkids",
+        tokenId: tid,
+        imageIndex: tokenImgSeq++,
+      }) +
+      '<h4 class="token-side__label">QuirkKid</h4>' +
+      '<p class="token-side__owner mono" title="' +
+      escapeAttr(owner || "") +
+      '">' +
+      escapeHtml(owner ? shortAddress(owner) : "—") +
+      "</p>" +
+      (quirkieObj.opensea
+        ? '<a class="btn-secondary" href="' +
+          escapeHtml(quirkieObj.opensea) +
+          '" target="_blank" rel="noopener noreferrer">Owner</a> '
+        : "") +
+      "</article>"
+    );
+  }
 
   function card(label, item, kind) {
     if (!item) {
@@ -780,11 +915,22 @@ function renderTokenResults(container, data) {
 
   var inxCard = ix ? card("INX", ix, "inx") : "";
 
+  var flecksToolbar = "";
+  if (tokenLookupHasGridableImages(data)) {
+    flecksToolbar =
+      '<div class="token-results-toolbar">' +
+      '<button type="button" class="btn-primary token-flecks-grid-btn" data-action="token-flecks-grid">Create FLECKS grid · this ID only</button>' +
+      '<p class="token-results-toolbar__hint">Opens the builder with only the art found for this token.</p>' +
+      "</div>";
+  }
+
   container.innerHTML =
     pairNote +
+    flecksToolbar +
     '<div class="token-pair">' +
     card("Quirkie", q, "quirkie") +
-    (data.inPairRange && ql ? card("Quirkling", ql, "quirking") : "") +
+    quirkKidCard(q) +
+    (data.inPairRange ? card("Quirkling", ql || null, "quirking") : "") +
     inxCard +
     "</div>" +
     verdict;
@@ -893,6 +1039,11 @@ async function findTokenMatch() {
   setGlobalLoading(true);
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
+  try {
+    window.__lastTokenLookupData = null;
+  } catch (e0) {
+    /* ignore */
+  }
 
   try {
     var res = await fetch(url, { method: "GET" });
@@ -914,6 +1065,11 @@ async function findTokenMatch() {
       throw new Error(errMsg);
     }
     setStatus(statusEl, "", "");
+    try {
+      window.__lastTokenLookupData = data;
+    } catch (e2) {
+      /* ignore */
+    }
     renderTokenResults(resultsEl, data);
   } catch (e) {
     var msg = e instanceof Error ? e.message : String(e);
@@ -931,7 +1087,8 @@ async function findTokenMatch() {
   walletResults.addEventListener("click", function (ev) {
     var slot = ev.target.closest("[data-counterpart-slot]");
     if (!slot || !walletResults.contains(slot)) return;
-    if (ev.target.closest("a.nft-thumb__find")) return;
+    if (ev.target.closest(".nft-thumb__retry")) return;
+    if (ev.target.closest(".wallet-col__os a")) return;
     slot.classList.toggle("is-revealed");
   });
 })();
@@ -946,6 +1103,43 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
   if (e.key === "Enter") findTokenMatch();
 });
 
+function setupRetryMissingImagesGlobal() {
+  document.addEventListener("click", function (ev) {
+    var wbtn = ev.target.closest("#wallet-retry-missing-btn");
+    if (wbtn) {
+      ev.preventDefault();
+      var wr = document.getElementById("wallet-results");
+      var NL = typeof window !== "undefined" && window.NftImageLoader;
+      if (NL && typeof NL.retryAllMissingNftImages === "function") {
+        NL.retryAllMissingNftImages(wr || document);
+      }
+      return;
+    }
+  });
+}
+
+function setupTokenFlecksGridFromSearch() {
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-action='token-flecks-grid']");
+    if (!btn) return;
+    var host = document.getElementById("token-results");
+    if (!host || !host.contains(btn)) return;
+    var d = window.__lastTokenLookupData;
+    if (!d) return;
+    var fn = window.__quirksOpenFlecksFromTokenSearch;
+    if (typeof fn === "function") {
+      fn(d);
+    } else {
+      var st = document.getElementById("token-status");
+      if (st) {
+        setStatus(st, "error", "FLECKS grid is still loading — try again in a moment.");
+      }
+    }
+  });
+}
+
 setupBackToMenu();
 setupWelcomeModal();
 setupLookupShell();
+setupRetryMissingImagesGlobal();
+setupTokenFlecksGridFromSearch();

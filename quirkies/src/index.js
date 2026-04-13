@@ -1,5 +1,11 @@
 /** Standalone Quirks checker — Quirkies × Quirklings (+ INX). Alchemy NFT API v3. */
 
+import {
+  dedupeInflight,
+  imageBufferToHttpResponse,
+  fallbackPngResponse,
+} from "./imageProxyUtils.js";
+
 function nftBaseUrl(apiKey) {
   return `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}`;
 }
@@ -111,12 +117,32 @@ function shouldProxyImageUrlForClient(u) {
  * @param {string | null | undefined} assetOrigin Request origin (e.g. https://….workers.dev).
  *  When the UI is on GitHub Pages, relative /api/img would hit the wrong host — always pass origin from fetch().
  */
-function proxiedImageUrlForClient(rawUrl, assetOrigin) {
+/**
+ * @param {string} rawUrl
+ * @param {string} assetOrigin
+ * @param {{ contract?: string, tokenId?: string | number, collection?: string } | null} [opts]
+ */
+function proxiedImageUrlForClient(rawUrl, assetOrigin, opts) {
   if (!rawUrl || typeof rawUrl !== "string") return null;
   const n = normalizeImageUrl(rawUrl.trim());
   if (!n) return null;
   if (!shouldProxyImageUrlForClient(n)) return n;
-  const q = `?url=${encodeURIComponent(n)}`;
+  let q = `?url=${encodeURIComponent(n)}`;
+  if (opts && typeof opts === "object") {
+    if (opts.contract && String(opts.contract).trim()) {
+      q += `&contract=${encodeURIComponent(String(opts.contract).trim())}`;
+    }
+    if (
+      opts.tokenId !== undefined &&
+      opts.tokenId !== null &&
+      String(opts.tokenId).trim() !== ""
+    ) {
+      q += `&tokenId=${encodeURIComponent(String(opts.tokenId).trim())}`;
+    }
+    if (opts.collection && String(opts.collection).trim()) {
+      q += `&collection=${encodeURIComponent(String(opts.collection).trim())}`;
+    }
+  }
   if (assetOrigin && typeof assetOrigin === "string") {
     const base = assetOrigin.replace(/\/$/, "");
     return `${base}/api/img${q}`;
@@ -559,17 +585,18 @@ const IPFS_GATEWAYS = [
   "https://ipfs.io/ipfs/",
 ];
 
-const IMG_PROXY_TIMEOUT_MS = 5500;
+/** Per-gateway attempt budget (slow IPFS often needs >4.5s). Keep in sync with public IMG_PROBE_TIMEOUT_MS. */
+const IMG_PROXY_TIMEOUT_MS = 12000;
 const IMG_PROXY_MAX_BYTES = 25 * 1024 * 1024;
 const IMG_PROXY_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
-const CF_CACHE_FETCH = { cacheEverything: true, cacheTtl: 86400 };
+const IMG_EDGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 function fullyDecodeUrlParam(raw) {
   let s = String(raw || "").trim();
   if (!s) return "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     try {
       const next = decodeURIComponent(s);
       if (next === s) break;
@@ -650,7 +677,6 @@ async function fetchWithImgTimeout(resource, timeoutMs) {
       redirect: "follow",
       headers: imgProxyHeadersForUrl(resource),
       signal: controller.signal,
-      cf: CF_CACHE_FETCH,
     });
     clearTimeout(id);
     return res;
@@ -663,6 +689,20 @@ async function fetchWithImgTimeout(resource, timeoutMs) {
 async function tryIpfsGateways(ipfsPath) {
   const path = sanitizeIpfsPathForGateway(ipfsPath);
   if (!path) return null;
+  const urls = IPFS_GATEWAYS.map((g) => g + path);
+  const attempts = urls.map((url) =>
+    fetchWithImgTimeout(url, IMG_PROXY_TIMEOUT_MS).then((res) => {
+      if (isOkImageResponse(res)) return res;
+      throw new Error("bad");
+    })
+  );
+  if (typeof Promise.any === "function") {
+    try {
+      return await Promise.any(attempts);
+    } catch {
+      return null;
+    }
+  }
   for (const gateway of IPFS_GATEWAYS) {
     const url = gateway + path;
     try {
@@ -706,7 +746,7 @@ async function fetchHttpsImage(decodedUrl) {
   return null;
 }
 
-async function handleImageProxy(request, ctx) {
+async function handleImageProxy(request, ctx, env) {
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: "GET" });
   try {
@@ -733,40 +773,46 @@ async function handleImageProxy(request, ctx) {
     });
   }
 
-  const ipfsPath = normalizeIPFSPathFromUrl(decodedUrl);
-  let originRes = null;
-  if (ipfsPath) {
-    originRes = await tryDirectThenGateways(decodedUrl, ipfsPath);
-  } else {
-    originRes = await fetchHttpsImage(decodedUrl);
-  }
-
-  if (!originRes || !originRes.ok) {
-    return new Response("Image not found", {
-      status: 404,
-      headers: { ...corsHeaders(), "Content-Type": "text/plain; charset=utf-8" },
-    });
-  }
-
-  const ct =
-    originRes.headers.get("Content-Type")?.split(";")[0].trim() ||
-    "image/png";
-  const headers = new Headers();
-  headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-  headers.set("Cache-Control", "public, max-age=86400");
-  headers.set("Content-Type", ct);
-  const len = originRes.headers.get("Content-Length");
-  if (len) headers.set("Content-Length", len);
-
-  const out = new Response(originRes.body, { status: 200, headers });
+  const dedupeKey = `url:${decodedUrl.slice(0, 512)}`;
 
   try {
-    if (ctx?.waitUntil) ctx.waitUntil(cache.put(cacheKey, out.clone()));
-  } catch {
-    /* ignore */
+    const fetched = await dedupeInflight(dedupeKey, async () => {
+      const ipfsPath = normalizeIPFSPathFromUrl(decodedUrl);
+      let originRes = null;
+      if (ipfsPath) {
+        originRes = await tryDirectThenGateways(decodedUrl, ipfsPath);
+      } else {
+        originRes = await fetchHttpsImage(decodedUrl);
+      }
+      if (!originRes || !originRes.ok) return null;
+
+      const ct =
+        originRes.headers.get("Content-Type")?.split(";")[0].trim() ||
+        "image/png";
+      const buf = await originRes.arrayBuffer();
+      if (buf.byteLength > IMG_PROXY_MAX_BYTES) return null;
+
+      return { buffer: buf, contentType: ct };
+    });
+
+    if (fetched && fetched.buffer) {
+      const out = imageBufferToHttpResponse(
+        fetched.buffer,
+        fetched.contentType,
+        IMG_EDGE_CACHE_CONTROL
+      );
+      try {
+        if (ctx?.waitUntil) ctx.waitUntil(cache.put(cacheKey, out.clone()));
+      } catch {
+        /* ignore */
+      }
+      return out;
+    }
+  } catch (e) {
+    console.error("Image proxy fetch error", e);
   }
-  return out;
+
+  return fallbackPngResponse();
 }
 
 function normalizePath(pathname) {
@@ -868,13 +914,24 @@ function requireQuirksAlchemyEnv(env) {
   };
 }
 
-function rowFromCol(col, id, assetOrigin) {
+function rowFromCol(col, id, assetOrigin, mainContract) {
   const rawImg = col.idToImage.get(id) ?? null;
   const rawKid = col.idToKidImage?.get(id) ?? null;
+  const tidJson = tokenIdStrToJson(id);
   return {
-    tokenId: tokenIdStrToJson(id),
-    image: rawImg ? proxiedImageUrlForClient(rawImg, assetOrigin) : null,
-    kidImage: rawKid ? proxiedImageUrlForClient(rawKid, assetOrigin) : null,
+    tokenId: tidJson,
+    image: rawImg
+      ? proxiedImageUrlForClient(rawImg, assetOrigin, {
+          contract: mainContract,
+          tokenId: tidJson,
+        })
+      : null,
+    kidImage: rawKid
+      ? proxiedImageUrlForClient(rawKid, assetOrigin, {
+          collection: "quirkkids",
+          tokenId: tidJson,
+        })
+      : null,
     traits: col.idToTraits.get(id) ?? [],
   };
 }
@@ -897,7 +954,7 @@ export default {
     const path = normalizePath(url.pathname);
 
     if (path === "/api/img") {
-      return handleImageProxy(request, ctx);
+      return handleImageProxy(request, ctx, env);
     }
 
     if (path === "/api/nft-metadata") {
@@ -925,8 +982,14 @@ export default {
           return json({ error: "Metadata not found" }, 404);
         }
         const rawImage = extractImageFromMetadata(meta);
+        const tidNorm = tokenIdStrToJson(tokenIdStr);
         return json({
-          image: rawImage ? proxiedImageUrlForClient(rawImage, assetOrigin) : null,
+          image: rawImage
+            ? proxiedImageUrlForClient(rawImage, assetOrigin, {
+                contract,
+                tokenId: tidNorm,
+              })
+            : null,
           rawImage,
         });
       } catch (err) {
@@ -981,10 +1044,22 @@ export default {
         const qKidFromContract = await qKidContractPromise;
         if (qKidFromContract) qKid = qKidFromContract;
 
+        const tidNorm = tokenIdStrToJson(tid);
+
         const quirkie = {
           owner: qOwner,
-          image: qImg ? proxiedImageUrlForClient(qImg, assetOrigin) : null,
-          kidImage: qKid ? proxiedImageUrlForClient(qKid, assetOrigin) : null,
+          image: qImg
+            ? proxiedImageUrlForClient(qImg, assetOrigin, {
+                contract: QUIRKIES,
+                tokenId: tidNorm,
+              })
+            : null,
+          kidImage: qKid
+            ? proxiedImageUrlForClient(qKid, assetOrigin, {
+                collection: "quirkkids",
+                tokenId: tidNorm,
+              })
+            : null,
           opensea: qOwner ? `https://opensea.io/${qOwner}` : null,
           openseaNft: openseaEthereumItemUrl(QUIRKIES, tid),
         };
@@ -993,7 +1068,12 @@ export default {
         if (inPairRange) {
           quirking = {
             owner: qlOwner,
-            image: qlImg ? proxiedImageUrlForClient(qlImg, assetOrigin) : null,
+            image: qlImg
+              ? proxiedImageUrlForClient(qlImg, assetOrigin, {
+                  contract: QUIRKLINGS,
+                  tokenId: tidNorm,
+                })
+              : null,
             opensea: qlOwner ? `https://opensea.io/${qlOwner}` : null,
             openseaNft: openseaEthereumItemUrl(QUIRKLINGS, tid),
           };
@@ -1006,7 +1086,12 @@ export default {
           const iImg = results[iOff + 1];
           inx = {
             owner: iOwner,
-            image: iImg ? proxiedImageUrlForClient(iImg, assetOrigin) : null,
+            image: iImg
+              ? proxiedImageUrlForClient(iImg, assetOrigin, {
+                  contract: INX,
+                  tokenId: tidNorm,
+                })
+              : null,
             opensea: iOwner ? `https://opensea.io/${iOwner}` : null,
             openseaNft: openseaEthereumItemUrl(INX, tid),
           };
@@ -1101,13 +1186,13 @@ export default {
         const inxSet = new Set(inxCol.idKeys);
 
         const quirkies = quirkiesCol.idKeys.map((id) =>
-          rowFromCol(quirkiesCol, id, assetOrigin)
+          rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES)
         );
         const quirklings = quirklingsCol.idKeys.map((id) =>
-          rowFromCol(quirklingsCol, id, assetOrigin)
+          rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS)
         );
         const inxList = inxCol.idKeys.map((id) =>
-          rowFromCol(inxCol, id, assetOrigin)
+          rowFromCol(inxCol, id, assetOrigin, INX)
         );
 
         const matched = [];
@@ -1121,12 +1206,12 @@ export default {
           if (bi > PAIR_MAX_TOKEN_ID) continue;
           if (!qlSet.has(id)) continue;
           const inxRow = inxSet.has(id)
-            ? rowFromCol(inxCol, id, assetOrigin)
+            ? rowFromCol(inxCol, id, assetOrigin, INX)
             : null;
           matched.push({
             tokenId: tokenIdStrToJson(id),
-            quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
-            quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+            quirkie: rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES),
+            quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
             inx: inxRow,
             openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
             openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
@@ -1194,13 +1279,20 @@ export default {
         );
         const missingQuirkie = missingQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaNft: missingQuirkieRows[i].openseaNft,
+          counterpartCollection: "quirkies",
+          counterpartContract: QUIRKIES,
           counterpartImage: proxiedImageUrlForClient(
             missingQuirkieRows[i].counterpartImage,
-            assetOrigin
+            assetOrigin,
+            {
+              contract: QUIRKIES,
+              tokenId: tokenIdStrToJson(id),
+              collection: "quirkies",
+            }
           ),
         }));
 
@@ -1217,25 +1309,32 @@ export default {
         );
         const loneQuirkies = loneQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
+          quirkie: rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaNft: loneQuirkieRows[i].openseaNft,
+          counterpartCollection: "quirklings",
+          counterpartContract: QUIRKLINGS,
           counterpartImage: proxiedImageUrlForClient(
             loneQuirkieRows[i].counterpartImage,
-            assetOrigin
+            assetOrigin,
+            {
+              contract: QUIRKLINGS,
+              tokenId: tokenIdStrToJson(id),
+              collection: "quirklings",
+            }
           ),
         }));
 
         const quirklingsHigh = highQuirklingIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
         }));
 
         const inxOnly = inxOnlyIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          inx: rowFromCol(inxCol, id, assetOrigin),
+          inx: rowFromCol(inxCol, id, assetOrigin, INX),
           openseaInx: INX ? openseaEthereumItemUrl(INX, id) : null,
         }));
 

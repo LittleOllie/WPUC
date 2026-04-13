@@ -38,22 +38,35 @@ function apiUrl(pathAndQuery) {
   return pathAndQuery;
 }
 
+function quirksNormalizeProxyUrlIfPossible(u) {
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  if (NL && typeof NL.normalizeApiImgUrl === "function") {
+    return NL.normalizeApiImgUrl(u);
+  }
+  return u;
+}
+
 /** QuirkKid S3 has no CORS; Worker /api/img — API may return absolute proxy URLs. */
 function quirksProxyKidCdnForCanvas(rawUrl) {
   if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
   const s = rawUrl.trim();
-  if (s.indexOf("/api/img") === 0) return apiUrl(s);
+  if (s.indexOf("/api/img") === 0) {
+    return quirksNormalizeProxyUrlIfPossible(apiUrl(s));
+  }
   try {
     const parsed = new URL(s);
     if (
       parsed.pathname === "/api/img" &&
       parsed.search.indexOf("url=") !== -1
     ) {
-      return s;
+      return quirksNormalizeProxyUrlIfPossible(s);
     }
     const h = parsed.hostname.toLowerCase();
     if (h === "quirkids-images.s3.ap-southeast-2.amazonaws.com") {
-      return apiUrl("/api/img?url=" + encodeURIComponent(s));
+      return quirksNormalizeProxyUrlIfPossible(
+        apiUrl("/api/img?url=" + encodeURIComponent(s))
+      );
     }
   } catch {
     /* ignore */
@@ -69,11 +82,298 @@ const QUIRKS_CANVAS_SIZE = 8192;
 const QUIRKS_BRAND_CELL_BG = "#000000";
 const QUIRKS_BRAND_PBLO_MAX_FRAC = 0.52;
 const QUIRKS_EXPORT_JPEG_QUALITY = 0.94;
+/** Per candidate when drawing export canvas (FlexGrid-style: don’t hang on one slow gateway). */
+const QUIRKS_EXPORT_IMAGE_TRY_MS = 12000;
+/** Cap wait when enabling download after preview paint (aligned with FlexGrid export wait). */
+const QUIRKS_PREVIEW_IMAGE_WAIT_MS = 12000;
+/** Preview-only: probe each NFT candidate before assigning img.src (fail fast, avoid broken first paint). */
+const QUIRKS_IMAGE_PREFLIGHT_MS = 2600;
 
 let quirksWalletData = null;
 let quirksEditorState = null;
 let quirksLastExportDataUrl = null;
 let quirksDnDFromIndex = null;
+
+/** Session: last known-good tile image URL per collection + token (preview/export). */
+const quirksSessionTileWinUrl = new Map();
+/** Session: proxy-normalized URLs that failed for that token this tab (skip when retrying). */
+const quirksSessionTileFailedUrls = new Map();
+/** Coalesce in-flight preview probes by normalized URL (avoid duplicate requests for same candidate). */
+const quirksPreflightInflight = new Map();
+
+function quirksSessionTileMemoKey(r2Meta) {
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  if (!NL || !r2Meta || r2Meta.tokenId == null) return "";
+  const slug =
+    typeof NL.resolveCollectionSlugForCache === "function"
+      ? NL.resolveCollectionSlugForCache(r2Meta)
+      : "";
+  const tid =
+    typeof NL.canonicalTokenIdStr === "function"
+      ? NL.canonicalTokenIdStr(r2Meta.tokenId)
+      : String(r2Meta.tokenId);
+  if (!slug || !tid) return "";
+  return slug + "\0" + tid;
+}
+
+function quirksDedupeUrlCandidates(arr) {
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  const norm = (u) => {
+    const s = String(u || "").trim();
+    if (!s) return "";
+    return NL && typeof NL.normalizeApiImgUrl === "function"
+      ? NL.normalizeApiImgUrl(s)
+      : s;
+  };
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const s = arr[i];
+    const k = norm(s);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(String(s).trim());
+  }
+  return out;
+}
+
+function quirksApplySessionMemoToCandidates(candidates, r2Meta) {
+  const base = Array.isArray(candidates) ? candidates.slice() : [];
+  const key = quirksSessionTileMemoKey(r2Meta);
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  const norm = (u) => {
+    const s = String(u || "").trim();
+    if (!s) return "";
+    return NL && typeof NL.normalizeApiImgUrl === "function"
+      ? NL.normalizeApiImgUrl(s)
+      : s;
+  };
+  let list = base;
+  if (key) {
+    const failed = quirksSessionTileFailedUrls.get(key);
+    if (failed && failed.size) {
+      list = list.filter((u) => u && !failed.has(norm(u)));
+    }
+    const win = quirksSessionTileWinUrl.get(key);
+    if (win && String(win).trim()) {
+      const wn = norm(win);
+      if (!failed || !failed.has(wn)) {
+        list = [win].concat(list.filter((u) => norm(u) !== wn));
+      }
+    }
+  }
+  let out = quirksDedupeUrlCandidates(list);
+  if (!out.length && base.length) {
+    out = quirksDedupeUrlCandidates(base);
+  }
+  return out;
+}
+
+function quirksRecordTileSessionWin(r2Meta, url) {
+  const key = quirksSessionTileMemoKey(r2Meta);
+  if (!key || !url) return;
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  const u =
+    NL && typeof NL.normalizeApiImgUrl === "function"
+      ? NL.normalizeApiImgUrl(String(url).trim())
+      : String(url).trim();
+  if (!u || /^data:image\/svg\+xml/i.test(u)) return;
+  if (NL && typeof NL.normalizeApiImgUrl === "function" && NL.NFT_PLACEHOLDER_SVG) {
+    const ph = NL.normalizeApiImgUrl(NL.NFT_PLACEHOLDER_SVG);
+    if (ph && u === ph) return;
+  }
+  quirksSessionTileWinUrl.set(key, u);
+}
+
+function quirksRecordTileSessionFail(r2Meta, url) {
+  const key = quirksSessionTileMemoKey(r2Meta);
+  if (!key || !url) return;
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  const u =
+    NL && typeof NL.normalizeApiImgUrl === "function"
+      ? NL.normalizeApiImgUrl(String(url).trim())
+      : String(url).trim();
+  if (!u) return;
+  let s = quirksSessionTileFailedUrls.get(key);
+  if (!s) {
+    s = new Set();
+    quirksSessionTileFailedUrls.set(key, s);
+  }
+  s.add(u);
+}
+
+function quirksAttachSessionTileMemoHooks(img, r2Meta) {
+  if (!img || !quirksSessionTileMemoKey(r2Meta)) return;
+  if (img.__quirksMemoCtl) {
+    try {
+      img.__quirksMemoCtl.abort();
+    } catch {
+      /* ignore */
+    }
+  }
+  const ctl = new AbortController();
+  img.__quirksMemoCtl = ctl;
+  const sig = ctl.signal;
+  function onLoad() {
+    quirksRecordTileSessionWin(r2Meta, img.src);
+    img.removeEventListener("error", onErr);
+  }
+  function onErr() {
+    quirksRecordTileSessionFail(r2Meta, img.src);
+  }
+  img.addEventListener("load", onLoad, { once: true, signal: sig });
+  img.addEventListener("error", onErr, { signal: sig });
+}
+
+function quirksNormTileUrl(u) {
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  const s = String(u || "").trim();
+  if (!s) return "";
+  return NL && typeof NL.normalizeApiImgUrl === "function"
+    ? NL.normalizeApiImgUrl(s)
+    : s;
+}
+
+function quirksFirstCandidateIsTrustedMemoWin(merged, r2Meta) {
+  const key = quirksSessionTileMemoKey(r2Meta);
+  if (!key || !merged || !merged.length) return false;
+  const win = quirksSessionTileWinUrl.get(key);
+  if (!win) return false;
+  const a = quirksNormTileUrl(merged[0]);
+  const b = quirksNormTileUrl(win);
+  return !!a && a === b;
+}
+
+function quirksProbeImageUrl(url, timeoutMs) {
+  const s = String(url || "").trim();
+  if (!s || /^javascript:/i.test(s)) return Promise.resolve(false);
+  if (/^data:image\//i.test(s)) return Promise.resolve(true);
+  const norm = quirksNormTileUrl(s);
+  if (!norm) return Promise.resolve(false);
+  const existing = quirksPreflightInflight.get(norm);
+  if (existing) return existing;
+  const p = new Promise((resolve) => {
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      quirksPreflightInflight.delete(norm);
+      resolve(ok);
+    };
+    const t = window.setTimeout(() => finish(false), timeoutMs);
+    im.onload = () => {
+      window.clearTimeout(t);
+      finish(true);
+    };
+    im.onerror = () => {
+      window.clearTimeout(t);
+      finish(false);
+    };
+    im.src = s;
+  });
+  quirksPreflightInflight.set(norm, p);
+  return p;
+}
+
+async function quirksPreflightReorderForPreview(merged, r2Meta) {
+  if (!merged || !merged.length) return merged || [];
+  if (quirksFirstCandidateIsTrustedMemoWin(merged, r2Meta)) {
+    return merged;
+  }
+  const key = quirksSessionTileMemoKey(r2Meta);
+  const failed = key ? quirksSessionTileFailedUrls.get(key) : null;
+  const timeoutMs = QUIRKS_IMAGE_PREFLIGHT_MS;
+  for (let i = 0; i < merged.length; i++) {
+    const u = merged[i];
+    if (!u) continue;
+    const un = quirksNormTileUrl(u);
+    if (failed && failed.has(un)) continue;
+    if (/^data:image\//i.test(String(u).trim())) {
+      const rest = merged.filter((_, j) => j !== i);
+      return quirksDedupeUrlCandidates([u].concat(rest));
+    }
+    const ok = await quirksProbeImageUrl(u, timeoutMs);
+    if (ok) {
+      const rest = merged.filter((_, j) => j !== i);
+      return quirksDedupeUrlCandidates([u].concat(rest));
+    }
+    quirksRecordTileSessionFail(r2Meta, u);
+  }
+  return merged;
+}
+
+function quirksApplyNftGridImageAfterPreflight(
+  img,
+  rawUrl,
+  slotIndex,
+  r2Meta,
+  finalList,
+  ipfsPath
+) {
+  const NL =
+    typeof window !== "undefined" && window.NftImageLoader;
+  if (!img || !NL || !finalList || !finalList.length) return;
+  if (quirksIsMemoryConstrainedDevice()) {
+    img.setAttribute("data-quirks-src", finalList[0]);
+    img.setAttribute(
+      "data-nft-c",
+      encodeURIComponent(JSON.stringify(finalList))
+    );
+    img.setAttribute("data-nft-ci", "0");
+    if (ipfsPath) {
+      img.setAttribute("data-nft-ipfs-path", ipfsPath);
+    }
+    if (NL.resolveCollectionSlugForCache) {
+      const sg = NL.resolveCollectionSlugForCache(r2Meta || {});
+      if (sg) img.setAttribute("data-nft-collection", sg);
+    }
+    if (r2Meta && r2Meta.contract) {
+      img.setAttribute("data-nft-contract", String(r2Meta.contract));
+    }
+    if (r2Meta && r2Meta.tokenId != null) {
+      img.setAttribute("data-nft-token-id", String(r2Meta.tokenId));
+    }
+    img.onload = function () {
+      if (typeof window.__nftImgLoad === "function") {
+        window.__nftImgLoad(img);
+      }
+    };
+    img.onerror = function () {
+      if (typeof window.__nftImgErr === "function") {
+        window.__nftImgErr(img);
+      }
+    };
+  } else {
+    NL.applyToGridImg(img, rawUrl, slotIndex, r2Meta || null, {
+      candidates: finalList,
+      ipfsPath: ipfsPath,
+    });
+  }
+  if (quirksSessionTileMemoKey(r2Meta) && finalList.length) {
+    quirksAttachSessionTileMemoHooks(img, r2Meta);
+  }
+}
+
+async function quirksAwaitQuirksGridPreflights(gridEl) {
+  if (!gridEl) return;
+  const imgs = gridEl.querySelectorAll("img.quirks-tile__img");
+  const pending = [];
+  for (let i = 0; i < imgs.length; i++) {
+    const p = imgs[i].__quirksPreflightPromise;
+    if (p) pending.push(p);
+  }
+  if (pending.length) {
+    await Promise.all(pending);
+  }
+}
 
 function quirksUseFlatMode() {
   try {
@@ -83,16 +383,85 @@ function quirksUseFlatMode() {
   }
 }
 
+/** Maps grid item kind → /api/img + client image-cache params (collection slug + optional contract). */
+function quirksR2MetaForGridItem(item) {
+  if (!item || item.tokenId == null) return null;
+  const tid = item.tokenId;
+  const c =
+    typeof window !== "undefined" ? window.__quirksWalletContracts : null;
+  const k = String(item.kind || "");
+  if (k.includes("quirkkid")) {
+    return { collection: "quirkkids", tokenId: tid };
+  }
+  if (k.includes("inx")) {
+    return {
+      contract: c && c.inx,
+      collection: "inx",
+      tokenId: tid,
+    };
+  }
+  if (k.includes("quirking")) {
+    return {
+      contract: c && c.quirklings,
+      collection: "quirklings",
+      tokenId: tid,
+    };
+  }
+  if (k.includes("quirkie")) {
+    return {
+      contract: c && c.quirkies,
+      collection: "quirkies",
+      tokenId: tid,
+    };
+  }
+  return { tokenId: tid };
+}
+
+/** Basename of URL path — must match exactly; avoid `indexOf("pblo.png")` (NFT filenames can contain that substring). */
+function quirksPublicBrandingBasename(url) {
+  if (!url || typeof url !== "string") return "";
+  const s = url.trim();
+  try {
+    const base =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : typeof window !== "undefined"
+          ? window.location.href
+          : "https://local.invalid/";
+    const path = new URL(s, base).pathname || "";
+    const seg = path.replace(/\/+$/, "").split("/");
+    const last = seg[seg.length - 1] || "";
+    return String(last).toLowerCase();
+  } catch {
+    const t = s.split("?")[0].split("#")[0];
+    const seg = t.replace(/\/+$/, "").split("/");
+    return String(seg[seg.length - 1] || "").toLowerCase();
+  }
+}
+
 /** Local /public branding files — NftImageLoader proxies other URLs via /api/img and breaks these. */
 function quirksIsLocalBrandingAssetUrl(url) {
   if (!url || typeof url !== "string") return false;
   const s = url.trim();
-  if (s.indexOf("quirkieslogo.png") !== -1) return true;
-  if (s.indexOf("pblo.png") !== -1) return true;
-  return false;
+  const base = quirksPublicBrandingBasename(s);
+  if (base !== "pblo.png" && base !== "quirkieslogo.png") return false;
+  if (!/^https?:/i.test(s)) return true;
+  try {
+    const pageBase =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : typeof window !== "undefined"
+          ? window.location.href
+          : "";
+    const abs = new URL(s);
+    const page = new URL(pageBase);
+    return abs.origin === page.origin;
+  } catch {
+    return true;
+  }
 }
 
-function quirksBindGridImage(img, rawUrl, slotIndex) {
+function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
   if (quirksIsLocalBrandingAssetUrl(String(rawUrl || ""))) {
     img.removeAttribute("data-nft-c");
     img.removeAttribute("data-nft-ci");
@@ -116,30 +485,49 @@ function quirksBindGridImage(img, rawUrl, slotIndex) {
   const NL =
     typeof window !== "undefined" && window.NftImageLoader;
   if (NL && typeof NL.applyToGridImg === "function") {
-    if (quirksIsMemoryConstrainedDevice()) {
-      const b = NL.buildImageCandidates(String(rawUrl || ""));
-      if (b.candidates && b.candidates.length) {
-        img.setAttribute("data-quirks-src", b.candidates[0]);
-        img.setAttribute(
-          "data-nft-c",
-          encodeURIComponent(JSON.stringify(b.candidates))
+    const b = NL.buildImageCandidates(String(rawUrl || ""), r2Meta || {});
+    const merged = quirksApplySessionMemoToCandidates(
+      b.candidates || [],
+      r2Meta
+    );
+    if (merged && merged.length) {
+      img.__quirksBindGen = (img.__quirksBindGen || 0) + 1;
+      const bindGen = img.__quirksBindGen;
+      if (quirksFirstCandidateIsTrustedMemoWin(merged, r2Meta)) {
+        quirksApplyNftGridImageAfterPreflight(
+          img,
+          rawUrl,
+          slotIndex,
+          r2Meta,
+          merged,
+          b.ipfsPath
         );
-        img.setAttribute("data-nft-ci", "0");
-        img.onload = function () {
-          if (typeof window.__nftImgLoad === "function") {
-            window.__nftImgLoad(img);
-          }
-        };
-        img.onerror = function () {
-          if (typeof window.__nftImgErr === "function") {
-            window.__nftImgErr(img);
-          }
-        };
       } else {
-        img.setAttribute("data-quirks-src", rawUrl);
+        const task = (async () => {
+          const finalList = await quirksPreflightReorderForPreview(
+            merged,
+            r2Meta
+          );
+          if (img.__quirksBindGen !== bindGen) return;
+          quirksApplyNftGridImageAfterPreflight(
+            img,
+            rawUrl,
+            slotIndex,
+            r2Meta,
+            finalList,
+            b.ipfsPath
+          );
+        })().finally(() => {
+          if (img.__quirksPreflightPromise === task) {
+            img.__quirksPreflightPromise = null;
+          }
+        });
+        img.__quirksPreflightPromise = task;
       }
+    } else if (quirksIsMemoryConstrainedDevice()) {
+      img.setAttribute("data-quirks-src", rawUrl);
     } else {
-      NL.applyToGridImg(img, rawUrl, slotIndex);
+      NL.applyToGridImg(img, rawUrl, slotIndex, r2Meta || null);
     }
     return;
   }
@@ -678,7 +1066,10 @@ async function quirksBuildGroupedExportCanvas(state) {
         const subW = cellR.w / nSub;
         for (let si = 0; si < nSub; si++) {
           const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
-          const img = await quirksLoadImageWithFallbacks(url);
+          const img = await quirksLoadImageWithFallbacks(
+            url,
+            quirksR2MetaForGridItem(unit.items[si])
+          );
           quirksDrawCover(
             ctx,
             img,
@@ -705,15 +1096,18 @@ async function quirksBuildGroupedExportCanvas(state) {
         const uu = quirksProxyKidCdnForCanvas(unit.items[j].image);
         if (uu && !seen[uu]) {
           seen[uu] = true;
-          urls.push(uu);
+          urls.push({
+            url: uu,
+            r2Meta: quirksR2MetaForGridItem(unit.items[j]),
+          });
         }
       }
     }
     const loadedMap = {};
     await Promise.all(
-      urls.map((url) =>
-        quirksLoadImageWithFallbacks(url).then((im) => {
-          loadedMap[url] = im;
+      urls.map((entry) =>
+        quirksLoadImageWithFallbacks(entry.url, entry.r2Meta).then((im) => {
+          loadedMap[entry.url] = im;
         })
       )
     );
@@ -790,12 +1184,28 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   const g = quirksComputeGrid(urls.length);
   const cells = g.cols * g.rows;
   const slots = [];
+  const slotR2Metas = [];
   for (let i = 0; i < cells; i++) {
     slots.push(i < urls.length ? urls[i] : null);
+    if (multi) {
+      slotR2Metas.push(
+        i < sortedItems.length ? quirksR2MetaForGridItem(sortedItems[i]) : null
+      );
+    } else if (i === 0) {
+      slotR2Metas.push(null);
+    } else {
+      const itemIdx = i - 1;
+      slotR2Metas.push(
+        itemIdx < sortedItems.length
+          ? quirksR2MetaForGridItem(sortedItems[itemIdx])
+          : null
+      );
+    }
   }
   quirksEditorState = {
     mode: "flat",
     slots,
+    slotR2Metas,
     cols: g.cols,
     rows: g.rows,
     gridLayout,
@@ -938,17 +1348,41 @@ function quirksAwaitPreviewGridLoads(gridEl) {
   });
 }
 
-function quirksLoadImageWithFallbacks(rawUrl) {
+function quirksLoadImageWithFallbacks(rawUrl, r2Meta) {
   return new Promise((resolve) => {
     if (!rawUrl) {
       resolve(null);
       return;
     }
+    const tryOne = (u, onOk, onFail) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (ok) onOk(img);
+        else onFail();
+      };
+      const t = window.setTimeout(() => finish(false), QUIRKS_EXPORT_IMAGE_TRY_MS);
+      img.onload = () => {
+        window.clearTimeout(t);
+        finish(true);
+      };
+      img.onerror = () => {
+        window.clearTimeout(t);
+        finish(false);
+      };
+      img.src = u;
+    };
     const NL =
       typeof window !== "undefined" && window.NftImageLoader;
     if (NL && typeof NL.buildImageCandidates === "function") {
-      const b = NL.buildImageCandidates(String(rawUrl));
-      const tryList = (b && b.candidates) || [];
+      const b = NL.buildImageCandidates(String(rawUrl), r2Meta || {});
+      const tryList = quirksApplySessionMemoToCandidates(
+        (b && b.candidates) || [],
+        r2Meta
+      );
       if (tryList.length === 0) {
         resolve(null);
         return;
@@ -960,11 +1394,19 @@ function quirksLoadImageWithFallbacks(rawUrl) {
           return;
         }
         const u = tryList[idx++];
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = () => tryNext();
-        img.src = u;
+        tryOne(
+          u,
+          (img) => {
+            quirksRecordTileSessionWin(r2Meta, img.src);
+            resolve(img);
+          },
+          () => {
+            if (quirksSessionTileMemoKey(r2Meta)) {
+              quirksRecordTileSessionFail(r2Meta, u);
+            }
+            window.setTimeout(tryNext, 120);
+          }
+        );
       }
       tryNext();
       return;
@@ -974,11 +1416,11 @@ function quirksLoadImageWithFallbacks(rawUrl) {
       resolve(null);
       return;
     }
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = u;
+    tryOne(
+      u,
+      (img) => resolve(img),
+      () => resolve(null)
+    );
   });
 }
 
@@ -1061,6 +1503,14 @@ function quirksCreateExportCanvas(W, H) {
 function quirksReleaseImageElement(img) {
   if (!img) return;
   try {
+    if (img.__quirksMemoCtl) {
+      try {
+        img.__quirksMemoCtl.abort();
+      } catch {
+        /* ignore */
+      }
+      img.__quirksMemoCtl = null;
+    }
     img.onload = null;
     img.onerror = null;
     img.src = "";
@@ -1098,7 +1548,8 @@ async function quirksExportGridDrawCellsSequential(
   rows,
   cw,
   ch,
-  firstCellBrand
+  firstCellBrand,
+  slotR2Metas
 ) {
   const cells = cols * rows;
   for (let i = 0; i < cells; i++) {
@@ -1108,10 +1559,11 @@ async function quirksExportGridDrawCellsSequential(
     const y = row * ch;
     const cellR = quirksExportCellRect(x, y, cw, ch);
     const slotUrl = slots[i];
+    const slotMeta = slotR2Metas && slotR2Metas[i];
     if (i === 0 && firstCellBrand) {
       const pbloM = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
       let bIm = null;
-      if (slotUrl) bIm = await quirksLoadImageWithFallbacks(slotUrl);
+      if (slotUrl) bIm = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
       quirksDrawBrandCellExport(
         ctx,
         bIm,
@@ -1126,7 +1578,7 @@ async function quirksExportGridDrawCellsSequential(
     } else {
       const bg = "#ffffff";
       let img = null;
-      if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl);
+      if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
       quirksDrawCover(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
       quirksReleaseImageElement(img);
     }
@@ -1136,7 +1588,13 @@ async function quirksExportGridDrawCellsSequential(
   }
 }
 
-async function quirksBuildGridCanvasFromSlots(slots, cols, rows, firstCellBrand) {
+async function quirksBuildGridCanvasFromSlots(
+  slots,
+  cols,
+  rows,
+  firstCellBrand,
+  slotR2Metas
+) {
   const cells = cols * rows;
   const sizeTry = quirksExportCanvasSizeCandidates(slots.length);
   let canvas = null;
@@ -1188,7 +1646,8 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows, firstCellBrand)
       rows,
       cw,
       ch,
-      !!firstCellBrand
+      !!firstCellBrand,
+      slotR2Metas
     );
   } else {
     const unique = [];
@@ -1197,14 +1656,17 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows, firstCellBrand)
       const u = slots[i];
       if (u && !seen[u]) {
         seen[u] = true;
-        unique.push(u);
+        unique.push({
+          url: u,
+          r2Meta: slotR2Metas && slotR2Metas[i],
+        });
       }
     }
     const loadedMap = {};
     await Promise.all(
-      unique.map((url) =>
-        quirksLoadImageWithFallbacks(url).then((im) => {
-          loadedMap[url] = im;
+      unique.map((entry) =>
+        quirksLoadImageWithFallbacks(entry.url, entry.r2Meta).then((im) => {
+          loadedMap[entry.url] = im;
         })
       )
     );
@@ -1254,6 +1716,19 @@ async function quirksBuildGridCanvasFromSlots(slots, cols, rows, firstCellBrand)
   return canvas;
 }
 
+function quirksPreviewImgPaintReady(im) {
+  return (
+    im &&
+    im.complete &&
+    im.naturalWidth > 0 &&
+    im.naturalHeight > 0
+  );
+}
+
+/**
+ * Wait until preview tiles have painted or settled (load/error/timeout).
+ * Mirrors FlexGrid waitForExportImages: natural dimensions + per-tile cap so UI never stalls.
+ */
 function quirksWaitForPreviewGridImages() {
   return new Promise((resolve) => {
     const grid = document.getElementById("quirks-preview-grid");
@@ -1284,11 +1759,19 @@ function quirksWaitForPreviewGridImages() {
     }
     for (let i = 0; i < n; i++) {
       const im = pending[i];
-      if (im.complete && im.src) oneDone();
-      else {
-        im.addEventListener("load", oneDone, { once: true });
-        im.addEventListener("error", oneDone, { once: true });
+      if (quirksPreviewImgPaintReady(im)) {
+        oneDone();
+        continue;
       }
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        oneDone();
+      };
+      im.addEventListener("load", done, { once: true });
+      im.addEventListener("error", done, { once: true });
+      window.setTimeout(done, QUIRKS_PREVIEW_IMAGE_WAIT_MS);
     }
   });
 }
@@ -1303,7 +1786,8 @@ function quirksRefreshPreviewFromSlots() {
           st.slots,
           st.cols,
           st.rows,
-          !!st.firstCellBrand
+          !!st.firstCellBrand,
+          st.slotR2Metas
         );
   return build
     .then((canvas) => {
@@ -1594,11 +2078,21 @@ function renderQuirksPreviewGrid(domPool) {
             img = document.createElement("img");
             img.className = "quirks-tile__img";
             img.alt = "";
-            quirksBindGridImage(img, url, slotCounter++);
+            quirksBindGridImage(
+              img,
+              url,
+              slotCounter++,
+              quirksR2MetaForGridItem(item)
+            );
           } else {
             img.className = "quirks-tile__img";
             img.alt = "";
-            quirksBindGridImage(img, url, slotCounter++);
+            quirksBindGridImage(
+              img,
+              url,
+              slotCounter++,
+              quirksR2MetaForGridItem(item)
+            );
           }
           img.draggable = true;
           strip.appendChild(img);
@@ -1658,11 +2152,21 @@ function renderQuirksPreviewGrid(domPool) {
           img = document.createElement("img");
           img.className = "quirks-tile__img";
           img.alt = "";
-          quirksBindGridImage(img, url, i);
+          quirksBindGridImage(
+            img,
+            url,
+            i,
+            st.slotR2Metas && st.slotR2Metas[i]
+          );
         } else {
           img.className = "quirks-tile__img";
           img.alt = "";
-          quirksBindGridImage(img, url, i);
+          quirksBindGridImage(
+            img,
+            url,
+            i,
+            st.slotR2Metas && st.slotR2Metas[i]
+          );
         }
         img.draggable = true;
         cell.appendChild(img);
@@ -1876,9 +2380,9 @@ async function runQuirksGenerate() {
   renderQuirksPreviewGrid();
   void (async () => {
     try {
-      await quirksAwaitPreviewGridLoads(
-        document.getElementById("quirks-preview-grid")
-      );
+      const gridForPreview = document.getElementById("quirks-preview-grid");
+      await quirksAwaitQuirksGridPreflights(gridForPreview);
+      await quirksAwaitPreviewGridLoads(gridForPreview);
       await quirksRefreshPreviewFromSlots();
       await quirksWaitForPreviewGridImages();
       quirksSetDownloadButtonReady(true);
@@ -1895,7 +2399,7 @@ function injectQuirksOpenButton() {
   b.type = "button";
   b.id = "quirks-open-btn";
   b.className = "btn-secondary quirks-open-btn";
-  b.textContent = "Grid builder";
+  b.textContent = "FLECKS GRID BUILDER";
   fa.appendChild(b);
   b.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -1964,6 +2468,7 @@ function setupQuirksBuilderUi() {
       const gridEl = document.getElementById("quirks-preview-grid");
       void (async () => {
         try {
+          await quirksAwaitQuirksGridPreflights(gridEl);
           await quirksAwaitPreviewGridLoads(gridEl);
           await quirksRefreshPreviewFromSlots();
           await quirksWaitForPreviewGridImages();
@@ -2059,6 +2564,17 @@ function setupQuirksBuilderUi() {
       quirksLastExportDataUrl = null;
     });
   }
+  const retryMissing = document.getElementById("quirks-retry-missing-btn");
+  if (retryMissing) {
+    retryMissing.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      const grid = document.getElementById("quirks-preview-grid");
+      const NL = typeof window !== "undefined" ? window.NftImageLoader : null;
+      if (NL && typeof NL.retryAllMissingNftImages === "function") {
+        NL.retryAllMissingNftImages(grid || document.getElementById("quirks-modal"));
+      }
+    });
+  }
   const dl = document.getElementById("quirks-download-btn");
   if (dl) {
     dl.addEventListener("click", () => {
@@ -2091,5 +2607,113 @@ function setupQuirksBuilderUi() {
   });
 }
 
+/** Sentinel address so builder accepts token-ID-only sessions without a wallet scan. */
+const QUIRKS_TOKEN_SEARCH_WALLET_ADDR =
+  "0x0000000000000000000000000000000000000bad";
+
+function quirksWalletPayloadFromTokenLookup(apiData) {
+  const tid = apiData.tokenId;
+  const q = apiData.quirkie;
+  const ql = apiData.quirking;
+  const ix = apiData.inx;
+  const quirkies = [];
+  if (q && (q.image || q.kidImage)) {
+    quirkies.push({
+      tokenId: tid,
+      image: q.image || null,
+      kidImage: q.kidImage || null,
+      traits: [],
+    });
+  }
+  const quirklings = [];
+  if (ql && ql.image) {
+    quirklings.push({
+      tokenId: tid,
+      image: ql.image,
+      traits: [],
+    });
+  }
+  const inxList = [];
+  if (ix && ix.image) {
+    inxList.push({
+      tokenId: tid,
+      image: ix.image,
+      traits: [],
+    });
+  }
+  return {
+    wallet: QUIRKS_TOKEN_SEARCH_WALLET_ADDR,
+    pairMaxTokenId: apiData.pairMaxTokenId,
+    contracts: apiData.contracts || {},
+    quirkies,
+    quirklings,
+    inx: inxList,
+    matched: [],
+    missingQuirkie: [],
+    loneQuirkies: [],
+    quirklingsHigh: [],
+    inxOnly: [],
+  };
+}
+
+function quirksTokenLookupHasGridImages(apiData) {
+  if (!apiData) return false;
+  const q = apiData.quirkie;
+  const ql = apiData.quirking;
+  const ix = apiData.inx;
+  return !!(
+    (q && q.image) ||
+    (q && q.kidImage) ||
+    (ql && ql.image) ||
+    (ix && ix.image)
+  );
+}
+
+export function quirksOpenFlecksFromTokenSearch(apiData) {
+  if (!quirksTokenLookupHasGridImages(apiData)) {
+    const errEl = document.getElementById("quirks-error");
+    if (errEl) {
+      errEl.textContent =
+        "No images available for this token to build a grid.";
+      errEl.classList.add("is-visible");
+    }
+    setQuirksModalOpen(true);
+    return;
+  }
+  const payload = quirksWalletPayloadFromTokenLookup(apiData);
+  quirksWalletData = payload;
+  try {
+    window.__quirksWalletPayload = payload;
+    window.__quirksWalletPayloadAddress = QUIRKS_TOKEN_SEARCH_WALLET_ADDR;
+    window.__quirksWalletContracts = payload.contracts || {};
+  } catch {
+    /* ignore */
+  }
+  resetQuirksModalOutput();
+  populateQuirksTraitSelect();
+  const cq = document.getElementById("quirks-opt-quirkies");
+  const cqk = document.getElementById("quirks-opt-quirkkids");
+  const cql = document.getElementById("quirks-opt-quirklings");
+  const cix = document.getElementById("quirks-opt-inx");
+  const q = apiData.quirkie;
+  const ql = apiData.quirking;
+  const ix = apiData.inx;
+  if (cq) cq.checked = !!(q && q.image);
+  if (cqk) cqk.checked = !!(q && q.kidImage);
+  if (cql) cql.checked = !!(ql && ql.image);
+  if (cix) cix.checked = !!(ix && ix.image);
+  const layoutGrouped = document.getElementById("quirks-layout-grouped");
+  if (layoutGrouped) layoutGrouped.checked = true;
+  quirksSyncGenerateButtonState();
+  const errEl = document.getElementById("quirks-error");
+  if (errEl) {
+    errEl.classList.remove("is-visible");
+    errEl.textContent = "";
+  }
+  setQuirksModalOpen(true);
+  void runQuirksGenerate();
+}
+
 window.__quirksInjectGridButton = injectQuirksOpenButton;
+window.__quirksOpenFlecksFromTokenSearch = quirksOpenFlecksFromTokenSearch;
 setupQuirksBuilderUi();

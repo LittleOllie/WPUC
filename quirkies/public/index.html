@@ -177,20 +177,30 @@
             alt="Quirkies"
           />
         </div>
+        <p class="welcome-modal__eyebrow">Quirks · Ethereum</p>
         <h2 id="welcome-modal-title" class="welcome-modal__title">Welcome</h2>
         <div id="welcome-modal-desc" class="welcome-modal__body">
           <p class="welcome-modal__lede">
-            <strong>QUIRKIES</strong> with optional <strong>QuirkKid</strong> art; <strong>QUIRKLINGS</strong> and
-            <strong>INX</strong> as separate collections (sorted by ID; Quirklings above 5000 listed after).
+            Check <strong>Quirkies</strong> (with optional <strong>QuirkKid</strong> art), <strong>Quirklings</strong>, and
+            <strong>INX</strong> in one place. Quirklings sort by ID (1–5000 first, then higher IDs).
           </p>
+          <p class="welcome-modal__section-label">What you can do</p>
           <ul class="welcome-modal__list">
-            <li><strong>Wallet</strong> — See what you hold: Quirkie + QuirkKid rows, then Quirklings and INX.</li>
-            <li><strong>Token lookup</strong> — One ID: Quirkie, QuirkKid, Quirkling, and INX side by side.</li>
-            <li><strong>Grid builder</strong> — After a wallet check, build a shareable grid; sort, drag, download.</li>
+            <li><strong>Wallet</strong> — Scan an address to see pairs, singles, and what you’re missing.</li>
+            <li><strong>Token lookup</strong> — Enter one ID to compare Quirkie, QuirkKid, Quirkling, and INX side by side.</li>
+            <li><strong>Grid builder</strong> — After a wallet check, arrange a shareable grid, drag tiles, and download.</li>
           </ul>
+          <aside class="welcome-modal__note" aria-label="Note from the builder">
+            <p class="welcome-modal__note-title">A quick note from me</p>
+            <p class="welcome-modal__note-text">
+              I’m only a kid and I’m still learning how all of this works, so please bear with me while I figure things out.
+              We sometimes have trouble loading images or metadata for some collections (the internet and IPFS aren’t always
+              friendly), but I’m working on it. Thank you for your patience.
+            </p>
+          </aside>
         </div>
         <button type="button" id="welcome-modal-got-it" class="btn-primary welcome-modal__cta">
-          Got it
+          Let’s go
         </button>
       </div>
     </div>
@@ -288,7 +298,16 @@
         </button>
         <p id="quirks-error" class="quirks-modal__error" role="alert"></p>
         <div id="quirks-preview-wrap" class="quirks-preview-wrap hidden">
-          <p class="quirks-preview-label">Preview</p>
+          <div class="quirks-preview-head">
+            <p class="quirks-preview-label">Preview</p>
+            <button
+              type="button"
+              id="quirks-retry-missing-btn"
+              class="btn-secondary quirks-preview-retry-missing"
+            >
+              Retry missing images
+            </button>
+          </div>
           <p class="quirks-preview-hint">
             Drag tiles to reorder. One collection: logo + pblo in the first tile (fixed). Multiple
             collections: pblo overlay only, one column wide.

@@ -376,11 +376,11 @@ body {
 
 .wallet-stats {
   margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.05rem;
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-panel-2);
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   color: var(--text-muted);
 }
 
@@ -400,6 +400,7 @@ body {
 .wallet-stats strong {
   color: var(--og-lime);
   font-weight: 800;
+  font-size: 1.12em;
 }
 
 .wallet-stats__sep {
@@ -629,17 +630,35 @@ input[type="text"]:focus {
 }
 
 .wallet-section-wrap[data-wallet-section="matched"] > .section-title {
-  margin-top: 0;
+  margin-top: 1.25rem;
+}
+
+.wallet-section-wrap[data-wallet-section="unmatched"] {
+  margin-top: 2rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .wallet-section-wrap[data-wallet-section="unmatched"] > .unmatched-sub:first-child .section-title {
   margin-top: 0;
 }
 
+.unmatched-sub + .unmatched-sub {
+  margin-top: 1.85rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wallet-section-wrap .section-title + .wallet-grid,
+.unmatched-sub .section-title + .wallet-grid,
+.unmatched-sub .section-blurb + .wallet-grid {
+  margin-top: 1.05rem;
+}
+
 .section-title {
-  font-size: 1rem;
-  margin: 1.35rem 0 0.75rem;
-  padding-bottom: 0.35rem;
+  font-size: 1.18rem;
+  margin: 1.5rem 0 0.85rem;
+  padding-bottom: 0.45rem;
   border-bottom: 2px solid rgba(223, 255, 0, 0.28);
   color: var(--og-lime);
   font-weight: 700;
@@ -690,6 +709,12 @@ input[type="text"]:focus {
   gap: 0.65rem;
 }
 
+.wallet-card__body {
+  margin-top: 0.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .wallet-card--ok {
   border-left: 4px solid var(--ok);
 }
@@ -714,24 +739,73 @@ input[type="text"]:focus {
 .wallet-card__visuals {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.65rem;
+}
+
+.wallet-card__visuals--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .wallet-card__visuals--triple {
+    grid-template-columns: 1fr;
+  }
 }
 
 .wallet-card__visuals--single {
   grid-template-columns: 1fr;
-  max-width: 140px;
+  max-width: 160px;
+}
+
+.wallet-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wallet-col__thumb {
+  width: 100%;
+}
+
+.wallet-col__thumb .nft-thumb,
+.wallet-col__thumb .nft-thumb.nft-thumb--counterpart {
+  width: 100%;
+}
+
+.wallet-col__os {
+  width: 100%;
+  margin-top: 0.45rem;
+}
+
+.btn-secondary--wallet-col {
+  display: block;
+  width: 100%;
+  margin-top: 0;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.84rem;
+  line-height: 1.25;
+}
+
+span.btn-secondary--wallet-col.btn-secondary--disabled {
+  display: block;
+  width: 100%;
+  text-align: center;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .wallet-card__id {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.28rem;
   font-weight: 700;
   color: var(--og-lime);
 }
 
 .wallet-card__badge {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   font-weight: 600;
 }
 
@@ -741,6 +815,7 @@ input[type="text"]:focus {
 
 .wallet-card__badge--bad {
   color: var(--danger);
+  font-size: 1.05rem;
 }
 
 .wallet-card__badge--extra {
@@ -823,6 +898,99 @@ input[type="text"]:focus {
 
 .nft-thumb img.is-broken + .nft-thumb-fallback {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  z-index: 4;
+  pointer-events: auto;
+}
+
+.nft-thumb-fallback__msg {
+  display: block;
+  max-width: 100%;
+}
+
+.nft-thumb__failed-ph {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.nft-thumb__retry {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 0.42rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #0a0a0a;
+  background: var(--og-lime);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.nft-thumb__retry:hover {
+  filter: brightness(1.08);
+}
+
+.nft-thumb__retry:active {
+  transform: scale(0.98);
+}
+
+@keyframes nft-retry-illuminate {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.35),
+      0 0 12px rgba(167, 139, 250, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.65),
+      0 0 22px rgba(167, 139, 250, 0.55),
+      0 0 36px rgba(167, 139, 250, 0.28);
+  }
+}
+
+.nft-thumb.is-broken .nft-thumb__retry,
+.nft-thumb__counterpart-visual.is-broken .nft-thumb__retry {
+  animation: nft-retry-illuminate 1.45s ease-in-out infinite;
+}
+
+.nft-thumb--metadata-fetch .nft-thumb__retry--metadata,
+.nft-thumb__counterpart-visual--metadata-fetch .nft-thumb__retry--metadata {
+  animation: nft-retry-illuminate 1.45s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nft-thumb.is-broken .nft-thumb__retry,
+  .nft-thumb__counterpart-visual.is-broken .nft-thumb__retry,
+  .nft-thumb--metadata-fetch .nft-thumb__retry--metadata,
+  .nft-thumb__counterpart-visual--metadata-fetch .nft-thumb__retry--metadata {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.45),
+      0 0 14px rgba(167, 139, 250, 0.3);
+  }
+}
+
+.nft-thumb .nft-thumb__retry--floating,
+.nft-thumb__counterpart-visual .nft-thumb__retry--floating {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  max-width: calc(100% - 1rem);
+}
+
+.nft-thumb .nft-thumb__retry--floating:active,
+.nft-thumb__counterpart-visual .nft-thumb__retry--floating:active {
+  transform: translateX(-50%) scale(0.98);
 }
 
 .nft-thumb--empty {
@@ -850,26 +1018,57 @@ input[type="text"]:focus {
   overflow: hidden;
 }
 
-/* Missing-from-wallet preview: light red wash so it reads as “not yours” */
-.nft-thumb--counterpart .nft-thumb__counterpart-visual::after {
+/*
+ * Matched-but-not-owned preview: subtle tint (not an error).
+ * Strong red only when the image pipeline actually failed (:has .is-broken).
+ */
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__counterpart-visual::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
   border-radius: inherit;
-  background: rgba(200, 48, 58, 0.34);
-  box-shadow: inset 0 0 0 1px rgba(255, 90, 90, 0.22);
+  background: rgba(30, 58, 138, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.35);
   transition:
     background 0.22s ease,
     box-shadow 0.22s ease;
 }
 
-.nft-thumb--counterpart:hover .nft-thumb__counterpart-visual::after,
-.nft-thumb--counterpart:focus-within .nft-thumb__counterpart-visual::after,
-.nft-thumb--counterpart.is-revealed .nft-thumb__counterpart-visual::after {
-  background: rgba(200, 48, 58, 0.2);
-  box-shadow: inset 0 0 0 1px rgba(255, 90, 90, 0.14);
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:hover .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:focus-within .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal.is-revealed .nft-thumb__counterpart-visual::after {
+  background: rgba(30, 58, 138, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(165, 180, 252, 0.45);
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  )
+  .nft-thumb__counterpart-visual::after {
+  background: rgba(153, 27, 27, 0.62);
+  box-shadow:
+    inset 0 0 0 3px rgba(220, 38, 38, 0.95),
+    inset 0 0 48px rgba(69, 10, 10, 0.55);
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  ):hover
+  .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  ):focus-within
+  .nft-thumb__counterpart-visual::after,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  ).is-revealed
+  .nft-thumb__counterpart-visual::after {
+  background: rgba(153, 27, 27, 0.48);
+  box-shadow:
+    inset 0 0 0 3px rgba(248, 113, 113, 0.75),
+    inset 0 0 36px rgba(69, 10, 10, 0.42);
 }
 
 .nft-thumb__counterpart-visual--empty {
@@ -881,6 +1080,50 @@ input[type="text"]:focus {
   background: rgba(0, 0, 0, 0.35);
 }
 
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__counterpart-visual--empty {
+  background: rgba(30, 41, 59, 0.72);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  )
+  .nft-thumb__counterpart-visual--empty {
+  background: rgba(91, 15, 15, 0.72);
+  border-color: rgba(252, 165, 165, 0.65);
+}
+
+.nft-thumb__counterpart-visual--metadata-fetch {
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  z-index: 3;
+  pointer-events: auto;
+  text-align: center;
+}
+
+.nft-thumb__counterpart-visual--metadata-fetch .nft-thumb-fallback__msg {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.nft-thumb--metadata-fetch {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem;
+  text-align: center;
+}
+
+.nft-thumb--metadata-fetch .nft-thumb-fallback {
+  display: block;
+  position: static;
+}
+
 .nft-thumb__counterpart-img {
   position: relative;
   z-index: 0;
@@ -889,13 +1132,35 @@ input[type="text"]:focus {
   object-fit: cover;
   display: block;
   opacity: 0.78;
-  transition: opacity 0.22s ease;
+  transition:
+    opacity 0.22s ease,
+    filter 0.22s ease;
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__counterpart-img {
+  opacity: 0.88;
+  filter: saturate(0.92) contrast(0.96);
 }
 
 .nft-thumb--counterpart:hover .nft-thumb__counterpart-img,
 .nft-thumb--counterpart:focus-within .nft-thumb__counterpart-img,
 .nft-thumb--counterpart.is-revealed .nft-thumb__counterpart-img {
   opacity: 1;
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:hover .nft-thumb__counterpart-img,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:focus-within .nft-thumb__counterpart-img,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal.is-revealed .nft-thumb__counterpart-img {
+  opacity: 1;
+  filter: none;
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  )
+  .nft-thumb__counterpart-img {
+  opacity: 0.58;
+  filter: saturate(0.75) contrast(0.9);
 }
 
 .nft-thumb__counterpart-visual .nft-thumb-fallback {
@@ -911,6 +1176,11 @@ input[type="text"]:focus {
   .nft-thumb__counterpart-img.is-broken
   + .nft-thumb-fallback {
   display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  z-index: 4;
+  pointer-events: auto;
+  padding: 0.35rem;
 }
 
 .nft-thumb__counterpart-label {
@@ -925,6 +1195,71 @@ input[type="text"]:focus {
   text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   pointer-events: none;
+}
+
+.nft-thumb--counterpartExternal .nft-thumb__counterpart-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-shadow:
+    0 0 12px rgba(0, 0, 0, 0.9),
+    0 1px 4px rgba(0, 0, 0, 0.95);
+}
+
+/* Always-visible retry on external-match cards (inner fallback can be covered or absent). */
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__retry--slot-action {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: calc(100% - 0.75rem);
+  white-space: nowrap;
+  font-size: 0.72rem;
+  padding: 0.34rem 0.7rem;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #0a0a0a;
+  background: var(--og-lime);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__retry--slot-action:hover {
+  filter: brightness(1.08);
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal .nft-thumb__retry--slot-action:active {
+  transform: translateX(-50%) scale(0.98);
+}
+
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual.is-broken
+  )
+  .nft-thumb__retry--slot-action,
+.nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+    .nft-thumb__counterpart-visual--metadata-fetch
+  )
+  .nft-thumb__retry--slot-action {
+  animation: nft-retry-illuminate 1.45s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+      .nft-thumb__counterpart-visual.is-broken
+    )
+    .nft-thumb__retry--slot-action,
+  .nft-thumb--counterpart.nft-thumb--counterpartExternal:has(
+      .nft-thumb__counterpart-visual--metadata-fetch
+    )
+    .nft-thumb__retry--slot-action {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgba(196, 181, 253, 0.45),
+      0 0 14px rgba(167, 139, 250, 0.3);
+  }
 }
 
 .nft-thumb__find {
@@ -1044,6 +1379,26 @@ input[type="text"]:focus {
 
 .token-side--inx {
   border-top: 3px solid #f472b6;
+}
+
+.token-side--quirkkid {
+  border-top: 3px solid #c4b5fd;
+}
+
+.token-results-toolbar {
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.token-results-toolbar__hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 32rem;
+  line-height: 1.35;
 }
 
 .token-side .nft-thumb {

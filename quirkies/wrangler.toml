@@ -12,5 +12,6 @@ INX_CONTRACT = "0x1Dafd82031eff6863AdF3a25907310FaEE72Ca5f"
 # ALCHEMY_API_KEY (exact name — copy from Alchemy dashboard → app → API key):
 # - Local: file must be named `.dev.vars` or `.env` in THIS folder (not `.dev.vars.example`).
 # - Deployed: `wrangler secret put ALCHEMY_API_KEY` from this directory.
+
 [assets]
 directory = "./public"

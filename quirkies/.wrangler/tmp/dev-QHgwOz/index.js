@@ -1,6 +1,57 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
+// src/imageProxyUtils.js
+var INFLIGHT = /* @__PURE__ */ new Map();
+async function dedupeInflight(key, fn) {
+  const ex = INFLIGHT.get(key);
+  if (ex) return ex;
+  const p = (async () => {
+    try {
+      return await fn();
+    } finally {
+      INFLIGHT.delete(key);
+    }
+  })();
+  INFLIGHT.set(key, p);
+  return p;
+}
+__name(dedupeInflight, "dedupeInflight");
+var FALLBACK_PNG_B64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+function base64ToUint8Array(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+__name(base64ToUint8Array, "base64ToUint8Array");
+var FALLBACK_PNG_BYTES = base64ToUint8Array(FALLBACK_PNG_B64);
+function imageProxyCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS"
+  };
+}
+__name(imageProxyCorsHeaders, "imageProxyCorsHeaders");
+function fallbackPngResponse() {
+  const headers = new Headers(imageProxyCorsHeaders());
+  headers.set("Content-Type", "image/png");
+  headers.set("Cache-Control", "no-store");
+  return new Response(FALLBACK_PNG_BYTES, { status: 200, headers });
+}
+__name(fallbackPngResponse, "fallbackPngResponse");
+function imageBufferToHttpResponse(buffer, contentType, cacheControl) {
+  const headers = new Headers(imageProxyCorsHeaders());
+  headers.set("Content-Type", contentType || "image/png");
+  headers.set(
+    "Cache-Control",
+    cacheControl || "public, max-age=31536000, immutable"
+  );
+  headers.set("Content-Length", String(buffer.byteLength));
+  return new Response(buffer, { status: 200, headers });
+}
+__name(imageBufferToHttpResponse, "imageBufferToHttpResponse");
+
 // src/index.js
 function nftBaseUrl(apiKey) {
   return `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}`;
@@ -104,12 +155,23 @@ function shouldProxyImageUrlForClient(u) {
   return isIpfsLikeImageUrl(u) || isQuirkiesQuirkKidCdnUrl(u);
 }
 __name(shouldProxyImageUrlForClient, "shouldProxyImageUrlForClient");
-function proxiedImageUrlForClient(rawUrl, assetOrigin) {
+function proxiedImageUrlForClient(rawUrl, assetOrigin, opts) {
   if (!rawUrl || typeof rawUrl !== "string") return null;
   const n = normalizeImageUrl(rawUrl.trim());
   if (!n) return null;
   if (!shouldProxyImageUrlForClient(n)) return n;
-  const q = `?url=${encodeURIComponent(n)}`;
+  let q = `?url=${encodeURIComponent(n)}`;
+  if (opts && typeof opts === "object") {
+    if (opts.contract && String(opts.contract).trim()) {
+      q += `&contract=${encodeURIComponent(String(opts.contract).trim())}`;
+    }
+    if (opts.tokenId !== void 0 && opts.tokenId !== null && String(opts.tokenId).trim() !== "") {
+      q += `&tokenId=${encodeURIComponent(String(opts.tokenId).trim())}`;
+    }
+    if (opts.collection && String(opts.collection).trim()) {
+      q += `&collection=${encodeURIComponent(String(opts.collection).trim())}`;
+    }
+  }
   if (assetOrigin && typeof assetOrigin === "string") {
     const base = assetOrigin.replace(/\/$/, "");
     return `${base}/api/img${q}`;
@@ -511,14 +573,14 @@ var IPFS_GATEWAYS = [
   "https://gateway.pinata.cloud/ipfs/",
   "https://ipfs.io/ipfs/"
 ];
-var IMG_PROXY_TIMEOUT_MS = 5500;
+var IMG_PROXY_TIMEOUT_MS = 12e3;
 var IMG_PROXY_MAX_BYTES = 25 * 1024 * 1024;
 var IMG_PROXY_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-var CF_CACHE_FETCH = { cacheEverything: true, cacheTtl: 86400 };
+var IMG_EDGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 function fullyDecodeUrlParam(raw) {
   let s = String(raw || "").trim();
   if (!s) return "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     try {
       const next = decodeURIComponent(s);
       if (next === s) break;
@@ -593,8 +655,7 @@ async function fetchWithImgTimeout(resource, timeoutMs) {
     const res = await fetch(resource, {
       redirect: "follow",
       headers: imgProxyHeadersForUrl(resource),
-      signal: controller.signal,
-      cf: CF_CACHE_FETCH
+      signal: controller.signal
     });
     clearTimeout(id);
     return res;
@@ -607,6 +668,20 @@ __name(fetchWithImgTimeout, "fetchWithImgTimeout");
 async function tryIpfsGateways(ipfsPath) {
   const path = sanitizeIpfsPathForGateway(ipfsPath);
   if (!path) return null;
+  const urls = IPFS_GATEWAYS.map((g) => g + path);
+  const attempts = urls.map(
+    (url) => fetchWithImgTimeout(url, IMG_PROXY_TIMEOUT_MS).then((res) => {
+      if (isOkImageResponse(res)) return res;
+      throw new Error("bad");
+    })
+  );
+  if (typeof Promise.any === "function") {
+    try {
+      return await Promise.any(attempts);
+    } catch {
+      return null;
+    }
+  }
   for (const gateway of IPFS_GATEWAYS) {
     const url = gateway + path;
     try {
@@ -647,7 +722,7 @@ async function fetchHttpsImage(decodedUrl) {
   return null;
 }
 __name(fetchHttpsImage, "fetchHttpsImage");
-async function handleImageProxy(request, ctx) {
+async function handleImageProxy(request, ctx, env) {
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: "GET" });
   try {
@@ -670,33 +745,38 @@ async function handleImageProxy(request, ctx) {
       headers: { ...corsHeaders(), "Content-Type": "text/plain; charset=utf-8" }
     });
   }
-  const ipfsPath = normalizeIPFSPathFromUrl(decodedUrl);
-  let originRes = null;
-  if (ipfsPath) {
-    originRes = await tryDirectThenGateways(decodedUrl, ipfsPath);
-  } else {
-    originRes = await fetchHttpsImage(decodedUrl);
-  }
-  if (!originRes || !originRes.ok) {
-    return new Response("Image not found", {
-      status: 404,
-      headers: { ...corsHeaders(), "Content-Type": "text/plain; charset=utf-8" }
-    });
-  }
-  const ct = originRes.headers.get("Content-Type")?.split(";")[0].trim() || "image/png";
-  const headers = new Headers();
-  headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-  headers.set("Cache-Control", "public, max-age=86400");
-  headers.set("Content-Type", ct);
-  const len = originRes.headers.get("Content-Length");
-  if (len) headers.set("Content-Length", len);
-  const out = new Response(originRes.body, { status: 200, headers });
+  const dedupeKey = `url:${decodedUrl.slice(0, 512)}`;
   try {
-    if (ctx?.waitUntil) ctx.waitUntil(cache.put(cacheKey, out.clone()));
-  } catch {
+    const fetched = await dedupeInflight(dedupeKey, async () => {
+      const ipfsPath = normalizeIPFSPathFromUrl(decodedUrl);
+      let originRes = null;
+      if (ipfsPath) {
+        originRes = await tryDirectThenGateways(decodedUrl, ipfsPath);
+      } else {
+        originRes = await fetchHttpsImage(decodedUrl);
+      }
+      if (!originRes || !originRes.ok) return null;
+      const ct = originRes.headers.get("Content-Type")?.split(";")[0].trim() || "image/png";
+      const buf = await originRes.arrayBuffer();
+      if (buf.byteLength > IMG_PROXY_MAX_BYTES) return null;
+      return { buffer: buf, contentType: ct };
+    });
+    if (fetched && fetched.buffer) {
+      const out = imageBufferToHttpResponse(
+        fetched.buffer,
+        fetched.contentType,
+        IMG_EDGE_CACHE_CONTROL
+      );
+      try {
+        if (ctx?.waitUntil) ctx.waitUntil(cache.put(cacheKey, out.clone()));
+      } catch {
+      }
+      return out;
+    }
+  } catch (e) {
+    console.error("Image proxy fetch error", e);
   }
-  return out;
+  return fallbackPngResponse();
 }
 __name(handleImageProxy, "handleImageProxy");
 function normalizePath(pathname) {
@@ -787,13 +867,20 @@ function requireQuirksAlchemyEnv(env) {
   };
 }
 __name(requireQuirksAlchemyEnv, "requireQuirksAlchemyEnv");
-function rowFromCol(col, id, assetOrigin) {
+function rowFromCol(col, id, assetOrigin, mainContract) {
   const rawImg = col.idToImage.get(id) ?? null;
   const rawKid = col.idToKidImage?.get(id) ?? null;
+  const tidJson = tokenIdStrToJson(id);
   return {
-    tokenId: tokenIdStrToJson(id),
-    image: rawImg ? proxiedImageUrlForClient(rawImg, assetOrigin) : null,
-    kidImage: rawKid ? proxiedImageUrlForClient(rawKid, assetOrigin) : null,
+    tokenId: tidJson,
+    image: rawImg ? proxiedImageUrlForClient(rawImg, assetOrigin, {
+      contract: mainContract,
+      tokenId: tidJson
+    }) : null,
+    kidImage: rawKid ? proxiedImageUrlForClient(rawKid, assetOrigin, {
+      collection: "quirkkids",
+      tokenId: tidJson
+    }) : null,
     traits: col.idToTraits.get(id) ?? []
   };
 }
@@ -812,7 +899,7 @@ var src_default = {
     }
     const path = normalizePath(url.pathname);
     if (path === "/api/img") {
-      return handleImageProxy(request, ctx);
+      return handleImageProxy(request, ctx, env);
     }
     if (path === "/api/nft-metadata") {
       try {
@@ -838,8 +925,12 @@ var src_default = {
           return json({ error: "Metadata not found" }, 404);
         }
         const rawImage = extractImageFromMetadata(meta);
+        const tidNorm = tokenIdStrToJson(tokenIdStr);
         return json({
-          image: rawImage ? proxiedImageUrlForClient(rawImage, assetOrigin) : null,
+          image: rawImage ? proxiedImageUrlForClient(rawImage, assetOrigin, {
+            contract,
+            tokenId: tidNorm
+          }) : null,
           rawImage
         });
       } catch (err) {
@@ -879,10 +970,17 @@ var src_default = {
         const qlImg = results[3];
         const qKidFromContract = await qKidContractPromise;
         if (qKidFromContract) qKid = qKidFromContract;
+        const tidNorm = tokenIdStrToJson(tid);
         const quirkie = {
           owner: qOwner,
-          image: qImg ? proxiedImageUrlForClient(qImg, assetOrigin) : null,
-          kidImage: qKid ? proxiedImageUrlForClient(qKid, assetOrigin) : null,
+          image: qImg ? proxiedImageUrlForClient(qImg, assetOrigin, {
+            contract: QUIRKIES,
+            tokenId: tidNorm
+          }) : null,
+          kidImage: qKid ? proxiedImageUrlForClient(qKid, assetOrigin, {
+            collection: "quirkkids",
+            tokenId: tidNorm
+          }) : null,
           opensea: qOwner ? `https://opensea.io/${qOwner}` : null,
           openseaNft: openseaEthereumItemUrl(QUIRKIES, tid)
         };
@@ -890,7 +988,10 @@ var src_default = {
         if (inPairRange) {
           quirking = {
             owner: qlOwner,
-            image: qlImg ? proxiedImageUrlForClient(qlImg, assetOrigin) : null,
+            image: qlImg ? proxiedImageUrlForClient(qlImg, assetOrigin, {
+              contract: QUIRKLINGS,
+              tokenId: tidNorm
+            }) : null,
             opensea: qlOwner ? `https://opensea.io/${qlOwner}` : null,
             openseaNft: openseaEthereumItemUrl(QUIRKLINGS, tid)
           };
@@ -902,7 +1003,10 @@ var src_default = {
           const iImg = results[iOff + 1];
           inx = {
             owner: iOwner,
-            image: iImg ? proxiedImageUrlForClient(iImg, assetOrigin) : null,
+            image: iImg ? proxiedImageUrlForClient(iImg, assetOrigin, {
+              contract: INX,
+              tokenId: tidNorm
+            }) : null,
             opensea: iOwner ? `https://opensea.io/${iOwner}` : null,
             openseaNft: openseaEthereumItemUrl(INX, tid)
           };
@@ -969,13 +1073,13 @@ var src_default = {
         const qlSet = new Set(quirklingsCol.idKeys);
         const inxSet = new Set(inxCol.idKeys);
         const quirkies = quirkiesCol.idKeys.map(
-          (id) => rowFromCol(quirkiesCol, id, assetOrigin)
+          (id) => rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES)
         );
         const quirklings = quirklingsCol.idKeys.map(
-          (id) => rowFromCol(quirklingsCol, id, assetOrigin)
+          (id) => rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS)
         );
         const inxList = inxCol.idKeys.map(
-          (id) => rowFromCol(inxCol, id, assetOrigin)
+          (id) => rowFromCol(inxCol, id, assetOrigin, INX)
         );
         const matched = [];
         for (const id of quirkiesCol.idKeys) {
@@ -987,11 +1091,11 @@ var src_default = {
           }
           if (bi > PAIR_MAX_TOKEN_ID) continue;
           if (!qlSet.has(id)) continue;
-          const inxRow = inxSet.has(id) ? rowFromCol(inxCol, id, assetOrigin) : null;
+          const inxRow = inxSet.has(id) ? rowFromCol(inxCol, id, assetOrigin, INX) : null;
           matched.push({
             tokenId: tokenIdStrToJson(id),
-            quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
-            quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+            quirkie: rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES),
+            quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
             inx: inxRow,
             openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
             openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
@@ -1051,13 +1155,20 @@ var src_default = {
         );
         const missingQuirkie = missingQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaNft: missingQuirkieRows[i].openseaNft,
+          counterpartCollection: "quirkies",
+          counterpartContract: QUIRKIES,
           counterpartImage: proxiedImageUrlForClient(
             missingQuirkieRows[i].counterpartImage,
-            assetOrigin
+            assetOrigin,
+            {
+              contract: QUIRKIES,
+              tokenId: tokenIdStrToJson(id),
+              collection: "quirkies"
+            }
           )
         }));
         const loneQuirkieRows = await mapWithConcurrency(
@@ -1073,23 +1184,30 @@ var src_default = {
         );
         const loneQuirkies = loneQuirkieIds.map((id, i) => ({
           tokenId: tokenIdStrToJson(id),
-          quirkie: rowFromCol(quirkiesCol, id, assetOrigin),
+          quirkie: rowFromCol(quirkiesCol, id, assetOrigin, QUIRKIES),
           openseaQuirkie: openseaEthereumItemUrl(QUIRKIES, id),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id),
           openseaNft: loneQuirkieRows[i].openseaNft,
+          counterpartCollection: "quirklings",
+          counterpartContract: QUIRKLINGS,
           counterpartImage: proxiedImageUrlForClient(
             loneQuirkieRows[i].counterpartImage,
-            assetOrigin
+            assetOrigin,
+            {
+              contract: QUIRKLINGS,
+              tokenId: tokenIdStrToJson(id),
+              collection: "quirklings"
+            }
           )
         }));
         const quirklingsHigh = highQuirklingIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          quirking: rowFromCol(quirklingsCol, id, assetOrigin),
+          quirking: rowFromCol(quirklingsCol, id, assetOrigin, QUIRKLINGS),
           openseaQuirkling: openseaEthereumItemUrl(QUIRKLINGS, id)
         }));
         const inxOnly = inxOnlyIds.map((id) => ({
           tokenId: tokenIdStrToJson(id),
-          inx: rowFromCol(inxCol, id, assetOrigin),
+          inx: rowFromCol(inxCol, id, assetOrigin, INX),
           openseaInx: INX ? openseaEthereumItemUrl(INX, id) : null
         }));
         const pairMaxJson = PAIR_MAX_TOKEN_ID <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(PAIR_MAX_TOKEN_ID) : PAIR_MAX_TOKEN_ID.toString(10);
@@ -1179,7 +1297,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-cqgWnp/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-URZ4Bf/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -1211,7 +1329,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-cqgWnp/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-URZ4Bf/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
