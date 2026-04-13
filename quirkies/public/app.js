@@ -36,8 +36,6 @@ function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
 }
 
-var MAX_WALLET_ROWS = 12;
-
 /** Split textarea / pasted list into unique valid0x addresses (max 12). */
 function parseWalletAddressesFromInput(raw) {
   var s = String(raw || "").trim();
@@ -56,67 +54,6 @@ function parseWalletAddressesFromInput(raw) {
     if (out.length >= 12) break;
   }
   return out;
-}
-
-function collectWalletAddressesFromRows() {
-  var inputs = document.querySelectorAll("#wallet-rows input.wallet-row__input");
-  var parts = [];
-  for (var i = 0; i < inputs.length; i++) {
-    parts.push(inputs[i].value);
-  }
-  return parseWalletAddressesFromInput(parts.join("\n"));
-}
-
-function syncWalletRowsUi() {
-  var container = document.getElementById("wallet-rows");
-  if (!container) return;
-  var rows = container.querySelectorAll(".wallet-row");
-  var addBtn = document.getElementById("add-wallet-btn");
-  var n = rows.length;
-  for (var i = 0; i < rows.length; i++) {
-    var rm = rows[i].querySelector(".wallet-row__remove");
-    if (rm) {
-      rm.hidden = n <= 1;
-    }
-  }
-  if (addBtn) {
-    var atCap = n >= MAX_WALLET_ROWS;
-    addBtn.disabled = atCap;
-    addBtn.setAttribute("aria-disabled", atCap ? "true" : "false");
-  }
-}
-
-function addWalletRow() {
-  var container = document.getElementById("wallet-rows");
-  if (!container) return;
-  if (container.querySelectorAll(".wallet-row").length >= MAX_WALLET_ROWS) return;
-  var row = document.createElement("div");
-  row.className = "wallet-row";
-  var inp = document.createElement("input");
-  inp.type = "text";
-  inp.className = "wallet-row__input";
-  inp.setAttribute("autocomplete", "off");
-  inp.setAttribute("spellcheck", "false");
-  inp.placeholder = "0x…";
-  var rm = document.createElement("button");
-  rm.type = "button";
-  rm.className = "wallet-row__remove";
-  rm.setAttribute("aria-label", "Remove wallet");
-  rm.textContent = "×";
-  row.appendChild(inp);
-  row.appendChild(rm);
-  container.appendChild(row);
-  syncWalletRowsUi();
-  inp.focus();
-}
-
-function removeWalletRow(btn) {
-  var row = btn && btn.closest ? btn.closest(".wallet-row") : null;
-  var container = document.getElementById("wallet-rows");
-  if (!row || !container) return;
-  if (container.querySelectorAll(".wallet-row").length <= 1) return;
-  row.remove();
-  syncWalletRowsUi();
 }
 
 function walletPayloadCacheKey(data) {
@@ -1144,6 +1081,7 @@ function renderTokenResults(container, data) {
 }
 
 async function checkWallet() {
+  var input = document.getElementById("wallet-input");
   var btn = document.getElementById("check-wallet-btn");
   var statusEl = document.getElementById("wallet-status");
   var resultsEl = document.getElementById("wallet-results");
@@ -1154,12 +1092,12 @@ async function checkWallet() {
   tokenResultsEl.innerHTML = "";
   setStatus(tokenStatusEl, "", "");
 
-  var addrs = collectWalletAddressesFromRows();
+  var addrs = parseWalletAddressesFromInput(input ? input.value : "");
   if (!addrs.length) {
     setStatus(
       statusEl,
       "error",
-      "Enter at least one wallet — 0x + 40 hex characters. Add another row or paste several in one field (comma / space). Max 12 addresses."
+      "Enter at least one wallet — 0x + 40 hex characters. Separate multiple with a comma, space, or new line (max 12)."
     );
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";
@@ -1302,29 +1240,15 @@ async function findTokenMatch() {
 })();
 
 document.getElementById("check-wallet-btn").addEventListener("click", checkWallet);
-var walletRowsEl = document.getElementById("wallet-rows");
-if (walletRowsEl) {
-  walletRowsEl.addEventListener("keydown", function (e) {
-    if (e.key !== "Enter") return;
-    var t = e.target;
-    if (!t || t.tagName !== "INPUT" || !t.classList.contains("wallet-row__input")) return;
-    e.preventDefault();
-    checkWallet();
-  });
-  walletRowsEl.addEventListener("click", function (e) {
-    var rm = e.target.closest(".wallet-row__remove");
-    if (!rm || !walletRowsEl.contains(rm)) return;
-    e.preventDefault();
-    removeWalletRow(rm);
+var walletInputEl = document.getElementById("wallet-input");
+if (walletInputEl) {
+  walletInputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      checkWallet();
+    }
   });
 }
-var addWalletBtn = document.getElementById("add-wallet-btn");
-if (addWalletBtn) {
-  addWalletBtn.addEventListener("click", function () {
-    addWalletRow();
-  });
-}
-syncWalletRowsUi();
 
 document.getElementById("find-match-btn").addEventListener("click", findTokenMatch);
 document.getElementById("token-input").addEventListener("keydown", function (e) {
