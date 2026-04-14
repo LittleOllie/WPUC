@@ -247,6 +247,40 @@ function setupBackToMenu() {
   }
 }
 
+var THEME_STORAGE_KEY = "lo-labs-theme";
+
+function setupThemeToggle() {
+  var html = document.documentElement;
+  var btn = document.getElementById("theme-toggle");
+  function syncButton() {
+    if (!btn) return;
+    var t = html.getAttribute("data-theme") || "dark";
+    var isLight = t === "light";
+    btn.setAttribute("aria-checked", isLight ? "true" : "false");
+    btn.setAttribute(
+      "aria-label",
+      isLight ? "Switch to dark theme" : "Switch to light theme"
+    );
+  }
+  function applyTheme(next) {
+    if (next !== "light" && next !== "dark") next = "dark";
+    html.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch (e) {
+      /* ignore */
+    }
+    syncButton();
+  }
+  if (btn) {
+    btn.addEventListener("click", function () {
+      var cur = html.getAttribute("data-theme") || "dark";
+      applyTheme(cur === "dark" ? "light" : "dark");
+    });
+  }
+  syncButton();
+}
+
 function setupWelcomeModal() {
   var modal = document.getElementById("welcome-modal");
   if (!modal) return;
@@ -1291,6 +1325,7 @@ function setupTokenFlecksGridFromSearch() {
 }
 
 setupBackToMenu();
+setupThemeToggle();
 setupWelcomeModal();
 setupLookupShell();
 setupRetryMissingImagesGlobal();
