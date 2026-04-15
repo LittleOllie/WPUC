@@ -327,7 +327,9 @@ async function fetchOpenSeaNftRank(apiKey, contractAddr, tokenIdDecimalStr) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    const r = data?.rarity?.rank;
+    /** v2 wraps payload in `{ nft: { rarity: { rank } } }` — not top-level `rarity`. */
+    const nft = data?.nft && typeof data.nft === "object" ? data.nft : data;
+    const r = nft?.rarity?.rank;
     if (typeof r === "number" && Number.isFinite(r)) return r;
     if (typeof r === "string" && /^\d+$/.test(r)) return Number(r);
     return null;

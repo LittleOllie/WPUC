@@ -27,6 +27,36 @@ function apiUrl(pathAndQuery) {
 }
 
 /**
+ * Same-folder static assets (ogeniegrid, pblo, fillers). Fixes URLs when the page path has no
+ * trailing slash (e.g. …/ogt vs …/ogt/) so ogeniegrid.png resolves next to the app, not up a level.
+ */
+function flexResolveStaticAsset(filename) {
+  if (!filename || typeof filename !== "string") return filename;
+  try {
+    var base =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : typeof window !== "undefined" && window.location
+          ? window.location.href
+          : filename;
+    var u = new URL(base);
+    var p = u.pathname;
+    var segs = p.split("/").filter(Boolean);
+    var last = segs[segs.length - 1] || "";
+    if (last && last.indexOf(".") === -1 && !p.endsWith("/")) {
+      u.pathname = p + "/";
+    }
+    return new URL(filename, u).href;
+  } catch (e) {
+    try {
+      var b = getApiBase().replace(/\/$/, "");
+      if (b) return b + "/" + filename.replace(/^\//, "");
+    } catch (e2) {}
+    return filename;
+  }
+}
+
+/**
  * CERT collection uses one shared artwork for every token — use this for “missing CERT” previews
  * instead of fetching per-token metadata. Resolves correctly on the deployed Worker, localhost, or file://.
  */
@@ -596,36 +626,18 @@ function openFlexModal() {
 
 /** Artwork under pblo in the flex grid preview + JPEG export (not the site header logo). */
 function getFlexGridBrandImageUrl() {
-  try {
-    return new URL("ogeniegrid.png", window.location.href).href;
-  } catch {
-    return "ogeniegrid.png";
-  }
+  return flexResolveStaticAsset("ogeniegrid.png");
 }
 
 function getFlexPbloImageUrl() {
-  try {
-    return new URL("pblo.png", window.location.href).href;
-  } catch {
-    return "pblo.png";
-  }
+  return flexResolveStaticAsset("pblo.png");
 }
 
 /** Second slot of a merged 2.png pair — no tile / no canvas draw at this index. */
 var FLEX_FILLER_SKIP = "__flex_filler_skip__";
 
 function flexFillerAssetUrl(filename) {
-  try {
-    var base =
-      typeof document !== "undefined" && document.baseURI
-        ? document.baseURI
-        : typeof window !== "undefined" && window.location
-          ? window.location.href
-          : filename;
-    return new URL(filename, base).href;
-  } catch {
-    return filename;
-  }
+  return flexResolveStaticAsset(filename);
 }
 
 function getFlexFiller1Url() {
@@ -2285,6 +2297,16 @@ var EXPORT_GIF_CONFIG = {
   quality: 25
 };
 
+/** Opening frame hold (fixed in the GIF popup; overridable only via flexExportRunGif). */
+var EXPORT_GIF_BRAND_HOLD_MS = 1000;
+var EXPORT_GIF_BRAND_HOLD_MIN_MS = 500;
+var EXPORT_GIF_BRAND_HOLD_MAX_MS = 3000;
+var EXPORT_GIF_NFT_DELAY_MIN_MS = 150;
+var EXPORT_GIF_NFT_DELAY_MAX_MS = 2000;
+
+/** GIF popup: 0 = slow (longer per NFT frame), 100 = fast. Medium (50) ≈ 350 ms/frame. */
+var flexGifLastSpeedPos = 50;
+
 /** Hard ceiling for “NFT frames” in the GIF options UI (first frame is always brand tile). */
 var EXPORT_GIF_MAX_NFT_FRAMES = 200;
 
@@ -2298,6 +2320,42 @@ function flexExportLimitFrames(frames, maxFrames) {
   return frames.filter(function (_, i) {
     return i % step === 0;
   });
+}
+
+/** How many NFT frames will be encoded after subsampling (matches flexExportLimitFrames). */
+function flexGifEffectiveNftFrameCount(orderedLength, maxPick) {
+  if (orderedLength <= 0) return 0;
+  var cap = Math.min(
+    Math.max(1, Math.floor(maxPick)),
+    EXPORT_GIF_MAX_NFT_FRAMES,
+    orderedLength
+  );
+  var phantom = new Array(orderedLength);
+  var i;
+  for (i = 0; i < orderedLength; i++) phantom[i] = i;
+  return flexExportLimitFrames(phantom, cap).length;
+}
+
+function flexClamp(n, lo, hi) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function flexGifSpeedPosToNftDelayMs(pos) {
+  var p = flexClamp(Math.round(parseInt(String(pos), 10) || 0), 0, 100);
+  if (p <= 50) {
+    return Math.round(2000 + (EXPORT_GIF_CONFIG.delay - 2000) * (p / 50));
+  }
+  return Math.round(
+    EXPORT_GIF_CONFIG.delay +
+      (EXPORT_GIF_NFT_DELAY_MIN_MS - EXPORT_GIF_CONFIG.delay) *
+        ((p - 50) / 50)
+  );
+}
+
+function flexFormatGifSeconds(ms) {
+  var sec = Math.max(0, Math.round(ms)) / 1000;
+  var d = sec >= 10 ? 1 : 2;
+  return Number(sec.toFixed(d)).toString() + " s";
 }
 
 /**
@@ -2495,32 +2553,54 @@ function flexExportWait(ms) {
   });
 }
 
-async function flexExportRunGif(optMaxNftFrames) {
+async function flexExportRunGif(opts) {
   if (typeof GIF === "undefined") {
     throw new Error("GIF library failed to load. Refresh the page.");
   }
   if (!flexEditorState) throw new Error("Generate a FlexGrid first.");
+  var opt =
+    typeof opts === "number"
+      ? { maxNftFrames: opts }
+      : opts && typeof opts === "object"
+        ? opts
+        : {};
   var cap = EXPORT_GIF_CONFIG.maxFrames;
   if (
-    typeof optMaxNftFrames === "number" &&
-    isFinite(optMaxNftFrames) &&
-    optMaxNftFrames > 0
+    typeof opt.maxNftFrames === "number" &&
+    isFinite(opt.maxNftFrames) &&
+    opt.maxNftFrames > 0
   ) {
     cap = Math.min(
-      Math.floor(optMaxNftFrames),
+      Math.floor(opt.maxNftFrames),
       EXPORT_GIF_MAX_NFT_FRAMES
     );
     cap = Math.max(1, cap);
   }
+  var brandDelayMs = EXPORT_GIF_BRAND_HOLD_MS;
+  if (typeof opt.brandDelayMs === "number" && isFinite(opt.brandDelayMs)) {
+    brandDelayMs = flexClamp(
+      Math.round(opt.brandDelayMs),
+      EXPORT_GIF_BRAND_HOLD_MIN_MS,
+      EXPORT_GIF_BRAND_HOLD_MAX_MS
+    );
+  }
+  var nftDelayMs = EXPORT_GIF_CONFIG.delay;
+  if (typeof opt.nftDelayMs === "number" && isFinite(opt.nftDelayMs)) {
+    nftDelayMs = flexClamp(
+      Math.round(opt.nftDelayMs),
+      EXPORT_GIF_NFT_DELAY_MIN_MS,
+      EXPORT_GIF_NFT_DELAY_MAX_MS
+    );
+  }
   var config = {
     size: EXPORT_GIF_CONFIG.size,
     maxFrames: cap,
-    delay: EXPORT_GIF_CONFIG.delay,
+    delay: nftDelayMs,
     quality: EXPORT_GIF_CONFIG.quality
   };
   var ordered = flexExportBuildOrderedUrls();
   var finalFrames = flexExportLimitFrames(ordered, config.maxFrames);
-  var delay = Math.max(300, config.delay);
+  var delay = nftDelayMs;
   var size = config.size;
   var total = 1 + finalFrames.length;
   var nWorkers = Math.min(6, Math.max(2, total));
@@ -2543,12 +2623,12 @@ async function flexExportRunGif(optMaxNftFrames) {
   flexExportSetProgress(
     "Est. ~" +
       flexExportEstimateMbHint(config, finalFrames.length) +
-      " MB · preparing frames (OGenie grid + pblo, then " +
-      finalFrames.length +
-      " NFT)…"
+      " MB · preparing " +
+      (1 + finalFrames.length) +
+      " frame(s)…"
   );
   var brandCanvas = await flexExportCreateGifBrandTileCanvas(size);
-  flexExportGifAddFrame(gifEnc, brandCanvas, 1200);
+  flexExportGifAddFrame(gifEnc, brandCanvas, brandDelayMs);
   flexReleaseCanvasMemory(brandCanvas);
   await flexExportWait(0);
 
@@ -2612,10 +2692,40 @@ function flexGifModalSetText(msg) {
   if (el) el.textContent = msg || "";
 }
 
+function flexGifOptionsUpdateDurationLine() {
+  var totalEl = document.getElementById("flex-gif-options-duration");
+  var input = document.getElementById("flex-gif-options-max");
+  var speedEl = document.getElementById("flex-gif-options-speed");
+  if (!totalEl || !flexEditorState) return;
+  var ordered = flexExportBuildOrderedUrls();
+  var n = ordered.length;
+  var maxPick = 1;
+  if (input) {
+    maxPick = parseInt(input.value, 10);
+    if (isNaN(maxPick) || maxPick < 1) maxPick = 1;
+    var imax = parseInt(input.max, 10);
+    if (!isNaN(imax) && maxPick > imax) maxPick = imax;
+  }
+  var nftMs = flexGifSpeedPosToNftDelayMs(
+    speedEl ? speedEl.value : flexGifLastSpeedPos
+  );
+  var nftCount = flexGifEffectiveNftFrameCount(n, maxPick);
+  var loopMs = EXPORT_GIF_BRAND_HOLD_MS + nftCount * nftMs;
+  var sec = loopMs / 1000;
+  totalEl.textContent =
+    "Total length: ~" + Number(sec.toFixed(1)) + " s";
+  if (speedEl) {
+    var sp = flexClamp(parseInt(speedEl.value, 10) || 0, 0, 100);
+    var lab = sp <= 30 ? "Slow" : sp >= 70 ? "Fast" : "Medium";
+    speedEl.setAttribute("aria-valuetext", lab);
+  }
+}
+
 function flexGifOptionsModalOpen() {
   var modal = document.getElementById("flex-gif-options-modal");
   var input = document.getElementById("flex-gif-options-max");
   var summary = document.getElementById("flex-gif-options-summary");
+  var speedEl = document.getElementById("flex-gif-options-speed");
   if (!modal || !flexEditorState) return;
   var ordered = flexExportBuildOrderedUrls();
   var n = ordered.length;
@@ -2624,21 +2734,24 @@ function flexGifOptionsModalOpen() {
   if (input) {
     input.min = "1";
     input.max = String(maxPick);
-    var def = Math.min(EXPORT_GIF_CONFIG.maxFrames, maxPick);
-    input.value = String(def);
+    input.value = String(maxPick);
+  }
+  if (speedEl) {
+    speedEl.value = String(
+      flexClamp(flexGifLastSpeedPos, 0, 100)
+    );
   }
   if (summary) {
     if (n === 0) {
       summary.textContent =
-        "No NFTs in the grid — the GIF will be the OGenie grid + pblo only.";
+        "No NFTs in this grid — the GIF is only the opening frame.";
     } else {
       summary.textContent =
         n +
-        " NFT(s) in your grid. If you pick fewer than " +
-        n +
-        ", frames are sampled evenly across the grid.";
+        " NFTs in this grid. Use a lower number to sample evenly across the grid.";
     }
   }
+  flexGifOptionsUpdateDurationLine();
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   if (input) {
@@ -2660,6 +2773,7 @@ function flexGifOptionsModalClose() {
 
 function flexGifOptionsConfirmAndRun() {
   var input = document.getElementById("flex-gif-options-max");
+  var speedEl = document.getElementById("flex-gif-options-speed");
   var maxPick = 1;
   if (input) {
     maxPick = parseInt(input.value, 10);
@@ -2667,9 +2781,19 @@ function flexGifOptionsConfirmAndRun() {
     var imax = parseInt(input.max, 10);
     if (!isNaN(imax) && maxPick > imax) maxPick = imax;
   }
+  var speedPos =
+    speedEl != null
+      ? flexClamp(parseInt(speedEl.value, 10) || 0, 0, 100)
+      : flexGifLastSpeedPos;
+  flexGifLastSpeedPos = speedPos;
+  var nftDelayMs = flexGifSpeedPosToNftDelayMs(speedPos);
   flexGifOptionsModalClose();
   flexExportWithUi(function () {
-    return flexExportRunGif(maxPick);
+    return flexExportRunGif({
+      maxNftFrames: maxPick,
+      brandDelayMs: EXPORT_GIF_BRAND_HOLD_MS,
+      nftDelayMs: nftDelayMs
+    });
   });
 }
 
@@ -2679,10 +2803,20 @@ function setupFlexGifOptionsModal() {
   var confirm = document.getElementById("flex-gif-options-confirm");
   var backdrop = document.getElementById("flex-gif-options-backdrop");
   var closeBtn = document.getElementById("flex-gif-options-close");
+  var maxInput = document.getElementById("flex-gif-options-max");
+  var speedEl = document.getElementById("flex-gif-options-speed");
   if (cancel) cancel.addEventListener("click", flexGifOptionsModalClose);
   if (closeBtn) closeBtn.addEventListener("click", flexGifOptionsModalClose);
   if (backdrop) backdrop.addEventListener("click", flexGifOptionsModalClose);
   if (confirm) confirm.addEventListener("click", flexGifOptionsConfirmAndRun);
+  if (maxInput) {
+    maxInput.addEventListener("input", flexGifOptionsUpdateDurationLine);
+    maxInput.addEventListener("change", flexGifOptionsUpdateDurationLine);
+  }
+  if (speedEl) {
+    speedEl.addEventListener("input", flexGifOptionsUpdateDurationLine);
+    speedEl.addEventListener("change", flexGifOptionsUpdateDurationLine);
+  }
 }
 
 function flexRefreshPreviewFromSlots() {

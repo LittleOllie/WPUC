@@ -242,7 +242,7 @@
         <p class="footer__flexgrid">
           <a
             class="footer__flexgrid-btn"
-            href="https://loflexgrid.littleollienft.workers.dev/"
+            href="https://littleollielabs.com/flexgrid/index.html"
             target="_blank"
             rel="noopener noreferrer"
             >For other collections, check out Flex Grid</a>
@@ -298,7 +298,7 @@
         </div>
         <a
           class="welcome-modal__flexgrid-btn"
-          href="https://loflexgrid.littleollienft.workers.dev/"
+          href="https://littleollielabs.com/flexgrid/index.html"
           target="_blank"
           rel="noopener noreferrer"
           >For other collections, check out Flex Grid</a>
@@ -478,8 +478,7 @@
         <p id="flex-gif-options-summary" class="flex-gif-options-modal__summary"></p>
         <label class="flex-gif-options-modal__label" for="flex-gif-options-max">NFT frames to include</label>
         <p class="flex-gif-options-modal__hint">
-          First frame is always OGenie grid + pblo. If your grid has more NFTs than this, frames are picked
-          evenly across the grid.
+          If this is less than the number of NFTs in your grid, frames are sampled evenly.
         </p>
         <input
           type="number"
@@ -490,6 +489,34 @@
           step="1"
           value="25"
         />
+        <label
+          class="flex-gif-options-modal__label flex-gif-options-modal__label--section"
+          for="flex-gif-options-speed"
+          >Speed</label>
+        <div class="flex-gif-options-modal__speed-scale" aria-hidden="true">
+          <span>Slow</span>
+          <span>Fast</span>
+        </div>
+        <div class="flex-gif-options-modal__range-row flex-gif-options-modal__range-row--speed">
+          <input
+            type="range"
+            id="flex-gif-options-speed"
+            class="flex-gif-options-modal__range"
+            min="0"
+            max="100"
+            step="5"
+            value="50"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuetext="Medium"
+            aria-label="GIF speed, slow to fast"
+          />
+        </div>
+        <p
+          id="flex-gif-options-duration"
+          class="flex-gif-options-modal__duration"
+          aria-live="polite"
+        ></p>
         <div class="flex-gif-options-modal__actions">
           <button type="button" id="flex-gif-options-cancel" class="btn-secondary flex-gif-options-modal__btn">
             Cancel
