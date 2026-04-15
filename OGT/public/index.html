@@ -362,31 +362,19 @@
         <div class="flex-modal__sort">
           <div class="flex-modal__sort-head">
             <label class="flex-modal__sort-title" for="flex-trait-sort">Layout</label>
-            <p id="flex-trait-sort-hint" class="flex-modal__sort-note">
-              Random by default. OpenSea rank uses rarity from the API when the worker has
-              <code class="flex-modal__inline-code">OPENSEA_API_KEY</code> set. Trait options sort
-              OGenies first, then Certs.
-            </p>
           </div>
           <div class="flex-modal__select-wrap">
             <select
               id="flex-trait-sort"
               class="flex-modal__select"
-              aria-describedby="flex-trait-sort-hint"
               aria-label="Sort order for the flex grid"
             ></select>
           </div>
         </div>
-        <label class="flex-quality-row">
-          <input type="checkbox" id="flex-quality-ultra" />
-          Ultra quality (slower — highest /img resolution)
-        </label>
         <div id="flex-preview-wrap" class="flex-preview-wrap hidden">
           <p class="flex-preview-label">Flex grid</p>
           <p class="flex-preview-hint">
-            Drag tiles to reorder. pblo stays on the top-left tile only; OGT grid art and fillers
-            move like NFTs. The wide 2.png can be moved to another two-cell span—two NFTs (or spares)
-            fill the cells it left behind.
+            Drag tiles to reorder.
           </p>
           <div id="flex-preview-grid" class="flex-preview-grid"></div>
           <button

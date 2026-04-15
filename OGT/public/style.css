@@ -1860,6 +1860,30 @@ body.welcome-modal-active {
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
+  position: relative;
+}
+
+.flex-preview-grid__pblo-fixed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% / var(--flex-cols, 1));
+  height: calc(100% / var(--flex-rows, 1));
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: stretch;
+}
+
+.flex-preview-grid__pblo-fixed > img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 52%;
+  object-fit: contain;
+  object-position: top center;
+  pointer-events: none;
 }
 
 .flex-tile {
@@ -2015,7 +2039,7 @@ body.welcome-modal-active {
   margin: 0 0 0.35rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--og-lime);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }

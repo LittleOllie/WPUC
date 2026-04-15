@@ -280,7 +280,7 @@ function flexBuildNftUrlCountsFromWallet() {
     wc && wc.checked
   );
   var sortSel = document.getElementById("flex-trait-sort");
-  var sk = sortSel && sortSel.value ? sortSel.value : "random";
+  var sk = sortSel && sortSel.value ? sortSel.value : "token";
   var sorted = flexSortOrShuffle(items, sk, lastWalletApiData);
   var counts = {};
   var i;
@@ -774,7 +774,7 @@ function flexSlotUrlIsBrandGridOgt(url) {
     var br = new URL(getFlexGridBrandImageUrl(), window.location.href).pathname;
     var a = (cu.split("/").pop() || "").toLowerCase();
     var b = (br.split("/").pop() || "").toLowerCase();
-    return a === b && a.length > 0;
+    return (a === b && a.length > 0) || a === "ogtriplegrid.png";
   } catch (e) {
     var bn = flexFillerBasename(url);
     return bn === "ogeniegrid.png" || bn === "ogtriplegrid.png";
@@ -854,13 +854,27 @@ function populateFlexTraitSelect() {
   if (!sel || !lastWalletApiData) return;
   var og = normalizeWalletNftList(lastWalletApiData.ogenies);
   var ce = normalizeWalletNftList(lastWalletApiData.certs);
-  var types = collectTraitTypesFromItems(og.concat(ce));
+  var ogTypes = collectTraitTypesFromItems(og);
+  var ceTypes = collectTraitTypesFromItems(ce);
+  var seen = {};
+  var types = [];
+  var ti;
+  for (ti = 0; ti < ogTypes.length; ti++) {
+    seen[ogTypes[ti]] = true;
+    types.push(ogTypes[ti]);
+  }
+  for (ti = 0; ti < ceTypes.length; ti++) {
+    if (!seen[ceTypes[ti]]) {
+      seen[ceTypes[ti]] = true;
+      types.push(ceTypes[ti]);
+    }
+  }
   var keep = sel.value;
   sel.innerHTML = "";
-  var randOpt = document.createElement("option");
-  randOpt.value = "random";
-  randOpt.textContent = "Random order";
-  sel.appendChild(randOpt);
+  var tokOpt = document.createElement("option");
+  tokOpt.value = "token";
+  tokOpt.textContent = "Token ID";
+  sel.appendChild(tokOpt);
   var rankOpt = document.createElement("option");
   rankOpt.value = "rank";
   rankOpt.textContent = "OpenSea rank";
@@ -879,7 +893,23 @@ function populateFlexTraitSelect() {
       break;
     }
   }
-  sel.value = ok ? keep : "random";
+  var hasRank = false;
+  var ii;
+  for (ii = 0; ii < og.length; ii++) {
+    if (typeof og[ii].openSeaRank === "number" && Number.isFinite(og[ii].openSeaRank)) {
+      hasRank = true;
+      break;
+    }
+  }
+  if (!hasRank) {
+    for (ii = 0; ii < ce.length; ii++) {
+      if (typeof ce[ii].openSeaRank === "number" && Number.isFinite(ce[ii].openSeaRank)) {
+        hasRank = true;
+        break;
+      }
+    }
+  }
+  sel.value = ok ? keep : hasRank ? "rank" : "token";
 }
 
 function flexTraitValue(traits, traitType) {
@@ -977,16 +1007,14 @@ function flexShufflePreserveKind(items) {
 }
 
 function flexSortOrShuffle(items, sortKey, walletData) {
-  if (!sortKey || sortKey === "random") {
-    return flexShufflePreserveKind(items);
-  }
+  if (!sortKey || sortKey === "token") return applyFlexSort(items, "", walletData);
   if (sortKey === "rank") {
     return applyFlexRankSort(items, walletData);
   }
   if (sortKey.indexOf("trait:") === 0) {
     return applyFlexSort(items, sortKey, walletData);
   }
-  return flexShufflePreserveKind(items);
+  return applyFlexSort(items, "", walletData);
 }
 
 function applyFlexRankSort(items, walletData) {
@@ -1062,8 +1090,7 @@ function flexBuildImgProxyUrl(directUrl, size) {
 }
 
 function flexFlexQualityUltra() {
-  var el = document.getElementById("flex-quality-ultra");
-  return !!(el && el.checked);
+  return false;
 }
 
 function flexEstimateTilePixels(cols, rows) {
@@ -1359,9 +1386,7 @@ function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop, extraScale) {
   ctx.restore();
 }
 
-/** Download JPEG: ogeniegrid fills tile (contain), pblo drawn on top (same as preview grid). */
-function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
-  var pbloCap = ch * FLEX_BRAND_PBLO_MAX_FRAC;
+function flexDrawBrandArtCellExport(ctx, ogImg, cellX, cellY, cw, ch) {
   ctx.save();
   ctx.beginPath();
   ctx.rect(cellX, cellY, cw, ch);
@@ -1378,20 +1403,30 @@ function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
     FLEX_BRAND_CELL_BG,
     FLEX_BRAND_CONTAIN_SCALE
   );
-  if (pbloImg && pbloImg.naturalWidth > 0) {
-    var piw = pbloImg.naturalWidth;
-    var pih = pbloImg.naturalHeight;
-    var drawW = cw;
-    var drawH = (pih / piw) * drawW;
-    if (drawH > pbloCap) {
-      drawH = pbloCap;
-      drawW = (piw / pih) * drawH;
-    }
-    var px = cellX + (cw - drawW) / 2;
-    ctx.drawImage(pbloImg, px, cellY, drawW, drawH);
-  }
   ctx.restore();
 }
+
+function flexDrawPbloOverlayExport(ctx, pbloImg, cellX, cellY, cw, ch) {
+  if (!pbloImg || pbloImg.naturalWidth <= 0) return;
+  var pbloCap = ch * FLEX_BRAND_PBLO_MAX_FRAC;
+  var piw = pbloImg.naturalWidth;
+  var pih = pbloImg.naturalHeight;
+  var drawW = cw;
+  var drawH = (pih / piw) * drawW;
+  if (drawH > pbloCap) {
+    drawH = pbloCap;
+    drawW = (piw / pih) * drawH;
+  }
+  var px = cellX + (cw - drawW) / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cellX, cellY, cw, ch);
+  ctx.clip();
+  ctx.drawImage(pbloImg, px, cellY, drawW, drawH);
+  ctx.restore();
+}
+
+// (pblo-only export removed; brand tile is ogeniegrid + pblo overlay)
 
 /**
  * Rectangular grid that fits all cells (e.g. 5×4). cols = ceil(sqrt(n)), rows = ceil(n/cols).
@@ -1511,6 +1546,7 @@ async function flexExportGridDrawCellsSequential(
   var x;
   var y;
   var bg;
+  var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl(), null);
   for (i = 0; i < cells; i++) {
     if (slots[i] === FLEX_FILLER_SKIP) continue;
     col = i % cols;
@@ -1548,17 +1584,12 @@ async function flexExportGridDrawCellsSequential(
     }
     var cellR = flexExportCellRect(x, y, cw, ch);
     var slotUrl = slots[i];
-    if (i === 0) {
-      var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl(), null);
-      var ogM = null;
-      if (slotUrl) {
-        ogM = await flexLoadImageWithFallbacks(
-          slotUrl,
-          flexProxyPxForExportUrl(slotUrl, exportPx)
-        );
-      }
-      flexDrawBrandCellExport(ctx, ogM, pbloM, cellR.x, cellR.y, cellR.w, cellR.h);
-      flexReleaseImageElement(pbloM);
+    if (slotUrl && flexSlotUrlIsBrandGridOgt(slotUrl)) {
+      var ogM = await flexLoadImageWithFallbacks(
+        slotUrl,
+        flexProxyPxForExportUrl(slotUrl, exportPx)
+      );
+      flexDrawBrandArtCellExport(ctx, ogM, cellR.x, cellR.y, cellR.w, cellR.h);
       flexReleaseImageElement(ogM);
     } else {
       bg = cellBackdrop;
@@ -1578,6 +1609,9 @@ async function flexExportGridDrawCellsSequential(
       });
     }
   }
+  /* pblo overlay is always fixed at the top-left cell. */
+  flexDrawPbloOverlayExport(ctx, pbloM, 0, 0, cw, ch);
+  flexReleaseImageElement(pbloM);
 }
 
 async function flexBuildGridCanvasFromSlots(
@@ -1701,11 +1735,10 @@ async function flexBuildGridCanvasFromSlots(
         continue;
       }
       var cellR2 = flexExportCellRect(x, y, cw, ch);
-      if (i === 0) {
-        flexDrawBrandCellExport(
+      if (slots[i] && flexSlotUrlIsBrandGridOgt(slots[i])) {
+        flexDrawBrandArtCellExport(
           ctx,
-          loadedMap[slots[0]] || null,
-          pbloD,
+          loadedMap[slots[i]] || null,
           cellR2.x,
           cellR2.y,
           cellR2.w,
@@ -1725,6 +1758,8 @@ async function flexBuildGridCanvasFromSlots(
         );
       }
     }
+    /* pblo overlay is always fixed at the top-left cell. */
+    flexDrawPbloOverlayExport(ctx, pbloD, 0, 0, cw, ch);
     flexReleaseImageElement(pbloD);
   }
   return canvas;
@@ -1912,7 +1947,7 @@ function flexSetTileEmptyClass(cell, hasImg) {
  */
 function flexHarvestPreviewDomPool() {
   var grid = document.getElementById("flex-preview-grid");
-  var pool = { pblo: null, byUrl: {} };
+  var pool = { byUrl: {} };
   if (!grid || !flexEditorState || !flexEditorState.slots) return pool;
   var slots = flexEditorState.slots;
   var cells = grid.querySelectorAll(".flex-tile");
@@ -1923,25 +1958,10 @@ function flexHarvestPreviewDomPool() {
     if (isNaN(idx)) continue;
     var url = slots[idx];
     if (!url || url === FLEX_FILLER_SKIP) continue;
-    if (idx === 0) {
-      if (!pool.pblo) {
-        var p = cell.querySelector(".flex-tile__brand-pblo");
-        if (p && p.parentNode) {
-          p.parentNode.removeChild(p);
-          pool.pblo = p;
-        }
-      }
-      var bimg = cell.querySelector(".flex-tile__img");
-      if (bimg && bimg.parentNode) {
-        bimg.parentNode.removeChild(bimg);
-        pool.byUrl[url] = bimg;
-      }
-    } else {
-      var img = cell.querySelector(".flex-tile__img");
-      if (img && img.parentNode) {
-        img.parentNode.removeChild(img);
-        pool.byUrl[url] = img;
-      }
+    var img = cell.querySelector(".flex-tile__img");
+    if (img && img.parentNode) {
+      img.parentNode.removeChild(img);
+      pool.byUrl[url] = img;
     }
   }
   return pool;
@@ -1954,13 +1974,6 @@ function flexTakePooledImg(pool, url) {
   return el;
 }
 
-function flexTakePooledPblo(pool) {
-  if (!pool || !pool.pblo) return null;
-  var p = pool.pblo;
-  pool.pblo = null;
-  return p;
-}
-
 function flexDrainUnusedDomPool(pool) {
   if (!pool) return;
   if (pool.byUrl) {
@@ -1971,10 +1984,6 @@ function flexDrainUnusedDomPool(pool) {
       }
     }
     pool.byUrl = {};
-  }
-  if (pool.pblo) {
-    flexReleaseImageElement(pool.pblo);
-    pool.pblo = null;
   }
 }
 
@@ -2152,7 +2161,18 @@ function renderFlexPreviewGrid(domPool) {
   var previewProxy = flexPickProxySizeForPreview(st.cols, st.rows);
   el.style.gridTemplateColumns = "repeat(" + st.cols + ", 1fr)";
   el.style.gridTemplateRows = "repeat(" + st.rows + ", minmax(0, 1fr))";
+  el.style.setProperty("--flex-cols", String(st.cols));
+  el.style.setProperty("--flex-rows", String(st.rows));
   el.innerHTML = "";
+  var pbloWrap = document.createElement("div");
+  pbloWrap.className = "flex-preview-grid__pblo-fixed";
+  var pbloFixed = document.createElement("img");
+  pbloFixed.src = getFlexPbloImageUrl();
+  pbloFixed.alt = "";
+  pbloFixed.setAttribute("aria-hidden", "true");
+  pbloFixed.draggable = false;
+  pbloWrap.appendChild(pbloFixed);
+  el.appendChild(pbloWrap);
   var i;
   for (i = 0; i < st.slots.length; i++) {
     var url = st.slots[i];
@@ -2165,50 +2185,7 @@ function renderFlexPreviewGrid(domPool) {
     cell.className = "flex-tile";
     cell.dataset.index = String(i);
 
-    if (i === 0) {
-      cell.classList.add("flex-tile--brand");
-      cell.style.gridColumn = "1";
-      cell.style.gridRow = "1";
-      if (url) {
-        var stack = document.createElement("div");
-        stack.className = "flex-tile__brand-stack";
-        var pbloImg = flexTakePooledPblo(pool);
-        if (!pbloImg) {
-          pbloImg = document.createElement("img");
-          pbloImg.src = getFlexPbloImageUrl();
-        }
-        pbloImg.className = "flex-tile__brand-pblo";
-        pbloImg.alt = "";
-        pbloImg.setAttribute("aria-hidden", "true");
-        pbloImg.draggable = false;
-        var brandImg = flexTakePooledImg(pool, url);
-        if (!brandImg) {
-          brandImg = document.createElement("img");
-          brandImg.className = "flex-tile__img";
-          brandImg.alt = "";
-          brandImg.draggable = true;
-          if (flexShouldProxyRemoteNftUrl(url)) {
-            flexAssignProxiedPreviewSrc(brandImg, url, previewProxy);
-          } else {
-            brandImg.src = url;
-          }
-        } else {
-          brandImg.className = "flex-tile__img";
-          brandImg.alt = "";
-          brandImg.draggable = true;
-          if (flexShouldProxyRemoteNftUrl(url)) {
-            flexAssignProxiedPreviewSrc(brandImg, url, previewProxy);
-          } else {
-            brandImg.src = url;
-          }
-        }
-        stack.appendChild(pbloImg);
-        cell.appendChild(brandImg);
-        cell.appendChild(stack);
-      } else {
-        cell.classList.add("flex-tile--empty");
-      }
-    } else if (url) {
+    if (url) {
       var merged = false;
       if (
         i < st.slots.length - 1 &&
@@ -2239,6 +2216,9 @@ function renderFlexPreviewGrid(domPool) {
         : url;
       if (flexSlotIsAnyFillerArtUrl(url)) {
         cell.classList.add("flex-tile--filler");
+      }
+      if (flexSlotUrlIsBrandGridOgt(url)) {
+        cell.classList.add("flex-tile--brand");
       }
 
       var img = flexTakePooledImg(pool, url);
@@ -2426,7 +2406,7 @@ async function flexExportCreateFrameCanvas(url, size) {
   return canvas;
 }
 
-/** GIF frame 1: same as preview / JPEG export — ogeniegrid + pblo on the lime tile. */
+/** GIF frame 1: static opening tile (brand art + fixed pblo overlay). */
 async function flexExportCreateGifBrandTileCanvas(size) {
   var canvas = document.createElement("canvas");
   canvas.width = size;
@@ -2444,7 +2424,8 @@ async function flexExportCreateGifBrandTileCanvas(size) {
     pbloUrl,
     flexProxyPxForExportUrl(pbloUrl, animPx)
   );
-  flexDrawBrandCellExport(ctx, ogImg, pbloImg, 0, 0, size, size);
+  flexDrawBrandArtCellExport(ctx, ogImg, 0, 0, size, size);
+  flexDrawPbloOverlayExport(ctx, pbloImg, 0, 0, size, size);
   flexReleaseImageElement(ogImg);
   flexReleaseImageElement(pbloImg);
   return canvas;
@@ -2887,7 +2868,7 @@ async function runFlexGenerate() {
   if (errEl) errEl.textContent = "";
   var sortSel = document.getElementById("flex-trait-sort");
   var sortKey =
-    sortSel && sortSel.value ? sortSel.value : "random";
+    sortSel && sortSel.value ? sortSel.value : "token";
   var sorted = flexSortOrShuffle(items, sortKey, lastWalletApiData);
   rebuildFlexSlotsFromSortedNfts(sorted);
   flexRevealFlexModalStage2();
@@ -2957,7 +2938,7 @@ function setupFlexYourGeniesUi() {
         wc && wc.checked
       );
       if (items.length === 0) return;
-      var sk = traitSel.value || "random";
+      var sk = traitSel.value || "token";
       var sorted = flexSortOrShuffle(items, sk, lastWalletApiData);
       var oldRects = flexCapturePreviewTileRectsByUrl();
       var domPool = flexHarvestPreviewDomPool();
