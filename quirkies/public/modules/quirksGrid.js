@@ -97,6 +97,144 @@ let quirksEditorState = null;
 let quirksLastExportDataUrl = null;
 let quirksDnDFromIndex = null;
 
+const QUIRKS_GIF_CONFIG = {
+  size: 480,
+  maxFrames: 25,
+  delay: 350,
+  quality: 25,
+};
+
+const QUIRKS_GIF_MAX_NFT_FRAMES = 200;
+let quirksGifLastSpeedPos = 50;
+
+function quirksClamp(n, lo, hi) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function quirksGifSpeedPosToNftDelayMs(pos) {
+  const p = quirksClamp(Math.round(parseInt(String(pos), 10) || 0), 0, 100);
+  if (p <= 50) {
+    return Math.round(2000 + (QUIRKS_GIF_CONFIG.delay - 2000) * (p / 50));
+  }
+  return Math.round(
+    QUIRKS_GIF_CONFIG.delay +
+      (150 - QUIRKS_GIF_CONFIG.delay) * ((p - 50) / 50)
+  );
+}
+
+function quirksExportLimitFrames(frames, maxFrames) {
+  const cap =
+    typeof maxFrames === "number" && isFinite(maxFrames) && maxFrames > 0
+      ? maxFrames
+      : frames.length;
+  if (frames.length <= cap) return frames.slice();
+  const step = Math.ceil(frames.length / cap);
+  return frames.filter((_, i) => i % step === 0);
+}
+
+function quirksGifEffectiveNftFrameCount(orderedLength, maxPick) {
+  if (orderedLength <= 0) return 0;
+  const cap = Math.min(
+    Math.max(1, Math.floor(maxPick)),
+    QUIRKS_GIF_MAX_NFT_FRAMES,
+    orderedLength
+  );
+  const phantom = new Array(orderedLength);
+  for (let i = 0; i < orderedLength; i++) phantom[i] = i;
+  return quirksExportLimitFrames(phantom, cap).length;
+}
+
+function quirksFormatGifSeconds(ms) {
+  const sec = Math.max(0, Math.round(ms)) / 1000;
+  const d = sec >= 10 ? 1 : 2;
+  return Number(sec.toFixed(d)).toString() + " s";
+}
+
+function quirksGetGifWorkerScriptUrl() {
+  try {
+    return new URL("gif.worker.js", document.baseURI || window.location.href)
+      .href;
+  } catch {
+    return "gif.worker.js";
+  }
+}
+
+function quirksExportBuildOrderedUrls() {
+  const st = quirksEditorState;
+  if (!st) return [];
+  const out = [];
+  if (st.mode === "grouped") {
+    for (let r = 0; r < st.packed.length; r++) {
+      const row = st.packed[r];
+      for (let c = 0; c < row.length; c++) {
+        const unit = row[c];
+        for (let si = 0; si < unit.items.length; si++) {
+          const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
+          if (!url) continue;
+          if (quirksPublicBrandingBasename(url) === "pblo.png") continue;
+          if (quirksPublicBrandingBasename(url) === "quirkieslogo.png") continue;
+          out.push(url);
+        }
+      }
+    }
+    return out;
+  }
+  for (let i = 0; i < st.slots.length; i++) {
+    const url = st.slots[i];
+    if (!url) continue;
+    const b = quirksPublicBrandingBasename(url);
+    if (b === "pblo.png" || b === "quirkieslogo.png") continue;
+    out.push(url);
+  }
+  return out;
+}
+
+async function quirksExportCreateGifBrandTileCanvas(size) {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  ctx.fillStyle = QUIRKS_BRAND_CELL_BG;
+  ctx.fillRect(0, 0, size, size);
+  const brandUrl = getQuirksGridBrandImageUrl();
+  const brandImg = await quirksLoadImageWithFallbacks(brandUrl, null);
+  quirksDrawContain(ctx, brandImg, 0, 0, size, size, QUIRKS_BRAND_CELL_BG);
+  quirksReleaseImageElement(brandImg);
+  const pbloImg = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
+  quirksDrawPbloOverlayExport(ctx, pbloImg, 0, 0, size, size);
+  quirksReleaseImageElement(pbloImg);
+  return canvas;
+}
+
+async function quirksExportCreateGifFrameCanvas(url, size) {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  const bg = "#0B0F1A";
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, size, size);
+  const img = await quirksLoadImageWithFallbacks(url, null);
+  quirksDrawContain(ctx, img, 0, 0, size, size, bg);
+  quirksReleaseImageElement(img);
+  return canvas;
+}
+
+function quirksGifDownloadBlob(blob, filename) {
+  const name = filename || "quirks-flex.gif";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
 /** Session: last known-good tile image URL per collection + token (preview/export). */
 const quirksSessionTileWinUrl = new Map();
 /** Session: proxy-normalized URLs that failed for that token this tab (skip when retrying). */
@@ -968,16 +1106,7 @@ function quirksRenderBrandOverlay() {
   const overlay = document.getElementById("quirks-preview-brand-overlay");
   if (!overlay) return;
   overlay.innerHTML = "";
-  const multi = quirksBrandingIsMultiCollection();
-  const brandInCell = !!(quirksEditorState && quirksEditorState.firstCellBrand);
-  overlay.classList.toggle(
-    "quirks-preview-brand-overlay--pblo-only",
-    multi && !brandInCell
-  );
-  if (!multi || brandInCell) {
-    /* Logo + pblo live in the first grid cell (firstCellBrand). */
-    return;
-  }
+  overlay.classList.add("quirks-preview-brand-overlay--pblo-only");
   const pblo = document.createElement("img");
   const pbloSrc = getQuirksPbloImageUrl();
   pblo.src = pbloSrc;
@@ -1233,7 +1362,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     cols: g.cols,
     rows: g.rows,
     gridLayout,
-    firstCellBrand: !multi || brandSquare,
+    firstCellBrand: false,
   };
 }
 
@@ -1274,6 +1403,46 @@ function quirksSetDownloadButtonReady(ready) {
   }
 }
 
+function quirksSetGifButtonReady(ready) {
+  const sec = document.getElementById("quirks-export-section");
+  const btn = document.getElementById("quirksExportGifBtn");
+  if (sec) sec.classList.toggle("hidden", !ready);
+  if (!btn) return;
+  if (ready) {
+    btn.classList.remove("hidden");
+    btn.disabled = false;
+  } else {
+    btn.classList.add("hidden");
+    btn.disabled = true;
+  }
+}
+
+function quirksExportSetProgress(msg) {
+  const el = document.getElementById("quirks-export-progress");
+  if (el) el.textContent = msg || "";
+}
+
+function quirksSetGifOptionsModalOpen(on) {
+  const modal = document.getElementById("quirks-gif-options-modal");
+  if (!modal) return;
+  modal.classList.toggle("hidden", !on);
+  modal.setAttribute("aria-hidden", on ? "false" : "true");
+  if (on) {
+    try {
+      modal.focus();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function quirksSetGifModalOpen(on) {
+  const modal = document.getElementById("quirks-gif-modal");
+  if (!modal) return;
+  modal.classList.toggle("hidden", !on);
+  modal.setAttribute("aria-hidden", on ? "false" : "true");
+}
+
 function setQuirksModalOpen(on) {
   const modal = document.getElementById("quirks-modal");
   if (!modal) return;
@@ -1298,6 +1467,8 @@ function resetQuirksModalOutput() {
   }
   if (wrap) wrap.classList.add("hidden");
   quirksSetDownloadButtonReady(false);
+  quirksSetGifButtonReady(false);
+  quirksExportSetProgress("");
   if (grid) grid.innerHTML = "";
   const brandOv = document.getElementById("quirks-preview-brand-overlay");
   if (brandOv) brandOv.innerHTML = "";
@@ -1565,6 +1736,30 @@ function quirksDrawBrandCellExport(ctx, brandImg, pbloImg, cellX, cellY, cw, ch)
   ctx.restore();
 }
 
+function quirksIsBrandLogoUrl(u) {
+  return quirksPublicBrandingBasename(u) === "quirkieslogo.png";
+}
+
+function quirksDrawPbloOverlayExport(ctx, pbloImg, cellX, cellY, cw, ch) {
+  if (!pbloImg || pbloImg.naturalWidth <= 0) return;
+  const pbloCap = ch * QUIRKS_BRAND_PBLO_MAX_FRAC;
+  const piw = pbloImg.naturalWidth;
+  const pih = pbloImg.naturalHeight;
+  let drawW = cw;
+  let drawH = (pih / piw) * drawW;
+  if (drawH > pbloCap) {
+    drawH = pbloCap;
+    drawW = (piw / pih) * drawH;
+  }
+  const px = cellX + (cw - drawW) / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cellX, cellY, cw, ch);
+  ctx.clip();
+  ctx.drawImage(pbloImg, px, cellY, drawW, drawH);
+  ctx.restore();
+}
+
 function quirksCreateExportCanvas(W, H) {
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -1613,6 +1808,7 @@ async function quirksExportGridDrawCellsSequential(
   slotR2Metas
 ) {
   const cells = cols * rows;
+  const pbloM = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
   for (let i = 0; i < cells; i++) {
     const col = i % cols;
     const row = Math.floor(i / cols);
@@ -1621,32 +1817,19 @@ async function quirksExportGridDrawCellsSequential(
     const cellR = quirksExportCellRect(x, y, cw, ch);
     const slotUrl = slots[i];
     const slotMeta = slotR2Metas && slotR2Metas[i];
-    if (i === 0 && firstCellBrand) {
-      const pbloM = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
-      let bIm = null;
-      if (slotUrl) bIm = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
-      quirksDrawBrandCellExport(
-        ctx,
-        bIm,
-        pbloM,
-        cellR.x,
-        cellR.y,
-        cellR.w,
-        cellR.h
-      );
-      quirksReleaseImageElement(pbloM);
-      quirksReleaseImageElement(bIm);
-    } else {
-      const bg = "#ffffff";
-      let img = null;
-      if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
-      quirksDrawContain(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
-      quirksReleaseImageElement(img);
-    }
+    const isBrand = slotUrl && quirksIsBrandLogoUrl(slotUrl);
+    const bg = isBrand ? QUIRKS_BRAND_CELL_BG : "#ffffff";
+    let img = null;
+    if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
+    quirksDrawContain(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
+    quirksReleaseImageElement(img);
     if ((i & 3) === 3) {
       await new Promise((r) => setTimeout(r, 0));
     }
   }
+  /* pblo overlay is always fixed at the top-left cell. */
+  quirksDrawPbloOverlayExport(ctx, pbloM, 0, 0, cw, ch);
+  quirksReleaseImageElement(pbloM);
 }
 
 async function quirksBuildGridCanvasFromSlots(
@@ -1720,44 +1903,29 @@ async function quirksBuildGridCanvasFromSlots(
       const su = slots[i];
       loadedSlots.push(su ? loadedMap[su] || null : null);
     }
-    const pbloD = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
     for (let i = 0; i < cells; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const x = col * cw;
       const y = row * ch;
       const cellR2 = quirksExportCellRect(x, y, cw, ch);
-      if (i === 0 && firstCellBrand) {
-        quirksDrawBrandCellExport(
-          ctx,
-          loadedSlots[0] || null,
-          pbloD,
-          cellR2.x,
-          cellR2.y,
-          cellR2.w,
-          cellR2.h
-        );
-      } else {
-        const bg = "#ffffff";
-        quirksDrawContain(
-          ctx,
-          loadedSlots[i] || null,
-          cellR2.x,
-          cellR2.y,
-          cellR2.w,
-          cellR2.h,
-          bg
-        );
-      }
+      const su = slots[i];
+      const isBrand = su && quirksIsBrandLogoUrl(su);
+      const bg = isBrand ? QUIRKS_BRAND_CELL_BG : "#ffffff";
+      quirksDrawContain(
+        ctx,
+        loadedSlots[i] || null,
+        cellR2.x,
+        cellR2.y,
+        cellR2.w,
+        cellR2.h,
+        bg
+      );
     }
-    quirksReleaseImageElement(pbloD);
   }
-  if (quirksBrandingIsMultiCollection() && !firstCellBrand) {
-    await quirksDrawBrandWatermark(ctx, W, H, {
-      multiCollection: true,
-      cols,
-    });
-  }
+  const pbloD = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
+  quirksDrawPbloOverlayExport(ctx, pbloD, 0, 0, cw, ch);
+  quirksReleaseImageElement(pbloD);
   return canvas;
 }
 
@@ -2153,54 +2321,14 @@ function renderQuirksPreviewGrid(domPool) {
       cell.className = "quirks-tile";
       cell.dataset.index = String(i);
       const url = st.slots[i];
-      const isBrandCell = st.firstCellBrand && i === 0;
-      if (isBrandCell && url) {
-        cell.classList.add("quirks-tile--brand");
+      if (url) {
         const loadEl = document.createElement("span");
         loadEl.className = "quirks-tile__loading";
         loadEl.setAttribute("aria-hidden", "true");
         cell.appendChild(loadEl);
-        const stack = document.createElement("div");
-        stack.className = "quirks-tile__brand-stack";
-        let pbloImg = quirksTakePooledPblo(pool);
-        if (!pbloImg) {
-          pbloImg = document.createElement("img");
-          pbloImg.src = getQuirksPbloImageUrl();
-          pbloImg.addEventListener(
-            "error",
-            () => {
-              if (pbloImg.getAttribute("data-quirks-pblo-fb") === "1") return;
-              pbloImg.setAttribute("data-quirks-pblo-fb", "1");
-              pbloImg.src = getQuirksPbloImageUrl() + "?r=1";
-            },
-            { once: true }
-          );
+        if (quirksPublicBrandingBasename(url) === "quirkieslogo.png") {
+          cell.classList.add("quirks-tile--brand");
         }
-        pbloImg.className = "quirks-tile__brand-pblo";
-        pbloImg.alt = "";
-        pbloImg.setAttribute("aria-hidden", "true");
-        pbloImg.draggable = false;
-        let brandImg = quirksTakePooledImg(pool, url);
-        if (!brandImg) {
-          brandImg = document.createElement("img");
-          brandImg.className = "quirks-tile__img";
-          brandImg.alt = "";
-          brandImg.draggable = false;
-          quirksBindGridImage(brandImg, url, 0);
-        } else {
-          brandImg.className = "quirks-tile__img";
-          brandImg.alt = "";
-          brandImg.draggable = false;
-          quirksBindGridImage(brandImg, url, 0);
-        }
-        stack.appendChild(pbloImg);
-        cell.appendChild(brandImg);
-        cell.appendChild(stack);
-      } else if (url) {
-        const loadEl = document.createElement("span");
-        loadEl.className = "quirks-tile__loading";
-        loadEl.setAttribute("aria-hidden", "true");
-        cell.appendChild(loadEl);
         let img = quirksTakePooledImg(pool, url);
         if (!img) {
           img = document.createElement("img");
@@ -2461,6 +2589,7 @@ async function runQuirksGenerate() {
   const previewWrap = document.getElementById("quirks-preview-wrap");
   if (previewWrap) previewWrap.classList.remove("hidden");
   quirksSetDownloadButtonReady(false);
+  quirksSetGifButtonReady(false);
   renderQuirksPreviewGrid();
   void (async () => {
     try {
@@ -2473,8 +2602,10 @@ async function runQuirksGenerate() {
       await quirksWaitForPreviewGridImages();
       await quirksRefreshPreviewFromSlots();
       quirksSetDownloadButtonReady(true);
+      quirksSetGifButtonReady(true);
     } catch {
       quirksSetDownloadButtonReady(false);
+      quirksSetGifButtonReady(false);
     }
   })();
 }
@@ -2558,6 +2689,7 @@ function setupQuirksBuilderUi() {
       const domPool = quirksHarvestPreviewDomPool();
       quirksRebuildSlotsFromSorted(items);
       quirksSetDownloadButtonReady(false);
+      quirksSetGifButtonReady(false);
       renderQuirksPreviewGrid(domPool);
       quirksAnimatePreviewGridFlip(oldRects);
       const gridEl = document.getElementById("quirks-preview-grid");
@@ -2568,8 +2700,10 @@ function setupQuirksBuilderUi() {
           await quirksWaitForPreviewGridImages();
           await quirksRefreshPreviewFromSlots();
           quirksSetDownloadButtonReady(true);
+          quirksSetGifButtonReady(true);
         } catch {
           quirksSetDownloadButtonReady(false);
+          quirksSetGifButtonReady(false);
         }
       })();
     });
@@ -2695,10 +2829,151 @@ function setupQuirksBuilderUi() {
         .finally(() => setGlobalLoadingQuirks(false));
     });
   }
+
+  const gifBtn = document.getElementById("quirksExportGifBtn");
+  const gifBackdrop = document.getElementById("quirks-gif-options-backdrop");
+  const gifClose = document.getElementById("quirks-gif-options-close");
+  const gifCancel = document.getElementById("quirks-gif-options-cancel");
+  const gifConfirm = document.getElementById("quirks-gif-options-confirm");
+  const gifMaxInput = document.getElementById("quirks-gif-options-max");
+  const gifSpeed = document.getElementById("quirks-gif-options-speed");
+
+  function closeGifOptions() {
+    quirksSetGifOptionsModalOpen(false);
+  }
+
+  function openGifOptions() {
+    if (!quirksEditorState) return;
+    const ordered = quirksExportBuildOrderedUrls();
+    if (gifMaxInput) {
+      const auto = Math.min(QUIRKS_GIF_MAX_NFT_FRAMES, Math.max(1, ordered.length));
+      gifMaxInput.value = String(auto);
+    }
+    const maxPick =
+      parseInt(
+        String(gifMaxInput?.value || QUIRKS_GIF_CONFIG.maxFrames),
+        10
+      ) || QUIRKS_GIF_CONFIG.maxFrames;
+    const eff = quirksGifEffectiveNftFrameCount(ordered.length, maxPick);
+    const sum = document.getElementById("quirks-gif-options-summary");
+    if (sum) {
+      sum.textContent =
+        "Your grid has " +
+        ordered.length +
+        " NFT tiles. This will export " +
+        eff +
+        " NFT frames plus the opening brand frame.";
+    }
+    const dur = document.getElementById("quirks-gif-options-duration");
+    const delayMs = quirksGifSpeedPosToNftDelayMs(quirksGifLastSpeedPos);
+    const total = 1000 + eff * delayMs;
+    if (dur) dur.textContent = "Estimated length: " + quirksFormatGifSeconds(total);
+    quirksSetGifOptionsModalOpen(true);
+  }
+
+  async function runGifExport(maxFrames, speedPos) {
+    const ordered = quirksExportBuildOrderedUrls();
+    const capped = quirksExportLimitFrames(
+      ordered,
+      Math.min(QUIRKS_GIF_MAX_NFT_FRAMES, Math.max(1, Math.floor(maxFrames)))
+    );
+    quirksExportSetProgress("");
+    quirksSetGifModalOpen(true);
+    quirksSetGifOptionsModalOpen(false);
+    const delayMs = quirksGifSpeedPosToNftDelayMs(speedPos);
+    let gif;
+    try {
+      if (typeof window.GIF !== "function") {
+        throw new Error("GIF library not loaded.");
+      }
+      gif = new window.GIF({
+        workers: 2,
+        quality: QUIRKS_GIF_CONFIG.quality,
+        repeat: 0,
+        workerScript: quirksGetGifWorkerScriptUrl(),
+        width: QUIRKS_GIF_CONFIG.size,
+        height: QUIRKS_GIF_CONFIG.size,
+      });
+    } catch (e) {
+      quirksSetGifModalOpen(false);
+      quirksExportSetProgress("Could not start GIF export.");
+      throw e;
+    }
+
+    gif.on("progress", (p) => {
+      const pct = Math.round((p || 0) * 100);
+      quirksExportSetProgress("Encoding GIF " + pct + "%");
+    });
+
+    gif.on("finished", (blob) => {
+      quirksSetGifModalOpen(false);
+      quirksExportSetProgress("");
+      quirksGifDownloadBlob(blob, "quirks-flex.gif");
+    });
+
+    gif.on("abort", () => {
+      quirksSetGifModalOpen(false);
+      quirksExportSetProgress("");
+    });
+
+    try {
+      const brandCanvas = await quirksExportCreateGifBrandTileCanvas(QUIRKS_GIF_CONFIG.size);
+      gif.addFrame(brandCanvas.getContext("2d"), { copy: true, delay: 1000 });
+      for (let i = 0; i < capped.length; i++) {
+        const c = await quirksExportCreateGifFrameCanvas(capped[i], QUIRKS_GIF_CONFIG.size);
+        gif.addFrame(c.getContext("2d"), { copy: true, delay: delayMs });
+        if ((i & 3) === 3) await new Promise((r) => setTimeout(r, 0));
+      }
+    } catch (e) {
+      quirksSetGifModalOpen(false);
+      quirksExportSetProgress("GIF export failed.");
+      throw e;
+    }
+
+    try {
+      gif.render();
+    } catch (e) {
+      quirksSetGifModalOpen(false);
+      quirksExportSetProgress("GIF export failed.");
+      throw e;
+    }
+  }
+
+  if (gifSpeed) {
+    gifSpeed.addEventListener("input", () => {
+      quirksGifLastSpeedPos = parseInt(String(gifSpeed.value), 10) || 50;
+      const dur = document.getElementById("quirks-gif-options-duration");
+      const ordered = quirksExportBuildOrderedUrls();
+      const maxPick = parseInt(String(gifMaxInput?.value || QUIRKS_GIF_CONFIG.maxFrames), 10) || QUIRKS_GIF_CONFIG.maxFrames;
+      const eff = quirksGifEffectiveNftFrameCount(ordered.length, maxPick);
+      const delayMs = quirksGifSpeedPosToNftDelayMs(quirksGifLastSpeedPos);
+      const total = 1000 + eff * delayMs;
+      if (dur) dur.textContent = "Estimated length: " + quirksFormatGifSeconds(total);
+    });
+  }
+
+  if (gifBtn) gifBtn.addEventListener("click", (ev) => { ev.preventDefault(); openGifOptions(); });
+  if (gifBackdrop) gifBackdrop.addEventListener("click", closeGifOptions);
+  if (gifClose) gifClose.addEventListener("click", closeGifOptions);
+  if (gifCancel) gifCancel.addEventListener("click", closeGifOptions);
+  if (gifConfirm) {
+    gifConfirm.addEventListener("click", () => {
+      const maxFrames = parseInt(String(gifMaxInput?.value || QUIRKS_GIF_CONFIG.maxFrames), 10) || QUIRKS_GIF_CONFIG.maxFrames;
+      const speedPos = parseInt(String(gifSpeed?.value || quirksGifLastSpeedPos), 10) || quirksGifLastSpeedPos;
+      quirksGifLastSpeedPos = speedPos;
+      void runGifExport(maxFrames, speedPos);
+    });
+  }
+
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
     const welcome = document.getElementById("welcome-modal");
     if (welcome && welcome.classList.contains("is-open")) return;
+    const gifOpts = document.getElementById("quirks-gif-options-modal");
+    if (gifOpts && !gifOpts.classList.contains("hidden")) {
+      closeGifOptions();
+      return;
+    }
     if (modal?.classList.contains("is-open")) closeModal();
   });
 }

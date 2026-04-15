@@ -374,6 +374,22 @@
           >
             Download Image
           </button>
+          <div id="quirks-export-section" class="quirks-export-section hidden">
+            <div class="quirks-export-controls">
+              <div class="quirks-export-controls__row">
+                <button
+                  type="button"
+                  id="quirksExportGifBtn"
+                  class="btn-primary quirks-modal__download quirks-export-controls__btn hidden"
+                  disabled
+                >
+                  Create GIF
+                </button>
+              </div>
+              <p id="quirks-export-progress" class="quirks-export-controls__progress" aria-live="polite"></p>
+              <p class="footer__credit quirks-export-controls__credit">Powered By Little Ollie Labs</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -392,7 +408,102 @@
       </div>
     </div>
 
+    <div
+      id="quirks-gif-options-modal"
+      class="quirks-gif-options-modal hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quirks-gif-options-title"
+      tabindex="-1"
+    >
+      <div
+        id="quirks-gif-options-backdrop"
+        class="quirks-gif-options-modal__backdrop"
+        aria-hidden="true"
+      ></div>
+      <div class="quirks-gif-options-modal__panel">
+        <div class="quirks-gif-options-modal__head">
+          <h3 id="quirks-gif-options-title" class="quirks-gif-options-modal__title">GIF export</h3>
+          <button
+            type="button"
+            id="quirks-gif-options-close"
+            class="quirks-gif-options-modal__close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <p id="quirks-gif-options-summary" class="quirks-gif-options-modal__summary"></p>
+        <label class="quirks-gif-options-modal__label" for="quirks-gif-options-max">NFT frames to include</label>
+        <p class="quirks-gif-options-modal__hint">
+          If this is less than the number of NFTs in your grid, frames are sampled evenly.
+        </p>
+        <input
+          type="number"
+          id="quirks-gif-options-max"
+          class="quirks-gif-options-modal__input"
+          min="1"
+          max="200"
+          step="1"
+          value="25"
+        />
+        <label
+          class="quirks-gif-options-modal__label quirks-gif-options-modal__label--section"
+          for="quirks-gif-options-speed"
+          >Speed</label>
+        <div class="quirks-gif-options-modal__speed-scale" aria-hidden="true">
+          <span>Slow</span>
+          <span>Fast</span>
+        </div>
+        <div class="quirks-gif-options-modal__range-row quirks-gif-options-modal__range-row--speed">
+          <input
+            type="range"
+            id="quirks-gif-options-speed"
+            class="quirks-gif-options-modal__range"
+            min="0"
+            max="100"
+            step="5"
+            value="50"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuetext="Medium"
+            aria-label="GIF speed, slow to fast"
+          />
+        </div>
+        <p
+          id="quirks-gif-options-duration"
+          class="quirks-gif-options-modal__duration"
+          aria-live="polite"
+        ></p>
+        <div class="quirks-gif-options-modal__actions">
+          <button type="button" id="quirks-gif-options-cancel" class="btn-secondary quirks-gif-options-modal__btn">
+            Cancel
+          </button>
+          <button type="button" id="quirks-gif-options-confirm" class="btn-primary quirks-gif-options-modal__btn">
+            Create GIF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="quirks-gif-modal"
+      class="quirks-gif-modal hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quirks-gif-modal-title"
+    >
+      <div class="quirks-gif-modal__backdrop" aria-hidden="true"></div>
+      <div class="quirks-gif-modal__panel">
+        <p id="quirks-gif-modal-title" class="quirks-gif-modal__text">Creating GIF…</p>
+        <div class="quirks-gif-modal__spinner" aria-hidden="true"></div>
+      </div>
+    </div>
+
     <script src="modules/nftImageLoader.js?v=api-worker-2"></script>
+    <script src="gif.js?v=api-worker-2"></script>
     <script src="app.js?v=api-worker-2"></script>
     <script type="module" src="modules/quirksGrid.js?v=api-worker-2"></script>
   </body>

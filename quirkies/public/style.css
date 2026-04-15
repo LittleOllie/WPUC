@@ -825,6 +825,8 @@ textarea.wallet-input-multiline:focus {
   border-bottom: 2px solid rgba(223, 255, 0, 0.28);
   color: var(--og-lime);
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .section-blurb {
@@ -832,6 +834,233 @@ textarea.wallet-input-multiline:focus {
   font-size: 0.88rem;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.quirks-export-section {
+  margin-top: 1rem;
+}
+
+.quirks-export-controls__row {
+  display: flex;
+}
+
+.quirks-export-controls__btn {
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.quirks-export-controls__progress {
+  margin: 0.65rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-height: 1.1em;
+}
+
+.quirks-gif-options-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.quirks-gif-options-modal.hidden {
+  display: none;
+}
+
+.quirks-gif-options-modal:not(.hidden) {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.quirks-gif-options-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.quirks-gif-options-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 100%);
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 1rem 1rem 1.05rem;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+
+.quirks-gif-options-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.quirks-gif-options-modal__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.quirks-gif-options-modal__close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.quirks-gif-options-modal__close:hover {
+  color: var(--text);
+  background: rgba(223, 255, 0, 0.08);
+}
+
+.quirks-gif-options-modal__summary {
+  margin: 0 0 0.85rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.quirks-gif-options-modal__label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.quirks-gif-options-modal__label--section {
+  margin-top: 0.9rem;
+}
+
+.quirks-gif-options-modal__hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.quirks-gif-options-modal__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+}
+
+.quirks-gif-options-modal__input:focus {
+  outline: none;
+  border-color: rgba(223, 255, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(223, 255, 0, 0.12);
+}
+
+.quirks-gif-options-modal__speed-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin: 0.35rem 0 0.35rem;
+}
+
+.quirks-gif-options-modal__range-row {
+  display: flex;
+  align-items: center;
+}
+
+.quirks-gif-options-modal__range-row--speed {
+  margin-bottom: 0.65rem;
+}
+
+.quirks-gif-options-modal__range {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.quirks-gif-options-modal__duration {
+  margin: 0.15rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.quirks-gif-options-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.95rem;
+}
+
+.quirks-gif-options-modal__btn {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.quirks-gif-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10045;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.quirks-gif-modal.hidden {
+  display: none;
+}
+
+.quirks-gif-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.quirks-gif-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 1.05rem 1.05rem 1rem;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  display: grid;
+  justify-items: center;
+}
+
+.quirks-gif-modal__text {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.quirks-gif-modal__spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(223, 255, 0, 0.75);
+  border-radius: 50%;
+  animation: quirks-gif-spin 0.75s linear infinite;
+}
+
+@keyframes quirks-gif-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .results-block .section-title:first-child {
