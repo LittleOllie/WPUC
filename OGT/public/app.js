@@ -360,6 +360,8 @@ var FLEX_MOBILE_EXPORT_MAX = 2048;
 var FLEX_CANVAS_SIZE = 8192;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
+/** Match preview CSS (~1.8% zoom) so JPEG/GIF export hides the right-edge seam on ogeniegrid. */
+var FLEX_BRAND_CONTAIN_SCALE = 1.018;
 /** Max fraction of brand cell height for the pblo band — matches `.flex-tile__brand-stack` max-height in CSS. */
 var FLEX_BRAND_PBLO_MAX_FRAC = 0.52;
 /** JPEG export: high visual quality, much smaller than PNG at8k. */
@@ -458,14 +460,18 @@ async function parseAndResolveWalletInputs(raw) {
   return out;
 }
 
-/** Normalize API item: `{ tokenId, image, traits }` or legacy numeric id. */
+/** Normalize API item: `{ tokenId, image, traits, openSeaRank? }` or legacy numeric id. */
 function normalizeWalletNftEntry(x) {
   if (x && typeof x === "object" && "tokenId" in x) {
-    return {
+    var out = {
       tokenId: x.tokenId,
       image: x.image || null,
       traits: Array.isArray(x.traits) ? x.traits : [],
     };
+    var r = x.openSeaRank;
+    if (typeof r === "number" && Number.isFinite(r)) out.openSeaRank = r;
+    else if (typeof r === "string" && /^\d+$/.test(r)) out.openSeaRank = Number(r);
+    return out;
   }
   return { tokenId: x, image: null, traits: [] };
 }
@@ -769,24 +775,32 @@ function collectFlexItems(data, wantOgenies, wantCerts) {
   if (wantOgenies) {
     normalizeWalletNftList(data.ogenies).forEach(function (e) {
       if (e.image) {
-        out.push({
+        var row = {
           tokenId: e.tokenId,
           image: String(e.image),
           traits: e.traits || [],
           kind: "ogenie",
-        });
+        };
+        if (typeof e.openSeaRank === "number" && Number.isFinite(e.openSeaRank)) {
+          row.openSeaRank = e.openSeaRank;
+        }
+        out.push(row);
       }
     });
   }
   if (wantCerts) {
     normalizeWalletNftList(data.certs).forEach(function (e) {
       if (e.image) {
-        out.push({
+        var rowC = {
           tokenId: e.tokenId,
           image: String(e.image),
           traits: e.traits || [],
           kind: "cert",
-        });
+        };
+        if (typeof e.openSeaRank === "number" && Number.isFinite(e.openSeaRank)) {
+          rowC.openSeaRank = e.openSeaRank;
+        }
+        out.push(rowC);
       }
     });
   }
@@ -835,6 +849,10 @@ function populateFlexTraitSelect() {
   randOpt.value = "random";
   randOpt.textContent = "Random order";
   sel.appendChild(randOpt);
+  var rankOpt = document.createElement("option");
+  rankOpt.value = "rank";
+  rankOpt.textContent = "OpenSea rank";
+  sel.appendChild(rankOpt);
   var t;
   for (t = 0; t < types.length; t++) {
     var o = document.createElement("option");
@@ -879,6 +897,25 @@ function flexTraitValueForSort(item, traitKey, walletData) {
     }
   }
   return "";
+}
+
+/** Lower OpenSea rank = rarer. Missing rank sorts last; CERT can borrow same-token OGENIE rank. */
+function flexRankValueForSort(item, walletData) {
+  if (typeof item.openSeaRank === "number" && Number.isFinite(item.openSeaRank)) {
+    return item.openSeaRank;
+  }
+  if (item.kind === "cert" && walletData && walletData.ogenies) {
+    var ogList = normalizeWalletNftList(walletData.ogenies);
+    var oi;
+    for (oi = 0; oi < ogList.length; oi++) {
+      if (String(ogList[oi].tokenId) === String(item.tokenId)) {
+        var br = ogList[oi].openSeaRank;
+        if (typeof br === "number" && Number.isFinite(br)) return br;
+        break;
+      }
+    }
+  }
+  return Number.POSITIVE_INFINITY;
 }
 
 function flexCompareTokenId(a, b) {
@@ -931,10 +968,26 @@ function flexSortOrShuffle(items, sortKey, walletData) {
   if (!sortKey || sortKey === "random") {
     return flexShufflePreserveKind(items);
   }
+  if (sortKey === "rank") {
+    return applyFlexRankSort(items, walletData);
+  }
   if (sortKey.indexOf("trait:") === 0) {
     return applyFlexSort(items, sortKey, walletData);
   }
   return flexShufflePreserveKind(items);
+}
+
+function applyFlexRankSort(items, walletData) {
+  var copy = items.slice();
+  return copy.sort(function (a, b) {
+    var kc = flexCompareKind(a, b);
+    if (kc !== 0) return kc;
+    var ra = flexRankValueForSort(a, walletData);
+    var rb = flexRankValueForSort(b, walletData);
+    if (ra < rb) return -1;
+    if (ra > rb) return 1;
+    return flexCompareTokenId(a, b);
+  });
 }
 
 function applyFlexSort(items, sortKey, walletData) {
@@ -1273,9 +1326,10 @@ function flexDrawCover(ctx, img, x, y, w, h, cellBackdrop) {
   ctx.restore();
 }
 
-/** Letterbox / full image inside rect (same idea as CSS object-fit: contain). */
-function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
+/** Letterbox / full image inside rect (same idea as CSS object-fit: contain). Optional extraScale zooms past edges (e.g. brand seam). */
+function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop, extraScale) {
   var backdrop = cellBackdrop || "#ffffff";
+  var zoom = typeof extraScale === "number" && extraScale > 0 ? extraScale : 1;
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
@@ -1285,7 +1339,7 @@ function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
   if (img && img.naturalWidth > 0) {
     var iw = img.naturalWidth;
     var ih = img.naturalHeight;
-    var scale = Math.min(w / iw, h / ih);
+    var scale = Math.min(w / iw, h / ih) * zoom;
     var tw = iw * scale;
     var th = ih * scale;
     ctx.drawImage(img, x + (w - tw) / 2, y + (h - th) / 2, tw, th);
@@ -1302,7 +1356,16 @@ function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
   ctx.clip();
   ctx.fillStyle = FLEX_BRAND_CELL_BG;
   ctx.fillRect(cellX, cellY, cw, ch);
-  flexDrawContain(ctx, ogImg, cellX, cellY, cw, ch, FLEX_BRAND_CELL_BG);
+  flexDrawContain(
+    ctx,
+    ogImg,
+    cellX,
+    cellY,
+    cw,
+    ch,
+    FLEX_BRAND_CELL_BG,
+    FLEX_BRAND_CONTAIN_SCALE
+  );
   if (pbloImg && pbloImg.naturalWidth > 0) {
     var piw = pbloImg.naturalWidth;
     var pih = pbloImg.naturalHeight;

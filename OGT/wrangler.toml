@@ -10,6 +10,9 @@ CERT_CONTRACT = "0x0C212fdB58d31e36039EfA2c85DFB0482Af8F2ee"
 # Highest token ID that exists for the CERT collection on-chain (OGENIE IDs above this have no matching CERT).
 CERT_MAX_TOKEN_ID = "1000"
 
+# Optional — flex "OpenSea rank" layout: `wrangler secret put OPENSEA_API_KEY` (not committed).
+# Without it, wallet JSON omits openSeaRank and rank sort falls back to token order within kind.
+
 # Serves public/index.html, style.css, app.js from your Worker URL.
 # Requests that do not match a file (e.g. /api/wallet) are handled by src/index.js.
 [assets]

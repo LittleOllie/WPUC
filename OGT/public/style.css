@@ -1239,6 +1239,33 @@ textarea.wallet-input-multiline:focus {
   color: var(--text-muted);
 }
 
+.footer__flexgrid {
+  margin: 1.15rem 0 0;
+}
+
+.footer__flexgrid-btn {
+  display: inline-block;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.35;
+  color: #0a0a0a;
+  background: var(--lo-blue);
+  border-radius: 10px;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+  transition: filter 0.12s ease;
+}
+
+.footer__flexgrid-btn:hover {
+  filter: brightness(1.08);
+}
+
 [data-theme="light"] input[type="text"],
 [data-theme="light"] textarea.wallet-input-multiline {
   border-color: rgba(0, 0, 0, 0.12);
@@ -1437,6 +1464,28 @@ body.welcome-modal-active {
 .welcome-modal__list strong {
   color: var(--text);
   font-weight: 600;
+}
+
+.welcome-modal__flexgrid-btn {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.35;
+  color: #0a0a0a;
+  background: var(--lo-blue);
+  border-radius: 10px;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+  transition: filter 0.12s ease;
+}
+
+.welcome-modal__flexgrid-btn:hover {
+  filter: brightness(1.08);
 }
 
 .welcome-modal__cta {
@@ -1721,6 +1770,13 @@ body.welcome-modal-active {
   color: var(--text-muted);
 }
 
+.flex-modal__sort-note .flex-modal__inline-code {
+  font-size: 0.78em;
+  font-family: ui-monospace, monospace;
+  color: var(--text);
+  word-break: break-all;
+}
+
 .flex-modal__select-wrap {
   position: relative;
 }
@@ -1854,7 +1910,7 @@ body.welcome-modal-active {
   overflow: hidden;
 }
 
-/* Brand grid art (ogeniegrid): full tile, contain so the whole asset fits the square */
+/* Brand grid art (ogeniegrid): slight zoom hides a ~1px seam on some exports */
 .flex-tile--brand > .flex-tile__img {
   position: absolute;
   inset: 0;
@@ -1862,6 +1918,8 @@ body.welcome-modal-active {
   height: 100%;
   object-fit: contain;
   object-position: center;
+  transform: scale(1.018);
+  transform-origin: center center;
   z-index: 0;
   /* Must receive drags; pblo stack above uses pointer-events: none so grabs hit this img */
   pointer-events: auto;

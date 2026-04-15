@@ -309,6 +309,43 @@ async function mapWithConcurrency(items, limit, asyncFn) {
   return out;
 }
 
+const OPENSEA_API_V2 = "https://api.opensea.io/api/v2";
+/** Keep modest: two collections fetch in parallel (see /api/wallet). */
+const OPENSEA_RANK_CONCURRENCY = 2;
+
+async function fetchOpenSeaNftRank(apiKey, contractAddr, tokenIdDecimalStr) {
+  const contract = normalizeAddr(contractAddr);
+  const tid = String(tokenIdDecimalStr).trim();
+  if (!contract || !tid) return null;
+  const url = `${OPENSEA_API_V2}/chain/ethereum/contract/${contract}/nfts/${encodeURIComponent(tid)}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "X-API-KEY": String(apiKey).trim(),
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const r = data?.rarity?.rank;
+    if (typeof r === "number" && Number.isFinite(r)) return r;
+    if (typeof r === "string" && /^\d+$/.test(r)) return Number(r);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function buildOpenSeaRankMap(apiKey, contract, idKeys) {
+  const m = new Map();
+  if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) return m;
+  await mapWithConcurrency(idKeys, OPENSEA_RANK_CONCURRENCY, async (id) => {
+    const r = await fetchOpenSeaNftRank(apiKey, contract, id);
+    if (r != null) m.set(id, r);
+  });
+  return m;
+}
+
 /**
  * Paginated getNFTsForOwner with withMetadata=true — one fetch per page (~100 NFTs).
  * Avoids hundreds of per-token getNFTMetadata calls (slow, hits Worker time limits on large wallets).
@@ -631,16 +668,30 @@ export default {
         const oSet = new Set(ogenieCol.idKeys);
         const cSet = new Set(certCol.idKeys);
 
-        const ogenies = ogenieCol.idKeys.map((id) => ({
-          tokenId: tokenIdStrToJson(id),
-          image: ogenieCol.idToImage.get(id) ?? null,
-          traits: ogenieCol.idToTraits.get(id) ?? [],
-        }));
-        const certs = certCol.idKeys.map((id) => ({
-          tokenId: tokenIdStrToJson(id),
-          image: certCol.idToImage.get(id) ?? null,
-          traits: certCol.idToTraits.get(id) ?? [],
-        }));
+        const osKey = env.OPENSEA_API_KEY;
+        const [rankOgenie, rankCert] = await Promise.all([
+          buildOpenSeaRankMap(osKey, OGENIE, ogenieCol.idKeys),
+          buildOpenSeaRankMap(osKey, CERT, certCol.idKeys),
+        ]);
+
+        const ogenies = ogenieCol.idKeys.map((id) => {
+          const row = {
+            tokenId: tokenIdStrToJson(id),
+            image: ogenieCol.idToImage.get(id) ?? null,
+            traits: ogenieCol.idToTraits.get(id) ?? [],
+          };
+          if (rankOgenie.has(id)) row.openSeaRank = rankOgenie.get(id);
+          return row;
+        });
+        const certs = certCol.idKeys.map((id) => {
+          const row = {
+            tokenId: tokenIdStrToJson(id),
+            image: certCol.idToImage.get(id) ?? null,
+            traits: certCol.idToTraits.get(id) ?? [],
+          };
+          if (rankCert.has(id)) row.openSeaRank = rankCert.get(id);
+          return row;
+        });
 
         const matched = [];
         for (const id of ogenieCol.idKeys) {

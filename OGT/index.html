@@ -223,6 +223,14 @@
       <footer class="footer">
         <p class="footer__credit">Powered By Little Ollie Labs</p>
         <p class="footer__meta">OGenie × Cert Checker · Ethereum mainnet</p>
+        <p class="footer__flexgrid">
+          <a
+            class="footer__flexgrid-btn"
+            href="https://loflexgrid.littleollienft.workers.dev/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >For other collections, check out Flex Grid</a>
+        </p>
       </footer>
     </div>
 
@@ -272,6 +280,12 @@
             <li><strong>Flex Your Genies</strong> — Grid from your wallet; sort, drag, download.</li>
           </ul>
         </div>
+        <a
+          class="welcome-modal__flexgrid-btn"
+          href="https://loflexgrid.littleollienft.workers.dev/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >For other collections, check out Flex Grid</a>
         <button type="button" id="welcome-modal-got-it" class="btn-primary welcome-modal__cta">
           Got it
         </button>
@@ -333,7 +347,9 @@
           <div class="flex-modal__sort-head">
             <label class="flex-modal__sort-title" for="flex-trait-sort">Layout</label>
             <p id="flex-trait-sort-hint" class="flex-modal__sort-note">
-              Random by default. Trait options sort OGenies first, then Certs.
+              Random by default. OpenSea rank uses rarity from the API when the worker has
+              <code class="flex-modal__inline-code">OPENSEA_API_KEY</code> set. Trait options sort
+              OGenies first, then Certs.
             </p>
           </div>
           <div class="flex-modal__select-wrap">
