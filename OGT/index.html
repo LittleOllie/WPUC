@@ -182,7 +182,7 @@
         <div class="lookup-shell__body" id="lookup-shell-body">
           <section class="panel mode-panel" aria-labelledby="wallet-mode-title">
             <h2 id="wallet-mode-title" class="mode-title">Wallet</h2>
-            <label class="field-label" for="wallet-input">Wallet address(es)</label>
+            <label class="field-label" for="wallet-input">Wallet address or ENS</label>
             <div class="input-row">
               <textarea
                 id="wallet-input"
@@ -190,13 +190,11 @@
                 rows="3"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder="0x…&#10;Several wallets: comma, space, or new line between each (max 12)"
+                placeholder="0xabc… or ollie.eth&#10;Multiple: comma, space, or new line (max 12)"
               ></textarea>
               <button type="button" id="check-wallet-btn" class="btn-primary">Check wallet(s)</button>
             </div>
-            <p class="hint">
-              Combined view: holdings from every address are merged (same token ID is not duplicated). Use a comma, space, or new line between addresses. You can also press Ctrl+Enter or Cmd+Enter to run the check.
-            </p>
+            <p class="hint">Enter 0x wallet address or ENS name</p>
             <div id="wallet-status" class="status" role="status" aria-live="polite"></div>
           </section>
 
@@ -342,7 +340,8 @@
         <div id="flex-preview-wrap" class="flex-preview-wrap hidden">
           <p class="flex-preview-label">Flex grid</p>
           <p class="flex-preview-hint">
-            Drag tiles to reorder (top-left branding is fixed).
+            Drag tiles to reorder. The pblo overlay stays on the top-left tile; OGT grid art and
+            fillers can be moved like other tiles.
           </p>
           <div id="flex-preview-grid" class="flex-preview-grid"></div>
           <button
@@ -353,6 +352,16 @@
           >
             Download Image
           </button>
+          <div id="flex-gif-section" class="flex-gif-section hidden">
+            <button
+              type="button"
+              id="flex-gif-create-btn"
+              class="btn-primary flex-modal__download flex-gif-create hidden"
+              disabled
+            >
+              Create GIF
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -375,6 +384,22 @@
       </div>
     </div>
 
+    <div
+      id="flex-gif-modal"
+      class="flex-gif-modal hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="flex-gif-modal-title"
+    >
+      <div class="flex-gif-modal__backdrop" aria-hidden="true"></div>
+      <div class="flex-gif-modal__panel">
+        <p id="flex-gif-modal-title" class="flex-gif-modal__text">Creating GIF…</p>
+        <div class="flex-gif-modal__spinner" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <script src="gif.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

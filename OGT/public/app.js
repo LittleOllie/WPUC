@@ -101,7 +101,7 @@ var FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP = 80;
 var FLEX_CANVAS_SIZE_FALLBACK = 4096;
 /** Mobile Safari kills tabs under memory pressure; cap canvas + never hold all decoded NFTs at once. */
 var FLEX_MOBILE_EXPORT_MAX = 2048;
-/** Export resolution (square). 8192 = max sharpness for print/social; falls back if canvas cap hit. */
+/** Max pixel length for the longer grid side when exporting (aspect ratio matches preview). */
 var FLEX_CANVAS_SIZE = 8192;
 /** Same as --og-lime / ogtriple wordmark yellow. */
 var FLEX_BRAND_CELL_BG = "#dfff00";
@@ -114,21 +114,90 @@ function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
 }
 
-/** Split textarea / pasted list into unique valid 0x addresses (max 12). */
-function parseWalletAddressesFromInput(raw) {
+/** sessionStorage key prefix for ENS → 0x resolution cache. */
+var ENS_RESOLVE_CACHE_PREFIX = "ogt_ens_resolve:";
+
+function isLikelyEnsName(s) {
+  var t = String(s || "").trim().toLowerCase();
+  return t.length > 0 && t.endsWith(".eth");
+}
+
+/**
+ * Resolve ENS via Worker (proxies ENS Ideas API — avoids browser CORS issues).
+ * @returns {Promise<string>} checksummed-lowercase 0x address
+ */
+async function resolveEnsNameToAddressCached(ensName) {
+  var norm = String(ensName || "").trim().toLowerCase();
+  if (!norm.endsWith(".eth")) {
+    return Promise.reject(new Error("Invalid ENS name or unable to resolve"));
+  }
+  try {
+    var cached = sessionStorage.getItem(ENS_RESOLVE_CACHE_PREFIX + norm);
+    if (cached && isValidWallet(cached)) {
+      return Promise.resolve(cached.trim().toLowerCase());
+    }
+  } catch (e) {
+    /* ignore storage blocked */
+  }
+  var url = apiUrl("/api/resolve-ens?name=" + encodeURIComponent(norm));
+  var res;
+  try {
+    res = await fetch(url, { method: "GET" });
+  } catch (e) {
+    return Promise.reject(new Error("Invalid ENS name or unable to resolve"));
+  }
+  var text = await res.text();
+  var data;
+  try {
+    data = JSON.parse(text);
+  } catch (e2) {
+    return Promise.reject(new Error("Invalid ENS name or unable to resolve"));
+  }
+  if (!res.ok || !data || typeof data.address !== "string") {
+    var errMsg =
+      data && typeof data.error === "string" ? data.error : "";
+    return Promise.reject(
+      new Error(
+        errMsg || "Invalid ENS name or unable to resolve"
+      )
+    );
+  }
+  var addr = data.address.trim().toLowerCase();
+  if (!isValidWallet(addr)) {
+    return Promise.reject(new Error("Invalid ENS name or unable to resolve"));
+  }
+  try {
+    sessionStorage.setItem(ENS_RESOLVE_CACHE_PREFIX + norm, addr);
+  } catch (e3) {
+    /* ignore */
+  }
+  return addr;
+}
+
+/**
+ * Split textarea into tokens; resolve .eth names; collect unique 0x addresses (max 12).
+ */
+async function parseAndResolveWalletInputs(raw) {
   var s = String(raw || "").trim();
   if (!s) return [];
   var parts = s.split(/[\s,;]+/g);
   var out = [];
   var seen = {};
-  for (var i = 0; i < parts.length; i++) {
+  var i;
+  for (i = 0; i < parts.length; i++) {
     var p = parts[i].trim();
     if (!p) continue;
-    if (!isValidWallet(p)) continue;
-    var low = p.toLowerCase();
-    if (seen[low]) continue;
-    seen[low] = true;
-    out.push(p);
+    var addr;
+    if (isLikelyEnsName(p)) {
+      addr = await resolveEnsNameToAddressCached(p);
+    } else if (isValidWallet(p)) {
+      addr = p.trim().toLowerCase();
+    } else {
+      continue;
+    }
+    if (seen[addr]) continue;
+    seen[addr] = true;
+    out.push(addr);
     if (out.length >= 12) break;
   }
   return out;
@@ -184,13 +253,24 @@ function flexSyncGenerateButtonState() {
 
 function flexSetDownloadButtonReady(ready) {
   var dl = document.getElementById("flex-download-btn");
-  if (!dl) return;
-  if (ready) {
-    dl.classList.remove("hidden");
-    dl.disabled = false;
-  } else {
-    dl.classList.add("hidden");
-    dl.disabled = true;
+  if (dl) {
+    if (ready) {
+      dl.classList.remove("hidden");
+      dl.disabled = false;
+    } else {
+      dl.classList.add("hidden");
+      dl.disabled = true;
+    }
+  }
+  var gifBtn = document.getElementById("flex-gif-create-btn");
+  if (gifBtn) {
+    if (ready) {
+      gifBtn.classList.remove("hidden");
+      gifBtn.disabled = false;
+    } else {
+      gifBtn.classList.add("hidden");
+      gifBtn.disabled = true;
+    }
   }
 }
 
@@ -267,28 +347,73 @@ function getFlexPbloImageUrl() {
 /** Second slot of a merged 2.png pair — no tile / no canvas draw at this index. */
 var FLEX_FILLER_SKIP = "__flex_filler_skip__";
 
-function getFlexFiller1Url() {
+function flexFillerAssetUrl(filename) {
   try {
-    return new URL("1.png", window.location.href).href;
+    var base =
+      typeof document !== "undefined" && document.baseURI
+        ? document.baseURI
+        : typeof window !== "undefined" && window.location
+          ? window.location.href
+          : filename;
+    return new URL(filename, base).href;
   } catch {
-    return "1.png";
+    return filename;
   }
+}
+
+function getFlexFiller1Url() {
+  return flexFillerAssetUrl("1.png");
 }
 
 function getFlexFiller2Url() {
-  try {
-    return new URL("2.png", window.location.href).href;
-  } catch {
-    return "2.png";
-  }
+  return flexFillerAssetUrl("2.png");
 }
 
 function getFlexFiller3Url() {
+  return flexFillerAssetUrl("3.png");
+}
+
+/** Last path segment of a URL (filler compare must not rely on strict === full href). */
+function flexFillerBasename(u) {
+  if (!u || typeof u !== "string") return "";
+  var s = u.trim();
+  if (!s || s === FLEX_FILLER_SKIP) return "";
   try {
-    return new URL("3.png", window.location.href).href;
-  } catch {
-    return "3.png";
+    if (typeof window !== "undefined" && window.location && window.location.href) {
+      s = new URL(s, window.location.href).pathname || s;
+    }
+  } catch (e) {
+    /* ignore */
   }
+  var parts = s.split("/");
+  var last = parts[parts.length - 1] || "";
+  var q = last.indexOf("?");
+  if (q !== -1) last = last.slice(0, q);
+  return last.toLowerCase();
+}
+
+function flexSlotIsFiller1Url(u) {
+  return flexFillerBasename(u) === "1.png";
+}
+
+function flexSlotIsFiller2Url(u) {
+  return flexFillerBasename(u) === "2.png";
+}
+
+function flexSlotIsFiller3Url(u) {
+  return flexFillerBasename(u) === "3.png";
+}
+
+/** Stable src for preview/export (avoids mismatched href vs slot string). */
+function flexCanonicalFillerSrc(u) {
+  if (flexSlotIsFiller1Url(u)) return getFlexFiller1Url();
+  if (flexSlotIsFiller2Url(u)) return getFlexFiller2Url();
+  if (flexSlotIsFiller3Url(u)) return getFlexFiller3Url();
+  return u;
+}
+
+function flexSlotIsAnyFillerArtUrl(u) {
+  return flexSlotIsFiller1Url(u) || flexSlotIsFiller2Url(u) || flexSlotIsFiller3Url(u);
 }
 
 /** Cover rect for two adjacent cells (same row or same column). */
@@ -356,15 +481,24 @@ function applyFlexFillers(slots, cols, rows) {
 }
 
 function flexEditorSlotIsDraggable(i) {
-  if (i === 0) return false;
   if (!flexEditorState || !flexEditorState.slots) return false;
   var s = flexEditorState.slots[i];
   if (!s || s === FLEX_FILLER_SKIP) return false;
-  var u1 = getFlexFiller1Url();
-  var u2 = getFlexFiller2Url();
-  var u3 = getFlexFiller3Url();
-  if (s === u1 || s === u2 || s === u3) return false;
   return true;
+}
+
+/** True when url is the flex brand OGT grid art (ogtriplegrid.png), any path/query variant. */
+function flexSlotUrlIsBrandGridOgt(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    var cu = new URL(url, window.location.href).pathname;
+    var br = new URL(getFlexGridBrandImageUrl(), window.location.href).pathname;
+    var a = (cu.split("/").pop() || "").toLowerCase();
+    var b = (br.split("/").pop() || "").toLowerCase();
+    return a === b && a.length > 0;
+  } catch (e) {
+    return flexFillerBasename(url) === "ogtriplegrid.png";
+  }
 }
 
 /** OGENIE block then CERT block; capped. Each item has image + traits for sorting. */
@@ -686,9 +820,14 @@ function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
   ctx.restore();
 }
 
+/**
+ * Rectangular grid that fits all cells (e.g. 5×4). cols = ceil(sqrt(n)), rows = ceil(n/cols).
+ * Preview tiles stay square (CSS); export uses the same cols:rows aspect ratio.
+ */
 function flexComputeGrid(totalCells) {
-  var cols = Math.ceil(Math.sqrt(totalCells));
-  var rows = Math.ceil(totalCells / cols);
+  var n = Math.max(1, totalCells);
+  var cols = Math.ceil(Math.sqrt(n));
+  var rows = Math.ceil(n / cols);
   return { cols: cols, rows: rows };
 }
 
@@ -716,15 +855,41 @@ function flexIsMemoryConstrainedDevice() {
   return false;
 }
 
-function flexExportCanvasSizeCandidates(slotsLen) {
-  var n = typeof slotsLen === "number" ? slotsLen : 0;
+/**
+ * Export dimensions: same aspect ratio as the preview grid (W:H = cols:rows), square pixels per cell.
+ * maxDim caps the longer grid side so large rectangular grids stay within canvas limits.
+ */
+function flexExportCanvasDimensionCandidates(cols, rows) {
+  var c = Math.max(1, cols);
+  var r = Math.max(1, rows);
+  var cells = c * r;
+  var maxDims;
   if (flexIsMemoryConstrainedDevice()) {
-    if (n > 49) return [1024, 896, 768];
-    if (n > 36) return [1280, 1024, 896];
-    if (n > 24) return [1536, 1280, 1024];
-    return [FLEX_MOBILE_EXPORT_MAX, 1536, 1024];
+    if (cells > 49) maxDims = [1024, 896, 768, 640];
+    else if (cells > 36) maxDims = [1280, 1024, 896, 768];
+    else if (cells > 24) maxDims = [1536, 1280, 1024, 896];
+    else maxDims = [FLEX_MOBILE_EXPORT_MAX, 1536, 1280, 1024];
+  } else {
+    maxDims = [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048, 1536];
   }
-  return [FLEX_CANVAS_SIZE, FLEX_CANVAS_SIZE_FALLBACK, 2048];
+  var out = [];
+  var i;
+  for (i = 0; i < maxDims.length; i++) {
+    var maxDim = maxDims[i];
+    var cellPx = Math.floor(maxDim / Math.max(c, r));
+    if (cellPx < 1) cellPx = 1;
+    out.push({ W: c * cellPx, H: r * cellPx });
+  }
+  return out;
+}
+
+/** Single export size cap (e.g. GIF) — same cols:rows aspect, square cells. */
+function flexExportCanvasDimensionSingle(cols, rows, maxDim) {
+  var c = Math.max(1, cols);
+  var r = Math.max(1, rows);
+  var cellPx = Math.floor(maxDim / Math.max(c, r));
+  if (cellPx < 1) cellPx = 1;
+  return [{ W: c * cellPx, H: r * cellPx }];
 }
 
 function flexPreviewConcurrentLoads() {
@@ -813,7 +978,16 @@ function flexAwaitPreviewGridLoads(gridEl) {
 }
 
 /** Load each cell’s art, draw, then release — keeps peak memory low for huge grids. */
-async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch) {
+async function flexExportGridDrawCellsSequential(
+  ctx,
+  slots,
+  cols,
+  rows,
+  cw,
+  ch,
+  cellBg
+) {
+  var cellBackdrop = cellBg || "#ffffff";
   var cells = cols * rows;
   var i;
   var col;
@@ -821,7 +995,6 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
   var x;
   var y;
   var bg;
-  var u2 = getFlexFiller2Url();
   for (i = 0; i < cells; i++) {
     if (slots[i] === FLEX_FILLER_SKIP) continue;
     col = i % cols;
@@ -830,13 +1003,23 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
     y = row * ch;
     if (
       i < cells - 1 &&
-      slots[i] === u2 &&
+      flexSlotIsFiller2Url(slots[i]) &&
       slots[i + 1] === FLEX_FILLER_SKIP
     ) {
       var merged = flexFillerMergedRect(i, i + 1, cols, cw, ch);
       if (merged) {
-        var img2 = await flexLoadImageWithFallbacks(u2);
-        flexDrawCover(ctx, img2, merged.x, merged.y, merged.w, merged.h, "#ffffff");
+        var img2 = await flexLoadImageWithFallbacks(
+          flexCanonicalFillerSrc(slots[i])
+        );
+        flexDrawCover(
+          ctx,
+          img2,
+          merged.x,
+          merged.y,
+          merged.w,
+          merged.h,
+          cellBackdrop
+        );
         flexReleaseImageElement(img2);
       }
       if ((i & 3) === 3) {
@@ -856,7 +1039,7 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
       flexReleaseImageElement(pbloM);
       flexReleaseImageElement(ogM);
     } else {
-      bg = "#ffffff";
+      bg = cellBackdrop;
       var img = null;
       if (slotUrl) {
         img = await flexLoadImageWithFallbacks(slotUrl);
@@ -872,17 +1055,29 @@ async function flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch)
   }
 }
 
-async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
+async function flexBuildGridCanvasFromSlots(
+  slots,
+  cols,
+  rows,
+  maxSideOverride,
+  cellBg
+) {
+  var cellBackdrop = cellBg || "#ffffff";
   var cells = cols * rows;
-  var sizeTry = flexExportCanvasSizeCandidates(slots.length);
+  var dimTry =
+    typeof maxSideOverride === "number" &&
+    maxSideOverride > 0 &&
+    isFinite(maxSideOverride)
+      ? flexExportCanvasDimensionSingle(cols, rows, maxSideOverride)
+      : flexExportCanvasDimensionCandidates(cols, rows);
   var ti;
   var canvas = null;
   var ctx = null;
   var W = 0;
   var H = 0;
-  for (ti = 0; ti < sizeTry.length; ti++) {
-    W = sizeTry[ti];
-    H = sizeTry[ti];
+  for (ti = 0; ti < dimTry.length; ti++) {
+    W = dimTry[ti].W;
+    H = dimTry[ti].H;
     canvas = flexCreateExportCanvas(W, H);
     if (canvas.width !== W || canvas.height !== H) {
       canvas = null;
@@ -902,7 +1097,7 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
   }
   var cw = W / cols;
   var ch = H / rows;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = cellBackdrop;
   ctx.fillRect(0, 0, W, H);
   var i;
   var col;
@@ -924,7 +1119,15 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
     uniqueCount > FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP;
 
   if (useSequential) {
-    await flexExportGridDrawCellsSequential(ctx, slots, cols, rows, cw, ch);
+    await flexExportGridDrawCellsSequential(
+      ctx,
+      slots,
+      cols,
+      rows,
+      cw,
+      ch,
+      cellBackdrop
+    );
   } else {
     var unique = [];
     var seen = {};
@@ -944,7 +1147,6 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       })
     );
     var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
-    var u2p = getFlexFiller2Url();
     for (i = 0; i < cells; i++) {
       if (slots[i] === FLEX_FILLER_SKIP) continue;
       col = i % cols;
@@ -953,15 +1155,17 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
       y = row * ch;
       if (
         i < cells - 1 &&
-        slots[i] === u2p &&
+        flexSlotIsFiller2Url(slots[i]) &&
         slots[i + 1] === FLEX_FILLER_SKIP
       ) {
         var mergedP = flexFillerMergedRect(i, i + 1, cols, cw, ch);
         if (mergedP) {
-          bg = "#ffffff";
+          bg = cellBackdrop;
+          var key2 = slots[i];
+          var imgM = loadedMap[key2] || loadedMap[flexCanonicalFillerSrc(key2)];
           flexDrawCover(
             ctx,
-            loadedMap[u2p] || null,
+            imgM || null,
             mergedP.x,
             mergedP.y,
             mergedP.w,
@@ -983,7 +1187,7 @@ async function flexBuildGridCanvasFromSlots(slots, cols, rows) {
           cellR2.h
         );
       } else {
-        bg = "#ffffff";
+        bg = cellBackdrop;
         var su2 = slots[i];
         flexDrawCover(
           ctx,
@@ -1155,6 +1359,13 @@ function resetFlexModalOutput() {
     err.classList.remove("is-visible");
   }
   if (wrap) wrap.classList.add("hidden");
+  var gifSec = document.getElementById("flex-gif-section");
+  if (gifSec) gifSec.classList.add("hidden");
+  var gifModal = document.getElementById("flex-gif-modal");
+  if (gifModal) {
+    gifModal.classList.add("hidden");
+    gifModal.setAttribute("aria-hidden", "true");
+  }
   flexSetDownloadButtonReady(false);
   if (grid) grid.innerHTML = "";
   flexEditorState = null;
@@ -1414,9 +1625,6 @@ function renderFlexPreviewGrid(domPool) {
   el.style.gridTemplateColumns = "repeat(" + st.cols + ", 1fr)";
   el.style.gridTemplateRows = "repeat(" + st.rows + ", minmax(0, 1fr))";
   el.innerHTML = "";
-  var u1 = getFlexFiller1Url();
-  var u2 = getFlexFiller2Url();
-  var u3 = getFlexFiller3Url();
   var i;
   for (i = 0; i < st.slots.length; i++) {
     var url = st.slots[i];
@@ -1450,7 +1658,7 @@ function renderFlexPreviewGrid(domPool) {
           brandImg = document.createElement("img");
           brandImg.className = "flex-tile__img";
           brandImg.alt = "";
-          brandImg.draggable = false;
+          brandImg.draggable = true;
           if (flexIsMemoryConstrainedDevice()) {
             brandImg.setAttribute("data-flex-src", url);
           } else {
@@ -1459,7 +1667,7 @@ function renderFlexPreviewGrid(domPool) {
         } else {
           brandImg.className = "flex-tile__img";
           brandImg.alt = "";
-          brandImg.draggable = false;
+          brandImg.draggable = true;
         }
         stack.appendChild(pbloImg);
         cell.appendChild(brandImg);
@@ -1471,7 +1679,7 @@ function renderFlexPreviewGrid(domPool) {
       var merged = false;
       if (
         i < st.slots.length - 1 &&
-        url === u2 &&
+        flexSlotIsFiller2Url(url) &&
         st.slots[i + 1] === FLEX_FILLER_SKIP
       ) {
         var col2 = (i + 1) % st.cols;
@@ -1493,22 +1701,31 @@ function renderFlexPreviewGrid(domPool) {
         cell.style.gridRow = String(row + 1);
       }
 
+      var srcOut = flexSlotIsAnyFillerArtUrl(url)
+        ? flexCanonicalFillerSrc(url)
+        : url;
+      if (flexSlotIsAnyFillerArtUrl(url)) {
+        cell.classList.add("flex-tile--filler");
+      }
+
       var img = flexTakePooledImg(pool, url);
       if (!img) {
         img = document.createElement("img");
         img.className = "flex-tile__img";
         img.alt = "";
         if (flexIsMemoryConstrainedDevice()) {
-          img.setAttribute("data-flex-src", url);
+          img.setAttribute("data-flex-src", srcOut);
         } else {
-          img.src = url;
+          img.src = srcOut;
         }
       } else {
         img.className = "flex-tile__img";
         img.alt = "";
+        if (flexSlotIsAnyFillerArtUrl(url)) {
+          img.src = srcOut;
+        }
       }
-      var isFiller = url === u1 || url === u2 || url === u3;
-      img.draggable = !isFiller;
+      img.draggable = true;
       cell.appendChild(img);
     } else {
       cell.style.gridColumn = String(col + 1);
@@ -1519,6 +1736,243 @@ function renderFlexPreviewGrid(domPool) {
     el.appendChild(cell);
   }
   flexDrainUnusedDomPool(pool);
+}
+
+/** GIF export limits (grid order only; never the raw NFT list). */
+var FLEX_GIF_MAX_FRAMES = 100;
+var FLEX_GIF_SINGLE_SIDE = 480;
+
+function flexGifWorkerScriptUrl() {
+  try {
+    return new URL("gif.worker.js", document.baseURI || window.location.href).href;
+  } catch (e) {
+    return "gif.worker.js";
+  }
+}
+
+function flexGifModalOpen(show) {
+  var el = document.getElementById("flex-gif-modal");
+  if (!el) return;
+  if (show) {
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+  } else {
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
+function flexGifModalSetText(msg) {
+  var el = document.getElementById("flex-gif-modal-title");
+  if (el) el.textContent = msg || "";
+}
+
+/**
+ * Row-major order for GIF frames after the forced OGT logo frame.
+ * Omits 1.png / 2.png / 3.png entirely. Omits ogtriplegrid.png (shown as first frame already).
+ */
+function flexGifBuildFrameDescriptorsFromState() {
+  if (!flexEditorState || !flexEditorState.slots) return [];
+  var slots = flexEditorState.slots;
+  var out = [];
+  var i;
+  for (i = 0; i < slots.length; i++) {
+    var url = slots[i];
+    if (url === FLEX_FILLER_SKIP) continue;
+    if (!url) continue;
+    if (flexSlotIsAnyFillerArtUrl(url)) continue;
+    if (flexSlotUrlIsBrandGridOgt(url)) continue;
+    out.push({ slotIndex: i, imageUrl: url });
+  }
+  return out;
+}
+
+/** Delay per frame (ms): slightly longer when many frames or large export square. */
+function flexGifComputeDelayMs(frameCount, sidePx) {
+  var n = Math.max(1, frameCount);
+  var s = typeof sidePx === "number" ? sidePx : FLEX_GIF_SINGLE_SIDE;
+  var base = 300;
+  if (n > 24) base += 40;
+  if (n > 48) base += 50;
+  if (n > 72) base += 40;
+  if (s >= 480) base += 20;
+  return Math.min(620, Math.max(240, Math.round(base)));
+}
+
+async function flexGifCreateContentFrameCanvas(url, side) {
+  var canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, side, side);
+  var img = await flexLoadImageWithFallbacks(url);
+  if (img && img.naturalWidth > 0) {
+    flexDrawCover(ctx, img, 0, 0, side, side, "#ffffff");
+  }
+  flexReleaseImageElement(img);
+  return canvas;
+}
+
+/** First GIF frame: always OGT grid logo + pblo (same layout as top-left tile when it holds the logo). */
+async function flexGifCreateForcedOgtBrandFrame(side) {
+  var canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var brandUrl = getFlexGridBrandImageUrl();
+  var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+  var ogM = await flexLoadImageWithFallbacks(brandUrl);
+  flexDrawBrandCellExport(ctx, ogM, pbloD, 0, 0, side, side);
+  flexReleaseImageElement(pbloD);
+  flexReleaseImageElement(ogM);
+  return canvas;
+}
+
+/** Top-left cell in GIF when that slot is not the OGT logo URL (NFT etc. under pblo). */
+async function flexGifCreateBrandFrameCanvas(side) {
+  var canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var slotUrl = flexEditorState.slots[0];
+  var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+  var ogM = null;
+  if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
+  flexDrawBrandCellExport(ctx, ogM, pbloD, 0, 0, side, side);
+  flexReleaseImageElement(pbloD);
+  flexReleaseImageElement(ogM);
+  return canvas;
+}
+
+function flexGifAddFrameFromCanvas(gif, canvas, delayMs) {
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var w = canvas.width;
+  var h = canvas.height;
+  var idata;
+  try {
+    idata = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    throw new Error(
+      "Could not read pixels for GIF (cross-origin art blocked the canvas). Try another browser."
+    );
+  }
+  gif.addFrame(idata, { delay: delayMs, copy: true });
+}
+
+function flexGifRenderAndDownload(gif) {
+  return new Promise(function (resolve, reject) {
+    gif.on("finished", function (blob) {
+      try {
+        if (!blob || blob.size < 32) {
+          reject(new Error("GIF encoding failed (empty output)."));
+          return;
+        }
+        var outBlob =
+          blob.type === "image/gif"
+            ? blob
+            : new Blob([blob], { type: "image/gif" });
+        var a = document.createElement("a");
+        var u = URL.createObjectURL(outBlob);
+        a.href = u;
+        a.download = "ogtriple-flex.gif";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () {
+          URL.revokeObjectURL(u);
+        }, 1500);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      resolve();
+    });
+    try {
+      gif.render();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function flexRunGifCreator() {
+  if (typeof GIF === "undefined") {
+    flexGifModalOpen(true);
+    flexGifModalSetText("GIF library failed to load. Refresh the page.");
+    setTimeout(function () {
+      flexGifModalOpen(false);
+    }, 2600);
+    return;
+  }
+  if (!flexEditorState) {
+    flexGifModalOpen(true);
+    flexGifModalSetText("Generate a FlexGrid first.");
+    setTimeout(function () {
+      flexGifModalOpen(false);
+    }, 2200);
+    return;
+  }
+  var btn = document.getElementById("flex-gif-create-btn");
+  if (btn) btn.disabled = true;
+  flexGifModalOpen(true);
+  flexGifModalSetText("Creating GIF…");
+  var workerUrl = flexGifWorkerScriptUrl();
+  try {
+    var descriptors = flexGifBuildFrameDescriptorsFromState();
+    var maxRest = Math.max(0, FLEX_GIF_MAX_FRAMES - 1);
+    if (descriptors.length > maxRest) {
+      descriptors = descriptors.slice(0, maxRest);
+    }
+    var side = FLEX_GIF_SINGLE_SIDE;
+    var totalFrames = 1 + descriptors.length;
+    var delayMs = flexGifComputeDelayMs(totalFrames, side);
+    var gifEnc = new GIF({
+      workers: 2,
+      quality: 10,
+      workerScript: workerUrl,
+      repeat: 0,
+      background: "#ffffff",
+      width: side,
+      height: side
+    });
+    var forced = await flexGifCreateForcedOgtBrandFrame(side);
+    flexGifAddFrameFromCanvas(gifEnc, forced, delayMs);
+    flexReleaseCanvasMemory(forced);
+    await new Promise(function (r) {
+      setTimeout(r, 0);
+    });
+    var fi;
+    for (fi = 0; fi < descriptors.length; fi++) {
+      var d = descriptors[fi];
+      var frameCanvas =
+        d.slotIndex === 0
+          ? await flexGifCreateBrandFrameCanvas(side)
+          : await flexGifCreateContentFrameCanvas(d.imageUrl, side);
+      flexGifAddFrameFromCanvas(gifEnc, frameCanvas, delayMs);
+      flexReleaseCanvasMemory(frameCanvas);
+      await new Promise(function (r) {
+        setTimeout(r, 0);
+      });
+    }
+    await flexGifRenderAndDownload(gifEnc);
+    flexGifModalSetText("Download started.");
+    setTimeout(function () {
+      flexGifModalOpen(false);
+    }, 450);
+  } catch (e) {
+    var msg = e instanceof Error ? e.message : String(e);
+    flexGifModalSetText(msg || "GIF export failed.");
+    setTimeout(function () {
+      flexGifModalOpen(false);
+    }, 2800);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function flexRefreshPreviewFromSlots() {
@@ -1542,6 +1996,8 @@ function flexRefreshPreviewFromSlots() {
       flexLastExportDataUrl = dataUrl;
       var wrap = document.getElementById("flex-preview-wrap");
       if (wrap) wrap.classList.remove("hidden");
+      var gifSec = document.getElementById("flex-gif-section");
+      if (gifSec) gifSec.classList.remove("hidden");
     })
     .catch(function (e) {
       var msg = e instanceof Error ? e.message : String(e);
@@ -1591,6 +2047,8 @@ async function runFlexGenerate() {
   rebuildFlexSlotsFromSortedNfts(sorted);
   var previewWrap = document.getElementById("flex-preview-wrap");
   if (previewWrap) previewWrap.classList.remove("hidden");
+  var gifSec = document.getElementById("flex-gif-section");
+  if (gifSec) gifSec.classList.remove("hidden");
   flexSetDownloadButtonReady(false);
   renderFlexPreviewGrid();
   setGlobalLoading(true);
@@ -1629,6 +2087,8 @@ function setupFlexYourGeniesUi() {
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (backdrop) backdrop.addEventListener("click", closeModal);
   if (genBtn) genBtn.addEventListener("click", runFlexGenerate);
+  var gifCreate = document.getElementById("flex-gif-create-btn");
+  if (gifCreate) gifCreate.addEventListener("click", flexRunGifCreator);
   var co = document.getElementById("flex-opt-ogenies");
   var cc = document.getElementById("flex-opt-certs");
   if (co) co.addEventListener("change", flexSyncGenerateButtonState);
@@ -2344,12 +2804,26 @@ async function checkWallet() {
   tokenResultsEl.innerHTML = "";
   setStatus(tokenStatusEl, "", "");
 
-  var addrs = parseWalletAddressesFromInput(input ? input.value : "");
+  var addrs;
+  try {
+    addrs = await parseAndResolveWalletInputs(input ? input.value : "");
+  } catch (ensErr) {
+    setStatus(
+      statusEl,
+      "error",
+      "Invalid ENS name or unable to resolve"
+    );
+    resultsEl.classList.add("hidden");
+    resultsEl.innerHTML = "";
+    clearLookupShellMeta();
+    setLookupShellCollapsed(false);
+    return;
+  }
   if (!addrs.length) {
     setStatus(
       statusEl,
       "error",
-      "Enter at least one wallet — 0x + 40 hex characters. Separate multiple with a comma, space, or new line (max 12)."
+      "Enter at least one valid 0x address or ENS name. Separate multiple with a comma, space, or new line (max 12)."
     );
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";

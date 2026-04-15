@@ -1609,9 +1609,34 @@ body.welcome-modal-active {
   user-select: none;
 }
 
+@keyframes flex-collection-pulse-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(223, 255, 0, 0.1),
+      0 0 14px rgba(223, 255, 0, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(223, 255, 0, 0.22),
+      0 0 32px rgba(223, 255, 0, 0.38);
+  }
+}
+
+.flex-collection-pill__input:not(:checked) + .flex-collection-pill__label {
+  animation: flex-collection-pulse-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flex-collection-pill__input:not(:checked) + .flex-collection-pill__label {
+    animation: none;
+  }
+}
+
 .flex-collection-pill:hover
   .flex-collection-pill__input:not(:checked)
   + .flex-collection-pill__label {
+  animation: none;
   border-color: rgba(223, 255, 0, 0.75);
   color: var(--og-lime);
   box-shadow:
@@ -1708,6 +1733,20 @@ body.welcome-modal-active {
   aspect-ratio: 1 / 2;
 }
 
+/*
+ * Grid + aspect-ratio: percentage heights on <img> often don’t resolve for spanned cells,
+ * so the image can collapse or fail to paint (user sees only the tile background).
+ * Match the brand tile: absolutely fill the cell (cover).
+ */
+.flex-tile:not(.flex-tile--brand) > .flex-tile__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 .flex-tile--brand {
   position: relative;
   background: var(--og-lime);
@@ -1757,6 +1796,15 @@ body.welcome-modal-active {
   display: block;
 }
 
+/* Filler art (1/2/3.png): keep paint above any stray grid bleed */
+.flex-tile--filler {
+  background: #ffffff;
+}
+
+.flex-tile--filler > .flex-tile__img {
+  z-index: 1;
+}
+
 .flex-tile--empty {
   background: #ffffff;
 }
@@ -1776,9 +1824,6 @@ body.welcome-modal-active {
 }
 
 .flex-tile__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
   pointer-events: auto;
 }
@@ -1815,6 +1860,85 @@ body.welcome-modal-active {
 .flex-modal__download {
   width: 100%;
   margin-top: 0.85rem;
+}
+
+.flex-gif-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.flex-gif-create {
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.flex-gif-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  place-items: center;
+  padding: 1rem;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.flex-gif-modal.hidden {
+  display: none;
+}
+
+.flex-gif-modal:not(.hidden) {
+  display: grid;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.flex-gif-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.flex-gif-modal__panel {
+  position: relative;
+  z-index: 1;
+  min-width: min(280px, 92vw);
+  padding: 1.35rem 1.5rem 1.5rem;
+  border-radius: 12px;
+  background: var(--panel-bg, rgba(24, 28, 40, 0.96));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.flex-gif-modal__text {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.flex-gif-modal__spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--accent, #8aa8ff);
+  border-radius: 50%;
+  animation: flex-gif-spin 0.75s linear infinite;
+}
+
+@keyframes flex-gif-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Full-screen loader: ogtriple pops in and spins on the spot */

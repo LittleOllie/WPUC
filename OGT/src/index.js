@@ -736,6 +736,43 @@ export default {
       }
     }
 
+    /** Proxy ENS Ideas — same-origin for the app; avoids browser CORS to api.ensideas.com */
+    if (path === "/api/resolve-ens") {
+      try {
+        const rawName = url.searchParams.get("name") || "";
+        const norm = String(rawName).trim().toLowerCase();
+        if (!norm.endsWith(".eth")) {
+          return json({ error: "Invalid ENS name" }, 400);
+        }
+        const upstream = await fetch(
+          `https://api.ensideas.com/ens/resolve/${encodeURIComponent(norm)}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const text = await upstream.text();
+        if (!upstream.ok) {
+          return json(
+            { error: "Unable to resolve ENS" },
+            upstream.status === 404 ? 404 : 502
+          );
+        }
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          return json({ error: "Invalid ENS response" }, 502);
+        }
+        const addr =
+          data && typeof data.address === "string" ? data.address.trim() : "";
+        if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+          return json({ error: "Invalid resolution" }, 502);
+        }
+        return json({ address: addr.toLowerCase(), name: norm });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return json({ error: "ENS resolution failed", detail: msg }, 500);
+      }
+    }
+
     return json({ error: "Not found" }, 404);
   },
 };
