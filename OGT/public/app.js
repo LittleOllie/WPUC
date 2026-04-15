@@ -114,6 +114,26 @@ function isValidWallet(s) {
   return typeof s === "string" && WALLET_RE.test(s.trim());
 }
 
+/** Split textarea / pasted list into unique valid 0x addresses (max 12). */
+function parseWalletAddressesFromInput(raw) {
+  var s = String(raw || "").trim();
+  if (!s) return [];
+  var parts = s.split(/[\s,;]+/g);
+  var out = [];
+  var seen = {};
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i].trim();
+    if (!p) continue;
+    if (!isValidWallet(p)) continue;
+    var low = p.toLowerCase();
+    if (seen[low]) continue;
+    seen[low] = true;
+    out.push(p);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
 /** Normalize API item: `{ tokenId, image, traits }` or legacy numeric id. */
 function normalizeWalletNftEntry(x) {
   if (x && typeof x === "object" && "tokenId" in x) {
@@ -912,6 +932,40 @@ function setupBackToMenu() {
   } catch (e) {
     /* keep default href */
   }
+}
+
+var THEME_STORAGE_KEY = "lo-labs-theme";
+
+function setupThemeToggle() {
+  var html = document.documentElement;
+  var btn = document.getElementById("theme-toggle");
+  function syncButton() {
+    if (!btn) return;
+    var t = html.getAttribute("data-theme") || "dark";
+    var isLight = t === "light";
+    btn.setAttribute("aria-checked", isLight ? "true" : "false");
+    btn.setAttribute(
+      "aria-label",
+      isLight ? "Switch to dark theme" : "Switch to light theme"
+    );
+  }
+  function applyTheme(next) {
+    if (next !== "light" && next !== "dark") next = "dark";
+    html.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch (e) {
+      /* ignore */
+    }
+    syncButton();
+  }
+  if (btn) {
+    btn.addEventListener("click", function () {
+      var cur = html.getAttribute("data-theme") || "dark";
+      applyTheme(cur === "dark" ? "light" : "dark");
+    });
+  }
+  syncButton();
 }
 
 function setupWelcomeModal() {
@@ -1815,6 +1869,18 @@ function updateLookupShellMetaFromWalletData(data) {
   var certs = (data && data.certs) || [];
   var meta = document.getElementById("lookup-shell-meta");
   if (!meta) return;
+  var nWallets = 1;
+  if (data && data.wallets && Array.isArray(data.wallets) && data.wallets.length) {
+    nWallets = data.wallets.length;
+  } else if (data && data.wallet && String(data.wallet).indexOf(",") !== -1) {
+    nWallets = String(data.wallet)
+      .split(",")
+      .map(function (x) {
+        return x.trim();
+      })
+      .filter(Boolean).length;
+  }
+  var walletSuffix = nWallets > 1 ? " · " + nWallets + " wallets" : "";
   meta.textContent =
     " · " +
     ogenies.length +
@@ -1826,7 +1892,8 @@ function updateLookupShellMetaFromWalletData(data) {
     (certs.length !== 1 ? "s" : "") +
     " · " +
     matched.length +
-    " Total Matched";
+    " Total Matched" +
+    walletSuffix;
   meta.hidden = false;
 }
 
@@ -1881,7 +1948,7 @@ function renderWalletResults(container, data) {
     container.removeAttribute("data-last-wallet");
     html +=
       walletStatsHtml(0, 0, 0) +
-      '<p class="empty-hint prominent">No NFTs found for this wallet in OGENIE or CERT on mainnet.</p>';
+      '<p class="empty-hint prominent">No NFTs found for the scanned wallet(s) in OGENIE or CERT on mainnet.</p>';
     container.innerHTML = html;
     container.classList.remove("hidden");
     updateLookupShellMetaFromWalletData(data);
@@ -1924,7 +1991,7 @@ function renderWalletResults(container, data) {
     '<h3 class="section-title">Missing OGENIEs</h3><div class="wallet-grid">';
   if (missingOgenies.length === 0) {
     html +=
-      '<p class="empty-hint">None — no CERTs in your wallet are missing their OGENIE.</p>';
+      '<p class="empty-hint">None — no CERTs in the scanned wallet(s) are missing their OGENIE.</p>';
   } else {
     for (var k = 0; k < missingOgenies.length; k++) {
       html += renderWalletCardExtraCert(missingOgenies[k]);
@@ -2087,17 +2154,13 @@ async function checkWallet() {
   tokenResultsEl.innerHTML = "";
   setStatus(tokenStatusEl, "", "");
 
-  var raw = (input.value || "").trim();
-  if (!raw) {
-    setStatus(statusEl, "error", "Enter a wallet address.");
-    resultsEl.classList.add("hidden");
-    resultsEl.innerHTML = "";
-    clearLookupShellMeta();
-    setLookupShellCollapsed(false);
-    return;
-  }
-  if (!isValidWallet(raw)) {
-    setStatus(statusEl, "error", "Invalid wallet — use a 0x + 40 hex character address.");
+  var addrs = parseWalletAddressesFromInput(input ? input.value : "");
+  if (!addrs.length) {
+    setStatus(
+      statusEl,
+      "error",
+      "Enter at least one wallet — 0x + 40 hex characters. Separate multiple with a comma, space, or new line (max 12)."
+    );
     resultsEl.classList.add("hidden");
     resultsEl.innerHTML = "";
     clearLookupShellMeta();
@@ -2105,7 +2168,11 @@ async function checkWallet() {
     return;
   }
 
-  var url = apiUrl("/api/wallet?address=" + encodeURIComponent(raw));
+  var params = new URLSearchParams();
+  for (var ai = 0; ai < addrs.length; ai++) {
+    params.append("address", addrs[ai]);
+  }
+  var url = apiUrl("/api/wallet?" + params.toString());
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
@@ -2225,9 +2292,15 @@ async function findTokenMatch() {
 })();
 
 document.getElementById("check-wallet-btn").addEventListener("click", checkWallet);
-document.getElementById("wallet-input").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") checkWallet();
-});
+var walletInputEl = document.getElementById("wallet-input");
+if (walletInputEl) {
+  walletInputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      checkWallet();
+    }
+  });
+}
 
 document.getElementById("find-match-btn").addEventListener("click", findTokenMatch);
 document.getElementById("token-input").addEventListener("keydown", function (e) {
@@ -2237,6 +2310,7 @@ document.getElementById("token-input").addEventListener("keydown", function (e) 
 window.setGlobalLoading = setGlobalLoading;
 
 setupBackToMenu();
+setupThemeToggle();
 setupWelcomeModal();
 setupFlexYourGeniesUi();
 setupLookupShell();

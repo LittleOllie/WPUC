@@ -6,16 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
       (function () {
-        var CANON = "OGTnew";
-        var SEG_LC = "ogtnew";
+        var CANON = "OGT";
 
         var loc = window.location;
         var p = loc.pathname;
         var segs = p.split("/");
 
+        function isOgtAppSeg(s) {
+          var x = (s || "").toLowerCase();
+          return x === "ogt" || x === "ogtnew";
+        }
+
         function appSegmentIndex() {
           for (var i = 0; i < segs.length; i++) {
-            if (segs[i].toLowerCase() === SEG_LC) return i;
+            if (isOgtAppSeg(segs[i])) return i;
           }
           return -1;
         }
@@ -31,7 +35,7 @@
           });
         }
 
-        /** GitHub Pages directory URLs need a trailing slash; bare /OGTnew often 404s. */
+        /** GitHub Pages directory URLs need a trailing slash; bare /OGT often 404s. */
         function expandWithSlashVariants(paths) {
           var out = [];
           paths.forEach(function (path) {
@@ -55,7 +59,7 @@
           var nonEmpty = segs.filter(Boolean);
           if (
             nonEmpty.length === 1 &&
-            new RegExp("^" + SEG_LC + "$", "i").test(nonEmpty[0]) &&
+            isOgtAppSeg(nonEmpty[0]) &&
             !p.endsWith("/")
           ) {
             loc.replace(loc.origin + "/" + CANON + "/" + loc.search + loc.hash);
@@ -72,7 +76,7 @@
           }
 
           var tryPaths = [];
-          [CANON, "ogtnew"].forEach(function (v) {
+          [CANON, "OGTnew"].forEach(function (v) {
             var path = buildPath(v);
             if (tryPaths.indexOf(path) === -1) tryPaths.push(path);
           });
@@ -80,9 +84,14 @@
           tryPaths.sort(function (a, b) {
             function rank(path) {
               var r = 0;
+              var pl = path.toLowerCase();
               if (!path.endsWith("/")) r += 2;
-              if (path.indexOf("/" + CANON) === -1 && path.toLowerCase().indexOf(SEG_LC) !== -1)
-                r += 1;
+              var hasCanon =
+                pl.indexOf("/ogt/") !== -1 ||
+                pl === "/ogt" ||
+                pl.endsWith("/ogt");
+              var hasLegacy = pl.indexOf("/ogtnew") !== -1;
+              if (!hasCanon && hasLegacy) r += 1;
               return r;
             }
             return rank(a) - rank(b);
@@ -90,7 +99,7 @@
 
           var changed = false;
           for (var j = 0; j < segs.length; j++) {
-            if (segs[j].toLowerCase() === SEG_LC && segs[j] !== CANON) {
+            if (isOgtAppSeg(segs[j]) && segs[j] !== CANON) {
               segs[j] = CANON;
               changed = true;
             }
@@ -109,7 +118,7 @@
             if (
               lastSeg === idx &&
               !next.endsWith("/") &&
-              segs[idx].toLowerCase() === SEG_LC
+              isOgtAppSeg(segs[idx])
             ) {
               next += "/";
             }

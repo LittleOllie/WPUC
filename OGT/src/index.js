@@ -397,6 +397,61 @@ function isValidEthAddress(addr) {
   return typeof addr === "string" && /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
 }
 
+const MAX_WALLETS_PER_SCAN = 12;
+
+function emptyOwnedCollection() {
+  return {
+    idKeys: [],
+    idToImage: new Map(),
+    idToTraits: new Map(),
+  };
+}
+
+function mergeOwnedCollections(into, from) {
+  if (!from?.idKeys?.length) return into;
+  if (!into?.idKeys) into = emptyOwnedCollection();
+  const idToImage = new Map(into.idToImage);
+  const idToTraits = new Map(into.idToTraits);
+  const idSet = new Set(into.idKeys);
+  for (const id of from.idKeys) {
+    idSet.add(id);
+    if (from.idToImage.has(id) && !idToImage.has(id)) {
+      idToImage.set(id, from.idToImage.get(id));
+    }
+    if (from.idToTraits.has(id) && !idToTraits.has(id)) {
+      idToTraits.set(id, from.idToTraits.get(id));
+    }
+  }
+  const idKeys = [...idSet].sort((x, y) => {
+    const cmp = BigInt(x) - BigInt(y);
+    if (cmp < 0n) return -1;
+    if (cmp > 0n) return 1;
+    return 0;
+  });
+  return { idKeys, idToImage, idToTraits };
+}
+
+function collectWalletAddressesFromSearchParams(searchParams) {
+  const rawList = searchParams.getAll("address");
+  const out = [];
+  const seen = new Set();
+  for (const raw of rawList) {
+    for (const piece of String(raw || "")
+      .split(/[\s,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      const a = normalizeAddr(piece);
+      if (!isValidEthAddress(a)) continue;
+      const low = a.toLowerCase();
+      if (seen.has(low)) continue;
+      seen.add(low);
+      out.push(a);
+      if (out.length >= MAX_WALLETS_PER_SCAN) return out;
+    }
+  }
+  return out;
+}
+
 /** Highest CERT token ID minted on-chain; OGENIE IDs above this have no matching CERT. */
 function getCertMaxTokenIdFromEnv(env) {
   const raw = env.CERT_MAX_TOKEN_ID;
@@ -524,15 +579,18 @@ export default {
 
     if (path === "/api/wallet") {
       try {
-        const addressRaw = url.searchParams.get("address");
+        const addresses = collectWalletAddressesFromSearchParams(
+          url.searchParams
+        );
 
-        if (!addressRaw || !String(addressRaw).trim()) {
-          return json({ error: "Missing wallet address" }, 400);
-        }
-
-        const address = normalizeAddr(addressRaw.trim());
-        if (!isValidEthAddress(address)) {
-          return json({ error: "Invalid wallet address" }, 400);
+        if (!addresses.length) {
+          return json(
+            {
+              error: "Missing or invalid wallet address(es)",
+              hint: "Use ?address=0x…&address=0x… or comma-separated values.",
+            },
+            400
+          );
         }
 
         const envCheck = requireAlchemyEnv(env);
@@ -545,10 +603,23 @@ export default {
             ? Number(certMaxId)
             : certMaxId.toString(10);
 
-        const [ogenieCol, certCol] = await Promise.all([
-          fetchOwnedCollection(nftBase, address, OGENIE),
-          fetchOwnedCollection(nftBase, address, CERT),
-        ]);
+        let ogenieCol = emptyOwnedCollection();
+        let certCol = emptyOwnedCollection();
+
+        const perWallet = await Promise.all(
+          addresses.map(async (address) => {
+            const [o, c] = await Promise.all([
+              fetchOwnedCollection(nftBase, address, OGENIE),
+              fetchOwnedCollection(nftBase, address, CERT),
+            ]);
+            return { o, c };
+          })
+        );
+
+        for (const row of perWallet) {
+          ogenieCol = mergeOwnedCollections(ogenieCol, row.o);
+          certCol = mergeOwnedCollections(certCol, row.c);
+        }
 
         const oSet = new Set(ogenieCol.idKeys);
         const cSet = new Set(certCol.idKeys);
@@ -649,7 +720,8 @@ export default {
         });
 
         return json({
-          wallet: address,
+          wallet: addresses.join(","),
+          wallets: addresses,
           certMaxTokenId: certMaxTokenIdJson,
           ogenies,
           certs,

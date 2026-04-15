@@ -110,7 +110,7 @@ After `[assets]` is deployed, **you do not need a separate host** for the UI: th
 
 If you use **GitHub Pages** as a **project site** (`https://YOURNAME.github.io/REPO/`), `public/index.html` loads a small script that sets `<base href="…">` so `style.css`, `app.js`, and images resolve under `/REPO/` instead of the site root (which would 404).
 
-**If the whole repo is published** (e.g. custom domain `yoursite.com/OGTnew/` with `README.md` at the folder root), hosts may show **README** instead of the app. This repo includes a **root `index.html`** (same UI as `public/index.html`) with `<base href="public/">` so the default page is **Cert Checker**, not the README. Keep **`public/index.html`** and **root `index.html`** in sync when you change the markup. An empty **`.nojekyll`** file disables Jekyll so GitHub Pages doesn’t rewrite paths unexpectedly.
+**If the whole repo is published** (e.g. custom domain `yoursite.com/OGT/` with `README.md` at the folder root), hosts may show **README** instead of the app. This repo includes a **root `index.html`** (same UI as `public/index.html`) with `<base href="public/">` so the default page is **Cert Checker**, not the README. Keep **`public/index.html`** and **root `index.html`** in sync when you change the markup. An empty **`.nojekyll`** file disables Jekyll so GitHub Pages doesn’t rewrite paths unexpectedly.
 
 The API still calls **`WORKER_ORIGIN`** from `public/app.js` (CORS is open on the Worker).
 

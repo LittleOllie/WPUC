@@ -1,6 +1,6 @@
 /**
  * Quirks Set Checker — standalone app (Quirkies × Quirklings × QuirKid × INX).
- * GitHub Pages has no /api/*; static hosting must call the Worker origin (same pattern as OGTnew/public/app.js).
+ * GitHub Pages has no /api/*; static hosting must call the Worker origin (same pattern as OGT/public/app.js).
  */
 var WORKER_ORIGIN = "https://quirks-set-checker.littleollienft.workers.dev";
 
