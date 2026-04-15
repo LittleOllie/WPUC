@@ -1,3 +1,5 @@
+import { handleImageProxy } from "./imgProxy.js";
+
 /** Alchemy NFT API v3 base URL (key in path). */
 function nftBaseUrl(apiKey) {
   return `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}`;
@@ -491,7 +493,7 @@ function requireAlchemyEnv(env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
@@ -505,6 +507,11 @@ export default {
     }
 
     const path = normalizePath(url.pathname);
+
+    /** Image proxy: WebP resize + cache (no Alchemy key required). */
+    if (path === "/img") {
+      return handleImageProxy(request, env, ctx);
+    }
 
     if (path === "/api/token") {
       try {

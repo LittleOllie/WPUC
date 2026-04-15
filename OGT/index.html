@@ -308,7 +308,7 @@
           />
         </div>
         <h2 id="flex-modal-title" class="flex-modal__title">Flex Your Genies</h2>
-        <p class="flex-modal__lede">Select Collection below.</p>
+        <p class="flex-modal__lede">Select collections, then generate your grid.</p>
         <div class="flex-modal__collection-row" role="group" aria-label="Collections to include">
           <label class="flex-collection-pill">
             <input type="checkbox" id="flex-opt-ogenies" class="flex-collection-pill__input" />
@@ -319,15 +319,6 @@
             <span class="flex-collection-pill__label">Certs</span>
           </label>
         </div>
-        <div class="flex-modal__sort">
-          <label class="flex-modal__sort-label" for="flex-trait-sort"
-            >Layout
-            <span class="flex-modal__sort-note"
-              >(Random default; traits sort OGenies then Certs)</span
-            ></label
-          >
-          <select id="flex-trait-sort" class="flex-modal__select" aria-label="Trait to sort flex grid"></select>
-        </div>
         <button
           type="button"
           id="flex-generate-btn"
@@ -337,11 +328,33 @@
           Generate FlexGrid
         </button>
         <p id="flex-error" class="flex-modal__error" role="alert"></p>
+        <div id="flex-modal-stage2" class="flex-modal__stage2 hidden">
+        <div class="flex-modal__sort">
+          <div class="flex-modal__sort-head">
+            <label class="flex-modal__sort-title" for="flex-trait-sort">Layout</label>
+            <p id="flex-trait-sort-hint" class="flex-modal__sort-note">
+              Random by default. Trait options sort OGenies first, then Certs.
+            </p>
+          </div>
+          <div class="flex-modal__select-wrap">
+            <select
+              id="flex-trait-sort"
+              class="flex-modal__select"
+              aria-describedby="flex-trait-sort-hint"
+              aria-label="Sort order for the flex grid"
+            ></select>
+          </div>
+        </div>
+        <label class="flex-quality-row">
+          <input type="checkbox" id="flex-quality-ultra" />
+          Ultra quality (slower — highest /img resolution)
+        </label>
         <div id="flex-preview-wrap" class="flex-preview-wrap hidden">
           <p class="flex-preview-label">Flex grid</p>
           <p class="flex-preview-hint">
-            Drag tiles to reorder. The pblo overlay stays on the top-left tile; OGT grid art and
-            fillers can be moved like other tiles.
+            Drag tiles to reorder. pblo stays on the top-left tile only; OGT grid art and fillers
+            move like NFTs. The wide 2.png can be moved to another two-cell span—two NFTs (or spares)
+            fill the cells it left behind.
           </p>
           <div id="flex-preview-grid" class="flex-preview-grid"></div>
           <button
@@ -352,35 +365,107 @@
           >
             Download Image
           </button>
-          <div id="flex-gif-section" class="flex-gif-section hidden">
-            <button
-              type="button"
-              id="flex-gif-create-btn"
-              class="btn-primary flex-modal__download flex-gif-create hidden"
-              disabled
-            >
-              Create GIF
-            </button>
+          <div id="flex-export-section" class="flex-export-section hidden">
+            <div id="exportControls" class="export-controls">
+              <div class="export-controls__row">
+                <button
+                  type="button"
+                  id="exportGifBtn"
+                  class="btn-primary flex-modal__download export-controls__btn hidden"
+                  disabled
+                >
+                  Download GIF
+                </button>
+              </div>
+              <p id="export-progress" class="export-controls__progress" aria-live="polite"></p>
+              <p class="footer__credit export-controls__credit">Powered By Little Ollie Labs</p>
+            </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
 
     <div
       id="global-loading"
-      class="global-loading"
+      class="global-loading global-loading--indeterminate"
       aria-hidden="true"
     >
       <div class="global-loading__backdrop" aria-hidden="true"></div>
-      <div class="global-loading__spin-wrap">
-        <img
-          class="global-loading__img"
-          src="ogtriplelogo.png"
-          width="120"
-          height="120"
-          alt=""
-          decoding="async"
+      <div class="global-loading__panel">
+        <div class="global-loading__spin-wrap">
+          <img
+            class="global-loading__img"
+            src="ogtriplelogo.png"
+            width="120"
+            height="120"
+            alt=""
+            decoding="async"
+          />
+        </div>
+        <p
+          id="global-loading-label"
+          class="global-loading__label"
+          aria-live="polite"
+        ></p>
+        <div
+          class="global-loading__pill"
+          aria-hidden="true"
+        >
+          <div class="global-loading__pill-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="flex-gif-options-modal"
+      class="flex-gif-options-modal hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="flex-gif-options-title"
+      tabindex="-1"
+    >
+      <div
+        id="flex-gif-options-backdrop"
+        class="flex-gif-options-modal__backdrop"
+        aria-hidden="true"
+      ></div>
+      <div class="flex-gif-options-modal__panel">
+        <div class="flex-gif-options-modal__head">
+          <h3 id="flex-gif-options-title" class="flex-gif-options-modal__title">GIF export</h3>
+          <button
+            type="button"
+            id="flex-gif-options-close"
+            class="flex-gif-options-modal__close"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <p id="flex-gif-options-summary" class="flex-gif-options-modal__summary"></p>
+        <label class="flex-gif-options-modal__label" for="flex-gif-options-max">NFT frames to include</label>
+        <p class="flex-gif-options-modal__hint">
+          First frame is always OGenie grid + pblo. If your grid has more NFTs than this, frames are picked
+          evenly across the grid.
+        </p>
+        <input
+          type="number"
+          id="flex-gif-options-max"
+          class="flex-gif-options-modal__input"
+          min="1"
+          max="200"
+          step="1"
+          value="25"
         />
+        <div class="flex-gif-options-modal__actions">
+          <button type="button" id="flex-gif-options-cancel" class="btn-secondary flex-gif-options-modal__btn">
+            Cancel
+          </button>
+          <button type="button" id="flex-gif-options-confirm" class="btn-primary flex-gif-options-modal__btn">
+            Create GIF
+          </button>
+        </div>
       </div>
     </div>
 

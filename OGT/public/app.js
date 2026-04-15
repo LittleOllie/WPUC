@@ -63,18 +63,64 @@ function setStatus(el, type, message) {
   el.textContent = message || "";
 }
 
-function setGlobalLoading(on) {
+/**
+ * Progress pill: null/omit = animated indeterminate (red→green sweep);
+ * 0–1 = solid fill, hue red → green.
+ */
+function setGlobalLoadingPill(progress) {
+  var root = document.getElementById("global-loading");
+  var fill = root && root.querySelector(".global-loading__pill-fill");
+  if (!root || !fill) return;
+  if (progress == null || typeof progress !== "number" || isNaN(progress)) {
+    root.classList.add("global-loading--indeterminate");
+    fill.style.width = "";
+    fill.style.background = "";
+    fill.style.transform = "";
+    return;
+  }
+  root.classList.remove("global-loading--indeterminate");
+  var p = Math.max(0, Math.min(1, progress));
+  fill.style.width = p * 100 + "%";
+  var hue = 120 * p;
+  fill.style.background = "hsl(" + hue + ", 72%, 48%)";
+}
+
+/**
+ * @param {boolean} on
+ * @param {{ message?: string, progress?: number } | undefined} opts — progress 0–1 for determinate pill
+ */
+function setGlobalLoading(on, opts) {
+  opts = opts || {};
   var el = document.getElementById("global-loading");
   if (!el) return;
+  var label = document.getElementById("global-loading-label");
   if (on) {
     el.classList.add("is-active");
     el.setAttribute("aria-busy", "true");
-    el.setAttribute("aria-label", "Loading");
+    var msg =
+      opts.message != null && String(opts.message).trim() !== ""
+        ? String(opts.message)
+        : "Loading…";
+    el.setAttribute("aria-label", msg);
+    if (label) label.textContent = msg;
+    if (typeof opts.progress === "number" && isFinite(opts.progress)) {
+      setGlobalLoadingPill(opts.progress);
+    } else {
+      setGlobalLoadingPill(null);
+    }
     el.removeAttribute("aria-hidden");
   } else {
     el.classList.remove("is-active");
     el.removeAttribute("aria-busy");
     el.removeAttribute("aria-label");
+    if (label) label.textContent = "";
+    var fill = el.querySelector(".global-loading__pill-fill");
+    if (fill) {
+      fill.style.width = "0%";
+      fill.style.background = "";
+      fill.style.transform = "";
+    }
+    el.classList.add("global-loading--indeterminate");
     el.setAttribute("aria-hidden", "true");
   }
 }
@@ -92,12 +138,221 @@ var flexEditorState = null;
 var flexLastExportDataUrl = null;
 var flexDnDFromIndex = null;
 
+function flexNormalizeCellIndexForMerge(slots, cols, idx) {
+  if (idx < 0 || idx >= slots.length) return idx;
+  if (slots[idx] !== FLEX_FILLER_SKIP) return idx;
+  if (
+    idx > 0 &&
+    flexSlotIsFiller2Url(slots[idx - 1]) &&
+    Math.floor((idx - 1) / cols) === Math.floor(idx / cols) &&
+    idx % cols === (idx - 1) % cols + 1
+  ) {
+    return idx - 1;
+  }
+  if (
+    idx >= cols &&
+    flexSlotIsFiller2Url(slots[idx - cols]) &&
+    slots[idx] === FLEX_FILLER_SKIP &&
+    idx % cols === (idx - cols) % cols
+  ) {
+    return idx - cols;
+  }
+  return idx;
+}
+
+function flexGetMerge2Pair(slots, cols, headIdx) {
+  var cells = slots.length;
+  if (headIdx < 0 || headIdx >= cells) return null;
+  if (!flexSlotIsFiller2Url(slots[headIdx])) return null;
+  if (headIdx + 1 < cells && slots[headIdx + 1] === FLEX_FILLER_SKIP) {
+    var r0 = Math.floor(headIdx / cols);
+    var r1 = Math.floor((headIdx + 1) / cols);
+    if (r0 === r1 && (headIdx + 1) % cols === (headIdx % cols) + 1) {
+      return { a: headIdx, b: headIdx + 1, horiz: true };
+    }
+  }
+  if (headIdx + cols < cells && slots[headIdx + cols] === FLEX_FILLER_SKIP) {
+    if (headIdx % cols === (headIdx + cols) % cols) {
+      return { a: headIdx, b: headIdx + cols, horiz: false };
+    }
+  }
+  return null;
+}
+
+function flexPairIndicesOverlap(a0, a1, b0, b1) {
+  if (a0 === b0 || a0 === b1 || a1 === b0 || a1 === b1) return true;
+  return false;
+}
+
+/**
+ * Try placing a 2.png merge at drop cell toIdx, or the alternate anchor (left/up neighbor)
+ * so dropping on the "right" or "bottom" cell of a pair still targets the same span.
+ */
+function flexTryPlaceMergeMove(slots, cols, cells, mFrom, toIdx) {
+  var horiz = mFrom.horiz;
+  var anchors = [];
+  var c = toIdx % cols;
+  if (horiz) {
+    if (c < cols - 1) anchors.push(toIdx);
+    if (c > 0) anchors.push(toIdx - 1);
+  } else {
+    if (toIdx + cols < cells) anchors.push(toIdx);
+    if (toIdx >= cols) anchors.push(toIdx - cols);
+  }
+  var seen = {};
+  var ai;
+  for (ai = 0; ai < anchors.length; ai++) {
+    var toN = anchors[ai];
+    if (seen[toN]) continue;
+    seen[toN] = true;
+    var toB = horiz ? toN + 1 : toN + cols;
+    if (toB >= cells) continue;
+    if (slots[toN] === FLEX_FILLER_SKIP || slots[toB] === FLEX_FILLER_SKIP) {
+      continue;
+    }
+    var srcA = mFrom.a;
+    var srcB = mFrom.b;
+    if (flexPairIndicesOverlap(srcA, srcB, toN, toB)) continue;
+
+    var dA = slots[toN];
+    var dB = slots[toB];
+    var u2 = getFlexFiller2Url();
+
+    if (dA === null && dB === null) {
+      var spare = flexSpareNftUrlsOrdered(slots);
+      var n1 = spare[0] || null;
+      var n2 = spare[1] || null;
+      slots[srcA] = n1;
+      slots[srcB] = n2;
+      slots[toN] = u2;
+      slots[toB] = FLEX_FILLER_SKIP;
+      return true;
+    }
+
+    if (dA && dB && dA !== FLEX_FILLER_SKIP && dB !== FLEX_FILLER_SKIP) {
+      slots[srcA] = dA;
+      slots[srcB] = dB;
+      slots[toN] = u2;
+      slots[toB] = FLEX_FILLER_SKIP;
+      return true;
+    }
+  }
+  return false;
+}
+
+function flexBuildNftUrlCountsFromWallet() {
+  if (!lastWalletApiData) return null;
+  var wo = document.getElementById("flex-opt-ogenies");
+  var wc = document.getElementById("flex-opt-certs");
+  var items = collectFlexItems(
+    lastWalletApiData,
+    wo && wo.checked,
+    wc && wc.checked
+  );
+  var sortSel = document.getElementById("flex-trait-sort");
+  var sk = sortSel && sortSel.value ? sortSel.value : "random";
+  var sorted = flexSortOrShuffle(items, sk, lastWalletApiData);
+  var counts = {};
+  var i;
+  for (i = 0; i < sorted.length; i++) {
+    var im = sorted[i].image;
+    counts[im] = (counts[im] || 0) + 1;
+  }
+  return {
+    counts: counts,
+    ordered: sorted.map(function (x) {
+      return x.image;
+    })
+  };
+}
+
+function flexSubtractUsedNftsFromCounts(counts, slots) {
+  var i;
+  for (i = 0; i < slots.length; i++) {
+    var u = slots[i];
+    if (!u || u === FLEX_FILLER_SKIP) continue;
+    if (flexSlotIsAnyFillerArtUrl(u)) continue;
+    if (flexSlotUrlIsBrandGridOgt(u)) continue;
+    if (counts[u] > 0) counts[u]--;
+  }
+}
+
+/** NFT image URLs not currently placed in the grid (multiset remainder, sort order). */
+function flexSpareNftUrlsOrdered(slots) {
+  var data = flexBuildNftUrlCountsFromWallet();
+  if (!data || !data.counts || !data.ordered) return [];
+  var counts = {};
+  var k;
+  for (k in data.counts) {
+    if (Object.prototype.hasOwnProperty.call(data.counts, k)) {
+      counts[k] = data.counts[k];
+    }
+  }
+  flexSubtractUsedNftsFromCounts(counts, slots);
+  var spare = [];
+  var i;
+  for (i = 0; i < data.ordered.length; i++) {
+    var u = data.ordered[i];
+    if ((counts[u] || 0) > 0) {
+      spare.push(u);
+      counts[u]--;
+    }
+  }
+  return spare;
+}
+
+/**
+ * true if drop changed slots (caller re-renders grid).
+ * Handles single↔single swap, 2.png merge moves (fills source with 2 NFTs or displaced pair), merge↔merge swap.
+ */
+function flexHandleFlexGridDrop(fromIdx, toIdx) {
+  if (!flexEditorState) return false;
+  var slots = flexEditorState.slots;
+  var cols = flexEditorState.cols;
+  var rows = flexEditorState.rows;
+  var cells = slots.length;
+
+  var fromN = flexNormalizeCellIndexForMerge(slots, cols, fromIdx);
+  var toN = flexNormalizeCellIndexForMerge(slots, cols, toIdx);
+  if (fromN === toN) return false;
+
+  var mFrom = flexGetMerge2Pair(slots, cols, fromN);
+  var mTo = flexGetMerge2Pair(slots, cols, toN);
+
+  if (!mFrom && !mTo) {
+    var tmp = slots[fromN];
+    slots[fromN] = slots[toN];
+    slots[toN] = tmp;
+    return true;
+  }
+
+  if (mFrom && mTo) {
+    if (mFrom.a === mTo.a) return false;
+    if (mFrom.horiz !== mTo.horiz) return false;
+    var ha = mFrom.a;
+    var hb = mFrom.b;
+    var va = mTo.a;
+    var vb = mTo.b;
+    var t2 = slots[ha];
+    var ts = slots[hb];
+    slots[ha] = slots[va];
+    slots[hb] = slots[vb];
+    slots[va] = t2;
+    slots[vb] = ts;
+    return true;
+  }
+
+  if (mFrom && !mTo) {
+    return flexTryPlaceMergeMove(slots, cols, cells, mFrom, toN);
+  }
+
+  if (!mFrom && mTo) return false;
+
+  return false;
+}
+
 /** Upper bound for flex grid NFT count (brand tile + this many collection cells max). */
 var FLEX_MAX_NFT_TILES = 100000;
-/**
- * Desktop export normally preloads all unique art in parallel for speed. Above this count, draw one cell at a time so large grids (e.g. 800+) do not run out of memory.
- */
-var FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP = 80;
 var FLEX_CANVAS_SIZE_FALLBACK = 4096;
 /** Mobile Safari kills tabs under memory pressure; cap canvas + never hold all decoded NFTs at once. */
 var FLEX_MOBILE_EXPORT_MAX = 2048;
@@ -251,6 +506,16 @@ function flexSyncGenerateButtonState() {
   gen.disabled = !on;
 }
 
+function flexRevealFlexModalStage2() {
+  var el = document.getElementById("flex-modal-stage2");
+  if (el) el.classList.remove("hidden");
+}
+
+function flexHideFlexModalStage2() {
+  var el = document.getElementById("flex-modal-stage2");
+  if (el) el.classList.add("hidden");
+}
+
 function flexSetDownloadButtonReady(ready) {
   var dl = document.getElementById("flex-download-btn");
   if (dl) {
@@ -262,7 +527,7 @@ function flexSetDownloadButtonReady(ready) {
       dl.disabled = true;
     }
   }
-  var gifBtn = document.getElementById("flex-gif-create-btn");
+  var gifBtn = document.getElementById("exportGifBtn");
   if (gifBtn) {
     if (ready) {
       gifBtn.classList.remove("hidden");
@@ -274,6 +539,7 @@ function flexSetDownloadButtonReady(ready) {
   }
 }
 
+/** Wait until every preview tile has finished loading (or errored). */
 function flexWaitForPreviewGridImages() {
   return new Promise(function (resolve) {
     var grid = document.getElementById("flex-preview-grid");
@@ -291,14 +557,9 @@ function flexWaitForPreviewGridImages() {
     var im;
     for (i = 0; i < imgs.length; i++) {
       im = imgs[i];
-      if (im.getAttribute("data-flex-src")) continue;
       pending.push(im);
     }
     var n = pending.length;
-    if (n === 0) {
-      resolve();
-      return;
-    }
     var left = n;
     function oneDone() {
       left--;
@@ -306,7 +567,7 @@ function flexWaitForPreviewGridImages() {
     }
     for (i = 0; i < n; i++) {
       im = pending[i];
-      if (im.complete && im.src) oneDone();
+      if (im.complete && im.naturalWidth > 0) oneDone();
       else {
         im.addEventListener("load", oneDone, { once: true });
         im.addEventListener("error", oneDone, { once: true });
@@ -330,9 +591,9 @@ function openFlexModal() {
 /** Artwork under pblo in the flex grid preview + JPEG export (not the site header logo). */
 function getFlexGridBrandImageUrl() {
   try {
-    return new URL("ogtriplegrid.png", window.location.href).href;
+    return new URL("ogeniegrid.png", window.location.href).href;
   } catch {
-    return "ogtriplegrid.png";
+    return "ogeniegrid.png";
   }
 }
 
@@ -487,7 +748,7 @@ function flexEditorSlotIsDraggable(i) {
   return true;
 }
 
-/** True when url is the flex brand OGT grid art (ogtriplegrid.png), any path/query variant. */
+/** True when url is the flex brand grid art (ogeniegrid.png), any path/query variant. */
 function flexSlotUrlIsBrandGridOgt(url) {
   if (!url || typeof url !== "string") return false;
   try {
@@ -497,7 +758,8 @@ function flexSlotUrlIsBrandGridOgt(url) {
     var b = (br.split("/").pop() || "").toLowerCase();
     return a === b && a.length > 0;
   } catch (e) {
-    return flexFillerBasename(url) === "ogtriplegrid.png";
+    var bn = flexFillerBasename(url);
+    return bn === "ogeniegrid.png" || bn === "ogtriplegrid.png";
   }
 }
 
@@ -714,12 +976,228 @@ function rebuildFlexSlotsFromSortedNfts(sortedItems) {
   flexEditorState = { slots: slots, cols: g.cols, rows: g.rows };
 }
 
-function flexLoadImageWithFallbacks(rawUrl) {
+/** Concurrent preview loads per batch (not sequential). */
+var FLEX_IMG_BATCH_SIZE = 20;
+/** Used to estimate on-screen tile px for /img?size= heuristic. */
+var FLEX_PREVIEW_GRID_EST_PX = 520;
+
+function flexImgDebug(msg, extra) {
+  try {
+    if (
+      typeof localStorage !== "undefined" &&
+      localStorage.getItem("flexImgDebug") === "1"
+    ) {
+      console.log("[flex-img]", msg, extra !== undefined ? extra : "");
+    }
+  } catch (e) {}
+}
+
+function flexBuildImgProxyUrl(directUrl, size) {
+  return apiUrl("/img?url=" + encodeURIComponent(directUrl) + "&size=" + String(size));
+}
+
+function flexFlexQualityUltra() {
+  var el = document.getElementById("flex-quality-ultra");
+  return !!(el && el.checked);
+}
+
+function flexEstimateTilePixels(cols, rows) {
+  var g = Math.max(1, cols, rows);
+  return FLEX_PREVIEW_GRID_EST_PX / g;
+}
+
+function flexPickProxySizeForPreview(cols, rows) {
+  if (flexFlexQualityUltra()) return 1024;
+  var tile = flexEstimateTilePixels(cols, rows);
+  if (tile < 150) return 256;
+  if (tile < 300) return 512;
+  return 1024;
+}
+
+function flexCountOccupiedSlots() {
+  if (!flexEditorState || !flexEditorState.slots) return 0;
+  var n = 0;
+  var i;
+  for (i = 0; i < flexEditorState.slots.length; i++) {
+    var s = flexEditorState.slots[i];
+    if (s && s !== FLEX_FILLER_SKIP) n++;
+  }
+  return n;
+}
+
+/**
+ * Proxy dimension for canvas export: balances quality vs speed for large wallets.
+ * @param {number} cellPixelWidth
+ */
+function flexPickProxySizeForExport(cellPixelWidth) {
+  var cells = flexCountOccupiedSlots();
+  if (flexFlexQualityUltra()) return 1024;
+  if (cells >= 300) return 512;
+  if (cells < 100) return 1024;
+  if (cellPixelWidth < 150) return 256;
+  if (cellPixelWidth < 300) return 512;
+  return 1024;
+}
+
+function flexGetExportProxySizeForAnimation() {
+  var cells = flexCountOccupiedSlots();
+  if (flexFlexQualityUltra()) return 1024;
+  if (cells >= 300) return 512;
+  if (cells < 100) return 1024;
+  return 512;
+}
+
+/** null = load direct (local / filler); else worker /img dimension */
+function flexProxyPxForExportUrl(u, exportPx) {
+  if (!u) return null;
+  if (flexIsLikelyLocalFlexAsset(u)) return null;
+  if (flexSlotIsAnyFillerArtUrl(u)) return null;
+  return exportPx;
+}
+
+function flexIsLikelyLocalFlexAsset(u) {
+  if (!u) return false;
+  var b = flexFillerBasename(u);
+  if (b === "1.png" || b === "2.png" || b === "3.png") return true;
+  if (
+    b === "pblo.png" ||
+    b === "ogeniegrid.png" ||
+    b === "ogtriplegrid.png" ||
+    b === "ogtriplelogo.png"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function flexShouldProxyRemoteNftUrl(u) {
+  if (!u || typeof u !== "string") return false;
+  if (flexSlotIsAnyFillerArtUrl(u)) return false;
+  if (flexIsLikelyLocalFlexAsset(u)) return false;
+  return /^https?:\/\//i.test(u);
+}
+
+function flexAssignProxiedPreviewSrc(img, rawUrl, proxySize) {
+  var c = buildImageCandidates(String(rawUrl));
+  if (!c.primary) return;
+  var primaryProxy = flexBuildImgProxyUrl(c.primary, proxySize);
+  var chain = [];
+  var fi;
+  for (fi = 0; fi < c.fallbacks.length; fi++) {
+    chain.push(flexBuildImgProxyUrl(c.fallbacks[fi], proxySize));
+  }
+  chain.push(c.primary);
+  for (fi = 0; fi < c.fallbacks.length; fi++) {
+    chain.push(c.fallbacks[fi]);
+  }
+  img.setAttribute("data-flex-src", primaryProxy);
+  img.setAttribute("data-fb", encodeURIComponent(JSON.stringify(chain)));
+  img.setAttribute("data-fbi", "0");
+}
+
+function flexLoadImageElementWithRetry(img) {
+  return new Promise(function (resolve) {
+    var src = img.getAttribute("data-flex-src");
+    if (!src) {
+      resolve();
+      return;
+    }
+    img.removeAttribute("data-flex-src");
+    var attempt = 0;
+    function finish() {
+      resolve();
+    }
+    function onError() {
+      if (attempt < 1) {
+        attempt++;
+        flexImgDebug("flex tile img retry", src);
+        img.src = src;
+        return;
+      }
+      if (typeof window.__nftImgErr === "function") {
+        window.__nftImgErr(img);
+      }
+      finish();
+    }
+    img.onload = finish;
+    img.onerror = onError;
+    img.src = src;
+  });
+}
+
+/**
+ * Batch-load preview tiles: resolves firstBatch after the first 20 images,
+ * continues remaining loads in the background (allDone).
+ */
+function flexKickProgressivePreviewLoads(gridEl) {
+  var resolveFirst;
+  var resolveAll;
+  var pFirst = new Promise(function (r) {
+    resolveFirst = r;
+  });
+  var pAll = new Promise(function (r) {
+    resolveAll = r;
+  });
+  if (!gridEl) {
+    resolveFirst();
+    resolveAll();
+    return { firstBatch: pFirst, allDone: pAll };
+  }
+  var imgs = Array.prototype.slice.call(
+    gridEl.querySelectorAll("img.flex-tile__img[data-flex-src]")
+  );
+  if (imgs.length === 0) {
+    resolveFirst();
+    resolveAll();
+    return { firstBatch: pFirst, allDone: pAll };
+  }
+  var batchSize = FLEX_IMG_BATCH_SIZE;
+  var i = 0;
+  var isFirstBatch = true;
+  function runBatch() {
+    if (i >= imgs.length) {
+      resolveAll();
+      return;
+    }
+    var end = Math.min(i + batchSize, imgs.length);
+    var batch = imgs.slice(i, end);
+    i = end;
+    Promise.all(batch.map(flexLoadImageElementWithRetry))
+      .then(function () {
+        flexImgDebug("preview batch", { loaded: i, total: imgs.length });
+        if (isFirstBatch) {
+          isFirstBatch = false;
+          resolveFirst();
+        }
+        runBatch();
+      })
+      .catch(function (err) {
+        console.warn("[flex-img] batch", err);
+        if (isFirstBatch) {
+          isFirstBatch = false;
+          resolveFirst();
+        }
+        runBatch();
+      });
+  }
+  runBatch();
+  return { firstBatch: pFirst, allDone: pAll };
+}
+
+/**
+ * @param {string} rawUrl
+ * @param {number | null | undefined} proxySizeOpt — 256|512|1024 for worker /img; omit for direct URLs only
+ */
+function flexLoadImageWithFallbacks(rawUrl, proxySizeOpt) {
   return new Promise(function (resolve) {
     if (!rawUrl) {
       resolve(null);
       return;
     }
+    var proxySize =
+      typeof proxySizeOpt === "number" && isFinite(proxySizeOpt)
+        ? proxySizeOpt
+        : null;
     var c = buildImageCandidates(String(rawUrl));
     var tryList = [];
     if (c.primary) tryList.push(c.primary);
@@ -728,21 +1206,41 @@ function flexLoadImageWithFallbacks(rawUrl) {
       tryList.push(c.fallbacks[fi]);
     }
     var idx = 0;
+    var attemptForUrl = 0;
+    var directPass = false;
     function tryNext() {
       if (idx >= tryList.length) {
+        if (proxySize && !directPass) {
+          directPass = true;
+          idx = 0;
+          attemptForUrl = 0;
+          flexImgDebug("canvas img: direct pass after proxy");
+          tryNext();
+          return;
+        }
         resolve(null);
         return;
       }
-      var u = tryList[idx++];
+      var u = tryList[idx];
+      var useProxy = proxySize && !directPass;
+      var loadUrl = useProxy ? flexBuildImgProxyUrl(u, proxySize) : u;
       var img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = function () {
         resolve(img);
       };
       img.onerror = function () {
+        if (attemptForUrl === 0) {
+          attemptForUrl = 1;
+          flexImgDebug("canvas img retry", loadUrl);
+          img.src = loadUrl;
+          return;
+        }
+        attemptForUrl = 0;
+        idx++;
         tryNext();
       };
-      img.src = u;
+      img.src = loadUrl;
     }
     tryNext();
   });
@@ -795,7 +1293,7 @@ function flexDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
   ctx.restore();
 }
 
-/** Download JPEG: ogtriplegrid fills tile (contain), pblo drawn on top (same as preview grid). */
+/** Download JPEG: ogeniegrid fills tile (contain), pblo drawn on top (same as preview grid). */
 function flexDrawBrandCellExport(ctx, ogImg, pbloImg, cellX, cellY, cw, ch) {
   var pbloCap = ch * FLEX_BRAND_PBLO_MAX_FRAC;
   ctx.save();
@@ -892,12 +1390,6 @@ function flexExportCanvasDimensionSingle(cols, rows, maxDim) {
   return [{ W: c * cellPx, H: r * cellPx }];
 }
 
-function flexPreviewConcurrentLoads() {
-  var ua = navigator.userAgent || "";
-  if (/iPhone|iPod/i.test(ua)) return 1;
-  return 2;
-}
-
 function flexReleaseImageElement(img) {
   if (!img) return;
   try {
@@ -920,61 +1412,9 @@ function flexReleaseCanvasMemory(canvas) {
   }
 }
 
-/** Stagger preview <img> loads on mobile so dozens of NFTs are not decoded at once. */
+/** First batch of preview images (parallel); remaining loads continue in background. */
 function flexAwaitPreviewGridLoads(gridEl) {
-  return new Promise(function (resolve) {
-    if (!gridEl) {
-      resolve();
-      return;
-    }
-    if (!flexIsMemoryConstrainedDevice()) {
-      resolve();
-      return;
-    }
-    var imgs = Array.prototype.slice.call(
-      gridEl.querySelectorAll("img.flex-tile__img[data-flex-src]")
-    );
-    var n = imgs.length;
-    if (n === 0) {
-      resolve();
-      return;
-    }
-    var concurrency = flexPreviewConcurrentLoads();
-    var completed = 0;
-    var nextIndex = 0;
-    function tryFinish() {
-      completed++;
-      if (completed >= n) resolve();
-    }
-    function launchOne() {
-      if (nextIndex >= n) return;
-      var img = imgs[nextIndex++];
-      var u = img.getAttribute("data-flex-src");
-      img.removeAttribute("data-flex-src");
-      img.addEventListener(
-        "load",
-        function () {
-          tryFinish();
-          launchOne();
-        },
-        { once: true }
-      );
-      img.addEventListener(
-        "error",
-        function () {
-          tryFinish();
-          launchOne();
-        },
-        { once: true }
-      );
-      img.src = u;
-    }
-    var initial = Math.min(concurrency, n);
-    var j;
-    for (j = 0; j < initial; j++) {
-      launchOne();
-    }
-  });
+  return flexKickProgressivePreviewLoads(gridEl).firstBatch;
 }
 
 /** Load each cell’s art, draw, then release — keeps peak memory low for huge grids. */
@@ -988,6 +1428,7 @@ async function flexExportGridDrawCellsSequential(
   cellBg
 ) {
   var cellBackdrop = cellBg || "#ffffff";
+  var exportPx = flexPickProxySizeForExport(cw);
   var cells = cols * rows;
   var i;
   var col;
@@ -1009,7 +1450,8 @@ async function flexExportGridDrawCellsSequential(
       var merged = flexFillerMergedRect(i, i + 1, cols, cw, ch);
       if (merged) {
         var img2 = await flexLoadImageWithFallbacks(
-          flexCanonicalFillerSrc(slots[i])
+          flexCanonicalFillerSrc(slots[i]),
+          null
         );
         flexDrawCover(
           ctx,
@@ -1032,9 +1474,14 @@ async function flexExportGridDrawCellsSequential(
     var cellR = flexExportCellRect(x, y, cw, ch);
     var slotUrl = slots[i];
     if (i === 0) {
-      var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+      var pbloM = await flexLoadImageWithFallbacks(getFlexPbloImageUrl(), null);
       var ogM = null;
-      if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
+      if (slotUrl) {
+        ogM = await flexLoadImageWithFallbacks(
+          slotUrl,
+          flexProxyPxForExportUrl(slotUrl, exportPx)
+        );
+      }
       flexDrawBrandCellExport(ctx, ogM, pbloM, cellR.x, cellR.y, cellR.w, cellR.h);
       flexReleaseImageElement(pbloM);
       flexReleaseImageElement(ogM);
@@ -1042,7 +1489,10 @@ async function flexExportGridDrawCellsSequential(
       bg = cellBackdrop;
       var img = null;
       if (slotUrl) {
-        img = await flexLoadImageWithFallbacks(slotUrl);
+        img = await flexLoadImageWithFallbacks(
+          slotUrl,
+          flexProxyPxForExportUrl(slotUrl, exportPx)
+        );
       }
       flexDrawCover(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
       flexReleaseImageElement(img);
@@ -1097,6 +1547,7 @@ async function flexBuildGridCanvasFromSlots(
   }
   var cw = W / cols;
   var ch = H / rows;
+  var exportPx = flexPickProxySizeForExport(cw);
   ctx.fillStyle = cellBackdrop;
   ctx.fillRect(0, 0, W, H);
   var i;
@@ -1105,18 +1556,8 @@ async function flexBuildGridCanvasFromSlots(
   var x;
   var y;
   var bg;
-  var seenForCap = {};
-  var uniqueCount = 0;
-  for (i = 0; i < slots.length; i++) {
-    var uc = slots[i];
-    if (uc && uc !== FLEX_FILLER_SKIP && !seenForCap[uc]) {
-      seenForCap[uc] = true;
-      uniqueCount++;
-    }
-  }
-  var useSequential =
-    flexIsMemoryConstrainedDevice() ||
-    uniqueCount > FLEX_DESKTOP_EXPORT_PARALLEL_UNIQUE_CAP;
+  /* Desktop: batched parallel loads (below). Mobile: one cell at a time to limit RAM. */
+  var useSequential = flexIsMemoryConstrainedDevice();
 
   if (useSequential) {
     await flexExportGridDrawCellsSequential(
@@ -1139,14 +1580,23 @@ async function flexBuildGridCanvasFromSlots(
       }
     }
     var loadedMap = {};
-    await Promise.all(
-      unique.map(function (url) {
-        return flexLoadImageWithFallbacks(url).then(function (im) {
-          loadedMap[url] = im;
-        });
-      })
-    );
-    var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
+    var u0;
+    for (u0 = 0; u0 < unique.length; u0 += FLEX_IMG_BATCH_SIZE) {
+      var slice = unique.slice(u0, u0 + FLEX_IMG_BATCH_SIZE);
+      await Promise.all(
+        slice.map(function (url) {
+          var px = flexProxyPxForExportUrl(url, exportPx);
+          return flexLoadImageWithFallbacks(url, px).then(function (im) {
+            loadedMap[url] = im;
+          });
+        })
+      );
+      flexImgDebug("export unique batch", {
+        loaded: Math.min(u0 + FLEX_IMG_BATCH_SIZE, unique.length),
+        of: unique.length,
+      });
+    }
+    var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl(), null);
     for (i = 0; i < cells; i++) {
       if (slots[i] === FLEX_FILLER_SKIP) continue;
       col = i % cols;
@@ -1354,13 +1804,15 @@ function resetFlexModalOutput() {
   var err = document.getElementById("flex-error");
   var wrap = document.getElementById("flex-preview-wrap");
   var grid = document.getElementById("flex-preview-grid");
+  flexHideFlexModalStage2();
   if (err) {
     err.textContent = "";
     err.classList.remove("is-visible");
   }
   if (wrap) wrap.classList.add("hidden");
-  var gifSec = document.getElementById("flex-gif-section");
+  var gifSec = document.getElementById("flex-export-section");
   if (gifSec) gifSec.classList.add("hidden");
+  flexExportSetProgress("");
   var gifModal = document.getElementById("flex-gif-modal");
   if (gifModal) {
     gifModal.classList.add("hidden");
@@ -1622,6 +2074,7 @@ function renderFlexPreviewGrid(domPool) {
       : { pblo: null, byUrl: {} };
   if (!pool.byUrl) pool.byUrl = {};
   var st = flexEditorState;
+  var previewProxy = flexPickProxySizeForPreview(st.cols, st.rows);
   el.style.gridTemplateColumns = "repeat(" + st.cols + ", 1fr)";
   el.style.gridTemplateRows = "repeat(" + st.rows + ", minmax(0, 1fr))";
   el.innerHTML = "";
@@ -1659,8 +2112,8 @@ function renderFlexPreviewGrid(domPool) {
           brandImg.className = "flex-tile__img";
           brandImg.alt = "";
           brandImg.draggable = true;
-          if (flexIsMemoryConstrainedDevice()) {
-            brandImg.setAttribute("data-flex-src", url);
+          if (flexShouldProxyRemoteNftUrl(url)) {
+            flexAssignProxiedPreviewSrc(brandImg, url, previewProxy);
           } else {
             brandImg.src = url;
           }
@@ -1668,6 +2121,11 @@ function renderFlexPreviewGrid(domPool) {
           brandImg.className = "flex-tile__img";
           brandImg.alt = "";
           brandImg.draggable = true;
+          if (flexShouldProxyRemoteNftUrl(url)) {
+            flexAssignProxiedPreviewSrc(brandImg, url, previewProxy);
+          } else {
+            brandImg.src = url;
+          }
         }
         stack.appendChild(pbloImg);
         cell.appendChild(brandImg);
@@ -1713,8 +2171,10 @@ function renderFlexPreviewGrid(domPool) {
         img = document.createElement("img");
         img.className = "flex-tile__img";
         img.alt = "";
-        if (flexIsMemoryConstrainedDevice()) {
-          img.setAttribute("data-flex-src", srcOut);
+        if (flexSlotIsAnyFillerArtUrl(url)) {
+          img.src = srcOut;
+        } else if (flexShouldProxyRemoteNftUrl(srcOut)) {
+          flexAssignProxiedPreviewSrc(img, srcOut, previewProxy);
         } else {
           img.src = srcOut;
         }
@@ -1722,6 +2182,10 @@ function renderFlexPreviewGrid(domPool) {
         img.className = "flex-tile__img";
         img.alt = "";
         if (flexSlotIsAnyFillerArtUrl(url)) {
+          img.src = srcOut;
+        } else if (flexShouldProxyRemoteNftUrl(srcOut)) {
+          flexAssignProxiedPreviewSrc(img, srcOut, previewProxy);
+        } else {
           img.src = srcOut;
         }
       }
@@ -1738,15 +2202,333 @@ function renderFlexPreviewGrid(domPool) {
   flexDrainUnusedDomPool(pool);
 }
 
-/** GIF export limits (grid order only; never the raw NFT list). */
-var FLEX_GIF_MAX_FRAMES = 100;
-var FLEX_GIF_SINGLE_SIDE = 480;
-
-function flexGifWorkerScriptUrl() {
+/** GIF export (grid order; X / Discord–friendly defaults). */
+function flexGetGifWorkerScriptUrl() {
   try {
     return new URL("gif.worker.js", document.baseURI || window.location.href).href;
   } catch (e) {
     return "gif.worker.js";
+  }
+}
+
+/**
+ * GIF export defaults: X / Discord–friendly dimensions, frame cap, and timing.
+ * flexExportLimitFrames subsamples when there are more NFTs than maxFrames.
+ */
+var EXPORT_GIF_CONFIG = {
+  size: 480,
+  maxFrames: 25,
+  delay: 350,
+  quality: 25
+};
+
+/** Hard ceiling for “NFT frames” in the GIF options UI (first frame is always brand tile). */
+var EXPORT_GIF_MAX_NFT_FRAMES = 200;
+
+function flexExportLimitFrames(frames, maxFrames) {
+  var cap =
+    typeof maxFrames === "number" && isFinite(maxFrames) && maxFrames > 0
+      ? maxFrames
+      : frames.length;
+  if (frames.length <= cap) return frames.slice();
+  var step = Math.ceil(frames.length / cap);
+  return frames.filter(function (_, i) {
+    return i % step === 0;
+  });
+}
+
+/**
+ * Row-major image URLs (no fillers; no brand grid art — logo frame is separate).
+ */
+function flexExportBuildOrderedUrls() {
+  if (!flexEditorState || !flexEditorState.slots) return [];
+  var slots = flexEditorState.slots;
+  var out = [];
+  var i;
+  for (i = 0; i < slots.length; i++) {
+    var url = slots[i];
+    if (url === FLEX_FILLER_SKIP) continue;
+    if (!url) continue;
+    if (flexSlotIsAnyFillerArtUrl(url)) continue;
+    if (flexSlotUrlIsBrandGridOgt(url)) continue;
+    out.push(url);
+  }
+  return out;
+}
+
+function flexExportSetProgress(msg) {
+  var el = document.getElementById("export-progress");
+  if (el) el.textContent = msg || "";
+  var gl = document.getElementById("global-loading");
+  var label = document.getElementById("global-loading-label");
+  if (gl && gl.classList.contains("is-active") && label) {
+    label.textContent = msg || "";
+  }
+  if (gl && gl.classList.contains("is-active")) {
+    var m = /(\d+)\s*%/.exec(msg || "");
+    if (m) {
+      setGlobalLoadingPill(parseInt(m[1], 10) / 100);
+    } else if (
+      msg &&
+      (/encoding|Est\./i.test(msg) ||
+        /preparing|adding|building/i.test(msg))
+    ) {
+      setGlobalLoadingPill(null);
+    }
+  }
+}
+
+function flexExportEstimateMbHint(config, frameCount) {
+  var px = config.size * config.size * 3;
+  var est = ((px * (1 + frameCount)) / (1024 * 1024)) * 0.08;
+  return est < 0.1 ? "<0.1" : est.toFixed(1);
+}
+
+async function flexExportCreateFrameCanvas(url, size) {
+  var canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var bg = "#0B0F1A";
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, size, size);
+  var animPx = flexGetExportProxySizeForAnimation();
+  var img = await flexLoadImageWithFallbacks(
+    url,
+    flexProxyPxForExportUrl(url, animPx)
+  );
+  if (img && img.naturalWidth > 0) {
+    flexDrawContain(ctx, img, 0, 0, size, size, bg);
+  }
+  flexReleaseImageElement(img);
+  return canvas;
+}
+
+/** GIF frame 1: same as preview / JPEG export — ogeniegrid + pblo on the lime tile. */
+async function flexExportCreateGifBrandTileCanvas(size) {
+  var canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var animPx = flexGetExportProxySizeForAnimation();
+  var ogUrl = getFlexGridBrandImageUrl();
+  var pbloUrl = getFlexPbloImageUrl();
+  var ogImg = await flexLoadImageWithFallbacks(
+    ogUrl,
+    flexProxyPxForExportUrl(ogUrl, animPx)
+  );
+  var pbloImg = await flexLoadImageWithFallbacks(
+    pbloUrl,
+    flexProxyPxForExportUrl(pbloUrl, animPx)
+  );
+  flexDrawBrandCellExport(ctx, ogImg, pbloImg, 0, 0, size, size);
+  flexReleaseImageElement(ogImg);
+  flexReleaseImageElement(pbloImg);
+  return canvas;
+}
+
+function flexExportGifAddFrame(gif, canvas, delayMs) {
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  var w = canvas.width;
+  var h = canvas.height;
+  var idata;
+  try {
+    idata = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    throw new Error(
+      "Could not read pixels for export (cross-origin art blocked the canvas)."
+    );
+  }
+  gif.addFrame(idata, { delay: delayMs, copy: true });
+}
+
+function flexGifRenderAndDownload(gif, filename) {
+  var name = filename || "ogtriple-flex.gif";
+  return new Promise(function (resolve, reject) {
+    var t0 = Date.now();
+    var lastPct = 0;
+    var tick = window.setInterval(function () {
+      var sec = Math.floor((Date.now() - t0) / 1000);
+      flexExportSetProgress(
+        "Encoding GIF " +
+          lastPct +
+          "% (" +
+          sec +
+          "s) — first frames take longest; please wait…"
+      );
+    }, 2500);
+    function stopTick() {
+      window.clearInterval(tick);
+    }
+    /**
+     * gif.js runs LZW + palette in Web Workers. Progress stays at 0% until the first
+     * frame finishes — can be minutes for many large frames — so we also show elapsed time.
+     */
+    gif.on("progress", function (p) {
+      var pct = Math.max(
+        0,
+        Math.min(100, Math.round((typeof p === "number" ? p : 0) * 100))
+      );
+      lastPct = pct;
+      var sec = Math.floor((Date.now() - t0) / 1000);
+      flexExportSetProgress("Encoding GIF " + pct + "% (" + sec + "s)");
+    });
+    gif.on("finished", function (blob) {
+      stopTick();
+      try {
+        if (!blob || blob.size < 32) {
+          reject(new Error("GIF encoding failed (empty output)."));
+          return;
+        }
+        var outBlob =
+          blob.type === "image/gif"
+            ? blob
+            : new Blob([blob], { type: "image/gif" });
+        /* Safari/macOS: File + MIME helps Quick Look, Mail, and Messages treat downloads as animated GIFs. */
+        var dlSource = outBlob;
+        if (typeof File !== "undefined") {
+          try {
+            dlSource = new File([outBlob], name, {
+              type: "image/gif",
+              lastModified: Date.now(),
+            });
+          } catch (e1) {
+            /* keep Blob */
+          }
+        }
+        var a = document.createElement("a");
+        var u = URL.createObjectURL(dlSource);
+        a.href = u;
+        a.download = name;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () {
+          URL.revokeObjectURL(u);
+        }, 1500);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      resolve();
+    });
+    flexExportSetProgress("Encoding GIF 0% (0s) — starting workers…");
+    try {
+      gif.render();
+    } catch (e) {
+      stopTick();
+      reject(e);
+    }
+  });
+}
+
+function flexExportWait(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function flexExportRunGif(optMaxNftFrames) {
+  if (typeof GIF === "undefined") {
+    throw new Error("GIF library failed to load. Refresh the page.");
+  }
+  if (!flexEditorState) throw new Error("Generate a FlexGrid first.");
+  var cap = EXPORT_GIF_CONFIG.maxFrames;
+  if (
+    typeof optMaxNftFrames === "number" &&
+    isFinite(optMaxNftFrames) &&
+    optMaxNftFrames > 0
+  ) {
+    cap = Math.min(
+      Math.floor(optMaxNftFrames),
+      EXPORT_GIF_MAX_NFT_FRAMES
+    );
+    cap = Math.max(1, cap);
+  }
+  var config = {
+    size: EXPORT_GIF_CONFIG.size,
+    maxFrames: cap,
+    delay: EXPORT_GIF_CONFIG.delay,
+    quality: EXPORT_GIF_CONFIG.quality
+  };
+  var ordered = flexExportBuildOrderedUrls();
+  var finalFrames = flexExportLimitFrames(ordered, config.maxFrames);
+  var delay = Math.max(300, config.delay);
+  var size = config.size;
+  var total = 1 + finalFrames.length;
+  var nWorkers = Math.min(6, Math.max(2, total));
+  if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) {
+    nWorkers = Math.min(
+      nWorkers,
+      Math.max(2, Math.min(6, navigator.hardwareConcurrency - 1))
+    );
+  }
+  var gifEnc = new GIF({
+    workers: nWorkers,
+    quality: config.quality,
+    workerScript: flexGetGifWorkerScriptUrl(),
+    repeat: 0,
+    background: "#0B0F1A",
+    width: size,
+    height: size
+  });
+
+  flexExportSetProgress(
+    "Est. ~" +
+      flexExportEstimateMbHint(config, finalFrames.length) +
+      " MB · preparing frames (OGenie grid + pblo, then " +
+      finalFrames.length +
+      " NFT)…"
+  );
+  var brandCanvas = await flexExportCreateGifBrandTileCanvas(size);
+  flexExportGifAddFrame(gifEnc, brandCanvas, 1200);
+  flexReleaseCanvasMemory(brandCanvas);
+  await flexExportWait(0);
+
+  var fi;
+  for (fi = 0; fi < finalFrames.length; fi++) {
+    flexExportSetProgress(
+      "Adding frames to GIF " +
+        (fi + 1) +
+        " / " +
+        finalFrames.length +
+        " · ~" +
+        flexExportEstimateMbHint(config, finalFrames.length) +
+        " MB"
+    );
+    var fc = await flexExportCreateFrameCanvas(finalFrames[fi], size);
+    flexExportGifAddFrame(gifEnc, fc, delay);
+    flexReleaseCanvasMemory(fc);
+    await flexExportWait(0);
+  }
+
+  await flexGifRenderAndDownload(gifEnc, "ogtriple-flex.gif");
+  flexExportSetProgress("");
+}
+
+async function flexExportWithUi(asyncFn) {
+  var gifBtn = document.getElementById("exportGifBtn");
+  if (gifBtn) gifBtn.disabled = true;
+  setGlobalLoading(true, { message: "Rendering…" });
+  flexExportSetProgress("");
+  try {
+    await asyncFn();
+    setGlobalLoading(true, { message: "Download started.", progress: 1 });
+    setTimeout(function () {
+      setGlobalLoading(false);
+    }, 450);
+  } catch (e) {
+    var msg = e instanceof Error ? e.message : String(e);
+    setGlobalLoading(true, { message: msg || "Export failed." });
+    setTimeout(function () {
+      setGlobalLoading(false);
+    }, 2200);
+  } finally {
+    if (gifBtn) gifBtn.disabled = false;
   }
 }
 
@@ -1767,212 +2549,77 @@ function flexGifModalSetText(msg) {
   if (el) el.textContent = msg || "";
 }
 
-/**
- * Row-major order for GIF frames after the forced OGT logo frame.
- * Omits 1.png / 2.png / 3.png entirely. Omits ogtriplegrid.png (shown as first frame already).
- */
-function flexGifBuildFrameDescriptorsFromState() {
-  if (!flexEditorState || !flexEditorState.slots) return [];
-  var slots = flexEditorState.slots;
-  var out = [];
-  var i;
-  for (i = 0; i < slots.length; i++) {
-    var url = slots[i];
-    if (url === FLEX_FILLER_SKIP) continue;
-    if (!url) continue;
-    if (flexSlotIsAnyFillerArtUrl(url)) continue;
-    if (flexSlotUrlIsBrandGridOgt(url)) continue;
-    out.push({ slotIndex: i, imageUrl: url });
+function flexGifOptionsModalOpen() {
+  var modal = document.getElementById("flex-gif-options-modal");
+  var input = document.getElementById("flex-gif-options-max");
+  var summary = document.getElementById("flex-gif-options-summary");
+  if (!modal || !flexEditorState) return;
+  var ordered = flexExportBuildOrderedUrls();
+  var n = ordered.length;
+  var maxPick =
+    n === 0 ? 1 : Math.min(n, EXPORT_GIF_MAX_NFT_FRAMES);
+  if (input) {
+    input.min = "1";
+    input.max = String(maxPick);
+    var def = Math.min(EXPORT_GIF_CONFIG.maxFrames, maxPick);
+    input.value = String(def);
   }
-  return out;
-}
-
-/** Delay per frame (ms): slightly longer when many frames or large export square. */
-function flexGifComputeDelayMs(frameCount, sidePx) {
-  var n = Math.max(1, frameCount);
-  var s = typeof sidePx === "number" ? sidePx : FLEX_GIF_SINGLE_SIDE;
-  var base = 300;
-  if (n > 24) base += 40;
-  if (n > 48) base += 50;
-  if (n > 72) base += 40;
-  if (s >= 480) base += 20;
-  return Math.min(620, Math.max(240, Math.round(base)));
-}
-
-async function flexGifCreateContentFrameCanvas(url, side) {
-  var canvas = document.createElement("canvas");
-  canvas.width = side;
-  canvas.height = side;
-  var ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, side, side);
-  var img = await flexLoadImageWithFallbacks(url);
-  if (img && img.naturalWidth > 0) {
-    flexDrawCover(ctx, img, 0, 0, side, side, "#ffffff");
-  }
-  flexReleaseImageElement(img);
-  return canvas;
-}
-
-/** First GIF frame: always OGT grid logo + pblo (same layout as top-left tile when it holds the logo). */
-async function flexGifCreateForcedOgtBrandFrame(side) {
-  var canvas = document.createElement("canvas");
-  canvas.width = side;
-  canvas.height = side;
-  var ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas not supported.");
-  var brandUrl = getFlexGridBrandImageUrl();
-  var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
-  var ogM = await flexLoadImageWithFallbacks(brandUrl);
-  flexDrawBrandCellExport(ctx, ogM, pbloD, 0, 0, side, side);
-  flexReleaseImageElement(pbloD);
-  flexReleaseImageElement(ogM);
-  return canvas;
-}
-
-/** Top-left cell in GIF when that slot is not the OGT logo URL (NFT etc. under pblo). */
-async function flexGifCreateBrandFrameCanvas(side) {
-  var canvas = document.createElement("canvas");
-  canvas.width = side;
-  canvas.height = side;
-  var ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas not supported.");
-  var slotUrl = flexEditorState.slots[0];
-  var pbloD = await flexLoadImageWithFallbacks(getFlexPbloImageUrl());
-  var ogM = null;
-  if (slotUrl) ogM = await flexLoadImageWithFallbacks(slotUrl);
-  flexDrawBrandCellExport(ctx, ogM, pbloD, 0, 0, side, side);
-  flexReleaseImageElement(pbloD);
-  flexReleaseImageElement(ogM);
-  return canvas;
-}
-
-function flexGifAddFrameFromCanvas(gif, canvas, delayMs) {
-  var ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas not supported.");
-  var w = canvas.width;
-  var h = canvas.height;
-  var idata;
-  try {
-    idata = ctx.getImageData(0, 0, w, h);
-  } catch (e) {
-    throw new Error(
-      "Could not read pixels for GIF (cross-origin art blocked the canvas). Try another browser."
-    );
-  }
-  gif.addFrame(idata, { delay: delayMs, copy: true });
-}
-
-function flexGifRenderAndDownload(gif) {
-  return new Promise(function (resolve, reject) {
-    gif.on("finished", function (blob) {
-      try {
-        if (!blob || blob.size < 32) {
-          reject(new Error("GIF encoding failed (empty output)."));
-          return;
-        }
-        var outBlob =
-          blob.type === "image/gif"
-            ? blob
-            : new Blob([blob], { type: "image/gif" });
-        var a = document.createElement("a");
-        var u = URL.createObjectURL(outBlob);
-        a.href = u;
-        a.download = "ogtriple-flex.gif";
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(function () {
-          URL.revokeObjectURL(u);
-        }, 1500);
-      } catch (e) {
-        reject(e);
-        return;
-      }
-      resolve();
-    });
-    try {
-      gif.render();
-    } catch (e) {
-      reject(e);
+  if (summary) {
+    if (n === 0) {
+      summary.textContent =
+        "No NFTs in the grid — the GIF will be the OGenie grid + pblo only.";
+    } else {
+      summary.textContent =
+        n +
+        " NFT(s) in your grid. If you pick fewer than " +
+        n +
+        ", frames are sampled evenly across the grid.";
     }
+  }
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  if (input) {
+    try {
+      input.focus();
+      input.select();
+    } catch (e) {
+      /* ignore */
+    }
+  }
+}
+
+function flexGifOptionsModalClose() {
+  var modal = document.getElementById("flex-gif-options-modal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function flexGifOptionsConfirmAndRun() {
+  var input = document.getElementById("flex-gif-options-max");
+  var maxPick = 1;
+  if (input) {
+    maxPick = parseInt(input.value, 10);
+    if (isNaN(maxPick) || maxPick < 1) maxPick = 1;
+    var imax = parseInt(input.max, 10);
+    if (!isNaN(imax) && maxPick > imax) maxPick = imax;
+  }
+  flexGifOptionsModalClose();
+  flexExportWithUi(function () {
+    return flexExportRunGif(maxPick);
   });
 }
 
-async function flexRunGifCreator() {
-  if (typeof GIF === "undefined") {
-    flexGifModalOpen(true);
-    flexGifModalSetText("GIF library failed to load. Refresh the page.");
-    setTimeout(function () {
-      flexGifModalOpen(false);
-    }, 2600);
-    return;
-  }
-  if (!flexEditorState) {
-    flexGifModalOpen(true);
-    flexGifModalSetText("Generate a FlexGrid first.");
-    setTimeout(function () {
-      flexGifModalOpen(false);
-    }, 2200);
-    return;
-  }
-  var btn = document.getElementById("flex-gif-create-btn");
-  if (btn) btn.disabled = true;
-  flexGifModalOpen(true);
-  flexGifModalSetText("Creating GIF…");
-  var workerUrl = flexGifWorkerScriptUrl();
-  try {
-    var descriptors = flexGifBuildFrameDescriptorsFromState();
-    var maxRest = Math.max(0, FLEX_GIF_MAX_FRAMES - 1);
-    if (descriptors.length > maxRest) {
-      descriptors = descriptors.slice(0, maxRest);
-    }
-    var side = FLEX_GIF_SINGLE_SIDE;
-    var totalFrames = 1 + descriptors.length;
-    var delayMs = flexGifComputeDelayMs(totalFrames, side);
-    var gifEnc = new GIF({
-      workers: 2,
-      quality: 10,
-      workerScript: workerUrl,
-      repeat: 0,
-      background: "#ffffff",
-      width: side,
-      height: side
-    });
-    var forced = await flexGifCreateForcedOgtBrandFrame(side);
-    flexGifAddFrameFromCanvas(gifEnc, forced, delayMs);
-    flexReleaseCanvasMemory(forced);
-    await new Promise(function (r) {
-      setTimeout(r, 0);
-    });
-    var fi;
-    for (fi = 0; fi < descriptors.length; fi++) {
-      var d = descriptors[fi];
-      var frameCanvas =
-        d.slotIndex === 0
-          ? await flexGifCreateBrandFrameCanvas(side)
-          : await flexGifCreateContentFrameCanvas(d.imageUrl, side);
-      flexGifAddFrameFromCanvas(gifEnc, frameCanvas, delayMs);
-      flexReleaseCanvasMemory(frameCanvas);
-      await new Promise(function (r) {
-        setTimeout(r, 0);
-      });
-    }
-    await flexGifRenderAndDownload(gifEnc);
-    flexGifModalSetText("Download started.");
-    setTimeout(function () {
-      flexGifModalOpen(false);
-    }, 450);
-  } catch (e) {
-    var msg = e instanceof Error ? e.message : String(e);
-    flexGifModalSetText(msg || "GIF export failed.");
-    setTimeout(function () {
-      flexGifModalOpen(false);
-    }, 2800);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+function setupFlexGifOptionsModal() {
+  var modal = document.getElementById("flex-gif-options-modal");
+  var cancel = document.getElementById("flex-gif-options-cancel");
+  var confirm = document.getElementById("flex-gif-options-confirm");
+  var backdrop = document.getElementById("flex-gif-options-backdrop");
+  var closeBtn = document.getElementById("flex-gif-options-close");
+  if (cancel) cancel.addEventListener("click", flexGifOptionsModalClose);
+  if (closeBtn) closeBtn.addEventListener("click", flexGifOptionsModalClose);
+  if (backdrop) backdrop.addEventListener("click", flexGifOptionsModalClose);
+  if (confirm) confirm.addEventListener("click", flexGifOptionsConfirmAndRun);
 }
 
 function flexRefreshPreviewFromSlots() {
@@ -1994,9 +2641,10 @@ function flexRefreshPreviewFromSlots() {
       }
       flexReleaseCanvasMemory(canvas);
       flexLastExportDataUrl = dataUrl;
+      flexRevealFlexModalStage2();
       var wrap = document.getElementById("flex-preview-wrap");
       if (wrap) wrap.classList.remove("hidden");
-      var gifSec = document.getElementById("flex-gif-section");
+      var gifSec = document.getElementById("flex-export-section");
       if (gifSec) gifSec.classList.remove("hidden");
     })
     .catch(function (e) {
@@ -2045,18 +2693,20 @@ async function runFlexGenerate() {
     sortSel && sortSel.value ? sortSel.value : "random";
   var sorted = flexSortOrShuffle(items, sortKey, lastWalletApiData);
   rebuildFlexSlotsFromSortedNfts(sorted);
+  flexRevealFlexModalStage2();
   var previewWrap = document.getElementById("flex-preview-wrap");
   if (previewWrap) previewWrap.classList.remove("hidden");
-  var gifSec = document.getElementById("flex-gif-section");
+  var gifSec = document.getElementById("flex-export-section");
   if (gifSec) gifSec.classList.remove("hidden");
   flexSetDownloadButtonReady(false);
   renderFlexPreviewGrid();
-  setGlobalLoading(true);
+  var gridEl = document.getElementById("flex-preview-grid");
+  var loads = flexKickProgressivePreviewLoads(gridEl);
+  setGlobalLoading(true, { message: "Loading artwork…" });
   try {
-    await flexAwaitPreviewGridLoads(
-      document.getElementById("flex-preview-grid")
-    );
-    await flexRefreshPreviewFromSlots();
+    await loads.firstBatch;
+    setGlobalLoading(false);
+    await Promise.all([flexRefreshPreviewFromSlots(), loads.allDone]);
     await flexWaitForPreviewGridImages();
     flexSetDownloadButtonReady(true);
   } catch {
@@ -2087,8 +2737,13 @@ function setupFlexYourGeniesUi() {
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (backdrop) backdrop.addEventListener("click", closeModal);
   if (genBtn) genBtn.addEventListener("click", runFlexGenerate);
-  var gifCreate = document.getElementById("flex-gif-create-btn");
-  if (gifCreate) gifCreate.addEventListener("click", flexRunGifCreator);
+  var exportGifBtn = document.getElementById("exportGifBtn");
+  if (exportGifBtn) {
+    exportGifBtn.addEventListener("click", function () {
+      flexGifOptionsModalOpen();
+    });
+  }
+  setupFlexGifOptionsModal();
   var co = document.getElementById("flex-opt-ogenies");
   var cc = document.getElementById("flex-opt-certs");
   if (co) co.addEventListener("change", flexSyncGenerateButtonState);
@@ -2114,9 +2769,13 @@ function setupFlexYourGeniesUi() {
       renderFlexPreviewGrid(domPool);
       flexAnimatePreviewGridFlip(oldRects);
       var gridEl = document.getElementById("flex-preview-grid");
-      flexAwaitPreviewGridLoads(gridEl)
+      var loads = flexKickProgressivePreviewLoads(gridEl);
+      loads.firstBatch
         .then(function () {
-          return flexRefreshPreviewFromSlots();
+          return Promise.all([
+            flexRefreshPreviewFromSlots(),
+            loads.allDone,
+          ]);
         })
         .then(function () {
           return flexWaitForPreviewGridImages();
@@ -2165,12 +2824,13 @@ function setupFlexYourGeniesUi() {
       var i = flexDnDFromIndex;
       if (i === null || i === undefined || i === j) return;
       if (!flexEditorSlotIsDraggable(i) || !flexEditorSlotIsDraggable(j)) return;
-      var tmp = flexEditorState.slots[i];
-      flexEditorState.slots[i] = flexEditorState.slots[j];
-      flexEditorState.slots[j] = tmp;
       flexDnDFromIndex = null;
-      flexSwapPreviewTileContents(i, j);
+      var oldRects = flexCapturePreviewTileRectsByUrl();
+      var domPool = flexHarvestPreviewDomPool();
+      if (!flexHandleFlexGridDrop(i, j)) return;
       flexLastExportDataUrl = null;
+      renderFlexPreviewGrid(domPool);
+      flexAnimatePreviewGridFlip(oldRects);
     });
   }
   var flexDl = document.getElementById("flex-download-btn");
@@ -2191,7 +2851,7 @@ function setupFlexYourGeniesUi() {
         triggerDownload();
         return;
       }
-      setGlobalLoading(true);
+      setGlobalLoading(true, { message: "Preparing image…" });
       flexRefreshPreviewFromSlots()
         .then(function () {
           triggerDownload();
@@ -2205,6 +2865,12 @@ function setupFlexYourGeniesUi() {
     if (ev.key !== "Escape") return;
     var welcome = document.getElementById("welcome-modal");
     if (welcome && welcome.classList.contains("is-open")) return;
+    var gifOpts = document.getElementById("flex-gif-options-modal");
+    if (gifOpts && !gifOpts.classList.contains("hidden")) {
+      flexGifOptionsModalClose();
+      ev.preventDefault();
+      return;
+    }
     if (modal && modal.classList.contains("is-open")) closeModal();
   });
 }
@@ -2840,7 +3506,7 @@ async function checkWallet() {
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
-  setGlobalLoading(true);
+  setGlobalLoading(true, { message: "Loading wallet…" });
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
   resultsEl.removeAttribute("data-last-wallet");
@@ -2903,7 +3569,7 @@ async function findTokenMatch() {
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Loading…");
-  setGlobalLoading(true);
+  setGlobalLoading(true, { message: "Loading token…" });
   resultsEl.classList.add("hidden");
   resultsEl.innerHTML = "";
 
