@@ -1451,82 +1451,49 @@ body.dark .collection-trait-control--dropTarget{
   background: rgba(76,111,255,.10);
 }
 
-/* Top-of-stage image load strip (paired with #gridStageImageLoading in index.html) */
+/* Top-of-stage: LO-only spinner while grid images load */
 .grid-stage-image-loading{
   flex-shrink: 0;
   margin: 0 0 12px;
-  padding: 14px 16px 16px;
+  padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid rgba(109, 224, 255, 0.22);
-  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(109, 224, 255, 0.18);
+  background: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
 }
 .grid-stage-image-loading.grid-stage-image-loading--empty{
   display: none;
 }
-.grid-stage-image-loading-note{
-  display: none;
-  margin: 0 0 12px;
-  font-size: 16px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 650;
-}
-.grid-stage-image-loading-note-line1{
-  display: block;
-}
-.grid-stage-image-loading-note-line2{
-  display: block;
-  margin-top: 10px;
-}
-.grid-stage-image-loading-note strong{
-  color: rgba(109, 224, 255, 0.95);
-  font-weight: 900;
-}
-body.dark .grid-stage-image-loading-note strong{
-  color: rgba(0, 255, 213, 0.92);
-}
-.grid-stage-image-loading.grid-stage-image-loading--busy .grid-stage-image-loading-note{
-  display: block;
-}
-.grid-stage-image-loading-row{
+.grid-stage-image-loading-lo{
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  justify-content: center;
 }
-.grid-stage-image-loading-label{
-  font-weight: 800;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.92);
+.grid-stage-image-loading-lo-img{
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.35));
+  animation: none;
 }
-.grid-stage-image-loading-fraction{
-  font-weight: 900;
-  font-size: 15px;
-  color: rgba(109, 224, 255, 0.95);
-  font-variant-numeric: tabular-nums;
+.grid-stage-image-loading.grid-stage-image-loading--busy .grid-stage-image-loading-lo-img{
+  animation: flexgridLoSpin 0.95s linear infinite;
 }
-body.dark .grid-stage-image-loading-fraction{
-  color: rgba(0, 255, 213, 0.9);
+.grid-stage-image-loading.grid-stage-image-loading--done .grid-stage-image-loading-lo-img{
+  animation: none;
 }
-.grid-stage-image-loading-track{
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.28);
-  overflow: hidden;
-  border: 1px solid rgba(109, 224, 255, 0.25);
+@keyframes flexgridLoSpin{
+  from{ transform: rotate(0deg); }
+  to{ transform: rotate(360deg); }
 }
-.grid-stage-image-loading-fill{
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, hsl(0, 78%, 52%), hsl(12, 76%, 50%));
-  transition: width 0.2s ease-out, background 0.25s ease-out, box-shadow 0.25s ease-out;
-  box-shadow: 0 0 12px hsla(0, 82%, 55%, 0.5);
-}
-body.dark .grid-stage-image-loading-fill{
-  background: linear-gradient(90deg, hsl(0, 78%, 50%), hsl(12, 74%, 48%));
-  box-shadow: 0 0 12px hsla(0, 80%, 50%, 0.45);
+@media (prefers-reduced-motion: reduce){
+  .grid-stage-image-loading.grid-stage-image-loading--busy .grid-stage-image-loading-lo-img{
+    animation: flexgridLoSpin 2.4s linear infinite;
+  }
 }
 
 /* Tiles slightly clearer against blue */
@@ -2215,172 +2182,45 @@ body.dark .tile[data-kind="empty"]{
   50%{ opacity: 0.6; }
 }
 
-  /* ✅ Loading overlay — Little Ollie style */
+  /* Full-screen loading: spinning LO only (same motion as grid strip) */
   #loadingOverlay{
     display:none;
     position:fixed;
     inset:0;
     z-index:99999;
-    background:rgba(11,18,32,.75);
+    background:rgba(11,18,32,.78);
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
     justify-content:center;
     align-items:center;
-    flex-direction:column;
-    gap:24px;
     padding:24px;
   }
   #loadingOverlay.visible{
     display:flex;
   }
-  /* Animations only when visible — avoids "stuck" spin when overlay was display:none */
-  #loadingOverlay .lo-orbit-ring,
-  #loadingOverlay .lo-orbit-img,
-  #loadingOverlay .lo-spinner{
-    animation: none;
-  }
-  #loadingOverlay.visible .lo-orbit-ring{
-    animation:loOrbitRing 2.5s linear infinite;
-    -webkit-animation:loOrbitRing 2.5s linear infinite;
-  }
-  /* LO character stays stationary (no spin) */
-  #loadingOverlay.visible .lo-spinner{
-    animation:loSpin .9s linear infinite;
-    -webkit-animation:loSpin .9s linear infinite;
-  }
-  #loadingOverlay .lo-orbit-wrap{
-    position:relative;
-    width:320px;
-    min-height:220px;
+  #loadingOverlay .loading-overlay-lo{
     display:flex;
     align-items:center;
     justify-content:center;
   }
-  #loadingOverlay .lo-orbit-ring{
-    position:absolute;
-    width:236px;
-    height:236px;
-    left:50%;
-    top:50%;
-    margin-left:-118px;
-    margin-top:-118px;
-    border: none;
-    border-radius:50%;
-    pointer-events:none;
-    z-index:0;
-    will-change:transform;
-  }
-  /* Gradient ring that rotates around LO (red -> green), with a clear gap */
-  #loadingOverlay .lo-orbit-ring::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    background: conic-gradient(from 0deg, #e53935, #ff9800, #ffeb3b, #4caf50);
-    /* Cut out the middle so it becomes a ring stroke */
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px));
-    mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px));
-    opacity: .95;
-    filter: drop-shadow(0 0 10px rgba(0,0,0,.22));
-  }
-  #loadingOverlay .lo-orbit-img{
-    position:absolute;
-    width:112px;
-    height:112px;
-    left:50%;
-    top:50%;
-    margin-left:-56px;
-    margin-top:-56px;
+  #loadingOverlay .loading-overlay-lo-img{
+    display:block;
+    width:min(140px, 38vw);
+    height:auto;
+    aspect-ratio:1;
     object-fit:contain;
+    filter:drop-shadow(0 8px 28px rgba(0,0,0,.4));
     transform-origin:center center;
-    pointer-events:none;
-    will-change:transform;
+    animation:none;
   }
-  @keyframes loOrbitRing{
-    from{ transform:rotate(0deg); }
-    to{ transform:rotate(360deg); }
+  /* Spin only while visible — avoids stuck animation when overlay is display:none */
+  #loadingOverlay.visible .loading-overlay-lo-img{
+    animation:flexgridLoSpin 0.95s linear infinite;
   }
-  @-webkit-keyframes loOrbitRing{
-    from{ -webkit-transform:rotate(0deg); transform:rotate(0deg); }
-    to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
-  }
-  /* (No LO image spin) */
-  #loadingOverlay .lo-message{
-    position:relative;
-    z-index:2;
-    font-family:"Baloo 2",system-ui,sans-serif;
-    font-size:clamp(21px,4vw,28px);
-    font-weight:800;
-    color:rgba(255,255,255,.95);
-    text-align:center;
-    text-shadow:0 2px 12px rgba(0,0,0,.4);
-    max-width:220px;
-    line-height:1.25;
-  }
-  #loadingOverlay .lo-progress{
-    position:relative;
-    z-index:2;
-    font-family:"Baloo 2",system-ui,sans-serif;
-    font-size:clamp(18px,3vw,21px);
-    font-weight:800;
-    color:rgba(109,224,255,.95);
-    text-align:center;
-    margin-top:10px;
-    min-height:20px;
-  }
-  #loadingOverlay .lo-progress-bar-wrap{
-    width:220px;
-    height:14px;
-    background:rgba(0,0,0,.4);
-    border-radius:999px;
-    overflow:hidden;
-    margin:10px auto 0;
-    border:1px solid rgba(255,255,255,.12);
-  }
-  #loadingOverlay .lo-progress-bar-fill{
-    height:100%;
-    border-radius:999px;
-    width:0%;
-    transition:width .4s ease;
-    background:linear-gradient(90deg,#e53935,#ff9800,#ffeb3b,#4caf50);
-  }
-  #loadingOverlay .lo-spinner{
-    width:44px;
-    height:44px;
-    border:4px solid rgba(255,255,255,.2);
-    border-top-color:#ffd84d;
-    border-radius:50%;
-    will-change:transform;
-    margin:0 auto 15px;
-  }
-  @keyframes loSpin{
-    to{ transform:rotate(360deg); }
-  }
-  @-webkit-keyframes loSpin{
-    to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
-  }
-  /* Reduced motion: slower spin so loading feedback stays visible */
   @media (prefers-reduced-motion: reduce){
-    #loadingOverlay.visible .lo-spinner{
-      animation:loSpin 2s linear infinite;
-      -webkit-animation:loSpin 2s linear infinite;
+    #loadingOverlay.visible .loading-overlay-lo-img{
+      animation:flexgridLoSpin 2.4s linear infinite;
     }
-    #loadingOverlay.visible .lo-orbit-ring{
-      animation:loOrbitRing 4s linear infinite;
-      -webkit-animation:loOrbitRing 4s linear infinite;
-    }
-    #loadingOverlay.visible .lo-orbit-img{
-      animation:loOrbitImg 4s linear infinite;
-      -webkit-animation:loOrbitImg 4s linear infinite;
-    }
-  }
-  @keyframes loSpinPulse{
-    0%,100%{ opacity:.6; }
-    50%{ opacity:1; }
-  }
-  @-webkit-keyframes loSpinPulse{
-    0%,100%{ opacity:.6; }
-    50%{ opacity:1; }
   }
 
 /* ==========================

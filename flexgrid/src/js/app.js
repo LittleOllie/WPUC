@@ -645,20 +645,13 @@ function setStatus(msg) {
 
 function showLoading(message = "Loading…", progress = "", pct = null) {
   const overlay = $("loadingOverlay");
-  const textEl = document.getElementById("loadingOverlayText");
-  const progressEl = document.getElementById("loadingOverlayProgress");
-  const barEl = document.getElementById("loadingOverlayBar");
   if (overlay) {
     overlay.classList.add("visible");
     overlay.setAttribute("aria-hidden", "false");
   }
-  if (textEl) textEl.textContent = message;
-  if (progressEl) progressEl.textContent = progress || "";
-  if (barEl) {
-    const w = pct != null ? Math.min(100, Math.max(0, Number(pct))) : 0;
-    barEl.style.width = w + "%";
-    barEl.setAttribute("aria-valuenow", String(Math.round(w)));
-  }
+  void message;
+  void progress;
+  void pct;
 }
 
 function hideLoading() {
@@ -683,10 +676,6 @@ function updateImageProgress() {
   const gridStatusRetryArea = document.getElementById("gridStatusRetryArea");
 
   const stageLoadBar = document.getElementById("gridStageImageLoading");
-  const stageFill = document.getElementById("gridStageImageProgressFill");
-  const stageTrack = document.getElementById("gridStageImageProgressTrack");
-  const stageLabel = document.getElementById("gridStageImageLoadLabel");
-  const stageFrac = document.getElementById("gridStageImageLoadFraction");
 
   if (total === 0) {
     if (barWrap) barWrap.style.display = "none";
@@ -713,30 +702,12 @@ function updateImageProgress() {
 
   setStatus(statusMsg);
 
-  /* Top-of-grid loading strip (red → green, matches manual picker) */
+  /* Top-of-grid: LO-only spinner while images settle */
   if (stageLoadBar) {
     stageLoadBar.classList.remove("grid-stage-image-loading--empty");
     const busy = settled < total;
     stageLoadBar.classList.toggle("grid-stage-image-loading--busy", busy);
     stageLoadBar.classList.toggle("grid-stage-image-loading--done", !busy);
-    if (stageFill) {
-      stageFill.style.width = `${progress}%`;
-      const t = progress / 100;
-      const hue = t * 118;
-      const hue2 = Math.min(118, hue + 10);
-      stageFill.style.background = `linear-gradient(90deg, hsl(${hue}, 78%, 52%), hsl(${hue2}, 72%, 46%))`;
-      stageFill.style.boxShadow = `0 0 12px hsla(${hue}, 82%, 55%, 0.5)`;
-    }
-    if (stageFrac) stageFrac.textContent = `${settled} / ${total}`;
-    if (stageTrack) {
-      stageTrack.setAttribute("aria-valuenow", String(progress));
-      stageTrack.setAttribute("aria-valuetext", `${settled} of ${total} grid images`);
-    }
-    if (stageLabel) {
-      if (busy) stageLabel.textContent = "Loading grid images…";
-      else if (failed > 0) stageLabel.textContent = "Finished loading — some tiles need Retry missing";
-      else stageLabel.textContent = "All grid images loaded";
-    }
   }
 
   /* Below-grid status bar */

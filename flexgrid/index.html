@@ -99,17 +99,16 @@
     })();
   </script>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
-    <div class="lo-orbit-wrap">
-      <div class="lo-orbit-ring"><img src="src/assets/images/LO.png" class="lo-orbit-img" alt="" aria-hidden="true"></div>
-      <div>
-        <div id="loadingOverlayText" class="lo-message"></div>
-        <div id="loadingOverlayProgress" class="lo-progress"></div>
-        <div class="lo-progress-bar-wrap">
-          <div id="loadingOverlayBar" class="lo-progress-bar-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-      </div>
+    <div class="loading-overlay-lo" aria-busy="true">
+      <img
+        src="src/assets/images/LO.png"
+        alt=""
+        class="loading-overlay-lo-img"
+        width="140"
+        height="140"
+        decoding="async"
+      />
     </div>
-    <div class="lo-spinner" aria-hidden="true"></div>
   </div>
   <div class="wrap container">
 
@@ -296,16 +295,15 @@
         </div>
 
         <div id="gridStageImageLoading" class="grid-stage-image-loading grid-stage-image-loading--empty" aria-live="polite">
-          <p class="grid-stage-image-loading-note" id="gridStageImageLoadingNote">
-            <span class="grid-stage-image-loading-note-line1">Hang tight — tiles fill in here after you pick NFTs. If you used <strong>Select manually</strong>, previews are reused so this step is usually quick.</span>
-            <span class="grid-stage-image-loading-note-line2">Tap <strong>Retry missing</strong> if a slot stays blank.</span>
-          </p>
-          <div class="grid-stage-image-loading-row">
-            <span id="gridStageImageLoadLabel" class="grid-stage-image-loading-label">Loading grid images…</span>
-            <span id="gridStageImageLoadFraction" class="grid-stage-image-loading-fraction"></span>
-          </div>
-          <div id="gridStageImageProgressTrack" class="grid-stage-image-loading-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0 of 0 grid images">
-            <div id="gridStageImageProgressFill" class="grid-stage-image-loading-fill"></div>
+          <div class="grid-stage-image-loading-lo" aria-hidden="true">
+            <img
+              src="src/assets/images/LO.png"
+              alt=""
+              class="grid-stage-image-loading-lo-img"
+              width="72"
+              height="72"
+              decoding="async"
+            />
           </div>
         </div>
 
