@@ -100,6 +100,20 @@ let quirksDnDFromIndex = null;
 let quirksDnDGroupedPayload = null;
 /** Last wallet item list used to build the flat grid — for optional collection-logo toggle. */
 let quirksLastSortedGridItems = null;
+/** User-picked image copied into every empty grid cell (flat layout only). */
+let quirksImportedVacantFillObjectUrl = null;
+
+const QUIRKS_IMPORT_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
+
+function quirksRevokeImportedVacantFillUrl() {
+  if (!quirksImportedVacantFillObjectUrl) return;
+  try {
+    URL.revokeObjectURL(quirksImportedVacantFillObjectUrl);
+  } catch {
+    /* ignore */
+  }
+  quirksImportedVacantFillObjectUrl = null;
+}
 
 const QUIRKS_GIF_CONFIG = {
   size: 480,
@@ -140,6 +154,30 @@ function quirksSyncCollectionLogoButton() {
   btn.hidden = false;
   const on = btn.getAttribute("aria-pressed") === "true";
   btn.textContent = on ? "Remove collection logo" : "Add collection logo";
+}
+
+function quirksSyncImportedBrandButtonUI() {
+  const clearBtn = document.getElementById("quirks-clear-import-brand-btn");
+  if (clearBtn) clearBtn.hidden = !quirksImportedVacantFillObjectUrl;
+}
+
+async function quirksRefreshPreviewAfterBrandOrLayoutChange() {
+  quirksSetDownloadButtonReady(false);
+  quirksSetGifButtonReady(false);
+  const domPool = quirksHarvestPreviewDomPool();
+  renderQuirksPreviewGrid(domPool);
+  const gridEl = document.getElementById("quirks-preview-grid");
+  try {
+    await quirksAwaitQuirksGridPreflights(gridEl);
+    await quirksAwaitPreviewGridLoads(gridEl);
+    await quirksWaitForPreviewGridImages();
+    await quirksRefreshPreviewFromSlots();
+    quirksSetDownloadButtonReady(true);
+    quirksSetGifButtonReady(true);
+  } catch {
+    quirksSetDownloadButtonReady(false);
+    quirksSetGifButtonReady(false);
+  }
 }
 
 function quirksClamp(n, lo, hi) {
@@ -198,6 +236,7 @@ function quirksExportBuildOrderedUrls() {
   const st = quirksEditorState;
   if (!st) return [];
   const out = [];
+  const brandSlotUrl = quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl());
   if (st.mode === "grouped") {
     for (let r = 0; r < st.packed.length; r++) {
       const row = st.packed[r];
@@ -206,6 +245,7 @@ function quirksExportBuildOrderedUrls() {
         for (let si = 0; si < unit.items.length; si++) {
           const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
           if (!url) continue;
+          if (url === brandSlotUrl) continue;
           if (quirksPublicBrandingBasename(url) === "pblo.png") continue;
           if (quirksPublicBrandingBasename(url) === "quirkieslogo.png") continue;
           out.push(url);
@@ -216,9 +256,9 @@ function quirksExportBuildOrderedUrls() {
   }
   for (let i = 0; i < st.slots.length; i++) {
     const url = st.slots[i];
-    if (!url) continue;
+    if (quirksSlotUrlIsBlank(url)) continue;
     const b = quirksPublicBrandingBasename(url);
-    if (b === "pblo.png" || b === "quirkieslogo.png") continue;
+    if (url === brandSlotUrl || b === "pblo.png" || b === "quirkieslogo.png") continue;
     out.push(url);
   }
   return out;
@@ -622,6 +662,14 @@ function quirksR2MetaForGridItem(item) {
   return { tokenId: tid };
 }
 
+/** Blob / data URLs for user-imported brand art — load like local files (no /api/img pipeline). */
+function quirksIsDirectUserImageUrl(url) {
+  const s = String(url || "").trim();
+  if (/^blob:/i.test(s)) return true;
+  if (/^data:image\//i.test(s)) return true;
+  return false;
+}
+
 /** Basename of URL path — must match exactly; avoid `indexOf("pblo.png")` (NFT filenames can contain that substring). */
 function quirksPublicBrandingBasename(url) {
   if (!url || typeof url !== "string") return "";
@@ -667,7 +715,11 @@ function quirksIsLocalBrandingAssetUrl(url) {
 }
 
 function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
-  if (quirksIsLocalBrandingAssetUrl(String(rawUrl || ""))) {
+  const rawStr = String(rawUrl || "");
+  if (
+    quirksIsLocalBrandingAssetUrl(rawStr) ||
+    quirksIsDirectUserImageUrl(rawStr)
+  ) {
     img.removeAttribute("data-nft-c");
     img.removeAttribute("data-nft-ci");
     img.decoding = "async";
@@ -744,8 +796,8 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
 }
 
 /**
- * Branding in `public/` — use the same relative URLs as index.html (`src="quirkieslogo.png"`).
- * Resolving via `new URL(file, document.baseURI)` can diverge from `location.origin` (www vs bare * domain, file: opaque origins) and route art through /api/img, which breaks these assets.
+ * First-cell brand art in `public/` — same relative URL as index.html (`src="quirkieslogo.png"`).
+ * User imports fill empty slots only; they never replace this asset.
  */
 function getQuirksGridBrandImageUrl() {
   return "quirkieslogo.png";
@@ -1354,6 +1406,14 @@ async function quirksBuildGroupedExportCanvas(state) {
   return canvas;
 }
 
+/** True when a flat slot has no usable image URL (matches empty/black tiles in the preview). */
+function quirksSlotUrlIsBlank(url) {
+  if (url == null) return true;
+  if (typeof url !== "string") return true;
+  return url.trim() === "";
+}
+
+/** @returns {number} How many empty cells were filled with the imported image (flat mode only). */
 function quirksRebuildSlotsFromSorted(sortedItems) {
   const gridLayout = quirksGetGridLayoutMode();
   const wantQ = document.getElementById("quirks-opt-quirkies")?.checked;
@@ -1365,6 +1425,8 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     addCollectionLogoOpt &&
     quirksBrandingIsMultiCollection() &&
     !quirksUseQuirkTripleBrandSquareCell();
+  /** Grouped preview has no flat `slots`; import must use the flat path (same as collection-logo force-flat). */
+  const forceFlatForVacantImport = !!quirksImportedVacantFillObjectUrl;
 
   if (
     gridLayout === "grouped" &&
@@ -1372,7 +1434,8 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     wantQl &&
     !quirksUseFlatMode() &&
     !quirksUseQuirkTripleBrandSquareCell() &&
-    !forceFlatForCollectionLogo
+    !forceFlatForCollectionLogo &&
+    !forceFlatForVacantImport
   ) {
     const units = buildLayoutUnitsFromGroupedSequence(sortedItems);
     const totalW = units.reduce((s, u) => s + u.width, 0);
@@ -1387,7 +1450,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
       gridLayout,
       firstCellBrand: false,
     };
-    return;
+    return 0;
   }
 
   const multi = quirksBrandingIsMultiCollection();
@@ -1400,12 +1463,23 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   const urls = prependBrand
     ? [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(itemUrls)
     : itemUrls;
-  const g = quirksComputeGrid(urls.length);
+  let denseUrlSlots = 0;
+  for (let z = 0; z < urls.length; z++) {
+    if (!quirksSlotUrlIsBlank(urls[z])) denseUrlSlots++;
+  }
+  /**
+   * Always leave ≥1 grid cell beyond real image URLs (e.g. brand + 5 NFTs = 6 URLs fits a 3×2
+   * with zero slack — no `null` slot). Use max(len, dense+1) so `quirksComputeGrid` expands
+   * enough for one spare tile (import / empty hole).
+   */
+  const layoutCellCountHint = Math.max(urls.length, denseUrlSlots + 1);
+  const g = quirksComputeGrid(layoutCellCountHint);
   const cells = g.cols * g.rows;
   const slots = [];
   const slotR2Metas = [];
   for (let i = 0; i < cells; i++) {
-    slots.push(i < urls.length ? urls[i] : null);
+    const raw = i < urls.length ? urls[i] : null;
+    slots.push(quirksSlotUrlIsBlank(raw) ? null : raw);
     if (multi && !brandSquare && !prependBrand) {
       slotR2Metas.push(
         i < sortedItems.length ? quirksR2MetaForGridItem(sortedItems[i]) : null
@@ -1421,6 +1495,23 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
       );
     }
   }
+  let vacantFilled = 0;
+  if (quirksImportedVacantFillObjectUrl) {
+    const fill = quirksImportedVacantFillObjectUrl;
+    /** Spare corner / trailing slack: use the last vacant cell so the image stays in the corner when the grid grows (e.g. logo on). */
+    let fillAt = -1;
+    for (let i = slots.length - 1; i >= 0; i--) {
+      if (quirksSlotUrlIsBlank(slots[i])) {
+        fillAt = i;
+        break;
+      }
+    }
+    if (fillAt >= 0) {
+      slots[fillAt] = fill;
+      if (slotR2Metas && fillAt < slotR2Metas.length) slotR2Metas[fillAt] = null;
+      vacantFilled = 1;
+    }
+  }
   quirksEditorState = {
     mode: "flat",
     slots,
@@ -1430,6 +1521,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     gridLayout,
     firstCellBrand: false,
   };
+  return vacantFilled;
 }
 
 function setGlobalLoadingQuirks(on) {
@@ -1544,6 +1636,10 @@ function resetQuirksModalOutput() {
     logoBtn.setAttribute("aria-pressed", "false");
     logoBtn.textContent = "Add collection logo";
   }
+  quirksRevokeImportedVacantFillUrl();
+  quirksSyncImportedBrandButtonUI();
+  const brandFile = document.getElementById("quirks-import-brand-file");
+  if (brandFile) brandFile.value = "";
   quirksEditorState = null;
   quirksLastExportDataUrl = null;
   quirksDnDFromIndex = null;
@@ -1624,8 +1720,8 @@ function quirksLoadImageWithFallbacks(rawUrl, r2Meta) {
       return;
     }
     const s0 = String(rawUrl).trim();
-    /** Same-origin /public branding — load directly (no proxy pipeline, no CORS mode that breaks canvas/export). */
-    if (quirksIsLocalBrandingAssetUrl(s0)) {
+    /** Same-origin /public branding + user blob/data — load directly (no proxy / CORS that breaks canvas/export). */
+    if (quirksIsLocalBrandingAssetUrl(s0) || quirksIsDirectUserImageUrl(s0)) {
       const img = new Image();
       let settled = false;
       const finish = (ok) => {
@@ -1811,6 +1907,7 @@ function quirksDrawBrandCellExport(ctx, brandImg, pbloImg, cellX, cellY, cw, ch)
 }
 
 function quirksIsBrandLogoUrl(u) {
+  if (!u || typeof u !== "string") return false;
   return quirksPublicBrandingBasename(u) === "quirkieslogo.png";
 }
 
@@ -2400,7 +2497,7 @@ function renderQuirksPreviewGrid(domPool) {
         loadEl.className = "quirks-tile__loading";
         loadEl.setAttribute("aria-hidden", "true");
         cell.appendChild(loadEl);
-        if (quirksPublicBrandingBasename(url) === "quirkieslogo.png") {
+        if (quirksIsBrandLogoUrl(url)) {
           cell.classList.add("quirks-tile--brand");
         }
         let img = quirksTakePooledImg(pool, url);
@@ -2439,6 +2536,7 @@ function renderQuirksPreviewGrid(domPool) {
     stage.style.setProperty("--quirks-grid-cols", String(st.cols));
   }
   quirksSyncCollectionLogoButton();
+  quirksSyncImportedBrandButtonUI();
   quirksRenderBrandOverlay();
 }
 
@@ -3131,21 +3229,68 @@ function setupQuirksBuilderUi() {
       collectionLogoBtn.setAttribute("aria-pressed", next ? "true" : "false");
       quirksSyncCollectionLogoButton();
       quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
-      quirksSetDownloadButtonReady(false);
-      quirksSetGifButtonReady(false);
-      const domPool = quirksHarvestPreviewDomPool();
-      renderQuirksPreviewGrid(domPool);
-      const gridEl = document.getElementById("quirks-preview-grid");
-      try {
-        await quirksAwaitQuirksGridPreflights(gridEl);
-        await quirksAwaitPreviewGridLoads(gridEl);
-        await quirksWaitForPreviewGridImages();
-        await quirksRefreshPreviewFromSlots();
-        quirksSetDownloadButtonReady(true);
-        quirksSetGifButtonReady(true);
-      } catch {
-        quirksSetDownloadButtonReady(false);
-        quirksSetGifButtonReady(false);
+      await quirksRefreshPreviewAfterBrandOrLayoutChange();
+    });
+  }
+
+  const importBrandBtn = document.getElementById("quirks-import-brand-image-btn");
+  const importBrandFile = document.getElementById("quirks-import-brand-file");
+  const clearImportBrandBtn = document.getElementById("quirks-clear-import-brand-btn");
+  if (importBrandBtn && importBrandFile) {
+    importBrandBtn.addEventListener("click", () => {
+      importBrandFile.click();
+    });
+    importBrandFile.addEventListener("change", async () => {
+      const file = importBrandFile.files && importBrandFile.files[0];
+      importBrandFile.value = "";
+      if (!file || !quirksLastSortedGridItems) return;
+      if (!file.type || !file.type.startsWith("image/")) {
+        const errEl = document.getElementById("quirks-error");
+        if (errEl) {
+          errEl.textContent = "Please choose an image file.";
+          errEl.classList.add("is-visible");
+        }
+        return;
+      }
+      if (file.size > QUIRKS_IMPORT_IMAGE_MAX_BYTES) {
+        const errEl = document.getElementById("quirks-error");
+        if (errEl) {
+          errEl.textContent = "Image is too large (max 15 MB).";
+          errEl.classList.add("is-visible");
+        }
+        return;
+      }
+      const errOk = document.getElementById("quirks-error");
+      if (errOk) {
+        errOk.textContent = "";
+        errOk.classList.remove("is-visible");
+      }
+      quirksRevokeImportedVacantFillUrl();
+      quirksImportedVacantFillObjectUrl = URL.createObjectURL(file);
+      quirksSyncImportedBrandButtonUI();
+      const filled = quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
+      if (filled === 0) {
+        quirksRevokeImportedVacantFillUrl();
+        quirksSyncImportedBrandButtonUI();
+        const errVac = document.getElementById("quirks-error");
+        if (errVac) {
+          errVac.textContent =
+            "Nothing to fill (no NFT images in this grid). Add collections and generate first.";
+          errVac.classList.add("is-visible");
+        }
+        return;
+      }
+      await quirksRefreshPreviewAfterBrandOrLayoutChange();
+    });
+  }
+  if (clearImportBrandBtn) {
+    clearImportBrandBtn.addEventListener("click", async () => {
+      if (!quirksImportedVacantFillObjectUrl) return;
+      quirksRevokeImportedVacantFillUrl();
+      quirksSyncImportedBrandButtonUI();
+      if (quirksLastSortedGridItems) {
+        quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
+        await quirksRefreshPreviewAfterBrandOrLayoutChange();
       }
     });
   }

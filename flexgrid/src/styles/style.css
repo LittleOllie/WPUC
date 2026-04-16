@@ -3277,7 +3277,7 @@ body.dark .manual-selection-footer{
 
 .collection-grid{
   display: grid;
-  /* Fills the available padded panel space nicely on desktop + iPhone */
+  /* Wide panels: auto-fit; phones get explicit columns below (logos must fit cells) */
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   padding: 6px 0 2px;
@@ -3285,27 +3285,27 @@ body.dark .manual-selection-footer{
   align-items: stretch;
   justify-items: stretch;
 }
+/* Typical phone portrait: one card per row — scroll vertically, no overlap */
+@media (max-width: 520px){
+  .collection-grid{
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-top: 4px;
+  }
+}
+/* Large phone / small tablet: two columns; logos scale to cell (see .collection-card rules) */
+@media (min-width: 521px) and (max-width: 859px){
+  .collection-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 4px;
+  }
+}
 @media (min-width: 860px){
   .collection-grid{
     /* Desktop/Mac: always show a few across (no single-column) */
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
-  }
-}
-/* iPhone/small phones: 2 columns */
-@media (max-width: 420px){
-  .collection-grid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding-top: 4px;
-  }
-}
-/* Larger phones: allow 3 columns when it fits */
-@media (min-width: 421px) and (max-width: 640px){
-  .collection-grid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    padding-top: 4px;
   }
 }
 
@@ -3326,13 +3326,15 @@ body.dark .manual-selection-footer{
   position: relative;
   box-shadow: 0 10px 22px rgba(0,0,0,.18);
   transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  min-width: 0; /* grid/flex: allow column to shrink so contents don't overflow neighbors */
 }
 .collection-card{
   min-height: 330px; /* tighter overall height */
 }
 @media (max-width: 520px){
   .collection-card{
-    min-height: 310px; /* tighter overall height */
+    /* Single-column layout: height follows content (fixed min was for multi-column tile look) */
+    min-height: 0;
   }
 }
 .collection-card:hover{
@@ -3365,26 +3367,28 @@ body.dark .collection-card:focus-visible{
 }
 
 .collection-card-logo{
-  width: 220px;
-  height: 220px;
+  /* Fluid: never wider than the card column (prevents overlap on 2–3 column phone grids) */
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  aspect-ratio: 1;
+  margin-inline: auto;
 }
 .collection-card-logo.collectionLogoWrap{
   border-radius: 14px;
 }
-/* Ensure the actual logo wrapper (and its <img>) scales up inside cards,
-   even if other global `.collectionLogoWrap` rules would otherwise win. */
+/* Ensure the actual logo wrapper (and its <img>) scales inside cards */
 .collection-card .collectionLogoWrap{
-  width: 220px;
-  height: 220px;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  aspect-ratio: 1;
+  margin-inline: auto;
 }
-@media (max-width: 520px){
-  .collection-card-logo{
-    width: 200px;
-    height: 200px;
-  }
+@media (max-width: 859px){
+  .collection-card-logo,
   .collection-card .collectionLogoWrap{
-    width: 200px;
-    height: 200px;
+    max-width: min(220px, 100%);
   }
 }
 .collection-card-name{

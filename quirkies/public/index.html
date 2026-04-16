@@ -354,15 +354,42 @@
             >
               Retry missing images
             </button>
-            <button
-              type="button"
-              id="quirks-add-collection-logo-btn"
-              class="btn-secondary quirks-add-collection-logo-btn"
-              aria-pressed="false"
-              hidden
-            >
-              Add collection logo
-            </button>
+            <div class="quirks-preview-brand-actions">
+              <button
+                type="button"
+                id="quirks-add-collection-logo-btn"
+                class="btn-secondary quirks-add-collection-logo-btn"
+                aria-pressed="false"
+                hidden
+              >
+                Add collection logo
+              </button>
+              <button
+                type="button"
+                id="quirks-import-brand-image-btn"
+                class="btn-secondary quirks-import-brand-image-btn"
+                title="Adds spare grid cells (one more than your NFT URLs), then fills every spare with your image. Quirkies logo uses Add collection logo."
+              >
+                Import image
+              </button>
+              <button
+                type="button"
+                id="quirks-clear-import-brand-btn"
+                class="btn-secondary quirks-clear-import-brand-btn"
+                hidden
+                title="Clear imported images from empty cells"
+              >
+                Remove import
+              </button>
+              <input
+                type="file"
+                id="quirks-import-brand-file"
+                class="sr-only"
+                accept="image/*"
+                aria-hidden="true"
+                tabindex="-1"
+              />
+            </div>
           </div>
           <p class="quirks-preview-hint">
             Drag tiles to reorder.
