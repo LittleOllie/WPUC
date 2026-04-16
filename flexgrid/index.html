@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  (function () {
+    var loc = window.location;
+    var p = loc.pathname;
+    // Legacy bookmarks: .../flexgrid/index.html → .../flexgrid/
+    if (/\/index\.html$/i.test(p)) {
+      var stripped = p.replace(/\/index\.html$/i, "/");
+      if (stripped !== p) {
+        loc.replace(loc.origin + stripped + loc.search + loc.hash);
+        return;
+      }
+    }
+    // Bare .../flexgrid (no trailing slash): relative asset URLs resolve incorrectly
+    if (/\/flexgrid$/i.test(p)) {
+      loc.replace(loc.origin + p + "/" + loc.search + loc.hash);
+    }
+  })();
+</script>
 
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
@@ -324,8 +342,63 @@
         <div class="gridExportBar">
           <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
         </div>
+        <div class="gridExportBar" style="border-top:none; padding-top:0;">
+          <button id="gridGifBtn" class="btn" type="button" disabled>🎞️ Create GIF</button>
+        </div>
       </div>
     </section>
+    </div>
+
+    <div id="gridGifOptionsModal" class="grid-gif-options-modal hidden" aria-hidden="true">
+      <div class="grid-gif-options-panel" role="dialog" aria-modal="true" aria-labelledby="gridGifOptionsTitle">
+        <div class="grid-gif-options-head">
+          <h3 id="gridGifOptionsTitle" class="grid-gif-options-title">GIF export</h3>
+          <button id="gridGifOptionsClose" class="grid-gif-options-close" type="button" aria-label="Close">×</button>
+        </div>
+        <p id="gridGifOptionsSummary" class="grid-gif-options-summary" aria-live="polite"></p>
+
+        <label class="grid-gif-options-label" for="gridGifOptionsMax">NFT frames to include</label>
+        <input
+          type="number"
+          id="gridGifOptionsMax"
+          class="grid-gif-options-input"
+          min="1"
+          max="200"
+          step="1"
+          value="25"
+        />
+
+        <label class="grid-gif-options-label grid-gif-options-label--section" for="gridGifOptionsSpeed">Speed</label>
+        <div class="grid-gif-options-speed-scale" aria-hidden="true">
+          <span>Slow</span>
+          <span>Fast</span>
+        </div>
+        <div class="grid-gif-options-range-row">
+          <input
+            type="range"
+            id="gridGifOptionsSpeed"
+            class="grid-gif-options-range"
+            min="0"
+            max="100"
+            step="5"
+            value="50"
+            aria-label="GIF speed, slow to fast"
+          />
+        </div>
+        <p id="gridGifOptionsDuration" class="grid-gif-options-duration" aria-live="polite"></p>
+
+        <div class="grid-gif-options-actions">
+          <button id="gridGifOptionsCancel" class="btn" type="button">Cancel</button>
+          <button id="gridGifOptionsConfirm" class="btn btnPrimary" type="button">Create GIF</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gridGifCreatingModal" class="grid-gif-creating-modal hidden" aria-hidden="true">
+      <div class="grid-gif-creating-panel">
+        <p class="grid-gif-creating-title">Creating GIF…</p>
+        <div class="grid-gif-creating-spinner" aria-hidden="true"></div>
+      </div>
     </div>
 
   </div>
@@ -340,8 +413,11 @@
       if (search && list){
         search.addEventListener("input", () => {
           const q = search.value.trim().toLowerCase();
-          const items = Array.from(list.children);
-          items.forEach(el => {
+          // Collection-first UX renders cards inside `.collection-grid`.
+          // Filter the cards rather than `#collectionsList` direct children.
+          const grid = list.querySelector(".collection-grid");
+          const cards = grid ? Array.from(grid.querySelectorAll(".collection-card")) : [];
+          cards.forEach((el) => {
             const txt = (el.innerText || "").toLowerCase();
             el.style.display = (!q || txt.includes(q)) ? "" : "none";
           });
@@ -386,6 +462,8 @@
   })();
 </script>
  
+<script src="../shared/loGifBranding.js"></script>
+<script src="../OGT/public/gif.js"></script>
 <script type="module" src="src/js/app.js"></script>
 </body>
 </html>

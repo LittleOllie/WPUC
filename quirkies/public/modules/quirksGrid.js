@@ -96,6 +96,10 @@ let quirksWalletData = null;
 let quirksEditorState = null;
 let quirksLastExportDataUrl = null;
 let quirksDnDFromIndex = null;
+/** Grouped preview: drag single image `{ u, sub }` vs whole unit via `quirksDnDFromIndex`. */
+let quirksDnDGroupedPayload = null;
+/** Last wallet item list used to build the flat grid — for optional collection-logo toggle. */
+let quirksLastSortedGridItems = null;
 
 const QUIRKS_GIF_CONFIG = {
   size: 480,
@@ -106,6 +110,37 @@ const QUIRKS_GIF_CONFIG = {
 
 const QUIRKS_GIF_MAX_NFT_FRAMES = 200;
 let quirksGifLastSpeedPos = 50;
+
+function quirksGifFinalFrameMsEstimate(nftDelayMs) {
+  const L = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  if (L && typeof L.finalFrameDelayMs === "function") {
+    return L.finalFrameDelayMs(nftDelayMs);
+  }
+  const d = Math.round(Number(nftDelayMs) || 0);
+  return Math.round((d < 1 ? 1 : d) * 1.5) + 500;
+}
+
+function quirksCollectionLogoToggleShows() {
+  return (
+    quirksEditorState &&
+    quirksBrandingIsMultiCollection() &&
+    !quirksUseQuirkTripleBrandSquareCell()
+  );
+}
+
+function quirksSyncCollectionLogoButton() {
+  const btn = document.getElementById("quirks-add-collection-logo-btn");
+  if (!btn) return;
+  if (!quirksCollectionLogoToggleShows()) {
+    btn.hidden = true;
+    btn.setAttribute("aria-pressed", "false");
+    btn.textContent = "Add collection logo";
+    return;
+  }
+  btn.hidden = false;
+  const on = btn.getAttribute("aria-pressed") === "true";
+  btn.textContent = on ? "Remove collection logo" : "Add collection logo";
+}
 
 function quirksClamp(n, lo, hi) {
   return Math.max(lo, Math.min(hi, n));
@@ -201,10 +236,32 @@ async function quirksExportCreateGifBrandTileCanvas(size) {
   const brandImg = await quirksLoadImageWithFallbacks(brandUrl, null);
   quirksDrawContain(ctx, brandImg, 0, 0, size, size, QUIRKS_BRAND_CELL_BG);
   quirksReleaseImageElement(brandImg);
-  const pbloImg = await quirksLoadImageWithFallbacks(getQuirksPbloImageUrl());
-  quirksDrawPbloOverlayExport(ctx, pbloImg, 0, 0, size, size);
-  quirksReleaseImageElement(pbloImg);
   return canvas;
+}
+
+function quirksExportGifBranding() {
+  const L = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  if (!L || typeof L.drawWatermark !== "function") {
+    throw new Error("GIF branding utilities failed to load. Refresh the page.");
+  }
+  return L;
+}
+
+function quirksExportGifAddFrame(gif, canvas, delayMs) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  const w = canvas.width;
+  const h = canvas.height;
+  quirksExportGifBranding().drawWatermark(ctx, w, h);
+  let idata;
+  try {
+    idata = ctx.getImageData(0, 0, w, h);
+  } catch (e) {
+    throw new Error(
+      "Could not read pixels for export (cross-origin art blocked the canvas)."
+    );
+  }
+  gif.addFrame(idata, { delay: delayMs, copy: true });
 }
 
 async function quirksExportCreateGifFrameCanvas(url, size) {
@@ -1301,13 +1358,21 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   const gridLayout = quirksGetGridLayoutMode();
   const wantQ = document.getElementById("quirks-opt-quirkies")?.checked;
   const wantQl = document.getElementById("quirks-opt-quirklings")?.checked;
+  const logoBtn = document.getElementById("quirks-add-collection-logo-btn");
+  const addCollectionLogoOpt =
+    !!logoBtn && logoBtn.getAttribute("aria-pressed") === "true";
+  const forceFlatForCollectionLogo =
+    addCollectionLogoOpt &&
+    quirksBrandingIsMultiCollection() &&
+    !quirksUseQuirkTripleBrandSquareCell();
 
   if (
     gridLayout === "grouped" &&
     wantQ &&
     wantQl &&
     !quirksUseFlatMode() &&
-    !quirksUseQuirkTripleBrandSquareCell()
+    !quirksUseQuirkTripleBrandSquareCell() &&
+    !forceFlatForCollectionLogo
   ) {
     const units = buildLayoutUnitsFromGroupedSequence(sortedItems);
     const totalW = units.reduce((s, u) => s + u.width, 0);
@@ -1328,26 +1393,27 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   const multi = quirksBrandingIsMultiCollection();
   const brandSquare = quirksUseQuirkTripleBrandSquareCell();
   const itemUrls = sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image));
-  const urls =
-    !multi || brandSquare
-      ? [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(
-          itemUrls
-        )
-      : itemUrls;
+  const prependBrand =
+    !multi ||
+    brandSquare ||
+    (multi && !brandSquare && addCollectionLogoOpt);
+  const urls = prependBrand
+    ? [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(itemUrls)
+    : itemUrls;
   const g = quirksComputeGrid(urls.length);
   const cells = g.cols * g.rows;
   const slots = [];
   const slotR2Metas = [];
   for (let i = 0; i < cells; i++) {
     slots.push(i < urls.length ? urls[i] : null);
-    if (multi && !brandSquare) {
+    if (multi && !brandSquare && !prependBrand) {
       slotR2Metas.push(
         i < sortedItems.length ? quirksR2MetaForGridItem(sortedItems[i]) : null
       );
-    } else if (i === 0) {
+    } else if (prependBrand && i === 0) {
       slotR2Metas.push(null);
     } else {
-      const itemIdx = i - 1;
+      const itemIdx = prependBrand ? i - 1 : i;
       slotR2Metas.push(
         itemIdx < sortedItems.length
           ? quirksR2MetaForGridItem(sortedItems[itemIdx])
@@ -1472,9 +1538,17 @@ function resetQuirksModalOutput() {
   if (grid) grid.innerHTML = "";
   const brandOv = document.getElementById("quirks-preview-brand-overlay");
   if (brandOv) brandOv.innerHTML = "";
+  const logoBtn = document.getElementById("quirks-add-collection-logo-btn");
+  if (logoBtn) {
+    logoBtn.hidden = true;
+    logoBtn.setAttribute("aria-pressed", "false");
+    logoBtn.textContent = "Add collection logo";
+  }
   quirksEditorState = null;
   quirksLastExportDataUrl = null;
   quirksDnDFromIndex = null;
+  quirksDnDGroupedPayload = null;
+  quirksLastSortedGridItems = null;
 }
 
 function quirksSetTileEmptyClass(cell, hasImg) {
@@ -2364,6 +2438,7 @@ function renderQuirksPreviewGrid(domPool) {
   if (stage) {
     stage.style.setProperty("--quirks-grid-cols", String(st.cols));
   }
+  quirksSyncCollectionLogoButton();
   quirksRenderBrandOverlay();
 }
 
@@ -2585,6 +2660,9 @@ async function runQuirksGenerate() {
     errEl.classList.remove("is-visible");
     errEl.textContent = "";
   }
+  quirksLastSortedGridItems = items.slice();
+  const logoBtnPre = document.getElementById("quirks-add-collection-logo-btn");
+  if (logoBtnPre) logoBtnPre.setAttribute("aria-pressed", "false");
   quirksRebuildSlotsFromSorted(items);
   const previewWrap = document.getElementById("quirks-preview-wrap");
   if (previewWrap) previewWrap.classList.remove("hidden");
@@ -2685,6 +2763,7 @@ function setupQuirksBuilderUi() {
         traitSel.value || "random"
       );
       if (items.length === 0) return;
+      quirksLastSortedGridItems = items.slice();
       const oldRects = quirksCapturePreviewTileRectsForFlip();
       const domPool = quirksHarvestPreviewDomPool();
       quirksRebuildSlotsFromSorted(items);
@@ -2724,16 +2803,47 @@ function setupQuirksBuilderUi() {
           e.preventDefault();
           return;
         }
-        quirksDnDFromIndex = u;
+        quirksDnDGroupedPayload = null;
+        quirksDnDFromIndex = null;
+        const img =
+          e.target instanceof HTMLImageElement &&
+          e.target.classList.contains("quirks-tile__img")
+            ? e.target
+            : e.target.closest("img.quirks-tile__img");
+        if (img) {
+          const strip = img.closest(".quirks-tile__strip");
+          const imgs = strip
+            ? Array.from(strip.querySelectorAll("img.quirks-tile__img"))
+            : [];
+          const sub = imgs.indexOf(img);
+          const unit = st.units[u];
+          if (
+            sub >= 0 &&
+            unit &&
+            Array.isArray(unit.items) &&
+            sub < unit.items.length
+          ) {
+            quirksDnDGroupedPayload = { u, sub };
+          }
+        }
+        if (!quirksDnDGroupedPayload) {
+          quirksDnDFromIndex = u;
+        }
         e.dataTransfer.effectAllowed = "move";
         try {
-          e.dataTransfer.setData("text/plain", String(u));
+          e.dataTransfer.setData(
+            "text/plain",
+            quirksDnDGroupedPayload
+              ? "item:" + u + ":" + quirksDnDGroupedPayload.sub
+              : String(u)
+          );
         } catch {
           /* ignore */
         }
         cell.classList.add("quirks-tile--dragging");
         return;
       }
+      quirksDnDGroupedPayload = null;
       const i = parseInt(cell.dataset.index, 10);
       if (isNaN(i) || !st.slots[i]) {
         e.preventDefault();
@@ -2756,6 +2866,7 @@ function setupQuirksBuilderUi() {
       const cell = e.target.closest(".quirks-tile");
       if (cell) cell.classList.remove("quirks-tile--dragging");
       quirksDnDFromIndex = null;
+      quirksDnDGroupedPayload = null;
     });
     previewGrid.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -2768,6 +2879,54 @@ function setupQuirksBuilderUi() {
       const st = quirksEditorState;
       if (st.mode === "grouped") {
         const j = parseInt(cell.dataset.unitIndex, 10);
+        if (isNaN(j) || !st.units[j]) return;
+        if (quirksDnDGroupedPayload) {
+          const from = quirksDnDGroupedPayload;
+          const toImg =
+            e.target instanceof HTMLImageElement &&
+            e.target.classList.contains("quirks-tile__img")
+              ? e.target
+              : e.target.closest("img.quirks-tile__img");
+          let subJ = 0;
+          if (toImg) {
+            const stripJ = toImg.closest(".quirks-tile__strip");
+            const imgsJ = stripJ
+              ? Array.from(stripJ.querySelectorAll("img.quirks-tile__img"))
+              : [];
+            const k = imgsJ.indexOf(toImg);
+            if (k >= 0) subJ = k;
+          }
+          const uFrom = st.units[from.u];
+          const uTo = st.units[j];
+          if (
+            !uFrom ||
+            !uTo ||
+            !Array.isArray(uFrom.items) ||
+            !Array.isArray(uTo.items)
+          ) {
+            quirksDnDGroupedPayload = null;
+            return;
+          }
+          if (from.sub < 0 || from.sub >= uFrom.items.length) {
+            quirksDnDGroupedPayload = null;
+            return;
+          }
+          if (subJ < 0) subJ = 0;
+          if (subJ >= uTo.items.length) subJ = uTo.items.length - 1;
+          if (from.u === j && from.sub === subJ) {
+            quirksDnDGroupedPayload = null;
+            return;
+          }
+          const tmpIt = uFrom.items[from.sub];
+          uFrom.items[from.sub] = uTo.items[subJ];
+          uTo.items[subJ] = tmpIt;
+          quirksRepackGroupedUnits();
+          quirksDnDGroupedPayload = null;
+          quirksDnDFromIndex = null;
+          renderQuirksPreviewGrid();
+          quirksLastExportDataUrl = null;
+          return;
+        }
         const i = quirksDnDFromIndex;
         if (i == null || isNaN(j) || !st.units[j]) return;
         if (i === j) return;
@@ -2862,11 +3021,12 @@ function setupQuirksBuilderUi() {
         ordered.length +
         " NFT tiles. This will export " +
         eff +
-        " NFT frames plus the opening brand frame.";
+        " NFT frames plus the opening brand frame and a closing CTA frame.";
     }
     const dur = document.getElementById("quirks-gif-options-duration");
     const delayMs = quirksGifSpeedPosToNftDelayMs(quirksGifLastSpeedPos);
-    const total = 1000 + eff * delayMs;
+    const finalMs = quirksGifFinalFrameMsEstimate(delayMs);
+    const total = 1000 + eff * delayMs + finalMs;
     if (dur) dur.textContent = "Estimated length: " + quirksFormatGifSeconds(total);
     quirksSetGifOptionsModalOpen(true);
   }
@@ -2918,12 +3078,22 @@ function setupQuirksBuilderUi() {
 
     try {
       const brandCanvas = await quirksExportCreateGifBrandTileCanvas(QUIRKS_GIF_CONFIG.size);
-      gif.addFrame(brandCanvas.getContext("2d"), { copy: true, delay: 1000 });
+      quirksExportGifAddFrame(gif, brandCanvas, 1000);
       for (let i = 0; i < capped.length; i++) {
         const c = await quirksExportCreateGifFrameCanvas(capped[i], QUIRKS_GIF_CONFIG.size);
-        gif.addFrame(c.getContext("2d"), { copy: true, delay: delayMs });
+        quirksExportGifAddFrame(gif, c, delayMs);
         if ((i & 3) === 3) await new Promise((r) => setTimeout(r, 0));
       }
+      const L = quirksExportGifBranding();
+      const finalIdata = L.createFinalFrameImageData(
+        QUIRKS_GIF_CONFIG.size,
+        QUIRKS_GIF_CONFIG.size
+      );
+      const finalDelay =
+        typeof L.finalFrameDelayMs === "function"
+          ? L.finalFrameDelayMs(delayMs)
+          : quirksGifFinalFrameMsEstimate(delayMs);
+      gif.addFrame(finalIdata, { delay: finalDelay, copy: true });
     } catch (e) {
       quirksSetGifModalOpen(false);
       quirksExportSetProgress("GIF export failed.");
@@ -2947,8 +3117,36 @@ function setupQuirksBuilderUi() {
       const maxPick = parseInt(String(gifMaxInput?.value || QUIRKS_GIF_CONFIG.maxFrames), 10) || QUIRKS_GIF_CONFIG.maxFrames;
       const eff = quirksGifEffectiveNftFrameCount(ordered.length, maxPick);
       const delayMs = quirksGifSpeedPosToNftDelayMs(quirksGifLastSpeedPos);
-      const total = 1000 + eff * delayMs;
+      const finalMs = quirksGifFinalFrameMsEstimate(delayMs);
+      const total = 1000 + eff * delayMs + finalMs;
       if (dur) dur.textContent = "Estimated length: " + quirksFormatGifSeconds(total);
+    });
+  }
+
+  const collectionLogoBtn = document.getElementById("quirks-add-collection-logo-btn");
+  if (collectionLogoBtn) {
+    collectionLogoBtn.addEventListener("click", async () => {
+      if (!quirksLastSortedGridItems || !quirksCollectionLogoToggleShows()) return;
+      const next = collectionLogoBtn.getAttribute("aria-pressed") !== "true";
+      collectionLogoBtn.setAttribute("aria-pressed", next ? "true" : "false");
+      quirksSyncCollectionLogoButton();
+      quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
+      quirksSetDownloadButtonReady(false);
+      quirksSetGifButtonReady(false);
+      const domPool = quirksHarvestPreviewDomPool();
+      renderQuirksPreviewGrid(domPool);
+      const gridEl = document.getElementById("quirks-preview-grid");
+      try {
+        await quirksAwaitQuirksGridPreflights(gridEl);
+        await quirksAwaitPreviewGridLoads(gridEl);
+        await quirksWaitForPreviewGridImages();
+        await quirksRefreshPreviewFromSlots();
+        quirksSetDownloadButtonReady(true);
+        quirksSetGifButtonReady(true);
+      } catch {
+        quirksSetDownloadButtonReady(false);
+        quirksSetGifButtonReady(false);
+      }
     });
   }
 

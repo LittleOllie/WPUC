@@ -105,6 +105,17 @@
   padding: 0.45rem 0.85rem;
 }
 
+.quirks-add-collection-logo-btn {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.8rem;
+  white-space: nowrap;
+}
+
+.quirks-preview-hint + .quirks-add-collection-logo-btn {
+  margin: 0 0 0.65rem;
+}
+
 .wallet-retry-missing-btn.nft-retry-missing--illuminate,
 .quirks-preview-retry-missing.nft-retry-missing--illuminate {
   animation: nft-retry-illuminate 1.45s ease-in-out infinite;

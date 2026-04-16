@@ -2406,7 +2406,7 @@ async function flexExportCreateFrameCanvas(url, size) {
   return canvas;
 }
 
-/** GIF frame 1: static opening tile (brand art + fixed pblo overlay). */
+/** GIF frame 1: static opening tile (brand art; no legacy pblo overlay). */
 async function flexExportCreateGifBrandTileCanvas(size) {
   var canvas = document.createElement("canvas");
   canvas.width = size;
@@ -2415,20 +2415,21 @@ async function flexExportCreateGifBrandTileCanvas(size) {
   if (!ctx) throw new Error("Canvas not supported.");
   var animPx = flexGetExportProxySizeForAnimation();
   var ogUrl = getFlexGridBrandImageUrl();
-  var pbloUrl = getFlexPbloImageUrl();
   var ogImg = await flexLoadImageWithFallbacks(
     ogUrl,
     flexProxyPxForExportUrl(ogUrl, animPx)
   );
-  var pbloImg = await flexLoadImageWithFallbacks(
-    pbloUrl,
-    flexProxyPxForExportUrl(pbloUrl, animPx)
-  );
   flexDrawBrandArtCellExport(ctx, ogImg, 0, 0, size, size);
-  flexDrawPbloOverlayExport(ctx, pbloImg, 0, 0, size, size);
   flexReleaseImageElement(ogImg);
-  flexReleaseImageElement(pbloImg);
   return canvas;
+}
+
+function flexExportGifBranding() {
+  var L = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  if (!L || typeof L.drawWatermark !== "function") {
+    throw new Error("GIF branding utilities failed to load. Refresh the page.");
+  }
+  return L;
 }
 
 function flexExportGifAddFrame(gif, canvas, delayMs) {
@@ -2436,6 +2437,7 @@ function flexExportGifAddFrame(gif, canvas, delayMs) {
   if (!ctx) throw new Error("Canvas not supported.");
   var w = canvas.width;
   var h = canvas.height;
+  flexExportGifBranding().drawWatermark(ctx, w, h);
   var idata;
   try {
     idata = ctx.getImageData(0, 0, w, h);
@@ -2583,7 +2585,7 @@ async function flexExportRunGif(opts) {
   var finalFrames = flexExportLimitFrames(ordered, config.maxFrames);
   var delay = nftDelayMs;
   var size = config.size;
-  var total = 1 + finalFrames.length;
+  var total = 1 + finalFrames.length + 1;
   var nWorkers = Math.min(6, Math.max(2, total));
   if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) {
     nWorkers = Math.min(
@@ -2603,9 +2605,9 @@ async function flexExportRunGif(opts) {
 
   flexExportSetProgress(
     "Est. ~" +
-      flexExportEstimateMbHint(config, finalFrames.length) +
+      flexExportEstimateMbHint(config, finalFrames.length + 1) +
       " MB · preparing " +
-      (1 + finalFrames.length) +
+      (1 + finalFrames.length + 1) +
       " frame(s)…"
   );
   var brandCanvas = await flexExportCreateGifBrandTileCanvas(size);
@@ -2621,7 +2623,7 @@ async function flexExportRunGif(opts) {
         " / " +
         finalFrames.length +
         " · ~" +
-        flexExportEstimateMbHint(config, finalFrames.length) +
+        flexExportEstimateMbHint(config, finalFrames.length + 1) +
         " MB"
     );
     var fc = await flexExportCreateFrameCanvas(finalFrames[fi], size);
@@ -2629,6 +2631,14 @@ async function flexExportRunGif(opts) {
     flexReleaseCanvasMemory(fc);
     await flexExportWait(0);
   }
+
+  var L = flexExportGifBranding();
+  var finalIdata = L.createFinalFrameImageData(size, size);
+  var finalDelay =
+    typeof L.finalFrameDelayMs === "function"
+      ? L.finalFrameDelayMs(delay)
+      : Math.round(delay * 1.5);
+  gifEnc.addFrame(finalIdata, { delay: finalDelay, copy: true });
 
   await flexGifRenderAndDownload(gifEnc, "ogtriple-flex.gif");
   flexExportSetProgress("");
@@ -2691,7 +2701,14 @@ function flexGifOptionsUpdateDurationLine() {
     speedEl ? speedEl.value : flexGifLastSpeedPos
   );
   var nftCount = flexGifEffectiveNftFrameCount(n, maxPick);
-  var loopMs = EXPORT_GIF_BRAND_HOLD_MS + nftCount * nftMs;
+  var finalMs;
+  var Lbr = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  if (Lbr && typeof Lbr.finalFrameDelayMs === "function") {
+    finalMs = Lbr.finalFrameDelayMs(nftMs);
+  } else {
+    finalMs = Math.round(nftMs * 1.5) + 500;
+  }
+  var loopMs = EXPORT_GIF_BRAND_HOLD_MS + nftCount * nftMs + finalMs;
   var sec = loopMs / 1000;
   totalEl.textContent =
     "Total length: ~" + Number(sec.toFixed(1)) + " s";
@@ -2725,7 +2742,7 @@ function flexGifOptionsModalOpen() {
   if (summary) {
     if (n === 0) {
       summary.textContent =
-        "No NFTs in this grid — the GIF is only the opening frame.";
+        "No NFTs in this grid — the GIF is the opening brand frame plus a closing CTA frame.";
     } else {
       summary.textContent =
         n +

@@ -334,10 +334,6 @@ function syncManualSelectionModalHeader() {
   if (!c) return;
   const title = document.getElementById("manualSelectionTitle");
   if (title) title.textContent = shortenForDisplay(c.name) || "Collection";
-  const slot = document.getElementById("manualSelectionLogoSlot");
-  if (!slot) return;
-  slot.innerHTML = "";
-  slot.appendChild(buildCollectionLogoThumb(c));
 }
 
 function getNFTSelectionKey(nft) {
@@ -776,13 +772,16 @@ function updateImageProgress() {
 function syncGridFooterButtons(buildDisabled, exportDisabled) {
   const gridBuild = $("gridBuildBtn");
   const gridExport = $("gridExportBtn");
+  const gridGif = $("gridGifBtn");
   if (gridBuild != null) gridBuild.disabled = buildDisabled ?? !hasItemsForBuild();
   if (gridExport != null) gridExport.disabled = exportDisabled ?? true;
+  if (gridGif != null) gridGif.disabled = exportDisabled ?? true;
 }
 function enableButtons() {
   const loadBtn = $("loadBtn");
   const buildBtn = $("gridBuildBtn");
   const exportBtn = $("gridExportBtn");
+  const gifBtn = $("gridGifBtn");
 
   const hasWallets = state.wallets.length > 0;
   if (loadBtn) loadBtn.disabled = !hasWallets;
@@ -790,6 +789,7 @@ function enableButtons() {
   const buildDisabled = !hasItemsForBuild();
   if (buildBtn) buildBtn.disabled = buildDisabled;
   if (exportBtn) exportBtn.disabled = true;
+  if (gifBtn) gifBtn.disabled = true;
   syncGridFooterButtons(buildDisabled, true);
 
   updateGuideGlow();
@@ -1092,11 +1092,20 @@ function ensureManualSelectionModal() {
   overlay.innerHTML = `
     <div class="manual-selection-modal" role="dialog" aria-modal="true" aria-labelledby="manualSelectionTitle">
       <div class="manual-selection-header">
+        <div class="manual-selection-headerTop">
+          <button type="button" class="manual-selection-close" id="manualSelectionCloseX" aria-label="Close">×</button>
+        </div>
         <div class="manual-selection-headerMain">
-          <div id="manualSelectionLogoSlot" class="manual-selection-logoSlot" aria-hidden="true"></div>
+          <img
+            id="manualSelectionHeaderBanner"
+            class="manual-selection-headerBanner"
+            src="src/assets/images/header.png"
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+          />
           <h3 id="manualSelectionTitle" class="manual-selection-title"></h3>
         </div>
-        <button type="button" class="manual-selection-close" id="manualSelectionCloseX" aria-label="Close">×</button>
       </div>
       <div class="manual-selection-toolbar">
         <button type="button" class="btn btnSmall" id="manualSelectionModalSelectAll">Select All</button>
@@ -1760,157 +1769,339 @@ function buildCollectionLogoThumb(c) {
 }
 
 // ---------- Collections ----------
+// ---------- Collection-first UX state (drives UI; core build logic stays in `state.*`) ----------
+// Source of truth remains:
+// - `state.selectionModeByCollection`
+// - `state.selectedNFTsByCollection`
+// - `state.includeCollectionLogoInBuild`
+// This block exists so the UX can talk in terms of "selected collections / settings"
+// without rewriting the grid builder.
+const collectionFirstState = {
+  /** Set of collection keys the user has interacted with (mode !== "none" or includeLogo). */
+  selectedCollections: new Set(),
+  /** { [collectionKey]: Set<nftSelectionKey> } (mirrors `state.selectedNFTsByCollection`) */
+  selectedNFTs: Object.create(null),
+  /** { [collectionKey]: { selectAll:boolean, manualSelection:string[], includeLogo:boolean } } */
+  collectionSettings: Object.create(null),
+};
+
+function syncCollectionFirstFromCoreFor(collectionKey) {
+  const key = String(collectionKey || "");
+  if (!key) return;
+  const mode = state.selectionModeByCollection[key] || "none";
+  const manualSet = state.selectedNFTsByCollection[key];
+  const includeLogo = state.includeCollectionLogoInBuild.has(key);
+
+  collectionFirstState.collectionSettings[key] = {
+    selectAll: mode === "all",
+    manualSelection: Array.from(manualSet || []),
+    includeLogo,
+  };
+  if (manualSet && manualSet.size) collectionFirstState.selectedNFTs[key] = new Set(manualSet);
+  else delete collectionFirstState.selectedNFTs[key];
+
+  const interacted = mode !== "none" || includeLogo;
+  if (interacted) collectionFirstState.selectedCollections.add(key);
+  else collectionFirstState.selectedCollections.delete(key);
+}
+
+function syncCollectionFirstFromCoreAll() {
+  for (const c of state.collections || []) {
+    if (!c?.key) continue;
+    syncCollectionFirstFromCoreFor(c.key);
+  }
+}
+
+// ---------- Collection actions modal ----------
+let collectionActionsModal = {
+  overlay: null,
+  collectionKey: null,
+};
+
+function ensureCollectionActionsModal() {
+  if (collectionActionsModal.overlay) return collectionActionsModal.overlay;
+
+  const overlay = document.createElement("div");
+  overlay.id = "collectionActionsOverlay";
+  overlay.className = "collection-actions-overlay hidden";
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.innerHTML = `
+    <div class="collection-actions-modal" role="dialog" aria-modal="true" aria-labelledby="collectionActionsTitle">
+      <div class="collection-actions-header">
+        <div class="collection-actions-headerRow">
+          <button type="button" class="collection-actions-back" id="collectionActionsBack">← Select more collections</button>
+          <button type="button" class="collection-actions-close" id="collectionActionsCloseX" aria-label="Close">×</button>
+        </div>
+        <img class="collection-actions-topBanner" src="src/assets/images/header.png" alt="" aria-hidden="true" />
+        <h3 class="collection-actions-title" id="collectionActionsTitle"></h3>
+      </div>
+
+      <div class="collection-actions-body">
+        <p class="collection-actions-summary" id="collectionActionsSummary"></p>
+
+        <div class="collection-actions-btns">
+          <button type="button" class="btn" id="collectionActionsSelectAll">✅ Select All NFTs</button>
+          <button type="button" class="btn" id="collectionActionsSelectManual">🖐️ Select Manually</button>
+          <button type="button" class="btn" id="collectionActionsLogo">🖼️ Add Collection Logo</button>
+        </div>
+
+        <button type="button" class="btn btnPrimary collection-actions-build" id="collectionActionsBuild">🧩 BUILD GRID NOW</button>
+      </div>
+    </div>
+  `;
+
+  const stop = (e) => e.stopPropagation();
+  overlay.querySelector(".collection-actions-modal").addEventListener("click", stop);
+  overlay.addEventListener("click", () => closeCollectionActionsModal());
+
+  document.body.appendChild(overlay);
+  collectionActionsModal.overlay = overlay;
+
+  const back = document.getElementById("collectionActionsBack");
+  const closeX = document.getElementById("collectionActionsCloseX");
+  const btnAll = document.getElementById("collectionActionsSelectAll");
+  const btnManual = document.getElementById("collectionActionsSelectManual");
+  const btnLogo = document.getElementById("collectionActionsLogo");
+  const btnBuild = document.getElementById("collectionActionsBuild");
+
+  if (back) back.addEventListener("click", () => closeCollectionActionsModal());
+  if (closeX) closeX.addEventListener("click", () => closeCollectionActionsModal());
+
+  if (btnAll)
+    btnAll.addEventListener("click", () => {
+      const key = collectionActionsModal.collectionKey;
+      const c = state.collections.find((x) => x.key === key);
+      if (!key || !c || !(c.nfts || []).length) return;
+      state.selectionModeByCollection[key] = "all";
+      delete state.selectedNFTsByCollection[key];
+      syncSelectedKeysFromSelection();
+      syncCollectionFirstFromCoreFor(key);
+      renderCollectionsList();
+      syncCollectionActionsModalUi();
+      const exportBtn = $("gridExportBtn");
+      if (exportBtn) exportBtn.disabled = true;
+      syncGridFooterButtons(!hasItemsForBuild(), true);
+      renderTraitFiltersForSelected();
+      updateGuideGlow();
+    });
+
+  if (btnManual)
+    btnManual.addEventListener("click", () => {
+      const key = collectionActionsModal.collectionKey;
+      const c = state.collections.find((x) => x.key === key);
+      if (!key || !c || !(c.nfts || []).length) return;
+      // Reuse existing manual selection modal; close this one so focus/scroll-lock stays simple.
+      closeCollectionActionsModal();
+      openManualSelectionModal(key);
+    });
+
+  if (btnLogo)
+    btnLogo.addEventListener("click", () => {
+      const key = collectionActionsModal.collectionKey;
+      const c = state.collections.find((x) => x.key === key);
+      if (!key || !c) return;
+      const canAddLogo = !!(c.logo && toProxyUrl(c.logo));
+      if (!canAddLogo) return;
+      if (state.includeCollectionLogoInBuild.has(key)) state.includeCollectionLogoInBuild.delete(key);
+      else state.includeCollectionLogoInBuild.add(key);
+      syncCollectionFirstFromCoreFor(key);
+      renderCollectionsList();
+      syncCollectionActionsModalUi();
+      const exportBtn = $("gridExportBtn");
+      if (exportBtn) exportBtn.disabled = true;
+      syncGridFooterButtons(!hasItemsForBuild(), true);
+      renderTraitFiltersForSelected();
+      notifyBuildAffectedByLogoOrCollectionChange();
+      updateGuideGlow();
+    });
+
+  if (btnBuild)
+    btnBuild.addEventListener("click", () => {
+      if (!hasItemsForBuild()) return;
+      closeCollectionActionsModal();
+      buildGrid(); // existing builder merges selected collections + logo + customs
+    });
+
+  return overlay;
+}
+
+function openCollectionActionsModal(collectionKey) {
+  const c = state.collections.find((x) => x.key === collectionKey);
+  if (!c) return;
+  ensureCollectionActionsModal();
+  collectionActionsModal.collectionKey = c.key;
+  syncCollectionActionsModalUi();
+  const overlay = collectionActionsModal.overlay;
+  overlay.classList.remove("hidden");
+  overlay.classList.add("visible");
+  overlay.setAttribute("aria-hidden", "false");
+  syncBodyScrollLock();
+}
+
+function closeCollectionActionsModal() {
+  const overlay = collectionActionsModal.overlay;
+  if (!overlay) return;
+  // Let the scale/opacity transition play, then fully hide.
+  overlay.classList.remove("visible");
+  overlay.setAttribute("aria-hidden", "true");
+  collectionActionsModal.collectionKey = null;
+  setTimeout(() => {
+    // If it was reopened quickly, don't force-hide.
+    if (overlay.classList.contains("visible")) return;
+    overlay.classList.add("hidden");
+    syncBodyScrollLock();
+  }, 190);
+}
+
+function syncCollectionActionsModalUi() {
+  const key = collectionActionsModal.collectionKey;
+  const c = state.collections.find((x) => x.key === key);
+  const title = document.getElementById("collectionActionsTitle");
+  const summary = document.getElementById("collectionActionsSummary");
+  const btnAll = document.getElementById("collectionActionsSelectAll");
+  const btnManual = document.getElementById("collectionActionsSelectManual");
+  const btnLogo = document.getElementById("collectionActionsLogo");
+  const btnBuild = document.getElementById("collectionActionsBuild");
+
+  if (!c) {
+    if (title) title.textContent = "";
+    if (summary) summary.textContent = "";
+    if (btnBuild) btnBuild.disabled = true;
+    return;
+  }
+
+  const displayName = shortenForDisplay(c.name) || "Collection";
+  if (title) title.textContent = displayName;
+
+  const total = c.count ?? c.nfts?.length ?? 0;
+  const mode = state.selectionModeByCollection[c.key] || "none";
+  const manualN = state.selectedNFTsByCollection[c.key]?.size ?? 0;
+  const logoOn = state.includeCollectionLogoInBuild.has(c.key);
+  const canAddLogo = !!(c.logo && toProxyUrl(c.logo));
+  const hasNfts = (c.nfts || []).length > 0;
+
+  const selText =
+    mode === "all" ? "All NFTs selected" : mode === "manual" ? `${manualN} NFT${manualN === 1 ? "" : "s"} selected` : "No NFTs selected yet";
+  const logoText = canAddLogo ? (logoOn ? "Logo will be included" : "Logo not included") : "No collection logo available";
+  if (summary) summary.textContent = `${total} owned · ${selText} · ${logoText}`;
+
+  if (btnAll) btnAll.disabled = !hasNfts;
+  if (btnManual) btnManual.disabled = !hasNfts;
+  if (btnLogo) {
+    btnLogo.disabled = !canAddLogo;
+    btnLogo.setAttribute("aria-pressed", logoOn ? "true" : "false");
+    btnLogo.textContent = logoOn ? "🗑️ Remove Collection Logo" : "🖼️ Add Collection Logo";
+  }
+
+  // Global build button reflects multi-collection selection.
+  if (btnBuild) btnBuild.disabled = !hasItemsForBuild();
+}
+
 function renderCollectionsList() {
   const wrap = $("collectionsList");
   if (!wrap) return;
 
   wrap.innerHTML = "";
   syncSelectedKeysFromSelection();
+  syncCollectionFirstFromCoreAll();
+
+  // Collection-first: render cards; clicking a card opens a modal with actions.
+  const grid = document.createElement("div");
+  grid.className = "collection-grid";
 
   state.collections.forEach((c) => {
-    const row = document.createElement("div");
-    row.className = "collectionItem";
-    row.dataset.collectionKey = String(c.key || "").trim().toLowerCase();
-    if (state.selectedKeys.has(c.key)) row.classList.add("selected");
-    const selMode = state.selectionModeByCollection[c.key] || "none";
-    if (
-      selMode === "manual" &&
-      (state.selectedNFTsByCollection[c.key]?.size ?? 0) > 0
-    ) {
-      row.classList.add("collectionItem--manualPicks");
-    }
-
-    const body = document.createElement("div");
-    body.className = "collectionItemBody";
-
-    const logoWrap = buildCollectionLogoThumb(c);
-
-    const main = document.createElement("div");
-    main.className = "collectionItemMain";
-
-    const header = document.createElement("div");
-    header.className = "collectionItemHeader";
-
-    const nameRow = document.createElement("div");
-    nameRow.className = "collectionNameRow";
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "collection-card";
+    card.dataset.collectionKey = String(c.key || "").trim().toLowerCase();
 
     const count = c.count ?? c.nfts?.length ?? 0;
     const displayName = shortenForDisplay(c.name) || "Unknown Collection";
+    const hasNfts = (c.nfts || []).length > 0;
+    const mode = state.selectionModeByCollection[c.key] || "none";
+    const selectedManualN = state.selectedNFTsByCollection[c.key]?.size ?? 0;
+    const logoOn = state.includeCollectionLogoInBuild.has(c.key);
+    const isSelected = mode !== "none" || logoOn;
 
-    const name = document.createElement("div");
-    name.className = "collectionName";
-    name.textContent = displayName;
-    nameRow.appendChild(name);
-
-    const selSuffix = getCollectionSelectionInlineSuffix(c);
-    if (selSuffix) {
-      const selInline = document.createElement("span");
-      selInline.className = "collectionSelectionInline";
-      selInline.textContent = selSuffix;
-      nameRow.appendChild(selInline);
+    // Edge-case: collections with no NFTs can't be selected.
+    if (!hasNfts) {
+      card.disabled = true;
+      card.title = "No NFTs found for this collection";
+      card.classList.add("collection-card--disabled");
     }
 
-    const countBadge = document.createElement("span");
-    countBadge.className = "collectionCount";
-    countBadge.textContent = `${count} owned`;
+    if (state.selectedKeys.has(c.key)) card.classList.add("selected");
+    if (mode === "manual" && selectedManualN > 0) card.classList.add("collection-card--manualPicks");
 
-    header.appendChild(nameRow);
-    header.appendChild(countBadge);
+    // Quick "Remove" so users can unselect without opening the modal.
+    if (isSelected) {
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "collection-card-remove";
+      removeBtn.textContent = "✖ Remove";
+      removeBtn.title = "Remove this collection from selection";
+      removeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const k = c.key;
+        state.selectionModeByCollection[k] = "none";
+        delete state.selectedNFTsByCollection[k];
+        state.includeCollectionLogoInBuild.delete(k);
+        syncSelectedKeysFromSelection();
+        syncCollectionFirstFromCoreFor(k);
+        renderCollectionsList();
+        const exportBtn = $("gridExportBtn");
+        if (exportBtn) exportBtn.disabled = true;
+        syncGridFooterButtons(!hasItemsForBuild(), true);
+        renderTraitFiltersForSelected();
+        notifyBuildAffectedByLogoOrCollectionChange();
+        updateGuideGlow();
+      });
+      card.appendChild(removeBtn);
+      card.classList.add("collection-card--hasRemove");
+    }
 
-    const actions = document.createElement("div");
-    actions.className = "collectionItemActions";
+    const logoWrap = buildCollectionLogoThumb(c);
+    logoWrap.classList.add("collection-card-logo");
 
-    const btnAll = document.createElement("button");
-    btnAll.type = "button";
-    btnAll.className = "btn btnSmall collectionActionBtn";
-    btnAll.textContent = "Select All";
-    btnAll.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if ((c.nfts || []).length === 0) return;
-      state.selectionModeByCollection[c.key] = "all";
-      delete state.selectedNFTsByCollection[c.key];
-      syncSelectedKeysFromSelection();
-      renderCollectionsList();
-      const buildBtn = $("gridBuildBtn");
-      const exportBtn = $("gridExportBtn");
-      if (buildBtn) buildBtn.disabled = !hasItemsForBuild();
-      if (exportBtn) exportBtn.disabled = true;
-      syncGridFooterButtons(!hasItemsForBuild(), true);
-      renderTraitFiltersForSelected();
-      updateGuideGlow();
+    const name = document.createElement("div");
+    name.className = "collection-card-name";
+    name.textContent = displayName;
+
+    const meta = document.createElement("div");
+    meta.className = "collection-card-meta";
+
+    const countEl = document.createElement("span");
+    countEl.className = "collection-card-count";
+    countEl.textContent = `${count}`;
+
+    const suffix = getCollectionSelectionInlineSuffix(c);
+    const selEl = document.createElement("span");
+    selEl.className = "collection-card-selection";
+    selEl.textContent =
+      suffix ||
+      (mode === "none"
+        ? "Tap to choose"
+        : mode === "all"
+          ? "All selected"
+          : `${selectedManualN} selected`);
+
+    meta.appendChild(countEl);
+    meta.appendChild(selEl);
+
+    card.appendChild(logoWrap);
+    card.appendChild(name);
+    card.appendChild(meta);
+
+    card.addEventListener("click", () => {
+      if (!hasNfts) return;
+      openCollectionActionsModal(c.key);
     });
 
-    const btnManual = document.createElement("button");
-    btnManual.type = "button";
-    btnManual.className = "btn btnSmall collectionActionBtn";
-    btnManual.textContent = "Select Manually";
-    btnManual.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openManualSelectionModal(c.key);
-    });
-
-    const btnLogo = document.createElement("button");
-    btnLogo.type = "button";
-    const logoOn = state.includeCollectionLogoInBuild.has(c.key);
-    const canAddLogo = !!(c.logo && toProxyUrl(c.logo));
-    btnLogo.className =
-      "btn btnSmall collectionActionBtn collectionBtnPickLogo" + (logoOn ? " collectionBtnPickLogo--on" : "");
-    btnLogo.textContent = "Add logo";
-    btnLogo.disabled = !canAddLogo;
-    btnLogo.setAttribute("aria-pressed", logoOn ? "true" : "false");
-    if (!canAddLogo) btnLogo.title = "No collection logo yet — wait for metadata or try again after load";
-    else btnLogo.title = logoOn ? "Remove collection logo from collage" : "Include collection logo as first tile for this collection";
-    btnLogo.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!canAddLogo) return;
-      const k = c.key;
-      if (state.includeCollectionLogoInBuild.has(k)) state.includeCollectionLogoInBuild.delete(k);
-      else state.includeCollectionLogoInBuild.add(k);
-      renderCollectionsList();
-      const buildBtn = $("gridBuildBtn");
-      const exportBtn = $("gridExportBtn");
-      if (buildBtn) buildBtn.disabled = !hasItemsForBuild();
-      if (exportBtn) exportBtn.disabled = true;
-      syncGridFooterButtons(!hasItemsForBuild(), true);
-      renderTraitFiltersForSelected();
-      notifyBuildAffectedByLogoOrCollectionChange();
-      updateGuideGlow();
-    });
-
-    const btnNone = document.createElement("button");
-    btnNone.type = "button";
-    btnNone.className = "collectionBtnSelectNone";
-    btnNone.textContent = "None";
-    btnNone.addEventListener("click", (e) => {
-      e.stopPropagation();
-      state.selectionModeByCollection[c.key] = "none";
-      delete state.selectedNFTsByCollection[c.key];
-      state.includeCollectionLogoInBuild.delete(c.key);
-      syncSelectedKeysFromSelection();
-      renderCollectionsList();
-      const buildBtn = $("gridBuildBtn");
-      const exportBtn = $("gridExportBtn");
-      if (buildBtn) buildBtn.disabled = !hasItemsForBuild();
-      if (exportBtn) exportBtn.disabled = true;
-      syncGridFooterButtons(!hasItemsForBuild(), true);
-      renderTraitFiltersForSelected();
-      notifyBuildAffectedByLogoOrCollectionChange();
-      updateGuideGlow();
-    });
-
-    actions.appendChild(btnAll);
-    actions.appendChild(btnManual);
-    actions.appendChild(btnLogo);
-    actions.appendChild(btnNone);
-
-    main.appendChild(header);
-    main.appendChild(actions);
-    body.appendChild(logoWrap);
-    body.appendChild(main);
-    row.appendChild(body);
-    wrap.appendChild(row);
+    grid.appendChild(card);
   });
+
+  wrap.appendChild(grid);
 
   maybeRefreshManualModalGrid();
   syncManualSelectionModalHeader();
@@ -3197,7 +3388,25 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
     }
 
     const paddedClassic = buildClassicPaddedItems(usedItems, totalSlots);
-    state.currentGridItems = paddedClassic;
+    // Remove trailing fully-empty rows (pure padding) so the grid doesn't render
+    // a bottom "free line" when the last tiles are empty.
+    let lastNonEmptyIndex = -1;
+    for (let i = paddedClassic.length - 1; i >= 0; i--) {
+      if (!isGridSlotEmpty(paddedClassic[i])) {
+        lastNonEmptyIndex = i;
+        break;
+      }
+    }
+    const neededRows = Math.max(1, Math.ceil((lastNonEmptyIndex + 1) / Math.max(1, cols)));
+    const desiredTotalSlots = neededRows * cols;
+    let trimmedPaddedClassic = paddedClassic;
+    if (desiredTotalSlots < totalSlots) {
+      rows = neededRows;
+      totalSlots = desiredTotalSlots;
+      trimmedPaddedClassic = paddedClassic.slice(0, totalSlots);
+    }
+
+    state.currentGridItems = trimmedPaddedClassic;
     state.gridLayoutMeta = {
       mode: "classic",
       layoutId: "classic",
@@ -3210,20 +3419,20 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
     };
 
     prepareGridForClassic(grid, cols, rows);
-    const denseForLog = paddedClassic.filter((it) => !isGridSlotEmpty(it));
+    const denseForLog = trimmedPaddedClassic.filter((it) => !isGridSlotEmpty(it));
     const noImageCount = denseForLog.filter((it) => !it?.image).length;
     if (DEV && noImageCount > 0) {
       console.log(`buildGrid: ${noImageCount} tile(s) have no image (using placeholder)`);
     }
 
-    const initialCount = Math.min(INITIAL_TILE_COUNT, paddedClassic.length);
+    const initialCount = Math.min(INITIAL_TILE_COUNT, trimmedPaddedClassic.length);
     for (let i = 0; i < initialCount; i++) {
-      const tile = makeGridTileForClassicSlot(paddedClassic[i], String(i));
+      const tile = makeGridTileForClassicSlot(trimmedPaddedClassic[i], String(i));
       clearTileGridPlacement(tile);
       setTileDraggableForLayout(tile);
       grid.appendChild(tile);
     }
-    scheduleProgressiveClassicPaddedGrid(grid, paddedClassic, buildId, 0);
+    scheduleProgressiveClassicPaddedGrid(grid, trimmedPaddedClassic, buildId, 0);
     updateImageTotalsAfterGridBuild(denseForLog);
     syncOrderedItemsFromGrid();
     requestAnimationFrame(syncWatermarkDOMToOneTile);
@@ -4509,19 +4718,27 @@ async function exportPNG() {
     }
 
     try {
-      const wmImg = await loadImageWithRetry("src/assets/images/pblo.png", 2, 8000);
+      const pbloImg = await loadImageWithRetry("src/assets/images/pblo.png", 2, 8000);
       const first = tiles[0];
-      const fr = first.getBoundingClientRect();
-      const wx = pad + (fr.left - gridRect.left);
-      const wy = pad + (fr.top - gridRect.top);
-      const ww = fr.width;
-      const wh0 = fr.height;
-      const { x: wmx, y: wmy, w: wmw } = exportTileDrawRect(wx, wy, ww, wh0);
-      const ratio = wmImg.naturalHeight / wmImg.naturalWidth;
-      const wmH = Math.round(wmw * ratio);
-      ctx.drawImage(wmImg, wmx, wmy, wmw, wmH);
+      if (first && pbloImg && pbloImg.naturalWidth > 0) {
+        const fr = first.getBoundingClientRect();
+        const wx = pad + (fr.left - gridRect.left);
+        const wy = pad + (fr.top - gridRect.top);
+        const ww = fr.width;
+        const wh0 = fr.height;
+        const { x: wmx, y: wmy, w: wmw } = exportTileDrawRect(wx, wy, ww, wh0);
+        const ratio = pbloImg.naturalHeight / pbloImg.naturalWidth;
+        let drawW = wmw;
+        let drawH = Math.round(drawW * ratio);
+        const pbloCap = wh0 * 0.52;
+        if (drawH > pbloCap) {
+          drawH = pbloCap;
+          drawW = (pbloImg.naturalWidth / pbloImg.naturalHeight) * drawH;
+        }
+        ctx.drawImage(pbloImg, wmx, wmy, drawW, drawH);
+      }
     } catch (e) {
-      console.warn("Watermark PNG failed to load for export:", e);
+      console.warn("pblo overlay failed for PNG export:", e);
     }
 
     await saveCanvasPNG(canvas, "lo-grid.jpg");
@@ -4532,6 +4749,316 @@ async function exportPNG() {
     console.error(err);
     setStatus("😕 Oops, export failed. Try again?");
   }
+}
+
+// ---------- GIF Export (Create GIF) ----------
+// Note: for gif.js "quality", LOWER numbers = better quality (but slower/bigger).
+var GRID_GIF_SIZE = 512;
+var GRID_GIF_CONFIG = {
+  size: 512,
+  maxFrames: 25,
+  delay: 350,
+  // Lower = better quality in gif.js (but slower / larger). Slight bump.
+  quality: 10,
+};
+var GRID_GIF_MAX_NFT_FRAMES = 200;
+var gridGifLastSpeedPos = 50;
+
+function gridGifBranding() {
+  var L = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  if (!L || typeof L.drawWatermark !== "function" || typeof L.createFinalFrameImageData !== "function") {
+    throw new Error("GIF branding utilities failed to load. Refresh the page.");
+  }
+  return L;
+}
+
+function getGridGifNftTiles() {
+  // Only tile types that represent NFTs/customs (not filler/empty slots).
+  // Some tiles use dataset.kind === "missing" when assets fail to load.
+  const tiles = queryAllGridTiles();
+  return tiles.filter((t) => {
+    const k = t?.dataset?.kind;
+    return k === "nft" || k === "missing";
+  });
+}
+
+function gridGifClamp(n, lo, hi) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function gridGifSpeedPosToNftDelayMs(pos) {
+  // Mirrors OGT/Quirks mapping so "feel" matches.
+  var p = gridGifClamp(Math.round(parseInt(String(pos), 10) || 0), 0, 100);
+  if (p <= 50) {
+    return Math.round(2000 + (GRID_GIF_CONFIG.delay - 2000) * (p / 50));
+  }
+  return Math.round(GRID_GIF_CONFIG.delay + (150 - GRID_GIF_CONFIG.delay) * ((p - 50) / 50));
+}
+
+function gridGifExportLimitFrames(frames, maxFrames) {
+  var cap =
+    typeof maxFrames === "number" &&
+    isFinite(maxFrames) &&
+    maxFrames > 0
+      ? maxFrames
+      : frames.length;
+  if (frames.length <= cap) return frames.slice();
+  var step = Math.ceil(frames.length / cap);
+  return frames.filter(function (_, i) {
+    return i % step === 0;
+  });
+}
+
+function gridGifEffectiveNftFrameCount(orderedLength, maxPick) {
+  if (orderedLength <= 0) return 0;
+  var cap = Math.min(
+    Math.max(1, Math.floor(maxPick)),
+    GRID_GIF_MAX_NFT_FRAMES,
+    orderedLength
+  );
+  var phantom = [];
+  for (var i = 0; i < orderedLength; i++) phantom.push(i);
+  return gridGifExportLimitFrames(phantom, cap).length;
+}
+
+function gridGifFormatSeconds(ms) {
+  var sec = Math.max(0, Math.round(ms)) / 1000;
+  var d = sec >= 10 ? 1 : 2;
+  return Number(sec.toFixed(d)).toString() + " s";
+}
+
+function gridGifGetWorkerScriptUrl() {
+  try {
+    return new URL("../OGT/public/gif.worker.js", document.baseURI || window.location.href).href;
+  } catch (e) {
+    return "../OGT/public/gif.worker.js";
+  }
+}
+
+function gridGifMakeCanvas(size, bg) {
+  var canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  var ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported.");
+  // Prefer higher quality resampling when we downscale NFT art into the GIF frame.
+  try {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+  } catch (_) {
+    // Older browsers may not support imageSmoothingQuality; ignore.
+  }
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, size, size);
+  return canvas;
+}
+
+function drawImageContain(ctx, img, x, y, w, h) {
+  if (!img || !img.naturalWidth || !img.naturalHeight) return;
+  var iw = img.naturalWidth;
+  var ih = img.naturalHeight;
+  var scale = Math.min(w / iw, h / ih);
+  var dw = iw * scale;
+  var dh = ih * scale;
+  var dx = x + (w - dw) / 2;
+  var dy = y + (h - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+function gridGifOpenModal(on) {
+  var m = $("gridGifOptionsModal");
+  if (!m) return;
+  m.classList.toggle("hidden", !on);
+  m.setAttribute("aria-hidden", on ? "false" : "true");
+}
+
+function gridGifOpenCreating(on) {
+  var m = $("gridGifCreatingModal");
+  if (!m) return;
+  m.classList.toggle("hidden", !on);
+  m.setAttribute("aria-hidden", on ? "false" : "true");
+}
+
+async function exportGIF() {
+  var tiles = getGridGifNftTiles();
+  var nftCount = tiles.length;
+  if (nftCount === 0) {
+    setStatus("😕 Nothing to export yet — build a grid first!");
+    return;
+  }
+
+  // Prevent multiple concurrent exports.
+  var gifBtn = $("gridGifBtn");
+  var pngBtn = $("gridExportBtn");
+  if (gifBtn) gifBtn.disabled = true;
+  if (pngBtn) pngBtn.disabled = true;
+
+  var maxPick = parseInt(String($("gridGifOptionsMax")?.value || GRID_GIF_CONFIG.maxFrames), 10) || GRID_GIF_CONFIG.maxFrames;
+  var speedPos = parseInt(String($("gridGifOptionsSpeed")?.value || gridGifLastSpeedPos), 10) || gridGifLastSpeedPos;
+  gridGifLastSpeedPos = speedPos;
+
+  // Ensure images are ready to draw.
+  await waitForExportImages(tiles);
+
+  var bg = "#0B0F1A";
+  var size = GRID_GIF_SIZE;
+
+  var delayMs = gridGifSpeedPosToNftDelayMs(speedPos);
+  var frameIndices = [];
+  var cap = Math.min(Math.max(1, Math.floor(maxPick)), GRID_GIF_MAX_NFT_FRAMES, nftCount);
+  var phantom = [];
+  for (var i = 0; i < nftCount; i++) phantom.push(i);
+  var limited = gridGifExportLimitFrames(phantom, cap);
+  frameIndices = limited;
+  var eff = frameIndices.length;
+
+  gridGifOpenCreating(true);
+  setStatus("🎞️ Creating GIF…");
+
+  try {
+    if (typeof window.GIF !== "function") {
+      throw new Error("GIF library not loaded.");
+    }
+
+    var L = gridGifBranding();
+
+    var gif = new window.GIF({
+      workers: 2,
+      quality: GRID_GIF_CONFIG.quality,
+      repeat: 0,
+      workerScript: gridGifGetWorkerScriptUrl(),
+      width: size,
+      height: size,
+    });
+
+    gif.on("progress", function (p) {
+      var pct = Math.max(0, Math.min(100, Math.round((typeof p === "number" ? p : 0) * 100)));
+      setStatus("Encoding GIF " + pct + "%");
+    });
+
+    gif.on("finished", function (blob) {
+      gridGifOpenCreating(false);
+      setStatus("✨ GIF saved! Check your downloads");
+      updateGuideGlow();
+      syncGridFooterButtons(!hasItemsForBuild(), false);
+      try {
+        var outBlob = blob && blob.type === "image/gif" ? blob : new Blob([blob], { type: "image/gif" });
+        var url = URL.createObjectURL(outBlob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "lo-grid.gif";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 4000);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    // Opening brand frame: first collection logo tile (no pblo overlay).
+    var brandCanvas = gridGifMakeCanvas(size, bg);
+    var bctx = brandCanvas.getContext("2d");
+    // Collection-logo tiles have dataset.key like "logo_<contract>" (see getGridItemKey()).
+    var firstLogoIndex = -1;
+    for (var li = 0; li < tiles.length; li++) {
+      var k = tiles[li]?.dataset?.key;
+      if (typeof k === "string" && k.startsWith("logo_")) {
+        firstLogoIndex = li;
+        break;
+      }
+    }
+    var logoTile = firstLogoIndex >= 0 ? tiles[firstLogoIndex] : tiles[0];
+    var logoImg = logoTile ? logoTile.querySelector("img") : null;
+    if (isImgUsable(logoImg)) {
+      drawImageCover(bctx, logoImg, 0, 0, size, size);
+    }
+    L.drawWatermark(bctx, size, size);
+    var brandIdata = bctx.getImageData(0, 0, size, size);
+    gif.addFrame(brandIdata, { delay: 1000, copy: true });
+
+    // NFT frames.
+    for (var fi = 0; fi < frameIndices.length; fi++) {
+      var idx = frameIndices[fi];
+      var tile = tiles[idx];
+      var img = tile ? tile.querySelector("img") : null;
+      var canvas = gridGifMakeCanvas(size, bg);
+      var ctx = canvas.getContext("2d");
+      if (isImgUsable(img)) {
+        drawImageContain(ctx, img, 0, 0, size, size);
+      }
+      L.drawWatermark(ctx, size, size);
+      var idata = ctx.getImageData(0, 0, size, size);
+      gif.addFrame(idata, { delay: delayMs, copy: true });
+      if ((fi & 3) === 3) {
+        await new Promise(function (r) {
+          setTimeout(r, 0);
+        });
+      }
+    }
+
+    // Final promo frame (always last) — white bg + black text.
+    var finalIdata = L.createFinalFrameImageData(size, size);
+    var finalDelay =
+      typeof L.finalFrameDelayMs === "function"
+        ? L.finalFrameDelayMs(delayMs)
+        : Math.round(delayMs * 1.5) + 500;
+    gif.addFrame(finalIdata, { delay: finalDelay, copy: true });
+
+    gif.render();
+  } catch (e) {
+    gridGifOpenCreating(false);
+    setStatus("😕 GIF export failed. Try again?");
+    console.error(e);
+    syncGridFooterButtons(!hasItemsForBuild(), false);
+  }
+}
+
+function updateGridGifOptionsUi() {
+  var tiles = getGridGifNftTiles();
+  var nftCount = tiles.length;
+  var maxInput = $("gridGifOptionsMax");
+  var speedEl = $("gridGifOptionsSpeed");
+  var summary = $("gridGifOptionsSummary");
+  var duration = $("gridGifOptionsDuration");
+  if (!maxInput || !speedEl) return;
+
+  var cap = GRID_GIF_MAX_NFT_FRAMES;
+  var defaultMaxPick = Math.min(nftCount, cap);
+  maxInput.value = String(defaultMaxPick || 1);
+
+  var speedPos = parseInt(String(speedEl.value || gridGifLastSpeedPos), 10) || gridGifLastSpeedPos;
+  var maxPick = parseInt(String(maxInput.value), 10) || defaultMaxPick;
+  var eff = gridGifEffectiveNftFrameCount(nftCount, maxPick);
+  var delayMs = gridGifSpeedPosToNftDelayMs(speedPos);
+  var Lbr = typeof window !== "undefined" ? window.LO_GIF_BRANDING : null;
+  var finalMs =
+    Lbr && typeof Lbr.finalFrameDelayMs === "function"
+      ? Lbr.finalFrameDelayMs(delayMs)
+      : Math.round(delayMs * 1.5) + 500;
+  var totalMs = 1000 + eff * delayMs + finalMs;
+
+  if (summary) {
+    summary.textContent =
+      "Your grid has " +
+      nftCount +
+      " NFT tiles. This will export " +
+      eff +
+      " NFT frames plus the opening brand frame and a closing CTA frame.";
+  }
+  if (duration) {
+    duration.textContent = "Estimated length: " + gridGifFormatSeconds(totalMs);
+  }
+}
+
+function openGridGifOptions() {
+  updateGridGifOptionsUi();
+  gridGifOpenModal(true);
+  var maxInput = $("gridGifOptionsMax");
+  if (maxInput) maxInput.focus();
 }
 
 function getComputedGridCols(gridEl) {
@@ -4696,6 +5223,33 @@ function toggleTraitOrderSection() {
   const gridExportBtn = $("gridExportBtn");
   if (gridBuildBtn) gridBuildBtn.addEventListener("click", buildGrid);
   if (gridExportBtn) gridExportBtn.addEventListener("click", exportPNG);
+
+  const gridGifBtn = $("gridGifBtn");
+  if (gridGifBtn) gridGifBtn.addEventListener("click", openGridGifOptions);
+
+  const gifOptionsModal = $("gridGifOptionsModal");
+  const gifOptionsClose = $("gridGifOptionsClose");
+  const gifOptionsCancel = $("gridGifOptionsCancel");
+  const gifOptionsConfirm = $("gridGifOptionsConfirm");
+  const gifMaxInput = $("gridGifOptionsMax");
+  const gifSpeedInput = $("gridGifOptionsSpeed");
+
+  if (gifOptionsModal) {
+    gifOptionsModal.addEventListener("click", (e) => {
+      // Close only when clicking the overlay itself.
+      if (e.target === gifOptionsModal) gridGifOpenModal(false);
+    });
+  }
+  if (gifOptionsClose) gifOptionsClose.addEventListener("click", () => gridGifOpenModal(false));
+  if (gifOptionsCancel) gifOptionsCancel.addEventListener("click", () => gridGifOpenModal(false));
+  if (gifOptionsConfirm)
+    gifOptionsConfirm.addEventListener("click", () => {
+      gridGifOpenModal(false);
+      exportGIF();
+    });
+
+  if (gifMaxInput) gifMaxInput.addEventListener("input", updateGridGifOptionsUi);
+  if (gifSpeedInput) gifSpeedInput.addEventListener("input", updateGridGifOptionsUi);
 
   // Step navigation
   const collectionsBackBtn = $("collectionsBackBtn");

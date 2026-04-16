@@ -2243,10 +2243,7 @@ body.dark .tile[data-kind="empty"]{
     animation:loOrbitRing 2.5s linear infinite;
     -webkit-animation:loOrbitRing 2.5s linear infinite;
   }
-  #loadingOverlay.visible .lo-orbit-img{
-    animation:loOrbitImg 2.5s linear infinite;
-    -webkit-animation:loOrbitImg 2.5s linear infinite;
-  }
+  /* LO character stays stationary (no spin) */
   #loadingOverlay.visible .lo-spinner{
     animation:loSpin .9s linear infinite;
     -webkit-animation:loSpin .9s linear infinite;
@@ -2261,26 +2258,39 @@ body.dark .tile[data-kind="empty"]{
   }
   #loadingOverlay .lo-orbit-ring{
     position:absolute;
-    width:210px;
-    height:210px;
+    width:236px;
+    height:236px;
     left:50%;
     top:50%;
-    margin-left:-105px;
-    margin-top:-105px;
-    border:3px dashed rgba(255,255,255,.35);
+    margin-left:-118px;
+    margin-top:-118px;
+    border: none;
     border-radius:50%;
     pointer-events:none;
     z-index:0;
     will-change:transform;
   }
+  /* Gradient ring that rotates around LO (red -> green), with a clear gap */
+  #loadingOverlay .lo-orbit-ring::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background: conic-gradient(from 0deg, #e53935, #ff9800, #ffeb3b, #4caf50);
+    /* Cut out the middle so it becomes a ring stroke */
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 10px));
+    opacity: .95;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,.22));
+  }
   #loadingOverlay .lo-orbit-img{
     position:absolute;
-    width:104px;
-    height:104px;
+    width:112px;
+    height:112px;
     left:50%;
     top:50%;
-    margin-left:-52px;
-    margin-top:-52px;
+    margin-left:-56px;
+    margin-top:-56px;
     object-fit:contain;
     transform-origin:center center;
     pointer-events:none;
@@ -2294,15 +2304,7 @@ body.dark .tile[data-kind="empty"]{
     from{ -webkit-transform:rotate(0deg); transform:rotate(0deg); }
     to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
   }
-  /* LO image spins so user sees it animate */
-  @keyframes loOrbitImg{
-    from{ transform:rotate(0deg); }
-    to{ transform:rotate(360deg); }
-  }
-  @-webkit-keyframes loOrbitImg{
-    from{ -webkit-transform:rotate(0deg); transform:rotate(0deg); }
-    to{ -webkit-transform:rotate(360deg); transform:rotate(360deg); }
-  }
+  /* (No LO image spin) */
   #loadingOverlay .lo-message{
     position:relative;
     z-index:2;
@@ -2658,13 +2660,19 @@ body.dark .manual-selection-modal{
 }
 .manual-selection-header{
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px 16px 14px;
   border-bottom: 1px solid rgba(109, 224, 255, 0.28);
   flex-shrink: 0;
   background: rgba(76, 111, 255, 0.14);
+}
+.manual-selection-headerTop{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 body.dark .manual-selection-header{
   border-bottom-color: rgba(0, 255, 213, 0.22);
@@ -2672,18 +2680,27 @@ body.dark .manual-selection-header{
 }
 .manual-selection-headerMain{
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 10px;
   min-width: 0;
   flex: 1;
+  width: 100%;
 }
-.manual-selection-logoSlot{
-  flex-shrink: 0;
+.manual-selection-headerBanner{
+  width: 100%;
+  max-width: 520px;
+  height: 86px;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
 }
-.manual-selection-logoSlot .collectionLogoWrap{
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+@media (max-width: 520px){
+  .manual-selection-headerBanner{
+    height: 78px;
+  }
 }
 .manual-selection-title{
   margin: 0;
@@ -2693,7 +2710,8 @@ body.dark .manual-selection-header{
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+  width: 100%;
+  text-align: center;
   min-width: 0;
 }
 .manual-selection-close{
@@ -3239,4 +3257,529 @@ body.dark .manual-selection-footer{
 }
 .stage.settings-canvas--light .stageCaptionOverlay--shadow{
   text-shadow: 0 1px 3px rgba(255,255,255,0.8);
+}
+
+/* ==========================
+   GIF export modals
+   ========================== */
+.grid-gif-options-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+}
+.grid-gif-options-modal.hidden{
+  display: none;
+}
+
+.grid-gif-options-panel{
+  width: 100%;
+  max-width: 520px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.78);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  padding: 14px 14px 16px;
+}
+
+.grid-gif-options-head{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.grid-gif-options-title{
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.grid-gif-options-close{
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.82);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+}
+.grid-gif-options-close:hover{
+  color: #fff;
+}
+
+.grid-gif-options-summary{
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+}
+
+.grid-gif-options-label{
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: rgba(255,255,255,0.86);
+}
+.grid-gif-options-label--section{
+  margin-top: 12px;
+}
+
+.grid-gif-options-input{
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #fff;
+  font: inherit;
+  margin-bottom: 8px;
+}
+.grid-gif-options-input:focus{
+  outline: none;
+  border-color: rgba(223,255,0,0.45);
+  box-shadow: 0 0 0 3px rgba(223,255,0,0.12);
+}
+
+.grid-gif-options-speed-scale{
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.65);
+  margin: 0 2px 4px;
+}
+
+.grid-gif-options-range-row{
+  margin-bottom: 10px;
+}
+
+.grid-gif-options-range{
+  width: 100%;
+}
+
+.grid-gif-options-duration{
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 800;
+  min-height: 1.1em;
+}
+
+.grid-gif-options-actions{
+  display: flex;
+  gap: 10px;
+}
+.grid-gif-options-actions .btn{
+  flex: 1;
+}
+
+.grid-gif-creating-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 100050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+}
+.grid-gif-creating-modal.hidden{
+  display: none;
+}
+.grid-gif-creating-panel{
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.78);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  padding: 16px;
+  text-align: center;
+}
+.grid-gif-creating-title{
+  margin: 0 0 12px;
+  font-size: 1.0rem;
+  font-weight: 900;
+}
+.grid-gif-creating-spinner{
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.18);
+  border-top-color: rgba(223,255,0,0.75);
+  animation: gridGifSpin 0.75s linear infinite;
+}
+@keyframes gridGifSpin{
+  to{ transform: rotate(360deg); }
+}
+
+/* ==========================
+   Collection-first grid + modal
+   ========================== */
+/* IMPORTANT: `#collectionsList` used to be a grid itself (old UI).
+   In collection-first mode, we render our own `.collection-grid` inside it,
+   so the parent must be a normal block container; otherwise the grid only
+   occupies one column (looks like half width). */
+.collectionList.collections-container{
+  display: block;
+}
+
+.collection-grid{
+  display: grid;
+  /* Fills the available padded panel space nicely on desktop + iPhone */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 6px 0 2px;
+  width: 100%;
+  align-items: stretch;
+  justify-items: stretch;
+}
+@media (min-width: 860px){
+  .collection-grid{
+    /* Desktop/Mac: always show a few across (no single-column) */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+/* iPhone/small phones: 2 columns */
+@media (max-width: 420px){
+  .collection-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 4px;
+  }
+}
+/* Larger phones: allow 3 columns when it fits */
+@media (min-width: 421px) and (max-width: 640px){
+  .collection-grid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 4px;
+  }
+}
+
+.collection-card{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.12);
+  border-radius: 16px;
+  padding: 10px 10px 10px;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  box-shadow: 0 10px 22px rgba(0,0,0,.18);
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.collection-card{
+  min-height: 330px; /* tighter overall height */
+}
+@media (max-width: 520px){
+  .collection-card{
+    min-height: 310px; /* tighter overall height */
+  }
+}
+.collection-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(109,224,255,.45);
+  box-shadow: 0 14px 28px rgba(0,0,0,.22), 0 0 0 1px rgba(109,224,255,.12);
+  background: rgba(109,224,255,.08);
+}
+body.dark .collection-card:hover{
+  border-color: rgba(0,255,213,.35);
+  box-shadow: 0 14px 28px rgba(0,0,0,.28), 0 0 0 1px rgba(0,255,213,.10);
+  background: rgba(0,255,213,.06);
+}
+.collection-card:active{
+  transform: translateY(-1px) scale(.99);
+}
+.collection-card:focus-visible{
+  outline: 3px solid rgba(109,224,255,.9);
+  outline-offset: 3px;
+}
+body.dark .collection-card:focus-visible{
+  outline-color: rgba(0,255,213,.9);
+}
+
+.collection-card--disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+.collection-card-logo{
+  width: 220px;
+  height: 220px;
+}
+.collection-card-logo.collectionLogoWrap{
+  border-radius: 14px;
+}
+/* Ensure the actual logo wrapper (and its <img>) scales up inside cards,
+   even if other global `.collectionLogoWrap` rules would otherwise win. */
+.collection-card .collectionLogoWrap{
+  width: 220px;
+  height: 220px;
+}
+@media (max-width: 520px){
+  .collection-card-logo{
+    width: 200px;
+    height: 200px;
+  }
+  .collection-card .collectionLogoWrap{
+    width: 200px;
+    height: 200px;
+  }
+}
+.collection-card-name{
+  font-weight: 950;
+  font-size: 20px;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 520px){
+  .collection-card-name{
+    font-size: 18px;
+  }
+}
+.collection-card-meta{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 850;
+  color: rgba(255,255,255,.82);
+}
+.collection-card-count{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.16);
+  font-variant-numeric: tabular-nums;
+}
+.collection-card-selection{
+  opacity: .95;
+}
+
+.collection-card.selected{
+  border-color: rgba(255, 221, 85, 0.95);
+  /* Yellow ring around the whole card (including its padding area) */
+  box-shadow:
+    0 0 0 3px rgba(255, 221, 85, 0.95),
+    0 14px 30px rgba(0,0,0,.22);
+  background: rgba(255, 221, 85, 0.10);
+}
+body.dark .collection-card.selected{
+  border-color: rgba(255, 235, 120, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(255, 235, 120, 0.95),
+    0 14px 32px rgba(0,0,0,.28);
+  background: rgba(255, 235, 120, 0.08);
+}
+.collection-card.collection-card--manualPicks{
+  border-color: rgba(255, 221, 85, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(255, 221, 85, 0.95),
+    0 14px 30px rgba(0,0,0,.22);
+  background: rgba(255, 221, 85, 0.10);
+}
+
+.collection-card-remove{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.92);
+  font-size: 13px;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0,0,0,.20);
+}
+.collection-card-remove:hover{
+  background: rgba(0,0,0,.48);
+  border-color: rgba(255,255,255,.32);
+}
+.collection-card-remove:active{
+  transform: translateY(1px);
+}
+body.dark .collection-card-remove{
+  background: rgba(0,0,0,.45);
+  border-color: rgba(0,255,213,.22);
+}
+
+/* Collection actions modal */
+.collection-actions-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 100020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  /* Match the first-visit disclaimer overlay */
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+body.dark .collection-actions-overlay{
+  background: rgba(0,0,0,.6);
+}
+.collection-actions-overlay.hidden{
+  display: none;
+}
+.collection-actions-modal{
+  width: 100%;
+  max-width: 520px;
+  /* Match `.disclaimer-modal` (first popup) */
+  border-radius: 24px;
+  border: 2px solid rgba(255,255,255,.3);
+  background: #4c6fff;
+  box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  overflow: hidden;
+  transform: scale(.96);
+  opacity: 1;
+  transition: transform .18s ease;
+  pointer-events: auto;
+}
+body.dark .collection-actions-modal{
+  /* Keep the same brand blue as the first popup even in dark mode */
+  background: #4c6fff;
+  border-color: rgba(255,255,255,.3);
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+}
+.collection-actions-overlay.visible .collection-actions-modal{
+  transform: scale(1);
+}
+.collection-actions-header{
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  /* Same solid blue as the modal shell */
+  background: #4c6fff;
+}
+body.dark .collection-actions-header{
+  background: #4c6fff;
+}
+.collection-actions-headerRow{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 0;
+}
+.collection-actions-topBanner{
+  width: 100%;
+  height: 86px;
+  object-fit: contain;
+  background: transparent;
+  display: block;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+@media (max-width: 520px){
+  .collection-actions-topBanner{
+    height: 78px;
+  }
+}
+.collection-actions-title{
+  margin: 0;
+  font-size: 24px;
+  font-weight: 950;
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 12px;
+}
+@media (max-width: 520px){
+  .collection-actions-title{
+    font-size: 22px;
+    white-space: normal; /* allow 2 lines on iPhone */
+  }
+}
+.collection-actions-back{
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.collection-actions-back:hover{
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.collection-actions-close{
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.82);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+}
+.collection-actions-close:hover{
+  color: #fff;
+}
+.collection-actions-body{
+  padding: 14px 14px 16px;
+  /* Same solid blue as the modal shell */
+  background: #4c6fff;
+}
+body.dark .collection-actions-body{
+  background: #4c6fff;
+}
+.collection-actions-summary{
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.35;
+}
+.collection-actions-btns{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.collection-actions-build{
+  width: 100%;
 }
