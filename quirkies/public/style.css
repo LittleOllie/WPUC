@@ -2474,6 +2474,26 @@ body.flex-modal-active {
   max-width: 18rem;
 }
 
+.global-loading__pct {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.35s ease 0.28s,
+    transform 0.35s ease 0.28s;
+}
+
+.global-loading.is-active .global-loading__pct {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .global-loading.is-active .global-loading__hint {
   opacity: 1;
   transition: opacity 0.35s ease 0.22s;

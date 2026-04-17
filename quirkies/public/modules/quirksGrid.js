@@ -109,18 +109,24 @@ let quirksDnDGroupedPayload = null;
 /** Last wallet item list used to build the flat grid — for optional collection-logo toggle. */
 let quirksLastSortedGridItems = null;
 /** User-picked image copied into every empty grid cell (flat layout only). */
-let quirksImportedVacantFillObjectUrl = null;
+let quirksImportedVacantFillObjectUrls = [];
 
 const QUIRKS_IMPORT_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
 
 function quirksRevokeImportedVacantFillUrl() {
-  if (!quirksImportedVacantFillObjectUrl) return;
-  try {
-    URL.revokeObjectURL(quirksImportedVacantFillObjectUrl);
-  } catch {
-    /* ignore */
+  const arr = Array.isArray(quirksImportedVacantFillObjectUrls)
+    ? quirksImportedVacantFillObjectUrls
+    : [];
+  for (let i = 0; i < arr.length; i++) {
+    const u = arr[i];
+    if (!u) continue;
+    try {
+      URL.revokeObjectURL(u);
+    } catch {
+      /* ignore */
+    }
   }
-  quirksImportedVacantFillObjectUrl = null;
+  quirksImportedVacantFillObjectUrls = [];
 }
 
 const QUIRKS_GIF_CONFIG = {
@@ -166,7 +172,19 @@ function quirksSyncCollectionLogoButton() {
 
 function quirksSyncImportedBrandButtonUI() {
   const clearBtn = document.getElementById("quirks-clear-import-brand-btn");
-  if (clearBtn) clearBtn.hidden = !quirksImportedVacantFillObjectUrl;
+  if (clearBtn) clearBtn.hidden = !(quirksImportedVacantFillObjectUrls || []).length;
+}
+
+function quirksImportedImagesActive() {
+  return Array.isArray(quirksImportedVacantFillObjectUrls) && quirksImportedVacantFillObjectUrls.length > 0;
+}
+
+function quirksFirstVacantSlotIndex(slots) {
+  if (!Array.isArray(slots) || !slots.length) return -1;
+  for (let i = 0; i < slots.length; i++) {
+    if (quirksSlotUrlIsBlank(slots[i])) return i;
+  }
+  return -1;
 }
 
 async function quirksRefreshPreviewAfterBrandOrLayoutChange() {
@@ -730,6 +748,28 @@ function quirksIsLocalBrandingAssetUrl(url) {
 }
 
 function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
+  function hookProgressHandlers() {
+    if (!img || quirksPreviewGlobalLoadingDepth <= 0) return;
+    if (img.getAttribute("data-quirks-progress-hooked") === "1") return;
+    img.setAttribute("data-quirks-progress-hooked", "1");
+    const prevLoad = img.onload;
+    const prevErr = img.onerror;
+    img.onload = function () {
+      try {
+        if (typeof prevLoad === "function") prevLoad.call(img);
+      } finally {
+        quirksPreviewLoadCountOnce(img);
+      }
+    };
+    img.onerror = function () {
+      try {
+        if (typeof prevErr === "function") prevErr.call(img);
+      } finally {
+        quirksPreviewLoadCountOnce(img);
+      }
+    };
+  }
+
   const rawStr = String(rawUrl || "");
   if (
     quirksIsLocalBrandingAssetUrl(rawStr) ||
@@ -761,6 +801,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
       const t = img.closest && img.closest(".quirks-tile");
       if (t && t.classList) t.classList.add("is-loaded");
     };
+    hookProgressHandlers();
     return;
   }
   const NL =
@@ -803,6 +844,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
         } catch {
           /* ignore */
         }
+        hookProgressHandlers();
         return;
       }
     }
@@ -838,6 +880,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
           merged,
           b.ipfsPath
         );
+        hookProgressHandlers();
       } else {
         if (bypassPreflight) {
           quirksApplyNftGridImageAfterPreflight(
@@ -848,6 +891,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
             merged,
             b.ipfsPath
           );
+          hookProgressHandlers();
           return;
         }
         const task = (async () => {
@@ -876,6 +920,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
     } else {
       NL.applyToGridImg(img, rawUrl, slotIndex, r2Meta || null);
     }
+    hookProgressHandlers();
     return;
   }
   if (quirksIsMemoryConstrainedDevice()) {
@@ -883,6 +928,7 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
   } else {
     img.src = rawUrl;
   }
+  hookProgressHandlers();
 }
 
 /**
@@ -1516,7 +1562,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     quirksBrandingIsMultiCollection() &&
     !quirksUseQuirkTripleBrandSquareCell();
   /** Grouped preview has no flat `slots`; import must use the flat path (same as collection-logo force-flat). */
-  const forceFlatForVacantImport = !!quirksImportedVacantFillObjectUrl;
+  const forceFlatForVacantImport = quirksImportedImagesActive();
 
   if (
     gridLayout === "grouped" &&
@@ -1586,20 +1632,16 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     }
   }
   let vacantFilled = 0;
-  if (quirksImportedVacantFillObjectUrl) {
-    const fill = quirksImportedVacantFillObjectUrl;
-    /** Spare corner / trailing slack: use the last vacant cell so the image stays in the corner when the grid grows (e.g. logo on). */
-    let fillAt = -1;
-    for (let i = slots.length - 1; i >= 0; i--) {
-      if (quirksSlotUrlIsBlank(slots[i])) {
-        fillAt = i;
-        break;
-      }
-    }
-    if (fillAt >= 0) {
+  if (quirksImportedImagesActive()) {
+    const fills = quirksImportedVacantFillObjectUrls.slice();
+    for (let fi = 0; fi < fills.length; fi++) {
+      const fill = fills[fi];
+      if (!fill) continue;
+      const fillAt = quirksFirstVacantSlotIndex(slots);
+      if (fillAt < 0) break;
       slots[fillAt] = fill;
       if (slotR2Metas && fillAt < slotR2Metas.length) slotR2Metas[fillAt] = null;
-      vacantFilled = 1;
+      vacantFilled += 1;
     }
   }
   quirksEditorState = {
@@ -1627,10 +1669,152 @@ function setGlobalLoadingQuirks(on) {
 /** Nested preview/export waits can overlap; only hide overlay when depth returns to 0. */
 let quirksPreviewGlobalLoadingDepth = 0;
 
+let quirksPreviewLoadTotal = 0;
+let quirksPreviewLoadDone = 0;
+let quirksPreviewLoadTickTimer = null;
+let quirksPreviewLoadLastShown = "";
+let quirksPreviewLoadLastChangeAt = 0;
+
+function quirksSetGlobalLoadingPctText(s) {
+  const el = document.getElementById("global-loading-pct");
+  if (!el) return;
+  el.textContent = s || "";
+  el.setAttribute("aria-hidden", s ? "false" : "true");
+}
+
+function quirksPreviewLoadUpdatePct() {
+  if (quirksPreviewGlobalLoadingDepth <= 0) return;
+  // Reconcile against live DOM so we don't miss cached/early loads.
+  let total = quirksPreviewLoadTotal || 0;
+  let doneScan = 0;
+  let failedScan = 0;
+  try {
+    const grid = document.getElementById("quirks-preview-grid");
+    if (grid) {
+      const imgs = grid.querySelectorAll("img.quirks-tile__img");
+      total = imgs.length;
+      for (let i = 0; i < imgs.length; i++) {
+        const im = imgs[i];
+        if (!im) continue;
+        const tile = im.closest && im.closest(".quirks-tile");
+        if (
+          (tile && tile.classList && tile.classList.contains("is-broken")) ||
+          (im.classList && im.classList.contains("is-broken")) ||
+          im.getAttribute("data-nft-fail-reason")
+        ) {
+          failedScan += 1;
+        }
+        if (tile && tile.classList && tile.classList.contains("is-loaded")) {
+          doneScan += 1;
+          continue;
+        }
+        if (im.complete) {
+          doneScan += 1;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  if (total) {
+    quirksPreviewLoadTotal = total;
+    quirksPreviewLoadDone = doneScan;
+  }
+  const done = Math.min(quirksPreviewLoadDone || 0, total || 0);
+  if (!total) {
+    quirksSetGlobalLoadingPctText("");
+    return;
+  }
+  const msg =
+    failedScan > 0
+      ? `${done}/${total} loaded · ${failedScan} failed`
+      : `${done}/${total} loaded`;
+  if (msg !== quirksPreviewLoadLastShown) {
+    quirksPreviewLoadLastShown = msg;
+    quirksPreviewLoadLastChangeAt = Date.now();
+  }
+  // If it hasn't changed in a while, show it's still alive.
+  const staleForMs = Date.now() - (quirksPreviewLoadLastChangeAt || 0);
+  if (staleForMs > 12000 && done < total) {
+    quirksSetGlobalLoadingPctText(`${msg} (still loading…)`);
+  } else {
+    quirksSetGlobalLoadingPctText(msg);
+  }
+}
+
+function quirksPreviewLoadResetCounter() {
+  quirksPreviewLoadTotal = 0;
+  quirksPreviewLoadDone = 0;
+  quirksPreviewLoadLastShown = "";
+  quirksPreviewLoadLastChangeAt = Date.now();
+  const grid = document.getElementById("quirks-preview-grid");
+  if (grid) {
+    const imgs = grid.querySelectorAll("img.quirks-tile__img");
+    let total = 0;
+    for (let i = 0; i < imgs.length; i++) {
+      const im = imgs[i];
+      if (!im) continue;
+      total += 1;
+      im.removeAttribute("data-quirks-progress-counted");
+    }
+    quirksPreviewLoadTotal = total;
+  }
+  quirksPreviewLoadUpdatePct();
+}
+
+function quirksPreviewLoadCountOnce(img) {
+  if (!img || quirksPreviewGlobalLoadingDepth <= 0) return;
+  try {
+    if (!img.classList || !img.classList.contains("quirks-tile__img")) return;
+    const grid = document.getElementById("quirks-preview-grid");
+    if (!grid || !(grid.contains && grid.contains(img))) return;
+    if (img.getAttribute("data-quirks-progress-counted") === "1") return;
+    img.setAttribute("data-quirks-progress-counted", "1");
+  } catch {
+    return;
+  }
+  quirksPreviewLoadDone += 1;
+  quirksPreviewLoadUpdatePct();
+}
+
+function quirksWrapGlobalImgLoadHooksOnce() {
+  if (typeof window === "undefined") return;
+  if (window.__quirksWrappedProgressHooks === true) return;
+  window.__quirksWrappedProgressHooks = true;
+  const prevLoad = window.__nftImgLoad;
+  const prevErr = window.__nftImgErr;
+  window.__nftImgLoad = function (img) {
+    try {
+      if (typeof prevLoad === "function") prevLoad(img);
+    } finally {
+      quirksPreviewLoadCountOnce(img);
+    }
+  };
+  window.__nftImgErr = function (img) {
+    try {
+      if (typeof prevErr === "function") prevErr(img);
+    } finally {
+      quirksPreviewLoadCountOnce(img);
+    }
+  };
+}
+
 function quirksPushPreviewGlobalLoading() {
   quirksPreviewGlobalLoadingDepth += 1;
   if (quirksPreviewGlobalLoadingDepth === 1) {
     setGlobalLoadingQuirks(true);
+    quirksWrapGlobalImgLoadHooksOnce();
+    quirksPreviewLoadResetCounter();
+    if (quirksPreviewLoadTickTimer) {
+      window.clearInterval(quirksPreviewLoadTickTimer);
+      quirksPreviewLoadTickTimer = null;
+    }
+    // Poll progress so it never appears "jammed" if events are missed.
+    quirksPreviewLoadTickTimer = window.setInterval(() => {
+      if (quirksPreviewGlobalLoadingDepth > 0) {
+        quirksPreviewLoadUpdatePct();
+      }
+    }, 400);
   }
 }
 
@@ -1639,6 +1823,11 @@ function quirksPopPreviewGlobalLoading() {
   quirksPreviewGlobalLoadingDepth -= 1;
   if (quirksPreviewGlobalLoadingDepth === 0) {
     setGlobalLoadingQuirks(false);
+    quirksSetGlobalLoadingPctText("");
+    if (quirksPreviewLoadTickTimer) {
+      window.clearInterval(quirksPreviewLoadTickTimer);
+      quirksPreviewLoadTickTimer = null;
+    }
   }
 }
 
@@ -2754,6 +2943,10 @@ function renderQuirksPreviewGrid(domPool) {
   quirksSyncImportedBrandButtonUI();
   quirksRenderBrandOverlay();
   quirksPerfMark("previewGrid:render:done");
+  // If the global loader is active, (re)compute total tiles after DOM is built.
+  if (quirksPreviewGlobalLoadingDepth > 0) {
+    quirksPreviewLoadResetCounter();
+  }
 }
 
 function populateQuirksTraitSelect() {
@@ -3474,10 +3667,13 @@ function setupQuirksBuilderUi() {
       importBrandFile.click();
     });
     importBrandFile.addEventListener("change", async () => {
-      const file = importBrandFile.files && importBrandFile.files[0];
+      const files = importBrandFile.files
+        ? Array.from(importBrandFile.files)
+        : [];
       importBrandFile.value = "";
-      if (!file || !quirksLastSortedGridItems) return;
-      if (!file.type || !file.type.startsWith("image/")) {
+      if (!files.length || !quirksLastSortedGridItems) return;
+      const images = files.filter((f) => f && f.type && f.type.startsWith("image/"));
+      if (!images.length) {
         const errEl = document.getElementById("quirks-error");
         if (errEl) {
           errEl.textContent = "Please choose an image file.";
@@ -3485,7 +3681,8 @@ function setupQuirksBuilderUi() {
         }
         return;
       }
-      if (file.size > QUIRKS_IMPORT_IMAGE_MAX_BYTES) {
+      const tooBig = images.find((f) => f.size > QUIRKS_IMPORT_IMAGE_MAX_BYTES);
+      if (tooBig) {
         const errEl = document.getElementById("quirks-error");
         if (errEl) {
           errEl.textContent = "Image is too large (max 15 MB).";
@@ -3498,8 +3695,31 @@ function setupQuirksBuilderUi() {
         errOk.textContent = "";
         errOk.classList.remove("is-visible");
       }
-      quirksRevokeImportedVacantFillUrl();
-      quirksImportedVacantFillObjectUrl = URL.createObjectURL(file);
+      // Place each new import into the first currently-vacant slot.
+      if (!Array.isArray(quirksImportedVacantFillObjectUrls)) {
+        quirksImportedVacantFillObjectUrls = [];
+      }
+      const st = quirksEditorState;
+      if (st && st.mode === "flat" && Array.isArray(st.slots)) {
+        for (let i = 0; i < images.length; i++) {
+          const u = URL.createObjectURL(images[i]);
+          const at = quirksFirstVacantSlotIndex(st.slots);
+          if (at < 0) {
+            try { URL.revokeObjectURL(u); } catch {}
+            break;
+          }
+          st.slots[at] = u;
+          if (st.slotR2Metas && at < st.slotR2Metas.length) st.slotR2Metas[at] = null;
+          quirksImportedVacantFillObjectUrls.push(u);
+        }
+        quirksSyncImportedBrandButtonUI();
+        await quirksRefreshPreviewAfterBrandOrLayoutChange();
+        return;
+      }
+      // Fallback: rebuild from sorted items (places into first vacant slots).
+      for (let i = 0; i < images.length; i++) {
+        quirksImportedVacantFillObjectUrls.push(URL.createObjectURL(images[i]));
+      }
       quirksSyncImportedBrandButtonUI();
       const filled = quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
       if (filled === 0) {
@@ -3518,7 +3738,7 @@ function setupQuirksBuilderUi() {
   }
   if (clearImportBrandBtn) {
     clearImportBrandBtn.addEventListener("click", async () => {
-      if (!quirksImportedVacantFillObjectUrl) return;
+      if (!quirksImportedImagesActive()) return;
       quirksRevokeImportedVacantFillUrl();
       quirksSyncImportedBrandButtonUI();
       if (quirksLastSortedGridItems) {

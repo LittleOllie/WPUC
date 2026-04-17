@@ -3205,9 +3205,11 @@ function addCustomImagesFromFileList(fileList) {
 function appendNewItemsToCurrentGridFromSelection() {
   const current = state.currentGridItems;
   if (!Array.isArray(current) || current.length === 0) return false;
-  const denseCur = current.filter((it) => !isGridSlotEmpty(it));
   const keys = new Set(
-    denseCur.map((it) => getGridItemKey(it)).filter(Boolean)
+    current
+      .filter((it) => !isGridSlotEmpty(it))
+      .map((it) => getGridItemKey(it))
+      .filter(Boolean)
   );
   let merged = getMergedSortedGridItems();
   if (merged.length > FLEX_GRID_MAX_NFTS) {
@@ -3215,7 +3217,18 @@ function appendNewItemsToCurrentGridFromSelection() {
   }
   const additions = merged.filter((it) => !keys.has(getGridItemKey(it)));
   if (!additions.length) return false;
-  state.currentGridItems = denseCur.concat(additions);
+  // Preserve explicit empty slots: fill the first currently-empty cells, then append overflow.
+  const next = current.slice();
+  let ai = 0;
+  for (let i = 0; i < next.length && ai < additions.length; i++) {
+    if (isGridSlotEmpty(next[i])) {
+      next[i] = additions[ai++];
+    }
+  }
+  while (ai < additions.length) {
+    next.push(additions[ai++]);
+  }
+  state.currentGridItems = next;
   syncOrderedItemsFromGrid();
   return true;
 }
