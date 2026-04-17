@@ -700,7 +700,13 @@
     var leaf = tail.replace(/\/+$/, "").split("/").pop();
     if (leaf) {
       var low = String(leaf).toLowerCase();
-      if (low === "quirkieslogo.png" || low === "pblo.png") {
+      if (
+        low === "quirkieslogo.png" ||
+        low === "pblo.png" ||
+        low === "quirklings.png" ||
+        low === "inx.png" ||
+        low === "quirkids.png"
+      ) {
         return s;
       }
     }
@@ -721,7 +727,10 @@
           var baseName = String(seg[seg.length - 1] || "").toLowerCase();
           if (
             baseName === "quirkieslogo.png" ||
-            baseName === "pblo.png"
+            baseName === "pblo.png" ||
+            baseName === "quirklings.png" ||
+            baseName === "inx.png" ||
+            baseName === "quirkids.png"
           ) {
             return s;
           }

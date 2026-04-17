@@ -404,8 +404,13 @@ export function collectQuirksItemsForGrid(
   wantInx,
   usePairing,
   maxTiles,
-  gridLayout
+  gridLayout,
+  preset
 ) {
+  const presetKey = String(preset || "").trim().toLowerCase();
+  if (presetKey && presetKey !== "own") {
+    return collectQuirksPresetItemsForGrid(walletPayload, presetKey, maxTiles);
+  }
   if (!usePairing) {
     return collectQuirksItemsFlat(
       walletPayload,
@@ -428,4 +433,122 @@ export function collectQuirksItemsForGrid(
     },
     maxTiles
   );
+}
+
+function indexByTokenId(list) {
+  const m = new Map();
+  const arr = normList(list);
+  for (let i = 0; i < arr.length; i++) {
+    const e = arr[i];
+    const k = idStr(e);
+    if (!k) continue;
+    if (!m.has(k)) m.set(k, e);
+  }
+  return m;
+}
+
+function sortedIdKeysFromSet(s) {
+  const out = Array.from(s || []);
+  out.sort((a, b) => {
+    const ba = parseIdBigint(a);
+    const bb = parseIdBigint(b);
+    if (ba != null && bb != null) {
+      if (ba < bb) return -1;
+      if (ba > bb) return 1;
+      return 0;
+    }
+    return String(a).localeCompare(String(b));
+  });
+  return out;
+}
+
+function push(out, tokenId, image, kind) {
+  if (!image) return;
+  out.push({
+    tokenId,
+    image: String(image),
+    traits: [],
+    kind,
+  });
+}
+
+/**
+ * Preset-only sequences (require holding the relevant items for the same tokenId).
+ * Returns a flat item list in the desired on-grid order.
+ */
+export function collectQuirksPresetItemsForGrid(walletPayload, presetKey, maxTiles) {
+  const cap = typeof maxTiles === "number" ? maxTiles : 100000;
+  const q = indexByTokenId(walletPayload?.quirkies);
+  const ql = indexByTokenId(walletPayload?.quirklings);
+  const ix = indexByTokenId(walletPayload?.inx);
+
+  // Determine IDs that satisfy the preset.
+  const ids = new Set();
+  const qKeys = new Set(q.keys());
+  for (const k of qKeys) ids.add(k);
+  const wantIds = new Set();
+
+  function hasQuirkie(id) {
+    const e = q.get(id);
+    return !!(e && e.image);
+  }
+  function hasKid(id) {
+    const e = q.get(id);
+    return !!effectiveQuirkKidImage(e);
+  }
+  function hasQuirkling(id) {
+    const e = ql.get(id);
+    return !!(e && e.image);
+  }
+  function hasInx(id) {
+    const e = ix.get(id);
+    return !!(e && e.image);
+  }
+
+  for (const id of ids) {
+    if (presetKey === "quirkies+quirkid") {
+      if (hasQuirkie(id) && hasKid(id)) wantIds.add(id);
+    } else if (presetKey === "alpha-sets") {
+      if (hasQuirkie(id) && hasQuirkling(id)) wantIds.add(id);
+    } else if (presetKey === "alpha+kid") {
+      if (hasQuirkie(id) && hasKid(id) && hasQuirkling(id)) wantIds.add(id);
+    } else if (presetKey === "triple-threat") {
+      if (hasQuirkie(id) && hasQuirkling(id) && hasInx(id)) wantIds.add(id);
+    } else if (presetKey === "quadruple-threat") {
+      if (hasQuirkie(id) && hasKid(id) && hasQuirkling(id) && hasInx(id)) wantIds.add(id);
+    } else {
+      // Unknown preset → nothing.
+    }
+  }
+
+  const out = [];
+  const ordered = sortedIdKeysFromSet(wantIds);
+  for (let i = 0; i < ordered.length && out.length < cap; i++) {
+    const id = ordered[i];
+    const qe = q.get(id);
+    const qle = ql.get(id);
+    const ixe = ix.get(id);
+    if (presetKey === "quirkies+quirkid") {
+      push(out, id, qe?.image, "quirkie-lone");
+      push(out, id, effectiveQuirkKidImage(qe), "quirkkid-lone");
+    } else if (presetKey === "alpha-sets") {
+      push(out, id, qe?.image, "quirkie-lone");
+      push(out, id, qle?.image, "quirking-unmatched");
+    } else if (presetKey === "alpha+kid") {
+      push(out, id, qe?.image, "quirkie-lone");
+      push(out, id, effectiveQuirkKidImage(qe), "quirkkid-lone");
+      push(out, id, qle?.image, "quirking-unmatched");
+    } else if (presetKey === "triple-threat") {
+      push(out, id, qe?.image, "quirkie-lone");
+      push(out, id, qle?.image, "quirking-unmatched");
+      push(out, id, ixe?.image, "inx");
+    } else if (presetKey === "quadruple-threat") {
+      push(out, id, qe?.image, "quirkie-lone");
+      push(out, id, effectiveQuirkKidImage(qe), "quirkkid-lone");
+      push(out, id, qle?.image, "quirking-unmatched");
+      push(out, id, ixe?.image, "inx");
+    }
+  }
+
+  return out.slice(0, cap);
 }

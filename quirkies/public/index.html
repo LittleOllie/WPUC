@@ -281,19 +281,16 @@
             alt="Quirkies"
           />
         </div>
-        <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
-        <div class="quirks-modal__intro">
-          <p class="quirks-modal__lede">
-            Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.
-          </p>
-          <p class="quirks-modal__note">
-            After you tap <strong>Generate grid</strong>, please wait up to a minute while tiles load — art is often fetched from IPFS and can be slow.
-          </p>
-          <p class="quirks-modal__note">
-            Some NFTs may not show a preview; metadata and IPFS gateways are not always reliable. We’re aware and working on it.
-          </p>
+        <div class="quirks-modal__title-row">
+          <h2 id="quirks-modal-title" class="quirks-modal__title">Grid builder</h2>
+          <button type="button" id="quirks-info-btn" class="quirks-info-btn" aria-haspopup="dialog" aria-controls="quirks-info-modal" aria-label="About Grid Builder">
+            i
+          </button>
         </div>
         <div class="quirks-modal__collection-row" role="group" aria-label="Collections to include">
+          <div class="quirks-collection-head">
+            <span class="quirks-collection-head__title">Own collection</span>
+          </div>
           <label class="quirks-collection-pill">
             <input type="checkbox" id="quirks-opt-quirkies" class="quirks-collection-pill__input" />
             <span class="quirks-collection-pill__label">Quirkies</span>
@@ -310,23 +307,20 @@
             <input type="checkbox" id="quirks-opt-inx" class="quirks-collection-pill__input" />
             <span class="quirks-collection-pill__label">INX</span>
           </label>
-        </div>
-        <div class="quirks-modal__layout-row" role="radiogroup" aria-label="Grid layout">
-          <span class="quirks-modal__layout-label">Tile order</span>
-          <label class="quirks-layout-choice">
-            <input
-              type="radio"
-              name="quirks-grid-layout"
-              id="quirks-layout-grouped"
-              value="grouped"
-              checked
-            />
-            <span>Group sets (Quirkie + QuirkKid per ID, then Quirklings, then INX)</span>
-          </label>
-          <label class="quirks-layout-choice">
-            <input type="radio" name="quirks-grid-layout" id="quirks-layout-sections" value="sections" />
-            <span>Separate sections (all Quirkies, then all QuirKid, then Quirklings, then INX)</span>
-          </label>
+          <div class="quirks-preset-block" role="group" aria-label="Special groupings">
+            <div class="quirks-preset-head">
+              <span class="quirks-preset-head__title">Special groupings</span>
+              <span class="quirks-preset-head__sub">Sets you own only</span>
+            </div>
+            <div class="quirks-preset-row">
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="own">Own collections</button>
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="quirkies+quirkid">Quirkies + QuirKid</button>
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="alpha-sets">Alpha sets</button>
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="alpha+kid">Alpha set + QuirKid</button>
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="triple-threat">Triple Threat</button>
+              <button type="button" class="quirks-preset-btn" data-quirks-preset="quadruple-threat">Quadruple Threat</button>
+            </div>
+          </div>
         </div>
         <div class="quirks-modal__sort">
           <label class="quirks-modal__sort-label" for="quirks-trait-sort"
@@ -530,6 +524,24 @@
           <button type="button" id="quirks-gif-options-confirm" class="btn-primary quirks-gif-options-modal__btn">
             Create GIF
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="quirks-info-modal" class="quirks-info-modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="quirks-info-title" tabindex="-1">
+      <div id="quirks-info-backdrop" class="quirks-info-modal__backdrop" aria-hidden="true"></div>
+      <div class="quirks-info-modal__panel">
+        <div class="quirks-info-modal__head">
+          <h3 id="quirks-info-title" class="quirks-info-modal__title">Grid Builder info</h3>
+          <button type="button" id="quirks-info-close" class="quirks-info-modal__close" aria-label="Close">×</button>
+        </div>
+        <div class="quirks-info-modal__body">
+          <h4 class="quirks-info-modal__h">How it works</h4>
+          <p class="quirks-info-modal__p">Build a shareable grid from this wallet’s Quirkies, QuirKid (companion art), Quirklings, and INX.</p>
+          <h4 class="quirks-info-modal__h">Loading</h4>
+          <p class="quirks-info-modal__p">After you tap <strong>Generate grid</strong>, please wait up to a minute while tiles load — art is often fetched from IPFS and can be slow.</p>
+          <h4 class="quirks-info-modal__h">Missing previews</h4>
+          <p class="quirks-info-modal__p">Some NFTs may not show a preview; metadata and IPFS gateways are not always reliable.</p>
         </div>
       </div>
     </div>

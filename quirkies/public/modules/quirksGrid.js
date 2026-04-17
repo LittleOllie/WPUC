@@ -7,6 +7,7 @@ import {
   shuffleQuirksPairing,
   sortPairingByQuirkieTrait,
   buildQuirksGridSequence,
+  collectQuirksPresetItemsForGrid,
   collectQuirksItemsFlat,
   traitValCanonical,
   quirksTraitCanonicalKey,
@@ -148,12 +149,43 @@ function quirksGifFinalFrameMsEstimate(nftDelayMs) {
   return Math.round((d < 1 ? 1 : d) * 1.5) + 500;
 }
 
+/** Own-collection mode only: whether per-collection / single header logos are inserted. */
+function quirksShowCollectionLogos() {
+  if (typeof window === "undefined") return true;
+  const v = window.__quirksShowCollectionLogos;
+  if (v === undefined || v === null) return true;
+  return !!v;
+}
+
+function quirksSyncPresetButtonActiveStates() {
+  const p = String(
+    typeof window !== "undefined" ? window.__quirksPresetMode || "own" : "own"
+  ).toLowerCase();
+  const btns = document.querySelectorAll(".quirks-preset-btn[data-quirks-preset]");
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    const k = String(b.getAttribute("data-quirks-preset") || "").toLowerCase();
+    b.classList.toggle("is-active", !!k && k === p);
+  }
+}
+
+function quirksSetPresetMode(preset) {
+  const p = String(preset || "own").toLowerCase();
+  try {
+    window.__quirksPresetMode = p;
+  } catch {
+    /* ignore */
+  }
+  quirksSyncPresetButtonActiveStates();
+}
+
 function quirksCollectionLogoToggleShows() {
-  return (
-    quirksEditorState &&
-    quirksBrandingIsMultiCollection() &&
-    !quirksUseQuirkTripleBrandSquareCell()
-  );
+  const preset = String(
+    typeof window !== "undefined" ? window.__quirksPresetMode || "own" : "own"
+  ).toLowerCase();
+  if (preset !== "own") return false;
+  if (quirksUseQuirkTripleBrandSquareCell()) return false;
+  return !!quirksEditorState;
 }
 
 function quirksSyncCollectionLogoButton() {
@@ -161,12 +193,11 @@ function quirksSyncCollectionLogoButton() {
   if (!btn) return;
   if (!quirksCollectionLogoToggleShows()) {
     btn.hidden = true;
-    btn.setAttribute("aria-pressed", "false");
-    btn.textContent = "Add collection logo";
     return;
   }
   btn.hidden = false;
-  const on = btn.getAttribute("aria-pressed") === "true";
+  const on = quirksShowCollectionLogos();
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
   btn.textContent = on ? "Remove collection logo" : "Add collection logo";
 }
 
@@ -261,6 +292,13 @@ function quirksExportBuildOrderedUrls() {
   if (!st) return [];
   const out = [];
   const brandSlotUrl = quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl());
+  const skipBases = new Set([
+    "pblo.png",
+    "quirkieslogo.png",
+    "quirklings.png",
+    "inx.png",
+    "quirkids.png",
+  ]);
   if (st.mode === "grouped") {
     for (let r = 0; r < st.packed.length; r++) {
       const row = st.packed[r];
@@ -270,8 +308,7 @@ function quirksExportBuildOrderedUrls() {
           const url = quirksProxyKidCdnForCanvas(unit.items[si].image);
           if (!url) continue;
           if (url === brandSlotUrl) continue;
-          if (quirksPublicBrandingBasename(url) === "pblo.png") continue;
-          if (quirksPublicBrandingBasename(url) === "quirkieslogo.png") continue;
+          if (skipBases.has(quirksPublicBrandingBasename(url))) continue;
           out.push(url);
         }
       }
@@ -282,7 +319,7 @@ function quirksExportBuildOrderedUrls() {
     const url = st.slots[i];
     if (quirksSlotUrlIsBlank(url)) continue;
     const b = quirksPublicBrandingBasename(url);
-    if (url === brandSlotUrl || b === "pblo.png" || b === "quirkieslogo.png") continue;
+    if (url === brandSlotUrl || skipBases.has(b)) continue;
     out.push(url);
   }
   return out;
@@ -730,7 +767,15 @@ function quirksIsLocalBrandingAssetUrl(url) {
   if (!url || typeof url !== "string") return false;
   const s = url.trim();
   const base = quirksPublicBrandingBasename(s);
-  if (base !== "pblo.png" && base !== "quirkieslogo.png") return false;
+  if (
+    base !== "pblo.png" &&
+    base !== "quirkieslogo.png" &&
+    base !== "quirklings.png" &&
+    base !== "inx.png" &&
+    base !== "quirkids.png"
+  ) {
+    return false;
+  }
   if (!/^https?:/i.test(s)) return true;
   try {
     const pageBase =
@@ -943,6 +988,28 @@ function getQuirksPbloImageUrl() {
   return "pblo.png";
 }
 
+function quirksCollectionKeyFromItemKind(kind) {
+  const k = String(kind || "").toLowerCase();
+  if (k.includes("quirkkid")) return "quirkkids";
+  if (k.includes("inx")) return "inx";
+  if (k.includes("quirking")) return "quirklings";
+  if (k.includes("quirkie")) return "quirkies";
+  return "";
+}
+
+/**
+ * OpenSea collection logos (static, CDN-hosted).
+ * Note: OpenSea API calls require keys/CORS; using image CDN URLs is safe for <img>.
+ */
+function quirksOpenSeaLogoUrlForCollectionKey(key) {
+  const k = String(key || "").toLowerCase();
+  if (k === "quirkies") return "quirkieslogo.png";
+  if (k === "quirklings") return "quirklings.png";
+  if (k === "inx") return "inx.png";
+  if (k === "quirkkids") return "quirkids.png";
+  return "";
+}
+
 function normalizeWalletNftEntry(x) {
   if (x && typeof x === "object" && "tokenId" in x) {
     return {
@@ -1131,10 +1198,13 @@ function quirksSortOrShuffleFlat(items, sortKey, walletData) {
 }
 
 function quirksGetGridLayoutMode() {
-  const el = document.querySelector(
-    'input[name="quirks-grid-layout"]:checked'
-  );
-  return el && el.value === "sections" ? "sections" : "grouped";
+  // Tile order UI removed. Own Collection = sections. Special groupings = grouped packing.
+  try {
+    const p = String(window.__quirksPresetMode || "own").toLowerCase();
+    return p === "own" ? "sections" : "grouped";
+  } catch {
+    return "sections";
+  }
 }
 
 /** True when 2+ collection checkboxes are on (multi-collection grid). */
@@ -1176,6 +1246,9 @@ function quirksUseQuirkTripleBrandSquareCell() {
 
 function quirksBuildItemList(data, wantQ, wantKid, wantQl, wantIx, sortKey) {
   const gridLayout = quirksGetGridLayoutMode();
+  const preset = String(
+    typeof window !== "undefined" ? window.__quirksPresetMode || "" : ""
+  ).trim();
   if (quirksUseFlatMode()) {
     const items = collectQuirksItemsFlat(
       data,
@@ -1186,6 +1259,9 @@ function quirksBuildItemList(data, wantQ, wantKid, wantQl, wantIx, sortKey) {
       QUIRKS_MAX_NFT_TILES
     );
     return quirksSortOrShuffleFlat(items, sortKey, data);
+  }
+  if (preset && preset.toLowerCase() !== "own") {
+    return collectQuirksPresetItemsForGrid(data, preset, QUIRKS_MAX_NFT_TILES);
   }
   let pairing = pairQuirksWalletData(data);
   if (!sortKey || sortKey === "random") {
@@ -1554,9 +1630,11 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
   const gridLayout = quirksGetGridLayoutMode();
   const wantQ = document.getElementById("quirks-opt-quirkies")?.checked;
   const wantQl = document.getElementById("quirks-opt-quirklings")?.checked;
-  const logoBtn = document.getElementById("quirks-add-collection-logo-btn");
-  const addCollectionLogoOpt =
-    !!logoBtn && logoBtn.getAttribute("aria-pressed") === "true";
+  const preset = String(
+    typeof window !== "undefined" ? window.__quirksPresetMode || "own" : "own"
+  ).toLowerCase();
+  // Logos only in Own Collection mode, and only while the user has not turned them off.
+  const addCollectionLogoOpt = preset === "own" && quirksShowCollectionLogos();
   const forceFlatForCollectionLogo =
     addCollectionLogoOpt &&
     quirksBrandingIsMultiCollection() &&
@@ -1591,11 +1669,50 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
 
   const multi = quirksBrandingIsMultiCollection();
   const brandSquare = quirksUseQuirkTripleBrandSquareCell();
-  const itemUrls = sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image));
-  const prependBrand =
-    !multi ||
-    brandSquare ||
-    (multi && !brandSquare && addCollectionLogoOpt);
+  /** Per-collection header tiles (quirklings.png / inx.png / …), not the global Quirkies mark. */
+  const usePerCollectionHeaderTiles =
+    addCollectionLogoOpt && multi && !brandSquare && gridLayout === "sections";
+
+  let itemUrls = sortedItems.map((x) => quirksProxyKidCdnForCanvas(x.image));
+  let sectionsMetas = null;
+
+  // Single collection: insert that collection's logo as the first tile when enabled.
+  if (addCollectionLogoOpt && !multi && !brandSquare && sortedItems.length) {
+    const key0 = quirksCollectionKeyFromItemKind(sortedItems[0]?.kind);
+    const logo0 = quirksOpenSeaLogoUrlForCollectionKey(key0);
+    if (logo0) {
+      itemUrls = [logo0].concat(itemUrls);
+      const metas = [null];
+      for (let i = 0; i < sortedItems.length; i++) metas.push(quirksR2MetaForGridItem(sortedItems[i]));
+      sectionsMetas = metas;
+    }
+  }
+
+  // When "Add collection logo" is on for multi-collection SECTIONS, insert each collection's logo
+  // before that collection section's first NFT (once per collection, not per NFT).
+  if (usePerCollectionHeaderTiles) {
+    const built = [];
+    const builtMetas = [];
+    const seen = new Set();
+    for (let i = 0; i < sortedItems.length; i++) {
+      const it = sortedItems[i];
+      const key = quirksCollectionKeyFromItemKind(it?.kind);
+      if (key && !seen.has(key)) {
+        const logo = quirksOpenSeaLogoUrlForCollectionKey(key);
+        if (logo) {
+          built.push(logo);
+          builtMetas.push(null);
+        }
+        seen.add(key);
+      }
+      built.push(quirksProxyKidCdnForCanvas(it.image));
+      builtMetas.push(quirksR2MetaForGridItem(it));
+    }
+    itemUrls = built;
+    sectionsMetas = builtMetas;
+  }
+  // Do not prepend quirkieslogo.png when per-collection logos already lead the list.
+  const prependBrand = !!brandSquare;
   const urls = prependBrand
     ? [quirksProxyKidCdnForCanvas(getQuirksGridBrandImageUrl())].concat(itemUrls)
     : itemUrls;
@@ -1624,11 +1741,19 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
       slotR2Metas.push(null);
     } else {
       const itemIdx = prependBrand ? i - 1 : i;
-      slotR2Metas.push(
-        itemIdx < sortedItems.length
-          ? quirksR2MetaForGridItem(sortedItems[itemIdx])
-          : null
-      );
+      // If we built a per-collection list with injected logos, use that meta list.
+      // Otherwise fall back to 1:1 mapping against sortedItems.
+      if (sectionsMetas && Array.isArray(sectionsMetas)) {
+        slotR2Metas.push(
+          itemIdx < sectionsMetas.length ? sectionsMetas[itemIdx] : null
+        );
+      } else {
+        slotR2Metas.push(
+          itemIdx < sortedItems.length
+            ? quirksR2MetaForGridItem(sortedItems[itemIdx])
+            : null
+        );
+      }
     }
   }
   let vacantFilled = 0;
@@ -2210,6 +2335,40 @@ function quirksDrawContain(ctx, img, x, y, w, h, cellBackdrop) {
   ctx.restore();
 }
 
+/** Matches preview `.quirks-tile--collection-logo--quirkids` (white cell, logo max 80% × contain). */
+const QUIRKS_QUIRKIDS_LOGO_EXPORT_FRAC = 0.8;
+
+function quirksIsQuirkidsCollectionLogoUrl(u) {
+  return !!u && typeof u === "string" && quirksPublicBrandingBasename(u) === "quirkids.png";
+}
+
+function quirksDrawContainQuirkidsCollectionLogo(ctx, img, x, y, w, h) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+  const m = (1 - QUIRKS_QUIRKIDS_LOGO_EXPORT_FRAC) / 2;
+  const iw = w * QUIRKS_QUIRKIDS_LOGO_EXPORT_FRAC;
+  const ih = h * QUIRKS_QUIRKIDS_LOGO_EXPORT_FRAC;
+  const ix = x + w * m;
+  const iy = y + h * m;
+  quirksDrawContain(ctx, img, ix, iy, iw, ih, "#ffffff");
+}
+
+/** Flat grid export: one cell, same rules as on-screen tiles (incl. Quirkids logo inset). */
+function quirksDrawFlatSlotExport(ctx, img, x, y, w, h, slotUrl) {
+  const isBrand = slotUrl && quirksIsBrandLogoUrl(slotUrl);
+  const bg = isBrand ? QUIRKS_BRAND_CELL_BG : "#ffffff";
+  if (!isBrand && quirksIsQuirkidsCollectionLogoUrl(slotUrl)) {
+    quirksDrawContainQuirkidsCollectionLogo(ctx, img, x, y, w, h);
+  } else {
+    quirksDrawContain(ctx, img, x, y, w, h, bg);
+  }
+}
+
 function quirksDrawBrandCellExport(ctx, brandImg, pbloImg, cellX, cellY, cw, ch) {
   const pbloCap = ch * QUIRKS_BRAND_PBLO_MAX_FRAC;
   ctx.save();
@@ -2237,6 +2396,15 @@ function quirksDrawBrandCellExport(ctx, brandImg, pbloImg, cellX, cellY, cw, ch)
 function quirksIsBrandLogoUrl(u) {
   if (!u || typeof u !== "string") return false;
   return quirksPublicBrandingBasename(u) === "quirkieslogo.png";
+}
+
+/** Local collection header art (same folder as index). */
+function quirksIsEmbeddedCollectionLogoUrl(u) {
+  if (!u || typeof u !== "string") return false;
+  const b = quirksPublicBrandingBasename(u);
+  return (
+    b === "quirklings.png" || b === "inx.png" || b === "quirkids.png"
+  );
 }
 
 function quirksDrawPbloOverlayExport(ctx, pbloImg, cellX, cellY, cw, ch) {
@@ -2316,11 +2484,17 @@ async function quirksExportGridDrawCellsSequential(
     const cellR = quirksExportCellRect(x, y, cw, ch);
     const slotUrl = slots[i];
     const slotMeta = slotR2Metas && slotR2Metas[i];
-    const isBrand = slotUrl && quirksIsBrandLogoUrl(slotUrl);
-    const bg = isBrand ? QUIRKS_BRAND_CELL_BG : "#ffffff";
     let img = null;
     if (slotUrl) img = await quirksLoadImageWithFallbacks(slotUrl, slotMeta);
-    quirksDrawContain(ctx, img, cellR.x, cellR.y, cellR.w, cellR.h, bg);
+    quirksDrawFlatSlotExport(
+      ctx,
+      img,
+      cellR.x,
+      cellR.y,
+      cellR.w,
+      cellR.h,
+      slotUrl
+    );
     quirksReleaseImageElement(img);
     if ((i & 3) === 3) {
       await new Promise((r) => setTimeout(r, 0));
@@ -2409,16 +2583,14 @@ async function quirksBuildGridCanvasFromSlots(
       const y = row * ch;
       const cellR2 = quirksExportCellRect(x, y, cw, ch);
       const su = slots[i];
-      const isBrand = su && quirksIsBrandLogoUrl(su);
-      const bg = isBrand ? QUIRKS_BRAND_CELL_BG : "#ffffff";
-      quirksDrawContain(
+      quirksDrawFlatSlotExport(
         ctx,
         loadedSlots[i] || null,
         cellR2.x,
         cellR2.y,
         cellR2.w,
         cellR2.h,
-        bg
+        su
       );
     }
   }
@@ -2903,6 +3075,16 @@ function renderQuirksPreviewGrid(domPool) {
         cell.appendChild(loadEl);
         if (quirksIsBrandLogoUrl(url)) {
           cell.classList.add("quirks-tile--brand");
+        } else if (quirksIsEmbeddedCollectionLogoUrl(url)) {
+          cell.classList.add("quirks-tile--collection-logo");
+          const b = quirksPublicBrandingBasename(url);
+          if (b === "quirklings.png") {
+            cell.classList.add("quirks-tile--collection-logo--quirklings");
+          } else if (b === "inx.png") {
+            cell.classList.add("quirks-tile--collection-logo--inx");
+          } else if (b === "quirkids.png") {
+            cell.classList.add("quirks-tile--collection-logo--quirkids");
+          }
         }
         let img = quirksTakePooledImg(pool, url);
         if (!img) {
@@ -3168,8 +3350,6 @@ async function runQuirksGenerate() {
     errEl.textContent = "";
   }
   quirksLastSortedGridItems = items.slice();
-  const logoBtnPre = document.getElementById("quirks-add-collection-logo-btn");
-  if (logoBtnPre) logoBtnPre.setAttribute("aria-pressed", "false");
   quirksRebuildSlotsFromSorted(items);
   const previewWrap = document.getElementById("quirks-preview-wrap");
   if (previewWrap) previewWrap.classList.remove("hidden");
@@ -3216,6 +3396,55 @@ function setupQuirksBuilderUi() {
   const closeBtn = document.getElementById("quirks-modal-close");
   const backdrop = document.getElementById("quirks-modal-backdrop");
   const genBtn = document.getElementById("quirks-generate-btn");
+  const infoBtn = document.getElementById("quirks-info-btn");
+  const infoModal = document.getElementById("quirks-info-modal");
+  const infoClose = document.getElementById("quirks-info-close");
+  const infoBackdrop = document.getElementById("quirks-info-backdrop");
+
+  function setInfoOpen(on) {
+    if (!infoModal) return;
+    infoModal.classList.toggle("hidden", !on);
+    infoModal.setAttribute("aria-hidden", on ? "false" : "true");
+    if (on) {
+      try { infoModal.focus(); } catch {}
+    }
+  }
+
+  if (infoBtn) infoBtn.addEventListener("click", () => setInfoOpen(true));
+  if (infoClose) infoClose.addEventListener("click", () => setInfoOpen(false));
+  if (infoBackdrop) infoBackdrop.addEventListener("click", () => setInfoOpen(false));
+  const presetRow = document.querySelector(".quirks-preset-row");
+  if (presetRow) {
+    presetRow.addEventListener("click", (ev) => {
+      const b = ev.target && ev.target.closest
+        ? ev.target.closest("[data-quirks-preset]")
+        : null;
+      if (!b) return;
+      ev.preventDefault();
+      const preset = String(b.getAttribute("data-quirks-preset") || "");
+      if (!preset) return;
+      quirksSetPresetMode(preset);
+      const cq = document.getElementById("quirks-opt-quirkies");
+      const ck = document.getElementById("quirks-opt-quirkkids");
+      const cl = document.getElementById("quirks-opt-quirklings");
+      const ci = document.getElementById("quirks-opt-inx");
+      if (preset === "own") {
+        try {
+          window.__quirksShowCollectionLogos = true;
+        } catch {
+          /* ignore */
+        }
+      } else {
+        // Set checkboxes based on special grouping preset.
+        if (cq) cq.checked = true;
+        if (ck) ck.checked = preset === "quirkies+quirkid" || preset === "alpha+kid" || preset === "quadruple-threat";
+        if (cl) cl.checked = preset === "alpha-sets" || preset === "alpha+kid" || preset === "triple-threat" || preset === "quadruple-threat";
+        if (ci) ci.checked = preset === "triple-threat" || preset === "quadruple-threat";
+      }
+      quirksSyncGenerateButtonState();
+      void runQuirksGenerate();
+    });
+  }
   function closeModal() {
     setQuirksModalOpen(false);
     resetQuirksModalOutput();
@@ -3224,6 +3453,8 @@ function setupQuirksBuilderUi() {
   if (backdrop) backdrop.addEventListener("click", closeModal);
   if (genBtn) genBtn.addEventListener("click", runQuirksGenerate);
   function onQuirksCollectionChange() {
+    // Manual collection selection = Own Collection mode.
+    quirksSetPresetMode("own");
     quirksSyncGenerateButtonState();
     if (quirksWalletData) populateQuirksTraitSelect();
     if (
@@ -3245,6 +3476,15 @@ function setupQuirksBuilderUi() {
     const el = document.getElementById(id);
     if (el) el.addEventListener("change", onQuirksCollectionChange);
   });
+
+  try {
+    if (typeof window !== "undefined" && window.__quirksShowCollectionLogos === undefined) {
+      window.__quirksShowCollectionLogos = true;
+    }
+  } catch {
+    /* ignore */
+  }
+  quirksSyncPresetButtonActiveStates();
   document.querySelectorAll('input[name="quirks-grid-layout"]').forEach((el) => {
     el.addEventListener("change", quirksSyncGenerateButtonState);
   });
@@ -3651,8 +3891,12 @@ function setupQuirksBuilderUi() {
   if (collectionLogoBtn) {
     collectionLogoBtn.addEventListener("click", async () => {
       if (!quirksLastSortedGridItems || !quirksCollectionLogoToggleShows()) return;
-      const next = collectionLogoBtn.getAttribute("aria-pressed") !== "true";
-      collectionLogoBtn.setAttribute("aria-pressed", next ? "true" : "false");
+      const next = !quirksShowCollectionLogos();
+      try {
+        window.__quirksShowCollectionLogos = next;
+      } catch {
+        /* ignore */
+      }
       quirksSyncCollectionLogoButton();
       quirksRebuildSlotsFromSorted(quirksLastSortedGridItems);
       await quirksRefreshPreviewAfterBrandOrLayoutChange();
@@ -3763,6 +4007,10 @@ function setupQuirksBuilderUi() {
 
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
+    if (infoModal && !infoModal.classList.contains("hidden")) {
+      setInfoOpen(false);
+      return;
+    }
     const welcome = document.getElementById("welcome-modal");
     if (welcome && welcome.classList.contains("is-open")) return;
     const gifOpts = document.getElementById("quirks-gif-options-modal");

@@ -105,44 +105,6 @@
   padding: 0.45rem 0.85rem;
 }
 
-.quirks-preview-brand-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.65rem;
-  width: 100%;
-}
-
-.quirks-preview-head .quirks-preview-brand-actions {
-  margin: 0;
-  width: auto;
-  flex: 1 1 100%;
-  justify-content: flex-start;
-}
-
-@media (min-width: 480px) {
-  .quirks-preview-head .quirks-preview-brand-actions {
-    flex: 1 1 auto;
-    justify-content: flex-end;
-    max-width: 100%;
-  }
-}
-
-.quirks-add-collection-logo-btn,
-.quirks-import-brand-image-btn,
-.quirks-clear-import-brand-btn {
-  flex-shrink: 0;
-  font-size: 0.82rem;
-  padding: 0.42rem 0.8rem;
-  white-space: nowrap;
-}
-
-.quirks-preview-hint + .quirks-preview-brand-actions {
-  margin-top: 0;
-  margin-bottom: 0.65rem;
-}
-
 .wallet-retry-missing-btn.nft-retry-missing--illuminate,
 .quirks-preview-retry-missing.nft-retry-missing--illuminate {
   animation: nft-retry-illuminate 1.45s ease-in-out infinite;
@@ -286,6 +248,36 @@ body.quirks-modal-active {
   color: var(--qk-accent-strong);
 }
 
+.quirks-modal__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.quirks-info-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.quirks-info-btn:hover {
+  border-color: rgba(167, 139, 250, 0.7);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.quirks-info-btn:focus-visible {
+  outline: 2px solid var(--qk-accent-strong);
+  outline-offset: 2px;
+}
+
 .quirks-modal__intro {
   margin: 0 0 1rem;
 }
@@ -323,6 +315,19 @@ body.quirks-modal-active {
   align-items: stretch;
   gap: 0.65rem;
   margin-bottom: 0.85rem;
+}
+
+.quirks-collection-head {
+  width: 100%;
+  margin: 0 0 0.2rem;
+}
+
+.quirks-collection-head__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .quirks-modal__layout-row {
@@ -367,6 +372,182 @@ body.quirks-modal-active {
   margin: 0;
   position: relative;
   min-width: 0;
+}
+
+.quirks-preset-block {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quirks-preset-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0 0 0.55rem;
+}
+
+.quirks-preset-head__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.quirks-preset-head__sub {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.quirks-preset-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.15rem 0 0.4rem;
+}
+
+.quirks-preset-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+  cursor: pointer;
+  border: 1px solid rgba(167, 139, 250, 0.55);
+  background: var(--bg-panel-2);
+  color: var(--qk-accent-muted);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.12),
+    0 0 18px rgba(167, 139, 250, 0.12);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+.quirks-preset-btn:hover {
+  border-color: rgba(196, 181, 253, 0.85);
+  color: var(--qk-accent);
+  box-shadow:
+    0 0 0 1px rgba(196, 181, 253, 0.2),
+    0 0 26px rgba(167, 139, 250, 0.22);
+}
+
+.quirks-preset-btn.is-active {
+  background: var(--qk-accent-strong);
+  border-color: var(--qk-accent-strong);
+  color: var(--qk-on-accent);
+  box-shadow: 0 4px 0 rgba(76, 29, 149, 0.45);
+}
+
+.quirks-preset-btn.is-active:hover {
+  filter: brightness(1.04);
+}
+
+/* Info modal */
+.quirks-info-modal.hidden {
+  display: none;
+}
+
+.quirks-info-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.quirks-info-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.quirks-info-modal__panel {
+  position: relative;
+  max-width: min(560px, calc(100vw - 2rem));
+  margin: 10vh auto 0;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.55);
+  padding: 0.9rem 1rem 1rem;
+}
+
+.quirks-info-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.quirks-info-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.quirks-info-modal__close {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quirks-info-modal__close:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.quirks-info-modal__body {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.quirks-info-modal__h {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(167, 139, 250, 0.9);
+}
+
+.quirks-info-modal__p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+@media (min-width: 560px) {
+  .quirks-preset-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 820px) {
+  .quirks-preset-row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 .quirks-collection-pill__input {
@@ -506,17 +687,7 @@ body.quirks-modal-active {
   object-fit: contain;
   object-position: left top;
   display: block;
-  /* Match FlexGrid watermark visibility */
-  opacity: 0.92;
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 12px;
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter:
-    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
 /* 2+ collections: pblo only, width = one grid column, flush to grid top-left */
@@ -532,8 +703,6 @@ body.quirks-modal-active {
   width: 100%;
   height: auto;
   max-height: none;
-  /* Flush corner watermark should still read on any art */
-  opacity: 0.92;
 }
 
 .quirks-preview-grid {
@@ -615,6 +784,55 @@ body.quirks-modal-active {
   overflow: hidden;
 }
 
+/* Embedded collection logos (quirklings / INX): slight zoom to hide edge bleed */
+.quirks-tile--collection-logo {
+  overflow: hidden;
+}
+
+.quirks-tile--collection-logo--quirklings .quirks-tile__img,
+.quirks-tile--collection-logo--inx .quirks-tile__img {
+  object-fit: cover;
+  transform: scale(1.09);
+  transform-origin: center center;
+}
+
+/* Quirkids mark: keep full art inside the square with a little inset (no cover crop) */
+.quirks-tile--collection-logo--quirkids {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.quirks-tile--collection-logo--quirkids .quirks-tile__img {
+  flex: 0 1 auto;
+  width: 80%;
+  height: 80%;
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quirks-tile--collection-logo--quirklings .quirks-tile__img,
+  .quirks-tile--collection-logo--inx .quirks-tile__img {
+    transform: none;
+    object-fit: cover;
+    width: 108%;
+    height: 108%;
+    margin: -4%;
+  }
+
+  .quirks-tile--collection-logo--quirkids .quirks-tile__img {
+    width: 80%;
+    height: 80%;
+    max-width: 80%;
+    max-height: 80%;
+    object-fit: contain;
+  }
+}
+
 .quirks-tile--brand > .quirks-tile__img {
   position: absolute;
   inset: 0;
@@ -657,18 +875,6 @@ body.quirks-modal-active {
   flex-shrink: 0;
   pointer-events: none;
   display: block;
-
-  /* Match FlexGrid watermark visibility */
-  opacity: 0.92;
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 12px;
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter:
-    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
 }
 
 .quirks-tile--brand .quirks-tile__loading {

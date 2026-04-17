@@ -6,30 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script>
       (function () {
-        var loc = window.location;
-        var p = loc.pathname;
-        var pl = p.toLowerCase();
-
-        /**
-         * FlexGrid (GitHub Pages): bare /flexgrid often 404s; this page runs and
-         * sends users to the directory URL. Legacy /flexgrid/index.html → /flexgrid/
-         */
-        if (pl.endsWith("/flexgrid/index.html")) {
-          loc.replace(
-            loc.origin +
-              p.replace(/\/index\.html$/i, "/") +
-              loc.search +
-              loc.hash
-          );
-          return;
-        }
-        if (pl.endsWith("/flexgrid")) {
-          loc.replace(loc.origin + p + "/" + loc.search + loc.hash);
-          return;
-        }
-
         var CANON = "OGT";
 
+        var loc = window.location;
+        var p = loc.pathname;
         var segs = p.split("/");
 
         function isOgtAppSeg(s) {
