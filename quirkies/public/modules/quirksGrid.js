@@ -86,6 +86,14 @@ const QUIRKS_EXPORT_JPEG_QUALITY = 0.94;
 const QUIRKS_EXPORT_IMAGE_TRY_MS = 12000;
 /** Cap wait when enabling download after preview paint (aligned with FlexGrid export wait). */
 const QUIRKS_PREVIEW_IMAGE_WAIT_MS = 12000;
+/** All grid preflights must finish within this window so the loader never sticks. */
+const QUIRKS_PREVIEW_PREFLIGHT_ALL_MS = 30000;
+/** Per-tile timeout when assigning `src` from `data-quirks-src` (memory-constrained preview). */
+const QUIRKS_PREVIEW_MEMORY_LOAD_TILE_MS = 12000;
+/** Hard cap for the whole memory-constrained preview load queue. */
+const QUIRKS_PREVIEW_MEMORY_LOAD_ALL_MS = 120000;
+/** Safety net if tile load/error listeners never fire. */
+const QUIRKS_PREVIEW_IMAGE_WAIT_OVERALL_MS = 120000;
 /** Sentinel wallet for token-ID-only FLECKS sessions (app token search). */
 const QUIRKS_TOKEN_SEARCH_WALLET_ADDR =
   "0x0000000000000000000000000000000000000bad";
@@ -165,13 +173,11 @@ async function quirksRefreshPreviewAfterBrandOrLayoutChange() {
   quirksSetDownloadButtonReady(false);
   quirksSetGifButtonReady(false);
   const domPool = quirksHarvestPreviewDomPool();
-  renderQuirksPreviewGrid(domPool);
-  const gridEl = document.getElementById("quirks-preview-grid");
   try {
-    await quirksAwaitQuirksGridPreflights(gridEl);
-    await quirksAwaitPreviewGridLoads(gridEl);
-    await quirksWaitForPreviewGridImages();
-    await quirksRefreshPreviewFromSlots();
+    await quirksWithPreviewGlobalLoading(async () => {
+      renderQuirksPreviewGrid(domPool);
+      await quirksAwaitPreviewGridFullyPainted();
+    });
     quirksSetDownloadButtonReady(true);
     quirksSetGifButtonReady(true);
   } catch {
@@ -616,7 +622,12 @@ async function quirksAwaitQuirksGridPreflights(gridEl) {
     if (p) pending.push(p);
   }
   if (pending.length) {
-    await Promise.all(pending);
+    await Promise.race([
+      Promise.all(pending),
+      new Promise((r) => {
+        window.setTimeout(r, QUIRKS_PREVIEW_PREFLIGHT_ALL_MS);
+      }),
+    ]);
   }
 }
 
@@ -1534,6 +1545,33 @@ function setGlobalLoadingQuirks(on) {
   el.classList.toggle("is-active", !!on);
 }
 
+/** Nested preview/export waits can overlap; only hide overlay when depth returns to 0. */
+let quirksPreviewGlobalLoadingDepth = 0;
+
+function quirksPushPreviewGlobalLoading() {
+  quirksPreviewGlobalLoadingDepth += 1;
+  if (quirksPreviewGlobalLoadingDepth === 1) {
+    setGlobalLoadingQuirks(true);
+  }
+}
+
+function quirksPopPreviewGlobalLoading() {
+  if (quirksPreviewGlobalLoadingDepth <= 0) return;
+  quirksPreviewGlobalLoadingDepth -= 1;
+  if (quirksPreviewGlobalLoadingDepth === 0) {
+    setGlobalLoadingQuirks(false);
+  }
+}
+
+async function quirksWithPreviewGlobalLoading(run) {
+  quirksPushPreviewGlobalLoading();
+  try {
+    await run();
+  } finally {
+    quirksPopPreviewGlobalLoading();
+  }
+}
+
 function quirksSyncGenerateButtonState() {
   const cq = document.getElementById("quirks-opt-quirkies");
   const cqk = document.getElementById("quirks-opt-quirkkids");
@@ -1692,20 +1730,42 @@ function quirksAwaitPreviewGridLoads(gridEl) {
       resolve();
       return;
     }
+    let closed = false;
+    const safeResolve = () => {
+      if (closed) return;
+      closed = true;
+      window.clearTimeout(hardCap);
+      resolve();
+    };
+    const hardCap = window.setTimeout(
+      () => safeResolve(),
+      QUIRKS_PREVIEW_MEMORY_LOAD_ALL_MS
+    );
     const concurrency = quirksPreviewConcurrentLoads();
     let completed = 0;
     let nextIndex = 0;
     function tryFinish() {
+      if (closed) return;
       completed++;
-      if (completed >= n) resolve();
+      if (completed >= n) safeResolve();
     }
     function launchOne() {
+      if (closed) return;
       if (nextIndex >= n) return;
       const img = imgs[nextIndex++];
       const u = img.getAttribute("data-quirks-src");
       img.removeAttribute("data-quirks-src");
-      img.addEventListener("load", () => { tryFinish(); launchOne(); }, { once: true });
-      img.addEventListener("error", () => { tryFinish(); launchOne(); }, { once: true });
+      const tileCap = window.setTimeout(() => {
+        tryFinish();
+        launchOne();
+      }, QUIRKS_PREVIEW_MEMORY_LOAD_TILE_MS);
+      const onEnd = () => {
+        window.clearTimeout(tileCap);
+        tryFinish();
+        launchOne();
+      };
+      img.addEventListener("load", onEnd, { once: true });
+      img.addEventListener("error", onEnd, { once: true });
       img.src = u;
     }
     const initial = Math.min(concurrency, n);
@@ -2112,6 +2172,7 @@ function quirksPreviewImgPaintReady(im) {
 /**
  * Wait until preview tiles have painted or settled (load/error/timeout).
  * Mirrors FlexGrid waitForExportImages: natural dimensions + per-tile cap so UI never stalls.
+ * Resolves early on the first `error` so the global loader can dismiss and the user can use Retry.
  */
 function quirksWaitForPreviewGridImages() {
   return new Promise((resolve) => {
@@ -2136,10 +2197,21 @@ function quirksWaitForPreviewGridImages() {
       resolve();
       return;
     }
+    let closed = false;
+    const safeResolve = () => {
+      if (closed) return;
+      closed = true;
+      window.clearTimeout(overallCap);
+      resolve();
+    };
+    const overallCap = window.setTimeout(
+      () => safeResolve(),
+      QUIRKS_PREVIEW_IMAGE_WAIT_OVERALL_MS
+    );
     let left = n;
     function oneDone() {
       left--;
-      if (left <= 0) resolve();
+      if (left <= 0) safeResolve();
     }
     for (let i = 0; i < n; i++) {
       const im = pending[i];
@@ -2154,7 +2226,14 @@ function quirksWaitForPreviewGridImages() {
         oneDone();
       };
       im.addEventListener("load", done, { once: true });
-      im.addEventListener("error", done, { once: true });
+      im.addEventListener(
+        "error",
+        () => {
+          done();
+          safeResolve();
+        },
+        { once: true }
+      );
       window.setTimeout(done, QUIRKS_PREVIEW_IMAGE_WAIT_MS);
     }
   });
@@ -2198,6 +2277,15 @@ function quirksRefreshPreviewFromSlots() {
       }
       return Promise.reject(e);
     });
+}
+
+/** After `renderQuirksPreviewGrid`, wait for tile preflights/loads then refresh export buffer. */
+async function quirksAwaitPreviewGridFullyPainted() {
+  const gridEl = document.getElementById("quirks-preview-grid");
+  await quirksAwaitQuirksGridPreflights(gridEl);
+  await quirksAwaitPreviewGridLoads(gridEl);
+  await quirksWaitForPreviewGridImages();
+  await quirksRefreshPreviewFromSlots();
 }
 
 function quirksHarvestPreviewDomPool() {
@@ -2766,17 +2854,12 @@ async function runQuirksGenerate() {
   if (previewWrap) previewWrap.classList.remove("hidden");
   quirksSetDownloadButtonReady(false);
   quirksSetGifButtonReady(false);
-  renderQuirksPreviewGrid();
   void (async () => {
     try {
-      const gridForPreview = document.getElementById("quirks-preview-grid");
-      await quirksAwaitQuirksGridPreflights(gridForPreview);
-      await quirksAwaitPreviewGridLoads(gridForPreview);
-      // Export must run after preview tiles have painted (or settled): session win
-      // URLs and stable loads align with what the user sees; otherwise parallel
-      // canvas Image() loads can race ahead and leave white cells (often QuirkKids).
-      await quirksWaitForPreviewGridImages();
-      await quirksRefreshPreviewFromSlots();
+      await quirksWithPreviewGlobalLoading(async () => {
+        renderQuirksPreviewGrid();
+        await quirksAwaitPreviewGridFullyPainted();
+      });
       quirksSetDownloadButtonReady(true);
       quirksSetGifButtonReady(true);
     } catch {
@@ -2869,13 +2952,11 @@ function setupQuirksBuilderUi() {
       quirksSetGifButtonReady(false);
       renderQuirksPreviewGrid(domPool);
       quirksAnimatePreviewGridFlip(oldRects);
-      const gridEl = document.getElementById("quirks-preview-grid");
       void (async () => {
         try {
-          await quirksAwaitQuirksGridPreflights(gridEl);
-          await quirksAwaitPreviewGridLoads(gridEl);
-          await quirksWaitForPreviewGridImages();
-          await quirksRefreshPreviewFromSlots();
+          await quirksWithPreviewGlobalLoading(async () => {
+            await quirksAwaitPreviewGridFullyPainted();
+          });
           quirksSetDownloadButtonReady(true);
           quirksSetGifButtonReady(true);
         } catch {
@@ -3021,8 +3102,20 @@ function setupQuirksBuilderUi() {
           quirksRepackGroupedUnits();
           quirksDnDGroupedPayload = null;
           quirksDnDFromIndex = null;
+          quirksSetDownloadButtonReady(false);
+          quirksSetGifButtonReady(false);
           renderQuirksPreviewGrid();
           quirksLastExportDataUrl = null;
+          void (async () => {
+            try {
+              await quirksWithPreviewGlobalLoading(quirksAwaitPreviewGridFullyPainted);
+              quirksSetDownloadButtonReady(true);
+              quirksSetGifButtonReady(true);
+            } catch {
+              quirksSetDownloadButtonReady(false);
+              quirksSetGifButtonReady(false);
+            }
+          })();
           return;
         }
         const i = quirksDnDFromIndex;
@@ -3033,8 +3126,20 @@ function setupQuirksBuilderUi() {
         st.units[j] = tmp;
         quirksRepackGroupedUnits();
         quirksDnDFromIndex = null;
+        quirksSetDownloadButtonReady(false);
+        quirksSetGifButtonReady(false);
         renderQuirksPreviewGrid();
         quirksLastExportDataUrl = null;
+        void (async () => {
+          try {
+            await quirksWithPreviewGlobalLoading(quirksAwaitPreviewGridFullyPainted);
+            quirksSetDownloadButtonReady(true);
+            quirksSetGifButtonReady(true);
+          } catch {
+            quirksSetDownloadButtonReady(false);
+            quirksSetGifButtonReady(false);
+          }
+        })();
         return;
       }
       const j = parseInt(cell.dataset.index, 10);
@@ -3079,11 +3184,11 @@ function setupQuirksBuilderUi() {
         triggerDownload();
         return;
       }
-      setGlobalLoadingQuirks(true);
+      quirksPushPreviewGlobalLoading();
       quirksWaitForPreviewGridImages()
         .then(() => quirksRefreshPreviewFromSlots())
         .then(triggerDownload)
-        .finally(() => setGlobalLoadingQuirks(false));
+        .finally(() => quirksPopPreviewGlobalLoading());
     });
   }
 

@@ -432,15 +432,24 @@
 
     <div id="global-loading" class="global-loading" aria-hidden="true">
       <div class="global-loading__backdrop" aria-hidden="true"></div>
-      <div class="global-loading__spin-wrap">
-        <img
-          class="global-loading__img"
-          src="quirkieslogo.png"
-          width="120"
-          height="120"
-          alt=""
-          decoding="async"
-        />
+      <div class="global-loading__panel">
+        <div class="global-loading__spin-wrap">
+          <img
+            class="global-loading__img"
+            src="quirkieslogo.png"
+            width="120"
+            height="120"
+            alt=""
+            decoding="async"
+          />
+        </div>
+        <div class="global-loading__progress" aria-hidden="true">
+          <div class="global-loading__progress-inner"></div>
+        </div>
+        <p class="global-loading__hint" role="status" aria-live="polite">
+          <span class="global-loading__hint-title">LOADING</span>
+          <span class="global-loading__hint-sub">(Bigger collections may take some time)</span>
+        </p>
       </div>
     </div>
 
