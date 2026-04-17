@@ -1884,6 +1884,18 @@ body.welcome-modal-active {
   object-fit: contain;
   object-position: top center;
   pointer-events: none;
+
+  /* Match FlexGrid watermark visibility */
+  opacity: 0.92;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 12px;
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  filter:
+    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
 }
 
 .flex-tile {
@@ -1977,6 +1989,18 @@ body.welcome-modal-active {
   flex-shrink: 0;
   pointer-events: none;
   display: block;
+
+  /* Match FlexGrid watermark visibility */
+  opacity: 0.92;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 12px;
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  filter:
+    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
 }
 
 /* Filler art (1/2/3.png): keep paint above any stray grid bleed */

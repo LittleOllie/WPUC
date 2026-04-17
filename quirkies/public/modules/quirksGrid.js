@@ -647,7 +647,11 @@ function quirksR2MetaForGridItem(item) {
     typeof window !== "undefined" ? window.__quirksWalletContracts : null;
   const k = String(item.kind || "");
   if (k.includes("quirkkid")) {
-    return { collection: "quirkkids", tokenId: tid };
+    return {
+      collection: "quirkkids",
+      tokenId: tid,
+      rawImage: typeof item.image === "string" ? item.image : null,
+    };
   }
   if (k.includes("inx")) {
     return {
@@ -743,6 +747,15 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
         const t = img.closest && img.closest(".quirks-tile");
         if (t && t.classList) t.classList.add("is-loaded");
       }
+      if (
+        quirksPerfEnabled() &&
+        !window.__quirksPerfFirstVisibleLogged &&
+        img &&
+        img.naturalWidth > 0
+      ) {
+        window.__quirksPerfFirstVisibleLogged = true;
+        quirksPerfMark("previewGrid:firstImage:visible");
+      }
     };
     img.onerror = function () {
       const t = img.closest && img.closest(".quirks-tile");
@@ -753,6 +766,61 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
   const NL =
     typeof window !== "undefined" && window.NftImageLoader;
   if (NL && typeof NL.applyToGridImg === "function") {
+    // Quirkid hybrid fast-path:
+    // - try the raw S3 URL first (no Worker hop)
+    // - fallback to the existing /api/img proxy automatically on error
+    if (r2Meta && r2Meta.collection === "quirkkids" && r2Meta.rawImage) {
+      const rawS3Url = String(r2Meta.rawImage || "").trim();
+      if (
+        rawS3Url &&
+        /^https?:\/\//i.test(rawS3Url) &&
+        rawS3Url.toLowerCase().indexOf(
+          "quirkids-images.s3.ap-southeast-2.amazonaws.com"
+        ) !== -1
+      ) {
+        const proxied = apiUrl(
+          "/api/img?url=" + encodeURIComponent(rawS3Url)
+        );
+        try {
+          console.log("[Quirkid] Direct S3 load:", rawS3Url);
+        } catch {
+          /* ignore */
+        }
+        NL.applyToGridImg(img, rawS3Url, slotIndex, r2Meta || null, {
+          candidates: [rawS3Url, proxied],
+          ipfsPath: null,
+        });
+        // Temporary testing log when the fallback actually happens (2nd candidate).
+        try {
+          const prevOnError = img.onerror;
+          img.onerror = function () {
+            const ci = parseInt(img.getAttribute("data-nft-ci") || "0", 10);
+            if (ci === 0) {
+              console.log("[Quirkid] Falling back to proxy:", proxied);
+            }
+            if (typeof prevOnError === "function") return prevOnError.call(img);
+          };
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+    }
+    /** Temporary perf test: skip preview preflight probing and bind the first candidate immediately. */
+    const bypassPreflight =
+      (() => {
+        try {
+          return (
+            typeof window !== "undefined" &&
+            window.location &&
+            window.location.search &&
+            new URLSearchParams(window.location.search).get("quirksBypassPreflight") ===
+              "1"
+          );
+        } catch {
+          return false;
+        }
+      })();
     const b = NL.buildImageCandidates(String(rawUrl || ""), r2Meta || {});
     const merged = quirksApplySessionMemoToCandidates(
       b.candidates || [],
@@ -771,6 +839,17 @@ function quirksBindGridImage(img, rawUrl, slotIndex, r2Meta) {
           b.ipfsPath
         );
       } else {
+        if (bypassPreflight) {
+          quirksApplyNftGridImageAfterPreflight(
+            img,
+            rawUrl,
+            slotIndex,
+            r2Meta,
+            merged,
+            b.ipfsPath
+          );
+          return;
+        }
         const task = (async () => {
           const finalList = await quirksPreflightReorderForPreview(
             merged,
@@ -2239,6 +2318,46 @@ function quirksWaitForPreviewGridImages() {
   });
 }
 
+function quirksPerfEnabled() {
+  try {
+    return (
+      typeof window !== "undefined" &&
+      window.location &&
+      window.location.search &&
+      new URLSearchParams(window.location.search).get("quirksPerf") === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function quirksPerfNow() {
+  try {
+    return typeof performance !== "undefined" && performance.now
+      ? performance.now()
+      : Date.now();
+  } catch {
+    return Date.now();
+  }
+}
+
+function quirksPerfMark(name) {
+  if (!quirksPerfEnabled()) return;
+  const t = quirksPerfNow();
+  try {
+    if (typeof performance !== "undefined" && performance.mark) {
+      performance.mark(name);
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    console.log(`[quirksPerf] ${name}: ${t.toFixed(1)}ms`);
+  } catch {
+    // ignore
+  }
+}
+
 function quirksRefreshPreviewFromSlots() {
   if (!quirksEditorState) return Promise.resolve();
   const st = quirksEditorState;
@@ -2282,10 +2401,13 @@ function quirksRefreshPreviewFromSlots() {
 /** After `renderQuirksPreviewGrid`, wait for tile preflights/loads then refresh export buffer. */
 async function quirksAwaitPreviewGridFullyPainted() {
   const gridEl = document.getElementById("quirks-preview-grid");
+  quirksPerfMark("previewGrid:awaitFullyPainted:start");
   await quirksAwaitQuirksGridPreflights(gridEl);
   await quirksAwaitPreviewGridLoads(gridEl);
   await quirksWaitForPreviewGridImages();
+  quirksPerfMark("previewGrid:tiles:settled");
   await quirksRefreshPreviewFromSlots();
+  quirksPerfMark("previewGrid:export:refreshed");
 }
 
 function quirksHarvestPreviewDomPool() {
@@ -2516,6 +2638,11 @@ function renderQuirksPreviewGrid(domPool) {
   if (!quirksEditorState) return;
   const el = document.getElementById("quirks-preview-grid");
   if (!el) return;
+  quirksPerfMark("previewGrid:render:start");
+  if (quirksPerfEnabled()) {
+    // Reset "first visible" for this render cycle.
+    window.__quirksPerfFirstVisibleLogged = false;
+  }
   const pool =
     domPool && typeof domPool === "object"
       ? domPool
@@ -2626,6 +2753,7 @@ function renderQuirksPreviewGrid(domPool) {
   quirksSyncCollectionLogoButton();
   quirksSyncImportedBrandButtonUI();
   quirksRenderBrandOverlay();
+  quirksPerfMark("previewGrid:render:done");
 }
 
 function populateQuirksTraitSelect() {
