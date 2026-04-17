@@ -1289,6 +1289,21 @@ function quirksComputeGrid(totalCells) {
 }
 
 /**
+ * Flat layout dimensions. Alpha set + QuirKid is always Quirkie | QuirkKid | Quirkling per row
+ * (3 across); default is near-square from `quirksComputeGrid`.
+ */
+function quirksFlatLayoutGridDims(layoutCellCountHint, preset) {
+  const n = Math.max(1, layoutCellCountHint);
+  const p = String(preset || "").toLowerCase();
+  if (p === "alpha+kid") {
+    const cols = 3;
+    const rows = Math.ceil(n / cols);
+    return { cols, rows };
+  }
+  return quirksComputeGrid(n);
+}
+
+/**
  * Grouped layout uses width-2 units (Quirkie + QuirkKid). An odd column count leaves a
  * permanent empty grid track on every row of pairs; use an even column count near √n
  * (round down when ceil is odd so we stay closer to square, e.g. 9 → 8 not 10).
@@ -1646,6 +1661,7 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
     gridLayout === "grouped" &&
     wantQ &&
     wantQl &&
+    preset !== "alpha+kid" &&
     !quirksUseFlatMode() &&
     !quirksUseQuirkTripleBrandSquareCell() &&
     !forceFlatForCollectionLogo &&
@@ -1725,8 +1741,11 @@ function quirksRebuildSlotsFromSorted(sortedItems) {
    * with zero slack — no `null` slot). Use max(len, dense+1) so `quirksComputeGrid` expands
    * enough for one spare tile (import / empty hole).
    */
-  const layoutCellCountHint = Math.max(urls.length, denseUrlSlots + 1);
-  const g = quirksComputeGrid(layoutCellCountHint);
+  let layoutCellCountHint = Math.max(urls.length, denseUrlSlots + 1);
+  if (preset === "alpha+kid" && !quirksImportedImagesActive()) {
+    layoutCellCountHint = Math.max(urls.length, denseUrlSlots);
+  }
+  const g = quirksFlatLayoutGridDims(layoutCellCountHint, preset);
   const cells = g.cols * g.rows;
   const slots = [];
   const slotR2Metas = [];
