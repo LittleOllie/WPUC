@@ -911,6 +911,23 @@ function exportProxyUrl(src) {
 }
 
 // ---------- Watermark helpers (DOM + Export) ----------
+/** Match PNG export: pblo in first cell, width = tile, height capped to 52% of tile (then scale width). */
+function flexGridPbloPreviewDrawSize(tileW, tileH, naturalW, naturalH) {
+  const tw = Math.max(1, tileW);
+  const th = Math.max(1, tileH);
+  const nw = Math.max(1, naturalW);
+  const nh = Math.max(1, naturalH);
+  const ratio = nh / nw;
+  let drawW = tw;
+  let drawH = drawW * ratio;
+  const pbloCap = th * 0.52;
+  if (drawH > pbloCap) {
+    drawH = pbloCap;
+    drawW = (nw / nh) * drawH;
+  }
+  return { drawW, drawH };
+}
+
 function syncWatermarkDOMToOneTile() {
   const wm = document.getElementById("wmGrid"); // <img>
   const grid = document.getElementById("grid");
@@ -924,19 +941,36 @@ function syncWatermarkDOMToOneTile() {
   }
 
   const gridWrap = grid.closest(".gridWrap") || grid.parentElement;
+  if (!gridWrap) return;
   if (wm.parentElement !== gridWrap) gridWrap.appendChild(wm);
 
   wm.style.display = "block";
   wm.style.position = "absolute";
-  wm.style.left = "0px";
-  wm.style.top = "0px";
   wm.style.zIndex = "9999";
   wm.style.pointerEvents = "none";
 
-  const tileW = firstTile.getBoundingClientRect().width || 0;
-  const w = Math.max(40, Math.floor(tileW));
-  wm.style.width = w + "px";
-  wm.style.height = "auto";
+  const wrapRect = gridWrap.getBoundingClientRect();
+  const fr = firstTile.getBoundingClientRect();
+  wm.style.left = Math.round(fr.left - wrapRect.left) + "px";
+  wm.style.top = Math.round(fr.top - wrapRect.top) + "px";
+
+  const applySize = () => {
+    const nw = wm.naturalWidth;
+    const nh = wm.naturalHeight;
+    if (!nw || !nh) return;
+    const { drawW, drawH } = flexGridPbloPreviewDrawSize(fr.width, fr.height, nw, nh);
+    wm.style.width = Math.max(1, Math.round(drawW)) + "px";
+    wm.style.height = Math.max(1, Math.round(drawH)) + "px";
+  };
+
+  if (wm.complete && wm.naturalWidth > 0) {
+    applySize();
+  } else {
+    wm.onload = () => {
+      wm.onload = null;
+      syncWatermarkDOMToOneTile();
+    };
+  }
 }
 
 // ---------- Wallet list ----------
@@ -4995,8 +5029,15 @@ async function exportGIF() {
     gif.render();
   } catch (e) {
     gridGifOpenCreating(false);
-    setStatus("😕 GIF export failed. Try again?");
+    const why = e instanceof Error && e.message ? e.message : String(e || "");
+    setStatus(
+      why
+        ? "😕 GIF export failed: " + (why.length > 120 ? why.slice(0, 117) + "…" : why)
+        : "😕 GIF export failed. Try again?"
+    );
     console.error(e);
+    if (gifBtn) gifBtn.disabled = false;
+    if (pngBtn) pngBtn.disabled = false;
     syncGridFooterButtons(!hasItemsForBuild(), false);
   }
 }

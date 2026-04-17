@@ -630,7 +630,7 @@ body{
       font-size: 25px;
     }
 
-    /* ✅ Watermark */
+    /* ✅ Watermark — flush top-left of first tile like PNG export (no pill chrome) */
 .watermarkGrid{
   position:absolute;
   left:0;
@@ -639,37 +639,25 @@ body{
   pointer-events:none;
 
   display:block;
-  width: 80px;     /* JS will overwrite */
+  width: 80px;     /* JS overwrites width + height */
   height: auto;
 
-  /* optional: make it crisp */
   image-rendering: auto;
-
-  /* Make watermark readable on any art/background */
-  opacity: 0.92;
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.28);
-  border-radius: 12px;
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  filter:
-    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
+  opacity: 1;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  object-fit: fill;
 }
 
-.stage.settings-canvas--light .watermarkGrid{
-  background: rgba(255, 255, 255, 0.60);
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(0, 0, 0, 0.06);
-  filter:
-    drop-shadow(0 2px 10px rgba(0, 0, 0, 0.35))
-    drop-shadow(0 0 1px rgba(0, 0, 0, 0.25));
-}
-
+.stage.settings-canvas--light .watermarkGrid,
 .stage.settings-canvas--dark .watermarkGrid{
-  background: rgba(0, 0, 0, 0.40);
+  background: transparent;
+  box-shadow: none;
+  filter: none;
 }
 
 
