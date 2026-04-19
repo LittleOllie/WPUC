@@ -85,8 +85,8 @@ function goToStep(step) {
   updateGuideGlow();
 }
 
-/** Same folder level as flexgrid/site/ — Little Ollie links hub. */
-const HUB_LINKS_PAGE = "../links.html";
+/** Little Ollie Labs links hub (absolute so it works from /flexgrid/site/ or any deploy path). */
+const HUB_LINKS_PAGE = "https://littleollielabs.com/links/";
 
 function syncHubBackButton() {
   const btn = $("hubBackBtn");

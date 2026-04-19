@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.style.opacity = "0";
 
     setTimeout(() => {
-      window.location.href = "links.html";
+      window.location.href = "links/";
     }, 500);
   });
 });

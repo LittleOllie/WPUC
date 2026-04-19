@@ -240,7 +240,7 @@ function setupBackToMenu() {
   try {
     var h = window.location.hostname || "";
     if (/\.workers\.dev$/i.test(h)) {
-      a.href = "https://littleollielabs.com/links.html";
+      a.href = "https://littleollielabs.com/links/";
     }
   } catch (e) {
     /* keep default href */

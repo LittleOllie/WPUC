@@ -1833,7 +1833,7 @@ function maybeShowWelcomeModal() {
 }
 
 /**
- * Hub lives at repo /links.html. On Cloudflare Workers (*.workers.dev) that file may not exist — use main site menu.
+ * Hub lives at https://littleollielabs.com/links/ (repo /links/). On Workers (*.workers.dev) use main site menu.
  */
 function setupBackToMenu() {
   var a = document.querySelector(".back-to-menu");
@@ -1841,7 +1841,7 @@ function setupBackToMenu() {
   try {
     var h = window.location.hostname || "";
     if (/\.workers\.dev$/i.test(h)) {
-      a.href = "https://littleollielabs.com/links.html";
+      a.href = "https://littleollielabs.com/links/";
     }
   } catch (e) {
     /* keep default href */
