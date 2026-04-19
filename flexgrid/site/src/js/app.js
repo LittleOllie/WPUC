@@ -91,7 +91,7 @@ const HUB_LINKS_PAGE = "../links.html";
 function syncHubBackButton() {
   const btn = $("hubBackBtn");
   if (!btn) return;
-  btn.textContent = "BACK";
+  btn.textContent = "← BACK";
   if (currentStep === 1) {
     btn.title = "Back to Links";
     btn.setAttribute("aria-label", "Back to Links");
@@ -1215,19 +1215,26 @@ function exportProxyUrl(src) {
 }
 
 // ---------- Watermark helpers (DOM + Export) ----------
-/** Tiny outward nudge so pblo sits flush with the first cell (kills antialias / JPG seam gaps). */
-const PBLO_EDGE_BLEED_PX = 2;
+/**
+ * How much each exported tile is expanded beyond its layout rect (fraction of width/height per side).
+ * Smaller = less neighbor overlap; too small can show hairline gaps in JPEG. 0.25% total is a good balance.
+ */
+const EXPORT_TILE_BLEED = 0.0025;
 
-/** pblo scales to fit inside the first tile (contain), top-left; optional bleed expands the fit box slightly. */
-function flexGridPbloPreviewDrawSize(tileW, tileH, naturalW, naturalH) {
-  const tw = Math.max(1, tileW);
-  const th = Math.max(1, tileH);
+/**
+ * pblo sits flush to the first cell’s top-left and is exactly as wide as that cell (export/DOM share the same math).
+ * Height follows the image aspect ratio at that width.
+ */
+function flexGridPbloLayoutInTileRect(dx, dy, dtw, _dth, naturalW, naturalH) {
   const nw = Math.max(1, naturalW);
   const nh = Math.max(1, naturalH);
-  const scale = Math.min(tw / nw, th / nh);
+  const drawW = Math.max(1, Math.round(dtw));
+  const drawH = Math.max(1, Math.round((drawW * nh) / nw));
   return {
-    drawW: nw * scale,
-    drawH: nh * scale,
+    px: Math.round(dx),
+    py: Math.round(dy),
+    drawW,
+    drawH,
   };
 }
 
@@ -1237,7 +1244,11 @@ function syncWatermarkDOMToOneTile() {
   const overflow = document.getElementById("gridOverflow");
   if (!wm || !grid) return;
 
-  const firstTile = grid.querySelector(".tile") || overflow?.querySelector(".tile");
+  const primaryTiles = [...grid.querySelectorAll(".tile")];
+  const firstTile =
+    flexGridFirstTileForPbloAnchor(primaryTiles) ||
+    primaryTiles[0] ||
+    overflow?.querySelector(".tile");
   if (!firstTile) {
     wm.style.display = "none";
     return;
@@ -1251,7 +1262,7 @@ function syncWatermarkDOMToOneTile() {
   wm.style.position = "absolute";
   wm.style.zIndex = "9999";
   wm.style.pointerEvents = "none";
-  wm.style.objectFit = "contain";
+  wm.style.objectFit = "fill";
   wm.style.objectPosition = "left top";
   wm.style.margin = "0";
   wm.style.padding = "0";
@@ -1259,21 +1270,21 @@ function syncWatermarkDOMToOneTile() {
   wm.style.bottom = "auto";
   wm.style.boxSizing = "border-box";
 
-  const b = PBLO_EDGE_BLEED_PX;
   const stackRect = gridStack.getBoundingClientRect();
   const fr = firstTile.getBoundingClientRect();
-  const tw = Math.max(1, fr.width + b * 2);
-  const th = Math.max(1, fr.height + b * 2);
+  const lx = fr.left - stackRect.left;
+  const ly = fr.top - stackRect.top;
+  const { x: px, y: py, w: dtw, h: dth } = exportTileDrawRect(lx, ly, fr.width, fr.height);
 
   const applySize = () => {
     const nw = wm.naturalWidth;
     const nh = wm.naturalHeight;
     if (!nw || !nh) return;
-    const { drawW, drawH } = flexGridPbloPreviewDrawSize(tw, th, nw, nh);
-    wm.style.left = `${Math.floor(fr.left - stackRect.left) - b}px`;
-    wm.style.top = `${Math.floor(fr.top - stackRect.top) - b}px`;
-    wm.style.width = `${Math.max(1, Math.round(drawW))}px`;
-    wm.style.height = `${Math.max(1, Math.round(drawH))}px`;
+    const { px: left, py: top, drawW, drawH } = flexGridPbloLayoutInTileRect(px, py, dtw, dth, nw, nh);
+    wm.style.left = `${Math.round(left)}px`;
+    wm.style.top = `${Math.round(top)}px`;
+    wm.style.width = `${drawW}px`;
+    wm.style.height = `${drawH}px`;
   };
 
   if (wm.complete && wm.naturalWidth > 0) {
@@ -2144,7 +2155,7 @@ function ensureCollectionActionsModal() {
     <div class="collection-actions-modal" role="dialog" aria-modal="true" aria-labelledby="collectionActionsTitle">
       <div class="collection-actions-header">
         <div class="collection-actions-headerRow">
-          <button type="button" class="collection-actions-back" id="collectionActionsBack">← Select more collections</button>
+          <button type="button" class="collection-actions-back" id="collectionActionsBack">← SELECT MORE COLLECTIONS</button>
           <button type="button" class="collection-actions-close" id="collectionActionsCloseX" aria-label="Close">×</button>
         </div>
         <img class="collection-actions-topBanner" src="src/assets/images/header.png" alt="" aria-hidden="true" />
@@ -5053,18 +5064,28 @@ function drawPlaceholder(ctx, x, y, w, h) {
   // Intentionally blank
 }
 
-/** ~1% larger, centered — kills faint gaps between tiles in exported JPEG. */
+/** Slightly larger than layout rect — softens JPEG seams; see EXPORT_TILE_BLEED (kept small to avoid tile overlap). */
 function exportTileDrawRect(x, y, w, h) {
-  const bleed = 0.01;
+  const bleed = EXPORT_TILE_BLEED;
   const ox = w * (bleed / 2);
   const oy = h * (bleed / 2);
   return { x: x - ox, y: y - oy, w: w * (1 + bleed), h: h * (1 + bleed) };
 }
 
+/** Classic grid may lead with empty filler cells — match pblo to first real tile if possible. */
+function flexGridFirstTileForPbloAnchor(tiles) {
+  if (!tiles?.length) return null;
+  for (const t of tiles) {
+    if (t?.dataset?.kind === "empty") continue;
+    return t;
+  }
+  return tiles[0];
+}
+
 /** Match CSS object-fit: cover; object-position: center (no stretch). */
 function drawImageCover(ctx, img, dx, dy, dw, dh) {
-  const nw = img.naturalWidth;
-  const nh = img.naturalHeight;
+  const nw = img.naturalWidth || img.width;
+  const nh = img.naturalHeight || img.height;
   if (!nw || !nh || !dw || !dh) return;
   const scale = Math.max(dw / nw, dh / nh);
   const sw = dw / scale;
@@ -5072,6 +5093,74 @@ function drawImageCover(ctx, img, dx, dy, dw, dh) {
   const sx = (nw - sw) / 2;
   const sy = (nh - sh) / 2;
   ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+}
+
+/**
+ * PNG export: screen `<img>` can look loaded while canvas draw still fails (decode race, WebKit paint,
+ * or rare CORS quirks). Decode + drawImage, then createImageBitmap, then re-fetch via proxy/gateways.
+ */
+async function drawImageCoverWithExportFallbacks(ctx, tile, img, dx, dy, dw, dh) {
+  if (!img || tile?.dataset?.kind === "empty") {
+    drawPlaceholder(ctx, dx, dy, dw, dh);
+    return;
+  }
+  if (typeof img.decode === "function") {
+    try {
+      await img.decode();
+    } catch (_) {}
+  }
+  if (isImgUsable(img)) {
+    try {
+      drawImageCover(ctx, img, dx, dy, dw, dh);
+      return;
+    } catch (e) {
+      if (DEV) console.warn("[export] drawImageCover failed, retrying", e);
+    }
+  }
+  try {
+    if (typeof createImageBitmap === "function" && isImgUsable(img)) {
+      const bmp = await createImageBitmap(img);
+      try {
+        drawImageCover(ctx, bmp, dx, dy, dw, dh);
+        return;
+      } finally {
+        if (typeof bmp.close === "function") bmp.close();
+      }
+    }
+  } catch (_) {}
+
+  const tryFetchBitmap = async (url) => {
+    if (!url || typeof url !== "string" || typeof createImageBitmap !== "function") return false;
+    const u = url.trim();
+    if (!u || u.startsWith("data:")) return false;
+    const res = await fetch(u, { mode: "cors", credentials: "omit", cache: "force-cache" });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const bmp = await createImageBitmap(blob);
+    try {
+      drawImageCover(ctx, bmp, dx, dy, dw, dh);
+      return true;
+    } finally {
+      if (typeof bmp.close === "function") bmp.close();
+    }
+  };
+
+  const directSrc = (img.currentSrc || img.src || "").trim();
+  try {
+    if (await tryFetchBitmap(directSrc)) return;
+  } catch (_) {}
+
+  const raw = (tile?.dataset?.rawUrl || "").trim();
+  if (raw) {
+    const urls = buildImageCandidates(raw);
+    for (let i = 0; i < urls.length; i++) {
+      try {
+        if (await tryFetchBitmap(urls[i])) return;
+      } catch (_) {}
+    }
+  }
+
+  drawPlaceholder(ctx, dx, dy, dw, dh);
 }
 
 // ✅ WKWebView-safe export handler + browser fallback
@@ -5219,9 +5308,9 @@ function isImgUsable(img) {
   return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
 }
 
-function waitForExportImages(tiles) {
+async function waitForExportImages(tiles) {
   const imgs = tiles.map((t) => t.querySelector("img")).filter(Boolean);
-  return Promise.all(
+  await Promise.all(
     imgs.map(
       (img) =>
         new Promise((resolve) => {
@@ -5232,9 +5321,17 @@ function waitForExportImages(tiles) {
           const done = () => resolve();
           img.addEventListener("load", done, { once: true });
           img.addEventListener("error", done, { once: true });
-          setTimeout(done, 10000);
+          setTimeout(done, 15000);
         })
     )
+  );
+  await Promise.all(
+    imgs.map(async (img) => {
+      if (typeof img.decode !== "function") return;
+      try {
+        await img.decode();
+      } catch (_) {}
+    })
   );
 }
 
@@ -5248,6 +5345,7 @@ async function exportPNG() {
     if (!tiles.length) return setStatus("😅 Nothing to export yet — build a grid first!");
 
     await waitForExportImages(tiles);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const gridRect = exportRoot.getBoundingClientRect();
     const logicalW = Math.max(1, gridRect.width);
@@ -5288,34 +5386,26 @@ async function exportPNG() {
       const { x: dx, y: dy, w: dw, h: dh } = exportTileDrawRect(x, y, w, h);
 
       const img = tile.querySelector("img");
-      if (!isImgUsable(img)) {
-        drawPlaceholder(ctx, dx, dy, dw, dh);
-        continue;
-      }
-
-      try {
-        drawImageCover(ctx, img, dx, dy, dw, dh);
-      } catch (e) {
-        drawPlaceholder(ctx, dx, dy, dw, dh);
-      }
+      await drawImageCoverWithExportFallbacks(ctx, tile, img, dx, dy, dw, dh);
     }
 
     try {
       const pbloImg = await loadImageWithRetry("src/assets/images/pblo.png", 2, 8000);
-      const first = tiles[0];
+      const first = flexGridFirstTileForPbloAnchor(tiles);
       if (first && pbloImg && pbloImg.naturalWidth > 0) {
         const fr = first.getBoundingClientRect();
-        const b = PBLO_EDGE_BLEED_PX;
-        const wx0 = pad + (fr.left - gridRect.left);
-        const wy0 = pad + (fr.top - gridRect.top);
-        const wx = Math.floor(wx0) - b;
-        const wy = Math.floor(wy0) - b;
-        const ww = Math.max(1, fr.width + b * 2);
-        const wh0 = Math.max(1, fr.height + b * 2);
-        const { drawW, drawH } = flexGridPbloPreviewDrawSize(ww, wh0, pbloImg.naturalWidth, pbloImg.naturalHeight);
-        const dw = Math.max(1, Math.round(drawW));
-        const dh = Math.max(1, Math.round(drawH));
-        ctx.drawImage(pbloImg, wx, wy, dw, dh);
+        const x = pad + (fr.left - gridRect.left);
+        const y = pad + (fr.top - gridRect.top);
+        const { x: dx, y: dy, w: dtw, h: dth } = exportTileDrawRect(x, y, fr.width, fr.height);
+        const { px, py, drawW, drawH } = flexGridPbloLayoutInTileRect(
+          dx,
+          dy,
+          dtw,
+          dth,
+          pbloImg.naturalWidth,
+          pbloImg.naturalHeight
+        );
+        ctx.drawImage(pbloImg, px, py, drawW, drawH);
       }
     } catch (e) {
       console.warn("pblo overlay failed for PNG export:", e);
@@ -5435,9 +5525,10 @@ function gridGifMakeCanvas(size, bg) {
 }
 
 function drawImageContain(ctx, img, x, y, w, h) {
-  if (!img || !img.naturalWidth || !img.naturalHeight) return;
-  var iw = img.naturalWidth;
-  var ih = img.naturalHeight;
+  if (!img) return;
+  var iw = img.naturalWidth || img.width;
+  var ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return;
   var scale = Math.min(w / iw, h / ih);
   var dw = iw * scale;
   var dh = ih * scale;

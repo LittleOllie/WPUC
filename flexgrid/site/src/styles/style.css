@@ -1327,6 +1327,8 @@ body.dark .stageLayoutSectionHeaderHint{
   border-radius: 10px;
   transition: color .2s, background .2s, border-color .2s, box-shadow .2s;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .stepItem.active {
   background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
@@ -2618,6 +2620,8 @@ body.dark .tile[data-kind="empty"]{
   padding: 6px 4px;
   border-radius: 8px;
   transition: background .15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .disclaimer-back-link:hover{
   background: rgba(0,0,0,.12);
@@ -3955,6 +3959,8 @@ body.dark .collection-actions-header{
   cursor: pointer;
   padding: 8px 10px;
   border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .collection-actions-back:hover{
   background: rgba(255,255,255,0.08);
