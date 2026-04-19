@@ -1,6 +1,20 @@
 name = "loflexgrid"
-main = "index.js"
+# Full worker: Alchemy (ETH / Base / Polygon + ApeChain fallback) + Moralis (ApeChain primary), /img proxy.
+main = "../worker.js"
 compatibility_date = "2024-01-01"
 
 # Deploy to workers.dev subdomain: loflexgrid.littleollienft.workers.dev
 # Run: npx wrangler deploy
+#
+# Secrets (values are NOT stored in this file):
+#   npx wrangler secret put ALCHEMY_API_KEY
+#     → Alchemy key for ETH, Base, and Polygon (`getNFTsForOwner`, metadata, contract logos).
+#
+#   npx wrangler secret put MORALIS_API_KEY
+#     → ApeChain via Moralis first; if Moralis errors, same routes fall back to Alchemy when ALCHEMY_API_KEY is set.
+#
+#   npx wrangler secret put ALCHEMY_API_KEY_APECHAIN   (optional)
+#     → dedicated Alchemy app for ApeChain only; otherwise ApeChain Alchemy fallback uses ALCHEMY_API_KEY.
+#
+# Optional: if Moralis changes the ApeChain slug, set a plain Worker var (not a secret):
+#   MORALIS_APECHAIN_CHAIN = "ape"   # or "0x8173" / "33139" — tried in order with built-in fallbacks.

@@ -6,8 +6,9 @@ import {
   fetchNFTsFromWorker,
   fetchNFTsFromZora,
   fetchContractMetadataFromWorker,
-  WORKER_BASE,
+  getWorkerBase,
 } from "./api.js";
+import { getAlchemyNetworkId } from "./alchemyNetworks.js";
 
 const DEV = window.location.hostname === "localhost";
 /** Max NFTs (including custom uploads) in one grid build / reorder. */
@@ -73,14 +74,46 @@ function goToStep(step) {
     state.walletCollapsed = false;
   }
   if (currentStep === 2 && collectionsSection) collectionsSection.classList.remove("collapsed");
-  if (currentStep === 3 && traitOrderSection) traitOrderSection.classList.remove("collapsed");
   if (currentStep === 3) {
     syncLayoutPickerActiveStates();
     applySettingsToLiveGrids();
     syncStageCaptionOverlay();
+    syncGridRemoveImportedBtnVisibility();
   }
 
+  syncHubBackButton();
   updateGuideGlow();
+}
+
+/** Same folder level as flexgrid/site/ — Little Ollie links hub. */
+const HUB_LINKS_PAGE = "../links.html";
+
+function syncHubBackButton() {
+  const btn = $("hubBackBtn");
+  if (!btn) return;
+  btn.textContent = "BACK";
+  if (currentStep === 1) {
+    btn.title = "Back to Links";
+    btn.setAttribute("aria-label", "Back to Links");
+  } else if (currentStep === 2) {
+    btn.title = "Back to Wallets";
+    btn.setAttribute("aria-label", "Back to Wallets");
+  } else {
+    btn.title = "Back to Collections";
+    btn.setAttribute("aria-label", "Back to Collections");
+  }
+}
+
+function onHubBackClick() {
+  if (currentStep === 1) {
+    window.location.href = HUB_LINKS_PAGE;
+    return;
+  }
+  if (currentStep === 2) {
+    goToStep(1);
+    return;
+  }
+  goToStep(2);
 }
 
 function escapeHtml(str) {
@@ -97,10 +130,10 @@ const SHOW_ERROR_PANEL = false; // set true only when debugging
 function setGuideGlow(ids = []) {
   const all = [
     "walletInput",
-    "addWalletBtn",
     "loadBtn",
     "controlsPanel",
     "collectionsList",
+    "collectionSearch",
   ];
 
   // clear glow everywhere
@@ -143,13 +176,13 @@ function updateGuideGlow() {
     collEmpty.style.display = state.collections.length > 0 ? "" : "none";
   } else if (collEmpty) collEmpty.style.display = "none";
 
-  // 1) No wallets yet -> highlight input + add
+  // 1) No wallets yet -> highlight wallet textarea
   if (!hasWallets) {
-    setGuideGlow(["walletInput", "addWalletBtn"]);
+    setGuideGlow(["walletInput"]);
     return;
   }
 
-  // 2) Wallet(s) added but not loaded yet -> highlight Load wallet(s) (pulse)
+  // 2) Wallet(s) added but not loaded yet -> highlight LOAD WALLET (pulse)
   if (hasWallets && !hasLoadedWallets) {
     setGuideGlow(["loadBtn"]);
     const loadBtn = $("loadBtn");
@@ -157,9 +190,9 @@ function updateGuideGlow() {
     return;
   }
 
-  // 3) Wallets loaded, no selection for build -> highlight collections area (panel + list)
+  // 3) Wallets loaded, no selection for build -> highlight search (green ring)
   if (controlsVisible && !hasOneOrMoreForBuild) {
-    setGuideGlow(["controlsPanel", "collectionsList"]);
+    setGuideGlow(["collectionSearch"]);
     return;
   }
 
@@ -195,7 +228,7 @@ const state = {
   wallets: [],
   chain: "eth",
   host: "eth-mainnet.g.alchemy.com",
-  walletCollapsed: true,
+  walletCollapsed: false,
   collectionsCollapsed: true,
   traitOrderCollapsed: true,
   /** Layout template id: "classic" | "hero" | "split" | "mixed" */
@@ -302,7 +335,7 @@ function scheduleManualModalNftPoll() {
         err.className = "manual-selection-nfts-waiting manual-selection-nfts-waiting--timeout";
         err.innerHTML =
           "<p class=\"manual-selection-nfts-waiting-title\">No NFTs showed up in time</p>" +
-          "<p class=\"manual-selection-nfts-waiting-hint\">Try <strong>Load wallet(s)</strong> again, or close and tap <strong>Select Manually</strong> once your collections finish loading.</p>";
+          "<p class=\"manual-selection-nfts-waiting-hint\">Try <strong>🔍 LOAD WALLET</strong> again, or close and tap <strong>Select Manually</strong> once your collections finish loading.</p>";
         grid.appendChild(err);
       }
       updateManualModalLoadProgress();
@@ -443,8 +476,30 @@ const ALCHEMY_HOST = {
   eth: "eth-mainnet.g.alchemy.com",
   base: "base-mainnet.g.alchemy.com",
   polygon: "polygon-mainnet.g.alchemy.com",
-  apechain: null,
 };
+
+/** Keep `state.chain` / `state.host` in sync with the Chain dropdown so loads never use a stale chain. */
+function applyChainSelectionFromDom() {
+  const sel = $("chainSelect");
+  if (!sel) return;
+  const raw = String(sel.value || "").trim().toLowerCase();
+  if (!raw) return;
+  if (raw === "solana") {
+    state.chain = "solana";
+    return;
+  }
+  if (raw === "apechain") {
+    state.chain = "apechain";
+    state.host = null;
+    console.log("[FlexGrid] Chain UI synced to state:", state.chain, "(NFTs via Moralis on Worker)");
+    return;
+  }
+  const host = ALCHEMY_HOST[raw];
+  if (!host) return;
+  state.chain = raw;
+  state.host = host;
+  console.log("[FlexGrid] Chain UI synced to state:", state.chain);
+}
 
 // ---------- Build cache-buster (GRID only) ----------
 let BUILD_ID = Date.now();
@@ -649,9 +704,23 @@ function showLoading(message = "Loading…", progress = "", pct = null) {
     overlay.classList.add("visible");
     overlay.setAttribute("aria-hidden", "false");
   }
-  void message;
-  void progress;
-  void pct;
+  const statusEl = $("loadingOverlayStatus");
+  if (statusEl) {
+    const line = [message, progress].filter((s) => s && String(s).trim()).join(" — ");
+    statusEl.textContent = line || "";
+  }
+  const fill = $("loadingOverlayBarFill");
+  if (fill) {
+    fill.classList.remove("indeterminate");
+    fill.style.transform = "";
+    if (pct != null && Number.isFinite(Number(pct))) {
+      const w = Math.max(0, Math.min(100, Number(pct)));
+      fill.style.width = `${w}%`;
+    } else {
+      fill.style.width = "";
+      fill.classList.add("indeterminate");
+    }
+  }
 }
 
 function hideLoading() {
@@ -659,6 +728,14 @@ function hideLoading() {
   if (overlay) {
     overlay.classList.remove("visible");
     overlay.setAttribute("aria-hidden", "true");
+  }
+  const statusEl = $("loadingOverlayStatus");
+  if (statusEl) statusEl.textContent = "";
+  const fill = $("loadingOverlayBarFill");
+  if (fill) {
+    fill.classList.remove("indeterminate");
+    fill.style.width = "0%";
+    fill.style.transform = "";
   }
 }
 
@@ -677,6 +754,9 @@ function updateImageProgress() {
 
   const stageLoadBar = document.getElementById("gridStageImageLoading");
 
+  const stageFill = document.getElementById("gridStageImageLoadingBarFill");
+  const stageHint = document.querySelector(".grid-stage-image-loading-hint");
+
   if (total === 0) {
     if (barWrap) barWrap.style.display = "none";
     if (retryBtn) retryBtn.classList.remove("pulseAlert");
@@ -687,6 +767,10 @@ function updateImageProgress() {
     if (stageLoadBar) {
       stageLoadBar.classList.add("grid-stage-image-loading--empty");
       stageLoadBar.classList.remove("grid-stage-image-loading--busy", "grid-stage-image-loading--done");
+    }
+    if (stageFill) {
+      stageFill.style.width = "0%";
+      stageFill.classList.remove("indeterminate");
     }
     return;
   }
@@ -702,12 +786,24 @@ function updateImageProgress() {
 
   setStatus(statusMsg);
 
-  /* Top-of-grid: LO-only spinner while images settle */
+  /* Top-of-grid: red→green progress bar while images settle */
   if (stageLoadBar) {
     stageLoadBar.classList.remove("grid-stage-image-loading--empty");
     const busy = settled < total;
     stageLoadBar.classList.toggle("grid-stage-image-loading--busy", busy);
     stageLoadBar.classList.toggle("grid-stage-image-loading--done", !busy);
+    if (stageFill) {
+      stageFill.classList.remove("indeterminate");
+      stageFill.style.width = `${progress}%`;
+    }
+    if (stageHint) {
+      if (settled >= total) {
+        stageHint.textContent =
+          failed > 0 ? `Finished — ${failed} image(s) need attention` : "All images loaded";
+      } else {
+        stageHint.textContent = `Loading images… ${settled}/${total}`;
+      }
+    }
   }
 
   /* Below-grid status bar */
@@ -776,6 +872,174 @@ function safeText(s) {
 }
 
 // ---------- URL helpers ----------
+function tryParseJsonObject(val) {
+  if (val == null) return null;
+  if (typeof val === "object") return val;
+  if (typeof val !== "string") return null;
+  const t = val.trim();
+  if (!t || (t[0] !== "{" && t[0] !== "[")) return null;
+  try {
+    const o = JSON.parse(t);
+    return typeof o === "object" && o !== null ? o : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Alchemy v2/v3 may ship `metadata` as a stringified JSON blob. */
+function mergedNFTMetadata(nft) {
+  const m0 = tryParseJsonObject(nft?.metadata) || (typeof nft?.metadata === "object" && nft.metadata ? nft.metadata : {});
+  const m1 = tryParseJsonObject(nft?.rawMetadata) || (typeof nft?.rawMetadata === "object" && nft.rawMetadata ? nft.rawMetadata : {});
+  const m2 = tryParseJsonObject(nft?.raw?.metadata) || (typeof nft?.raw?.metadata === "object" && nft.raw?.metadata ? nft.raw.metadata : {});
+  return { ...m0, ...m1, ...m2 };
+}
+
+/** Moralis / gateways sometimes emit protocol-relative URLs or a broken `https:///2F…` prefix. */
+function repairBrokenImageUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  let s = url.trim();
+  if (!s) return url;
+  if (s.startsWith("//")) s = `https:${s}`;
+  s = s.replace(/^https:\/\/{2,}2F(?=[a-zA-Z0-9])/i, "https://");
+  s = s.replace(/^http:\/\/{2,}2F(?=[a-zA-Z0-9])/i, "http://");
+  s = s.replace(/^https:\/\/{3,}/i, "https://");
+  s = s.replace(/^http:\/\/{3,}/i, "http://");
+  return s;
+}
+
+/** Inline SVG / image_data from OpenSea-style metadata → usable data URL (bounded size). */
+function coerceImageDataUrl(imageData) {
+  if (typeof imageData !== "string" || !imageData.trim()) return null;
+  const d = imageData.trim();
+  if (d.startsWith("data:")) return d;
+  if (d.length > 750000) return null;
+  if (d.includes("<svg")) return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(d)}`;
+  return null;
+}
+
+/**
+ * Broad image discovery (does not apply collection-logo exclusion — pair with getImage() first when needed).
+ * Safe for messy v3 / ApeChain payloads; never throws to callers.
+ */
+function getBestImage(nft) {
+  try {
+    const merged = mergedNFTMetadata(nft);
+    const pick = (v) => {
+      if (typeof v !== "string" || !v.trim()) return null;
+      return repairBrokenImageUrl(v.trim());
+    };
+    return (
+      pick(nft?.media?.[0]?.gateway) ||
+      pick(nft?.media?.[0]?.thumbnail) ||
+      pick(nft?.media?.[0]?.raw) ||
+      pick(merged.image) ||
+      pick(merged.image_url) ||
+      pick(nft?.rawMetadata?.image) ||
+      pick(nft?.rawMetadata?.image_url) ||
+      coerceImageDataUrl(nft?.rawMetadata?.image_data) ||
+      pick(typeof nft?.image === "string" ? nft.image : null) ||
+      pick(nft?.image?.cachedUrl) ||
+      pick(nft?.image?.thumbnailUrl) ||
+      pick(nft?.image?.originalUrl) ||
+      pick(nft?.image?.pngUrl) ||
+      null
+    );
+  } catch (err) {
+    console.warn("[FlexGrid] getBestImage:", err?.message || err);
+    return null;
+  }
+}
+
+/** Raw URL for art before proxy (grid + normalization). Prefer logo-safe getImage, then getBestImage. */
+function primaryRawArtUrlForNft(nft) {
+  try {
+    const a = (getImage(nft) || "").toString().trim();
+    if (a) return a;
+    const b = getBestImage(nft);
+    return b ? String(b).trim() : "";
+  } catch (err) {
+    console.warn("[FlexGrid] primaryRawArtUrlForNft:", err?.message || err);
+    return "";
+  }
+}
+
+/**
+ * Collection-level image hints (ApeChain / Moralis rows may omit contract-level logos).
+ * Returns a URL string or null (UI uses placeholder when null).
+ */
+function getCollectionLogoFromNFTs(collection) {
+  if (!collection || typeof collection !== "object") return null;
+  if (typeof collection.image === "string" && collection.image.trim()) {
+    return repairBrokenImageUrl(collection.image.trim());
+  }
+  if (typeof collection.logo === "string" && collection.logo.trim()) {
+    return repairBrokenImageUrl(collection.logo.trim());
+  }
+  const nfts = collection.nfts || [];
+  for (let i = 0; i < nfts.length; i++) {
+    const n = nfts[i];
+    if (!n) continue;
+    if (typeof n.image === "string" && n.image.trim()) return repairBrokenImageUrl(n.image.trim());
+    if (n.image && typeof n.image === "object") {
+      const u = n.image.cachedUrl || n.image.originalUrl || n.image.thumbnailUrl || n.image.pngUrl;
+      if (typeof u === "string" && u.trim()) return repairBrokenImageUrl(u.trim());
+    }
+    const art = primaryRawArtUrlForNft(n);
+    if (art) return repairBrokenImageUrl(art);
+  }
+  return null;
+}
+
+/**
+ * Collection row / logo: contract-level URL first, then per-NFT contract metadata, last resort first token art.
+ */
+function getCollectionLogoUrlForRow(collection) {
+  try {
+    if (!collection || typeof collection !== "object") return null;
+    const key = String(collection.key || "").trim().toLowerCase();
+    const logApe = (source, url) => {
+      if (state?.chain === "apechain" && url) {
+        console.log("[FlexGrid][ApeChain] collection logo source:", source, "contract:", key || "(unknown)");
+      }
+    };
+    if (typeof collection.image === "string" && collection.image.trim()) {
+      const u = collection.image.trim();
+      logApe("collection.image", u);
+      return u;
+    }
+    if (typeof collection.logo === "string" && collection.logo.trim()) {
+      const u = collection.logo.trim();
+      logApe("collection.logo", u);
+      return u;
+    }
+    const nfts = collection.nfts || [];
+    for (let i = 0; i < nfts.length; i++) {
+      const u = extractCollectionLogoRawUrlFromNft(nfts[i]);
+      if (u) {
+        logApe("nft.contract/collection metadata", u);
+        return u;
+      }
+    }
+    const fromNfts = getCollectionLogoFromNFTs({ ...collection, image: null, logo: null });
+    if (fromNfts) {
+      logApe("first token art / nft.image", fromNfts);
+      return fromNfts;
+    }
+    if (state?.chain === "apechain") {
+      console.log("[FlexGrid][ApeChain] collection logo source: none (placeholder)", "contract:", key || "(unknown)");
+    }
+    return null;
+  } catch (err) {
+    console.warn("[FlexGrid] getCollectionLogoUrlForRow:", err?.message || err);
+    return null;
+  }
+}
+
+/** Optional strict filter (e.g. analytics). Not applied to wallet load — would hide valid fixer-upper NFTs. */
+function isValidNFT(nft) {
+  return !!(nft && (nft._rawImageUrl || nft.image || primaryRawArtUrlForNft(nft)));
+}
+
 function isAlreadyProxied(url) {
   return typeof url === "string" && !!IMG_PROXY && url.startsWith(IMG_PROXY);
 }
@@ -792,6 +1056,13 @@ function getIpfsPath(url) {
 
   try {
     const u = new URL(s);
+    const host = u.hostname.toLowerCase();
+    const sub = host.match(/^([a-zA-Z0-9]{30,})\.ipfs\.(w3s\.link|dweb\.link)$/);
+    if (sub) {
+      const cid = sub[1];
+      const tail = (u.pathname || "").replace(/^\/+/, "").split("?")[0].split("#")[0];
+      return tail ? `${cid}/${tail}` : cid;
+    }
     const idx = u.pathname.indexOf("/ipfs/");
     if (idx !== -1) {
       return u.pathname.slice(idx + "/ipfs/".length).replace(/^\/+/, "");
@@ -801,23 +1072,32 @@ function getIpfsPath(url) {
   return "";
 }
 
+/** HTTP(S) / IPFS / ar / CID normalization. IPFS is upgraded to https gateways; use `toProxyUrl` for Worker `/img?url=` (not `/api/img`). */
 function normalizeImageUrl(url) {
   if (!url) return null;
 
-  const s = String(url).trim();
+  const s = repairBrokenImageUrl(String(url).trim());
 
   // Already good
   if (s.startsWith("https://")) return s;
+  if (s.startsWith("http://")) return s;
+  if (s.startsWith("data:")) return s;
+
+  // ar://… (common in Alchemy v3 / on-chain metadata)
+  if (/^ar:\/\//i.test(s)) {
+    const id = s.replace(/^ar:\/\//i, "").replace(/^\/+/, "");
+    return id ? `https://arweave.net/${id}` : null;
+  }
 
   // ipfs://
   if (s.startsWith("ipfs://")) {
     const path = s.replace("ipfs://", "").replace(/^ipfs\//, "");
-    return "https://cloudflare-ipfs.com/ipfs/" + path;
+    return "https://dweb.link/ipfs/" + path;
   }
 
   // Raw CID
   if (!s.startsWith("http") && s.length > 40) {
-    return "https://cloudflare-ipfs.com/ipfs/" + s;
+    return "https://dweb.link/ipfs/" + s;
   }
 
   return s;
@@ -826,6 +1106,8 @@ function normalizeImageUrl(url) {
 /** Prefer Worker proxy when available; fallback to direct gateways for reliability. */
 function toProxyUrl(rawUrl) {
   if (!rawUrl || !IMG_PROXY) return null;
+  const raw = String(rawUrl).trim();
+  if (/^data:/i.test(raw) || /^blob:/i.test(raw)) return null;
   if (isAlreadyProxied(rawUrl)) return rawUrl;
   const normalized = normalizeImageUrl(rawUrl);
   const urlToProxy = normalized || String(rawUrl).trim();
@@ -852,15 +1134,37 @@ function buildImageCandidates(rawUrl) {
 
   const ipfsPath = getIpfsPath(rawUrl);
   if (ipfsPath) {
-    candidates.push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
+    candidates.push(`https://dweb.link/ipfs/${ipfsPath}`);
     candidates.push(`https://w3s.link/ipfs/${ipfsPath}`);
-    candidates.push(`https://nftstorage.link/ipfs/${ipfsPath}`);
     candidates.push(`https://ipfs.io/ipfs/${ipfsPath}`);
+    candidates.push(`https://nftstorage.link/ipfs/${ipfsPath}`);
+    candidates.push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
   } else if (normalized && !candidates.includes(normalized)) {
     candidates.push(normalized);
   }
 
   return [...new Set(candidates)];
+}
+
+/**
+ * Client-side img onerror chain (simple list). Grid tiles use `loadTileImage` instead (multi-gateway + cache).
+ * @param {HTMLImageElement} imgElement
+ * @param {string[]} fallbackUrls
+ * @param {string} [finalFallback]
+ */
+function handleImageError(imgElement, fallbackUrls, finalFallback = TILE_PLACEHOLDER_SRC) {
+  if (!imgElement || typeof imgElement.addEventListener !== "function") return;
+  const list = [...new Set((fallbackUrls || []).filter((u) => typeof u === "string" && u.trim()))];
+  if (!list.length) {
+    imgElement.src = finalFallback;
+    return;
+  }
+  let index = 0;
+  imgElement.onerror = () => {
+    index++;
+    if (index < list.length) imgElement.src = list[index];
+    else imgElement.src = finalFallback;
+  };
 }
 
 /** Register URLs the manual picker already loaded so Build Grid reuses imageCache (instant assign, no re-fetch). */
@@ -911,21 +1215,20 @@ function exportProxyUrl(src) {
 }
 
 // ---------- Watermark helpers (DOM + Export) ----------
-/** Match PNG export: pblo in first cell, width = tile, height capped to 52% of tile (then scale width). */
+/** Tiny outward nudge so pblo sits flush with the first cell (kills antialias / JPG seam gaps). */
+const PBLO_EDGE_BLEED_PX = 2;
+
+/** pblo scales to fit inside the first tile (contain), top-left; optional bleed expands the fit box slightly. */
 function flexGridPbloPreviewDrawSize(tileW, tileH, naturalW, naturalH) {
   const tw = Math.max(1, tileW);
   const th = Math.max(1, tileH);
   const nw = Math.max(1, naturalW);
   const nh = Math.max(1, naturalH);
-  const ratio = nh / nw;
-  let drawW = tw;
-  let drawH = drawW * ratio;
-  const pbloCap = th * 0.52;
-  if (drawH > pbloCap) {
-    drawH = pbloCap;
-    drawW = (nw / nh) * drawH;
-  }
-  return { drawW, drawH };
+  const scale = Math.min(tw / nw, th / nh);
+  return {
+    drawW: nw * scale,
+    drawH: nh * scale,
+  };
 }
 
 function syncWatermarkDOMToOneTile() {
@@ -940,27 +1243,37 @@ function syncWatermarkDOMToOneTile() {
     return;
   }
 
-  const gridWrap = grid.closest(".gridWrap") || grid.parentElement;
-  if (!gridWrap) return;
-  if (wm.parentElement !== gridWrap) gridWrap.appendChild(wm);
+  const gridStack = grid.closest(".gridStack");
+  if (!gridStack) return;
+  if (wm.parentElement !== gridStack) gridStack.appendChild(wm);
 
   wm.style.display = "block";
   wm.style.position = "absolute";
   wm.style.zIndex = "9999";
   wm.style.pointerEvents = "none";
+  wm.style.objectFit = "contain";
+  wm.style.objectPosition = "left top";
+  wm.style.margin = "0";
+  wm.style.padding = "0";
+  wm.style.right = "auto";
+  wm.style.bottom = "auto";
+  wm.style.boxSizing = "border-box";
 
-  const wrapRect = gridWrap.getBoundingClientRect();
+  const b = PBLO_EDGE_BLEED_PX;
+  const stackRect = gridStack.getBoundingClientRect();
   const fr = firstTile.getBoundingClientRect();
-  wm.style.left = Math.round(fr.left - wrapRect.left) + "px";
-  wm.style.top = Math.round(fr.top - wrapRect.top) + "px";
+  const tw = Math.max(1, fr.width + b * 2);
+  const th = Math.max(1, fr.height + b * 2);
 
   const applySize = () => {
     const nw = wm.naturalWidth;
     const nh = wm.naturalHeight;
     if (!nw || !nh) return;
-    const { drawW, drawH } = flexGridPbloPreviewDrawSize(fr.width, fr.height, nw, nh);
-    wm.style.width = Math.max(1, Math.round(drawW)) + "px";
-    wm.style.height = Math.max(1, Math.round(drawH)) + "px";
+    const { drawW, drawH } = flexGridPbloPreviewDrawSize(tw, th, nw, nh);
+    wm.style.left = `${Math.floor(fr.left - stackRect.left) - b}px`;
+    wm.style.top = `${Math.floor(fr.top - stackRect.top) - b}px`;
+    wm.style.width = `${Math.max(1, Math.round(drawW))}px`;
+    wm.style.height = `${Math.max(1, Math.round(drawH))}px`;
   };
 
   if (wm.complete && wm.naturalWidth > 0) {
@@ -974,117 +1287,74 @@ function syncWatermarkDOMToOneTile() {
 }
 
 // ---------- Wallet list ----------
-function normalizeWallet(w) {
-  return (w || "").trim().replace(/\s+/g, "").toLowerCase();
+const MAX_WALLET_ADDRESSES = 12;
+
+/** Split pasted / typed text into unique valid 0x addresses (capped at MAX_WALLET_ADDRESSES). */
+function parseWalletAddressesFromInput(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return [];
+  const parts = s.split(/[\s,;]+/g);
+  const out = [];
+  const seen = {};
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i].trim().toLowerCase();
+    if (!p) continue;
+    if (!/^0x[a-f0-9]{40}$/.test(p)) continue;
+    if (seen[p]) continue;
+    seen[p] = true;
+    out.push(p);
+    if (out.length >= MAX_WALLET_ADDRESSES) break;
+  }
+  return out;
 }
 
 let walletValidationDebounce = null;
 
 function clearWalletValidationHint() {
   const hint = $("walletValidationHint");
-  if (hint) hint.textContent = "";
+  if (hint) {
+    hint.textContent = "";
+    hint.style.color = "";
+  }
 }
 
-function showWalletValidationHint(valid) {
+function updateWalletInputHint() {
   const hint = $("walletValidationHint");
-  if (!hint) return;
-  hint.textContent = valid ? "✓ Valid" : "";
-  hint.style.color = valid ? "#4CAF50" : "";
-}
-
-function addWallet() {
   const input = $("walletInput");
-  const hint = $("walletValidationHint");
-  const w = normalizeWallet(input ? input.value : "");
-
-  const showAddError = (msg) => {
-    setStatus(msg);
-    if (hint) { hint.textContent = msg; hint.style.color = "#ff9800"; }
-  };
-
-  if (!w) {
-    showAddError("👋 Paste a wallet address first.");
+  if (!hint || !input) return;
+  const raw = String(input.value || "").trim();
+  const n = state.wallets.length;
+  if (!raw) {
+    clearWalletValidationHint();
     return;
   }
-  if (!/^0x[a-f0-9]{40}$/.test(w)) {
-    showAddError("That doesn't look like a valid 0x address (need 0x + 40 hex chars).");
-    return;
+  if (n > 0) {
+    hint.textContent = `✓ ${n} wallet${n === 1 ? "" : "s"} ready`;
+    hint.style.color = "#4CAF50";
+  } else {
+    hint.textContent = "Enter valid 0x addresses (comma, space, or new line)";
+    hint.style.color = "#ff9800";
   }
-  if (state.wallets.includes(w)) {
-    showAddError("Already got that one!");
-    return;
-  }
-
-  state.wallets.push(w);
-
-  if (input) {
-    input.value = "";
-    input.blur();
-  }
-  clearWalletValidationHint();
-
-  renderWalletList();
-  syncWalletHeader();
-  enableButtons();
-  updateGuideGlow();
-  setStatus(`✅ Nice! Wallet added (${state.wallets.length} total)`);
 }
 
-function removeWallet(w) {
-  state.wallets = state.wallets.filter((x) => x !== w);
+/** Parse #walletInput into state.wallets (no separate Add step). */
+function syncWalletsFromInput() {
+  const input = $("walletInput");
+  const raw = input ? input.value : "";
+  state.wallets = parseWalletAddressesFromInput(raw);
   renderWalletList();
   syncWalletHeader();
   enableButtons();
   updateGuideGlow();
-    setStatus(`Bye bye wallet — ${state.wallets.length} remaining`);
+  updateWalletInputHint();
+  return state.wallets.length;
 }
 
 function renderWalletList() {
   const wrap = $("walletList");
   if (!wrap) return;
-
-  if (!state.wallets.length) {
-    wrap.style.display = "none";
-    wrap.innerHTML = "";
-    return;
-  }
-
-  wrap.style.display = "";
+  wrap.style.display = "none";
   wrap.innerHTML = "";
-
-  state.wallets.forEach((w) => {
-    const row = document.createElement("div");
-    row.className = "walletChip";
-
-    const left = document.createElement("div");
-    left.style.minWidth = "0";
-
-    const addr = document.createElement("div");
-    addr.className = "walletAddr";
-    addr.textContent = w;
-
-    const meta = document.createElement("div");
-    meta.className = "walletMeta";
-    meta.textContent = "Ready to load";
-
-    left.appendChild(addr);
-    left.appendChild(meta);
-
-    const btns = document.createElement("div");
-    btns.className = "chipBtns";
-
-    const rm = document.createElement("button");
-    rm.className = "btnSmall";
-    rm.type = "button";
-    rm.textContent = "🗑 Remove";
-    rm.addEventListener("click", () => removeWallet(w));
-
-    btns.appendChild(rm);
-
-    row.appendChild(left);
-    row.appendChild(btns);
-    wrap.appendChild(row);
-  });
 }
 
 // ---------- Manual selection modal ----------
@@ -1183,10 +1453,14 @@ function ensureManualSelectionModal() {
   return overlay;
 }
 
-function modalThumbSrcForNFT(nft) {
+function modalThumbSrcForNFT(nft, candidateIndex = 0) {
   const raw = getImage(nft);
-  const u = toProxyUrl(raw) || normalizeImageUrl(raw);
-  return u || TILE_PLACEHOLDER_SRC;
+  if (!raw) return TILE_PLACEHOLDER_SRC;
+  const list = buildImageCandidates(raw);
+  if (!list.length) return TILE_PLACEHOLDER_SRC;
+  const ci = Number(candidateIndex);
+  const i = Math.min(Math.max(0, Number.isFinite(ci) ? ci : 0), list.length - 1);
+  return list[i] || TILE_PLACEHOLDER_SRC;
 }
 
 function updateManualModalLoadProgress() {
@@ -1322,7 +1596,12 @@ function armManualModalImage(img, cell, retryBtn, nft) {
 function retryManualModalImage(img, nft, retryBtn, cell) {
   cell.classList.remove("manual-nft-tile--error");
   retryBtn.hidden = true;
-  const base = modalThumbSrcForNFT(nft);
+  const raw = getImage(nft);
+  const list = raw ? buildImageCandidates(raw) : [];
+  let idx = parseInt(cell.dataset.thumbCandIdx || "0", 10);
+  idx = list.length ? (idx + 1) % list.length : 0;
+  cell.dataset.thumbCandIdx = String(idx);
+  const base = list.length ? list[idx] : modalThumbSrcForNFT(nft, 0);
   const sep = base.includes("?") ? "&" : "?";
   attachManualThumbnailPipeline(img, cell, retryBtn, { bumpSettledOnDone: false, nft });
   img.src = `${base}${sep}_retry=${Date.now()}`;
@@ -1576,7 +1855,7 @@ function confirmManualSelection() {
   closeManualSelectionModal();
 }
 
-// ---------- Collection logos (Alchemy contract metadata, async) ----------
+// ---------- Collection logos (Worker: Alchemy or Moralis contract metadata, async) ----------
 /** Avoid dozens of simultaneous /img requests freezing the collections UI — cap starts per frame. */
 const COLLECTION_THUMB_LOADS_PER_FRAME = 2;
 let _collectionThumbQueue = [];
@@ -1713,7 +1992,7 @@ function extractCollectionLogoRawUrlFromNft(nft) {
   if (!nft || typeof nft !== "object") return null;
   const pick = (obj) => {
     if (!obj || typeof obj !== "object") return null;
-    const u = obj.imageUrl || obj.image_url || obj.logo;
+    const u = obj.imageUrl || obj.image_url || obj.logo || obj.coverImageUrl;
     return typeof u === "string" && u.trim() ? u.trim() : null;
   };
   const cm = nft.contractMetadata;
@@ -1731,6 +2010,15 @@ function extractCollectionLogoRawUrlFromNft(nft) {
     const u = pick(c.openSeaMetadata) || pick(c.openSea);
     if (u) return u;
   }
+  const col = nft.collection;
+  if (col && typeof col === "object") {
+    const u =
+      pick(col.openSeaMetadata) ||
+      pick(col.openSea) ||
+      (typeof col.imageUrl === "string" && col.imageUrl.trim() ? col.imageUrl.trim() : null) ||
+      (typeof col.image_url === "string" && col.image_url.trim() ? col.image_url.trim() : null);
+    if (u) return u;
+  }
   return null;
 }
 
@@ -1739,7 +2027,18 @@ function buildCollectionLogoThumb(c) {
   const wrap = document.createElement("div");
   wrap.className = "collectionLogoWrap";
 
-  const appendImg = (src) => {
+  const showPlaceholder = () => {
+    wrap.innerHTML = "";
+    wrap.appendChild(makeCollectionLogoPlaceholder());
+  };
+
+  /** List UI only — omit crossOrigin so more CDNs load; try proxy then direct gateways. */
+  const appendImgWaterfall = (urls) => {
+    const list = [...new Set((urls || []).filter(Boolean))];
+    if (!list.length) {
+      showPlaceholder();
+      return;
+    }
     const img = document.createElement("img");
     img.className = "collectionLogoThumb";
     img.alt = "";
@@ -1750,23 +2049,34 @@ function buildCollectionLogoThumb(c) {
       if ("fetchPriority" in img) img.fetchPriority = "low";
     } catch (_) {}
     img.referrerPolicy = "no-referrer";
-    img.crossOrigin = "anonymous";
+    let i = 0;
     img.onerror = () => {
-      wrap.innerHTML = "";
-      wrap.appendChild(makeCollectionLogoPlaceholder());
+      i++;
+      if (i >= list.length) {
+        showPlaceholder();
+        return;
+      }
+      img.src = list[i];
     };
     wrap.appendChild(img);
     enqueueCollectionListImageLoad(() => {
-      img.src = src;
+      i = 0;
+      img.src = list[0];
     });
   };
 
-  if (c.logo) {
-    const proxied = toProxyUrl(c.logo);
-    if (proxied) {
-      appendImg(proxied);
+  const logoRaw = getCollectionLogoUrlForRow(c);
+  if (logoRaw) {
+    const raw = String(logoRaw).trim();
+    const urls = buildImageCandidates(raw);
+    if (urls.length) {
+      appendImgWaterfall(urls);
       return wrap;
     }
+    const nu = normalizeImageUrl(raw);
+    if (nu) appendImgWaterfall([nu]);
+    else showPlaceholder();
+    return wrap;
   }
 
   wrap.appendChild(makeCollectionLogoPlaceholder());
@@ -1845,9 +2155,9 @@ function ensureCollectionActionsModal() {
         <p class="collection-actions-summary" id="collectionActionsSummary"></p>
 
         <div class="collection-actions-btns">
-          <button type="button" class="btn" id="collectionActionsSelectAll">✅ Select All NFTs</button>
-          <button type="button" class="btn" id="collectionActionsSelectManual">🖐️ Select Manually</button>
-          <button type="button" class="btn" id="collectionActionsLogo">🖼️ Add Collection Logo</button>
+          <button type="button" class="btn collection-actions-choice" id="collectionActionsLogo">Add collection logo</button>
+          <button type="button" class="btn collection-actions-choice" id="collectionActionsSelectAll">Select all NFTs</button>
+          <button type="button" class="btn collection-actions-choice" id="collectionActionsSelectManual">Select manually</button>
         </div>
 
         <button type="button" class="btn btnPrimary collection-actions-build" id="collectionActionsBuild">🧩 BUILD GRID NOW</button>
@@ -1990,12 +2300,19 @@ function syncCollectionActionsModalUi() {
   const logoText = canAddLogo ? (logoOn ? "Logo will be included" : "Logo not included") : "No collection logo available";
   if (summary) summary.textContent = `${total} owned · ${selText} · ${logoText}`;
 
-  if (btnAll) btnAll.disabled = !hasNfts;
-  if (btnManual) btnManual.disabled = !hasNfts;
+  if (btnAll) {
+    btnAll.disabled = !hasNfts;
+    btnAll.classList.toggle("collection-actions-choice--active", mode === "all");
+  }
+  if (btnManual) {
+    btnManual.disabled = !hasNfts;
+    btnManual.classList.toggle("collection-actions-choice--active", mode === "manual");
+  }
   if (btnLogo) {
     btnLogo.disabled = !canAddLogo;
     btnLogo.setAttribute("aria-pressed", logoOn ? "true" : "false");
-    btnLogo.textContent = logoOn ? "🗑️ Remove Collection Logo" : "🖼️ Add Collection Logo";
+    btnLogo.classList.toggle("collection-actions-choice--active", logoOn && canAddLogo);
+    btnLogo.textContent = logoOn ? "Collection logo in grid" : "Add collection logo";
   }
 
   // Global build button reflects multi-collection selection.
@@ -2451,7 +2768,7 @@ async function addCollectionByContract(contractInput) {
     let allNfts = [];
     const chain = state.chain || "eth";
     for (const wallet of state.wallets) {
-      const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chain}&contractAddresses=${encodeURIComponent(normAddr)}`;
+      const url = `${getWorkerBase()}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chain}&contractAddresses=${encodeURIComponent(normAddr)}`;
       const res = await fetch(url).catch(() => null);
       const json = res?.ok ? await res.json().catch(() => ({})) : {};
       const nfts = json.nfts || [];
@@ -2472,7 +2789,7 @@ async function addCollectionByContract(contractInput) {
     }
 
     const validNfts = allNfts.filter((n) => n && typeof n === "object");
-    const normalized = validNfts.map(normalizeNFT);
+    const normalized = validNfts.map((n) => normalizeNFT(n, chain));
     const deduped = dedupeNFTs(normalized);
     const expanded = expandNFTs(deduped);
     const newGrouped = groupByCollection(expanded);
@@ -2719,8 +3036,15 @@ function prepareGridForClassic(grid, cols, rows) {
 }
 
 function clearAllGrids() {
+  const wm = document.getElementById("wmGrid");
   const p = getGridPrimary();
   const o = getGridOverflow();
+  if (wm && p) {
+    const stack = p.closest(".gridStack");
+    const wrap = p.closest(".gridWrap");
+    if (stack) stack.appendChild(wm);
+    else if (wrap) wrap.appendChild(wm);
+  }
   if (p) p.innerHTML = "";
   if (o) o.innerHTML = "";
 }
@@ -2757,7 +3081,7 @@ function setTileDraggableForLayout(tile) {
 }
 
 function syncLayoutPickerActiveStates() {
-  for (const wrapId of ["layoutPickerBtns", "stageLayoutPickerBtns", "settingsLayoutPicker"]) {
+  for (const wrapId of ["stageLayoutPickerBtns", "settingsLayoutPicker"]) {
     const wrap = $(wrapId);
     if (!wrap) continue;
     wrap.querySelectorAll(".layoutPickerBtn, .settings-layout-btn").forEach((b) => {
@@ -2854,11 +3178,54 @@ function clearAllCustomImages() {
   }
   state.customImages = [];
   state.selectedCustomImageIds.clear();
+  refreshGridAfterCustomImagesCleared();
   renderCustomImagesPanel();
   updateBuildButtonAvailability();
   updateGuideGlow();
   setStatus("Custom images cleared");
   renderSettingsPanel();
+}
+
+/**
+ * File-upload grid tiles only. Collection logo tiles also set `isCustom` for tile keys — they must
+ * not be removed when clearing imports.
+ */
+function isUserImportedCustomGridItem(it) {
+  return !!(it && it.isCustom === true && it.sourceKey === "custom");
+}
+
+/** Show “Remove imports” on the grid toolbar only when there are uploaded custom images. */
+function syncGridRemoveImportedBtnVisibility() {
+  const btn = $("gridRemoveImportedBtn");
+  if (!btn) return;
+  const show = (state.customImages || []).length > 0;
+  btn.hidden = !show;
+  btn.setAttribute("aria-hidden", show ? "false" : "true");
+}
+
+/** If the live grid still shows imported tiles, drop them and re-render (classic / template). */
+function refreshGridAfterCustomImagesCleared() {
+  if (currentStep !== 3 || !Array.isArray(state.currentGridItems) || !state.currentGridItems.length) return;
+  if (!state.currentGridItems.some((it) => isUserImportedCustomGridItem(it))) return;
+
+  const meta = state.gridLayoutMeta;
+  const filtered = state.currentGridItems.filter((it) => !isUserImportedCustomGridItem(it));
+  const dense = filtered.filter((it) => !isGridSlotEmpty(it));
+  BUILD_ID = Date.now();
+
+  if (meta?.mode === "template" && meta.layoutId) {
+    renderFullLayoutFromItems(dense, meta.layoutId, BUILD_ID);
+  } else if (meta?.mode === "classic" && meta.columns != null && meta.totalSlots != null) {
+    const padded = buildClassicPaddedItems(dense, meta.totalSlots);
+    state.currentGridItems = padded;
+    syncOrderedItemsFromGrid();
+    reapplyLayoutAfterOrderChange();
+  } else {
+    renderFullLayoutFromItems(dense, "classic", BUILD_ID);
+  }
+  enableDragDrop();
+  if (state.imageLoadState.total > 0) updateImageProgress();
+  requestAnimationFrame(syncWatermarkDOMToOneTile);
 }
 
 function rebuildClassicFromDenseForSettings() {
@@ -2896,6 +3263,7 @@ function ensureSettingsPanel() {
         <h3 class="settings-section-title">About</h3>
         <p class="settings-about-line">FlexGrid ${APP_SETTINGS_VERSION}</p>
         <p class="settings-about-sub">Built in real time 👊</p>
+        <a class="settings-linkbtn" href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer">𝕏 Follow us on Twitter / X</a>
       </section>
       <section class="settings-section">
         <h3 class="settings-section-title">Canvas</h3>
@@ -2926,10 +3294,10 @@ function ensureSettingsPanel() {
         <button type="button" class="btn btnSmall settings-fullbtn" id="settingsImportBtn">Import Image / Logo</button>
         <button type="button" class="btn btnSmall settings-fullbtn settings-btn-muted" id="settingsClearCustomBtn">Clear Custom Images</button>
       </section>
-      <section class="settings-section">
+      <section class="settings-section settings-section--comingSoon" aria-label="Text (coming soon)">
         <h3 class="settings-section-title">Text</h3>
-        <button type="button" class="btn btnSmall settings-fullbtn" id="settingsAddTextBtn">Add / edit caption</button>
-        <label class="settings-toggle"><input type="checkbox" id="settingsTextShadow" checked /> Text shadow</label>
+        <p class="settings-coming-soon">Coming soon</p>
+        <p class="settings-hint settings-hint--muted">Caption and text styling will land here in a future update.</p>
       </section>
       <section class="settings-section">
         <h3 class="settings-section-title">Feedback</h3>
@@ -2986,10 +3354,6 @@ function ensureSettingsPanel() {
         state.settingsAutoFillEmpty = t.checked;
         rebuildClassicFromDenseForSettings();
       }
-      if (t.id === "settingsTextShadow") {
-        state.settingsTextShadow = t.checked;
-        syncStageCaptionOverlay();
-      }
     });
 
     panel.addEventListener("click", (e) => {
@@ -3020,8 +3384,6 @@ function ensureSettingsPanel() {
     const clr = $("settingsClearCustomBtn");
     if (clr) clr.addEventListener("click", () => clearAllCustomImages());
 
-    const addTxt = $("settingsAddTextBtn");
-    if (addTxt) addTxt.addEventListener("click", () => promptAddStageCaption());
   }
 }
 
@@ -3061,9 +3423,6 @@ function renderSettingsPanel() {
   if (ks) ks.checked = state.settingsKeepGridSquare !== false;
   const af = $("settingsAutoFill");
   if (af) af.checked = state.settingsAutoFillEmpty !== false;
-  const ts = $("settingsTextShadow");
-  if (ts) ts.checked = state.settingsTextShadow !== false;
-
   syncLayoutPickerActiveStates();
 }
 
@@ -3076,32 +3435,6 @@ function toggleSettings() {
 function closeSettings() {
   state.isSettingsOpen = false;
   renderSettingsPanel();
-}
-
-function renderLayoutPicker() {
-  const wrap = $("layoutPickerBtns");
-  if (!wrap) return;
-  wrap.innerHTML = "";
-  for (const id of Object.keys(LAYOUTS)) {
-    const def = LAYOUTS[id];
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btnSmall layoutPickerBtn";
-    btn.dataset.layoutId = id;
-    if (def.comingSoon) {
-      btn.textContent = `${def.name} · coming soon`;
-      btn.disabled = true;
-      btn.setAttribute("aria-disabled", "true");
-      btn.title = "Coming soon";
-      btn.classList.add("layoutPickerBtn--soon");
-    } else {
-      btn.textContent = def.name;
-      btn.addEventListener("click", () => onUserSelectLayout(id));
-    }
-    wrap.appendChild(btn);
-  }
-  if (LAYOUTS[state.selectedLayout]?.comingSoon) state.selectedLayout = "classic";
-  syncLayoutPickerActiveStates();
 }
 
 /** Live layout switch on grid screen — no re-fetch, uses current item order. */
@@ -3141,7 +3474,10 @@ function updateBuildButtonAvailability() {
 
 function renderCustomImagesPanel() {
   const list = $("customImagesList");
-  if (!list) return;
+  if (!list) {
+    syncGridRemoveImportedBtnVisibility();
+    return;
+  }
   list.innerHTML = "";
   for (const item of state.customImages || []) {
     const card = document.createElement("div");
@@ -3212,6 +3548,7 @@ function renderCustomImagesPanel() {
 
     list.appendChild(card);
   }
+  syncGridRemoveImportedBtnVisibility();
 }
 
 function addCustomImagesFromFileList(fileList) {
@@ -3237,18 +3574,27 @@ function addCustomImagesFromFileList(fileList) {
 
 /** Append items from merged selection that are not already on the grid (e.g. new imports). */
 function appendNewItemsToCurrentGridFromSelection() {
-  const current = state.currentGridItems;
-  if (!Array.isArray(current) || current.length === 0) return false;
+  let current = state.currentGridItems;
+  let merged = getMergedSortedGridItems();
+  if (merged.length > FLEX_GRID_MAX_NFTS) {
+    merged = merged.slice(0, FLEX_GRID_MAX_NFTS);
+  }
+  if (!merged.length) return false;
+
+  if (!Array.isArray(current) || current.length === 0) {
+    const dim = computeGridDimensionsForCount(merged.length);
+    const padded = buildClassicPaddedItems(merged, dim.totalSlots);
+    state.currentGridItems = padded;
+    syncOrderedItemsFromGrid();
+    return true;
+  }
+
   const keys = new Set(
     current
       .filter((it) => !isGridSlotEmpty(it))
       .map((it) => getGridItemKey(it))
       .filter(Boolean)
   );
-  let merged = getMergedSortedGridItems();
-  if (merged.length > FLEX_GRID_MAX_NFTS) {
-    merged = merged.slice(0, FLEX_GRID_MAX_NFTS);
-  }
   const additions = merged.filter((it) => !keys.has(getGridItemKey(it)));
   if (!additions.length) return false;
   // Preserve explicit empty slots: fill the first currently-empty cells, then append overflow.
@@ -3267,11 +3613,39 @@ function appendNewItemsToCurrentGridFromSelection() {
   return true;
 }
 
+/** Classic grid: grow columns/rows when a new import does not fit the current slot count (e.g. full 3×3 + import). */
+function expandClassicGridAfterImportOverflow() {
+  const meta = state.gridLayoutMeta;
+  if (meta?.mode !== "classic" || meta.totalSlots == null) return false;
+  const arr = state.currentGridItems;
+  if (!Array.isArray(arr)) return false;
+  const dense = arr.filter((it) => !isGridSlotEmpty(it));
+  if (dense.length <= meta.totalSlots && arr.length <= meta.totalSlots) return false;
+
+  const dim = computeGridDimensionsForCount(dense.length);
+  const padded = buildClassicPaddedItems(dense, dim.totalSlots);
+  state.currentGridItems = padded;
+  syncOrderedItemsFromGrid();
+  BUILD_ID = Date.now();
+  renderFullLayoutFromItems(padded, "classic", BUILD_ID, {
+    cols: dim.cols,
+    rows: dim.rows,
+    totalSlots: dim.totalSlots,
+  });
+  return true;
+}
+
 function finalizeCustomImageImport(addedCount) {
   if (!addedCount) return;
-  if (currentStep === 3 && queryAllGridTiles().length > 0) {
+  if (currentStep === 3) {
     if (appendNewItemsToCurrentGridFromSelection()) {
-      reapplyLayoutAfterOrderChange();
+      if (!expandClassicGridAfterImportOverflow()) {
+        reapplyLayoutAfterOrderChange();
+      } else {
+        enableDragDrop();
+        if (state.imageLoadState.total > 0) updateImageProgress();
+        requestAnimationFrame(syncWatermarkDOMToOneTile);
+      }
       setStatus(`✅ Added ${addedCount} image(s) to your grid`);
       return;
     }
@@ -3533,6 +3907,12 @@ function rebuildClassicGridFromItems(items, cols, rows, totalSlots) {
   renderFullLayoutFromItems(items, "classic", BUILD_ID, { cols, rows, totalSlots });
 }
 
+/** Index of first non-empty collection-logo tile in grid order (for shuffle pinning). */
+function findFirstCollectionLogoIndex(items) {
+  const arr = items || [];
+  return arr.findIndex((it) => !isGridSlotEmpty(it) && it.isLogo);
+}
+
 function shuffleCurrentGridOrder() {
   const items = state.currentGridItems;
   if (!items?.length) return;
@@ -3540,21 +3920,33 @@ function shuffleCurrentGridOrder() {
   let nextItems;
   if (meta?.mode === "classic" && meta.totalSlots != null) {
     const dense = items.filter((it) => !isGridSlotEmpty(it));
-    if (dense.length < 2) return;
-    const arr = dense.slice();
+    const li = findFirstCollectionLogoIndex(dense);
+    const headLogo = li >= 0 ? dense[li] : null;
+    const pool =
+      li >= 0 ? dense.slice(0, li).concat(dense.slice(li + 1)) : dense.slice();
+    if (!headLogo && pool.length < 2) return;
+    if (headLogo && pool.length < 1) return;
+    const arr = pool.slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    nextItems = buildClassicPaddedItems(arr, meta.totalSlots);
+    const denseNext = headLogo ? [headLogo, ...arr] : arr;
+    nextItems = buildClassicPaddedItems(denseNext, meta.totalSlots);
   } else {
-    const arr = items.slice();
-    if (arr.length < 2) return;
+    const arr0 = items.slice();
+    const li = findFirstCollectionLogoIndex(arr0);
+    const headLogo = li >= 0 ? arr0[li] : null;
+    const pool =
+      li >= 0 ? arr0.slice(0, li).concat(arr0.slice(li + 1)) : arr0.slice();
+    if (!headLogo && pool.length < 2) return;
+    if (headLogo && pool.length < 1) return;
+    const arr = pool.slice();
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    nextItems = arr;
+    nextItems = headLogo ? [headLogo, ...arr] : arr;
   }
   state.currentGridItems = nextItems;
   syncOrderedItemsFromGrid();
@@ -3591,6 +3983,14 @@ function buildGrid() {
     if (exportBtn) exportBtn.disabled = true;
     syncGridFooterButtons(true, true);
     return;
+  }
+
+  syncSelectedKeysFromSelection();
+  if (state.selectedKeys.size > 0) {
+    state.selectedCustomImageIds.clear();
+    renderCustomImagesPanel();
+    updateBuildButtonAvailability();
+    updateGuideGlow();
   }
 
   const chosen = getSelectedCollections();
@@ -3633,14 +4033,7 @@ function buildGrid() {
   if (oldBar) oldBar.remove();
   renderTraitFiltersForSelected();
 
-  const stageTitle = $("stageTitle");
   const stageMeta = $("stageMeta");
-
-  if (stageTitle) {
-    stageTitle.innerHTML =
-      `Little Ollie Flex Grid <span class="titleHint">Edit size • Drag to swap • Drop on empty slots for gaps / new lines</span>`;
-  }
-
   if (stageMeta) stageMeta.textContent = "";
 
   const shuffleBtn = $("gridShuffleBtn");
@@ -3954,8 +4347,14 @@ function makeNFTTile(it) {
   tile.dataset.collectionKey = (it?.sourceKey || "").toString().trim().toLowerCase();
   tile.dataset.key = getGridItemKey(it);
 
-  let raw = typeof it?.image === "string" ? it.image.trim() : "";
-  if (!raw) raw = normalizeImageUrl(getImage(it)) || "";
+  let raw = "";
+  try {
+    if (typeof it?._rawImageUrl === "string" && it._rawImageUrl.trim()) raw = it._rawImageUrl.trim();
+    if (!raw && typeof it?.image === "string" && it.image.trim()) raw = it.image.trim();
+    if (!raw) raw = primaryRawArtUrlForNft(it).trim();
+  } catch (_) {
+    raw = "";
+  }
   tile.dataset.kind = raw ? "nft" : "empty";
 
   const img = document.createElement("img");
@@ -4198,42 +4597,52 @@ function enableDragDrop() {
 
 // ---------- Wallet load ----------
 async function loadWallets() {
-  const chain = $("chainSelect")?.value || "eth";
+  syncWalletsFromInput();
+  applyChainSelectionFromDom();
+  const chain = String($("chainSelect")?.value || state.chain || "eth").trim().toLowerCase();
 
   if (chain === "solana") return setStatus("Solana coming soon. For now use ETH or Base.");
-  if (chain === "apechain") return setStatus("ApeChain coming soon. For now use ETH or Base.");
-  if (!state.wallets.length) return setStatus("👋 Add at least one wallet first!");
+  if (!state.wallets.length) {
+    return setStatus("👋 Enter at least one valid wallet — 0x + 40 hex chars. Separate several with a comma, space, or new line.");
+  }
 
   if (!configLoaded) {
     return setStatus(
       "⚠️ Configuration not loaded. " +
-        "Ensure the Worker config is available at " + WORKER_BASE + "/api/config/flex-grid"
+        "Ensure the Worker config is available at " + getWorkerBase() + "/api/config/flex-grid"
     );
   }
 
   const host = ALCHEMY_HOST[chain];
-  if (!host) return setStatus("Chain not configured.");
+  if (chain !== "apechain" && !host) return setStatus("Chain not configured.");
+
+  try {
+    console.log("[FlexGrid] Chain selected:", chain, "→", getAlchemyNetworkId(chain));
+  } catch {
+    console.log("[FlexGrid] Chain selected:", chain);
+  }
 
   state.chain = chain;
-  state.host = host;
+  state.host = chain === "apechain" ? null : host;
 
   try {
     state.contractLogoCache = Object.create(null);
     state.contractLogoInflight.clear();
 
-    showLoading("👀 Little Ollie is checking your wallet...", "", 0);
+    const gatherMsg = "Gathering your NFTs";
+    showLoading(gatherMsg, "", 4);
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
 
     const allNfts = [];
     const WALLET_BATCH_SIZE = 3;
+    const nw = state.wallets.length;
     for (let i = 0; i < state.wallets.length; i += WALLET_BATCH_SIZE) {
       const batch = state.wallets.slice(i, i + WALLET_BATCH_SIZE);
       const batchNum = Math.floor(i / WALLET_BATCH_SIZE) + 1;
       const totalBatches = Math.ceil(state.wallets.length / WALLET_BATCH_SIZE);
-      const walletPct = state.wallets.length > 0
-        ? Math.round((Math.min(i + WALLET_BATCH_SIZE, state.wallets.length) / state.wallets.length) * 100)
-        : 0;
-      showLoading("🧺 Gathering your NFTs...", `Wallets ${i + 1}-${Math.min(i + WALLET_BATCH_SIZE, state.wallets.length)} of ${state.wallets.length}`, walletPct);
+      const doneWallets = Math.min(i + WALLET_BATCH_SIZE, nw);
+      const walletPct = nw > 0 ? Math.min(88, Math.round((doneWallets / nw) * 82) + 6) : 88;
+      showLoading(gatherMsg, "", walletPct);
       setStatus(`Gathering NFTs… batch ${batchNum}/${totalBatches}.`);
       const results = await Promise.all(
         batch.map((w) => fetchNFTsFromWorker({ wallet: w, chain }))
@@ -4241,7 +4650,7 @@ async function loadWallets() {
       results.forEach((nfts) => allNfts.push(...(nfts || [])));
     }
 
-    showLoading("🎨 Sorting your collections...", "", 85);
+    showLoading(gatherMsg, "", 90);
     if (DEV) console.log("RAW NFT COUNT (all wallets)", allNfts.length);
     if (DEV) console.log("RAW SAMPLE (all)", allNfts.slice(0, 10).map((nft) => ({
       contract: nft?.contract?.address,
@@ -4252,7 +4661,20 @@ async function loadWallets() {
       idTokenId: nft?.id?.tokenId,
     })));
     const validNfts = allNfts.filter((n) => n && typeof n === "object");
-    const normalized = validNfts.map(normalizeNFT);
+    const normalized = validNfts.map((n) => normalizeNFT(n, chain));
+    if (chain === "apechain" && normalized.length > 0) {
+      try {
+        const s = normalized[0];
+        console.log("[ApeChain Debug] NFT sample:", s);
+        console.log("[ApeChain Debug] image fields:", {
+          media: s?.media,
+          rawMetadata: s?.rawMetadata,
+          raw: s?.raw,
+          _rawImageUrl: s?._rawImageUrl,
+          _displayImageUrl: s?._displayImageUrl,
+        });
+      } catch (_) {}
+    }
     const deduped = dedupeNFTs(normalized);
     const expanded = expandNFTs(deduped);
     if (DEV) console.log("EXPANDED NFT COUNT", expanded.length);
@@ -4262,7 +4684,7 @@ async function loadWallets() {
     const displayedCount = grouped.reduce((s, c) => s + (c.nfts?.length ?? 0), 0);
     if (DEV) console.log(`NFT load complete: total ${allNfts.length} fetched → ${deduped.length} deduped → ${expanded.length} expanded → ${displayedCount} in ${grouped.length} collections`);
 
-    showLoading("✨ Almost ready...", "", 100);
+    showLoading(gatherMsg, "", 100);
     state.collections = grouped;
     resetCollectionSelectionState();
 
@@ -4278,10 +4700,8 @@ async function loadWallets() {
     if (buildBtn) buildBtn.disabled = !hasItemsForBuild();
     if (exportBtn) exportBtn.disabled = true;
 
-    const stageTitle = $("stageTitle");
     const stageMeta = $("stageMeta");
-    if (stageTitle) stageTitle.textContent = "Wallets loaded";
-    if (stageMeta) stageMeta.textContent = "Select collections, then 🧩 Build grid.";
+    if (stageMeta) stageMeta.textContent = "Wallets loaded — select collections, then 🧩 Build grid.";
 
     setStatus(grouped.length > 0
       ? `🎉 Boom! Loaded your wallets — ${grouped.length} collection(s) found`
@@ -4331,8 +4751,17 @@ function nftToGridItem(nft, sourceKey = "") {
     .toLowerCase();
   const tokenId = (nft?._tokenId ?? nft?.tokenId ?? nft?.token_id ?? nft?.id?.tokenId ?? nft?.id ?? "").toString().trim();
   const safeTokenId = tokenId && tokenId !== "null" ? tokenId : "0";
-  const image = normalizeImageUrl(getImage(nft)) || PLACEHOLDER_IMAGE;
-  const name = nft?.name || nft?.title || (safeTokenId ? `#${safeTokenId}` : "NFT");
+  const rawArt = primaryRawArtUrlForNft(nft);
+  const image = rawArt
+    ? (gridProxyUrl(rawArt) || normalizeImageUrl(rawArt) || TILE_PLACEHOLDER_SRC)
+    : TILE_PLACEHOLDER_SRC;
+  const m = mergedNFTMetadata(nft);
+  const name =
+    nft?.name ||
+    nft?.title ||
+    (typeof m?.name === "string" && m.name.trim()) ||
+    nft?.metadata?.name ||
+    (safeTokenId ? `#${safeTokenId}` : "Unnamed NFT");
   if (DEV) console.log("RENDERING NFT", { name: nft?.title || nft?.name, contract: nft?.contract?.address });
   const attributes =
     nft?.rawMetadata?.attributes ||
@@ -4349,6 +4778,8 @@ function nftToGridItem(nft, sourceKey = "") {
     sourceKey: sourceKey || contractAddr,
   };
   if (nft._instanceId) item._instanceId = nft._instanceId;
+  if (typeof nft._rawImageUrl === "string" && nft._rawImageUrl.trim()) item._rawImageUrl = nft._rawImageUrl.trim();
+  if (typeof nft._displayImageUrl === "string" && nft._displayImageUrl.trim()) item._displayImageUrl = nft._displayImageUrl.trim();
   return item;
 }
 
@@ -4413,8 +4844,12 @@ function dedupeNFTs(nfts) {
 
 const PLACEHOLDER_IMAGE = "";
 
-/** Normalize NFT into consistent shape with _contractAddress, _tokenId, _tokenType, _balance */
-function normalizeNFT(nft) {
+/**
+ * Normalize NFT into consistent shape with _contractAddress, _tokenId, _tokenType, _balance, _chain.
+ * Safe for Alchemy v2/v3 payloads (missing contract or media does not throw).
+ */
+function normalizeNFT(nft, chain) {
+  const _chain = String(chain || state.chain || "eth").toLowerCase();
   const _contractAddress = (nft.contract?.address || nft.collection?.address || nft.contractAddress || "")
     .toString().trim().toLowerCase() || "unknown";
   const _tokenId = (
@@ -4425,12 +4860,39 @@ function normalizeNFT(nft) {
   ).toString().trim();
   const _tokenType = String(nft.tokenType || nft.id?.tokenMetadata?.tokenType || "ERC721").toUpperCase();
   const _balance = Math.max(1, parseInt(nft.balance || "1", 10) || 1);
+  const merged = mergedNFTMetadata(nft);
+  const name =
+    (typeof nft.name === "string" && nft.name.trim()) ||
+    (typeof nft.title === "string" && nft.title.trim()) ||
+    (typeof merged?.name === "string" && merged.name.trim()) ||
+    (typeof nft.metadata?.name === "string" && nft.metadata.name.trim()) ||
+    "Unnamed NFT";
+  const collectionName =
+    (typeof nft.collection?.name === "string" && nft.collection.name.trim()) ||
+    (typeof nft.contract?.name === "string" && nft.contract.name.trim()) ||
+    (typeof nft.contractMetadata?.name === "string" && nft.contractMetadata.name.trim()) ||
+    "Unknown Collection";
+  let rawImage = null;
+  try {
+    rawImage = primaryRawArtUrlForNft(nft);
+    rawImage = rawImage ? String(rawImage).trim() : null;
+  } catch (err) {
+    console.warn("[FlexGrid] normalizeNFT image:", err?.message || err);
+    rawImage = null;
+  }
+  const displayImage = rawImage ? (toProxyUrl(rawImage) || normalizeImageUrl(rawImage) || null) : null;
   return {
     ...nft,
     _contractAddress,
     _tokenId,
     _tokenType,
     _balance,
+    _chain,
+    name,
+    collection: nft.collection && typeof nft.collection === "object" ? { ...nft.collection, name: collectionName } : { name: collectionName },
+    _rawImageUrl: rawImage,
+    _displayImageUrl: displayImage,
+    image: displayImage || rawImage || (typeof nft.image === "string" ? nft.image : null) || null,
   };
 }
 
@@ -4458,10 +4920,15 @@ function expandNFTs(nfts) {
 function getImage(nft) {
   const logo = extractCollectionLogoRawUrlFromNft(nft);
   const normLogo = logo ? String(logo).trim() : "";
+  const merged = mergedNFTMetadata(nft);
   const candidates = [
+    merged.image,
+    merged.image_url,
     nft?.media?.[0]?.thumbnail,
     nft?.media?.[0]?.gateway,
     nft?.media?.[0]?.raw,
+    nft?.raw?.metadata?.image,
+    nft?.raw?.metadata?.image_url,
     nft?.rawMetadata?.image,
     nft?.rawMetadata?.image_url,
     nft?.metadata?.image,
@@ -4475,8 +4942,22 @@ function getImage(nft) {
   ];
   for (const c of candidates) {
     if (c == null || c === "") continue;
-    const s = String(c).trim();
-    if (!s) continue;
+    if (typeof c === "object" && c) {
+      const ou =
+        (typeof c.url === "string" && c.url.trim()) ||
+        (typeof c.uri === "string" && c.uri.trim()) ||
+        (typeof c.gateway === "string" && c.gateway.trim()) ||
+        "";
+      if (ou) {
+        const s = repairBrokenImageUrl(String(ou).trim());
+        if (!s) continue;
+        if (normLogo && s === normLogo) continue;
+        return s;
+      }
+      continue;
+    }
+    const s = repairBrokenImageUrl(String(c).trim());
+    if (!s || s === "[object Object]") continue;
     if (normLogo && s === normLogo) continue;
     return s;
   }
@@ -4521,14 +5002,7 @@ function groupByCollection(nfts) {
   Object.keys(collections).forEach((k) => {
     collections[k].count = collections[k].nfts.length;
     if (!collections[k].logo) {
-      const nfts = collections[k].nfts || [];
-      for (let j = 0; j < nfts.length; j++) {
-        const fromMeta = extractCollectionLogoRawUrlFromNft(nfts[j]);
-        if (fromMeta) {
-          collections[k].logo = fromMeta;
-          break;
-        }
-      }
+      collections[k].logo = getCollectionLogoUrlForRow(collections[k]);
     }
   });
 
@@ -4650,6 +5124,97 @@ async function saveCanvasPNG(canvas, filename = "little-ollie-grid.jpg") {
   setTimeout(() => URL.revokeObjectURL(url), 8000);
 }
 
+/** Post-export share sheet (X intent + follow). Shown only after successful grid/GIF export. */
+const FLEXGRID_SHARE_PAGE_URL = "https://littleollielabs.com/flexgrid/";
+const FLEXGRID_SHARE_TWEET_TEXT =
+  "Just turned my NFTs into a FlexGrid 🔥 Multi-chain now live (ETH, Base, ApeChain) 👀";
+/**
+ * Strict ASCII prefill for Web Intent (X rejects many Unicode chars in query, e.g. em dash U+2014).
+ * Link is appended in the same `text` value — skip separate `url` param (fewer edge-case failures).
+ */
+const FLEXGRID_SHARE_INTENT_BODY =
+  "Just turned my NFTs into a FlexGrid - ETH, Base, ApeChain are live. Try it:";
+
+function buildXIntentTweetUrl(_shareText, shareUrl) {
+  try {
+    const link = String(shareUrl || "").trim() || FLEXGRID_SHARE_PAGE_URL;
+    const body = `${FLEXGRID_SHARE_INTENT_BODY} ${link}`.replace(/\s+/g, " ").trim();
+    const u = new URL("https://twitter.com/intent/tweet");
+    u.searchParams.set("text", body.slice(0, 280));
+    return u.href;
+  } catch (_) {
+    return "https://twitter.com/intent/tweet";
+  }
+}
+
+function createShareModal({ shareText, shareUrl }) {
+  document.querySelector(".flexgrid-share-overlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.className = "flexgrid-share-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "flexgrid-share-title");
+
+  const modal = document.createElement("div");
+  modal.className = "flexgrid-share-modal";
+  modal.innerHTML = `
+    <div class="flexgrid-share-content">
+      <img class="flexgrid-share-banner" src="src/assets/images/header.png" alt="" width="560" height="120" decoding="async" aria-hidden="true" />
+      <div class="flexgrid-share-inner">
+        <h2 id="flexgrid-share-title">🔥 Your FlexGrid is ready</h2>
+        <p class="flexgrid-share-sub">Show it off on X and tag us 👇</p>
+        <div class="flexgrid-share-buttons">
+          <a href="#" id="flexgrid-share-intent" target="_blank" rel="noopener noreferrer" class="flexgrid-share-btn flexgrid-share-btn--primary">Share on X</a>
+          <a href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer" class="flexgrid-share-btn flexgrid-share-btn--secondary">Follow @littleollienft</a>
+        </div>
+        <button type="button" class="flexgrid-share-close">Close</button>
+      </div>
+    </div>
+  `;
+
+  const intent = modal.querySelector("#flexgrid-share-intent");
+  if (intent instanceof HTMLAnchorElement) {
+    intent.href = buildXIntentTweetUrl(shareText, shareUrl);
+  }
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    document.removeEventListener("keydown", onKeyDown);
+    overlay.remove();
+  };
+
+  function onKeyDown(e) {
+    if (e.key === "Escape") close();
+  }
+  document.addEventListener("keydown", onKeyDown);
+
+  modal.addEventListener("click", (e) => e.stopPropagation());
+  modal.querySelector(".flexgrid-share-close")?.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+}
+
+/** Fire after download has been triggered; deferred so export is never blocked. */
+function offerFlexGridShareAfterExport() {
+  requestAnimationFrame(() => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(
+          `${FLEXGRID_SHARE_TWEET_TEXT} ${FLEXGRID_SHARE_PAGE_URL}`.replace(/\s+/g, " ").trim()
+        );
+      }
+    } catch (_) {}
+    createShareModal({
+      shareText: FLEXGRID_SHARE_TWEET_TEXT,
+      shareUrl: FLEXGRID_SHARE_PAGE_URL,
+    });
+  });
+}
+
 function isImgUsable(img) {
   return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
 }
@@ -4740,20 +5305,17 @@ async function exportPNG() {
       const first = tiles[0];
       if (first && pbloImg && pbloImg.naturalWidth > 0) {
         const fr = first.getBoundingClientRect();
-        const wx = pad + (fr.left - gridRect.left);
-        const wy = pad + (fr.top - gridRect.top);
-        const ww = fr.width;
-        const wh0 = fr.height;
-        const { x: wmx, y: wmy, w: wmw } = exportTileDrawRect(wx, wy, ww, wh0);
-        const ratio = pbloImg.naturalHeight / pbloImg.naturalWidth;
-        let drawW = wmw;
-        let drawH = Math.round(drawW * ratio);
-        const pbloCap = wh0 * 0.52;
-        if (drawH > pbloCap) {
-          drawH = pbloCap;
-          drawW = (pbloImg.naturalWidth / pbloImg.naturalHeight) * drawH;
-        }
-        ctx.drawImage(pbloImg, wmx, wmy, drawW, drawH);
+        const b = PBLO_EDGE_BLEED_PX;
+        const wx0 = pad + (fr.left - gridRect.left);
+        const wy0 = pad + (fr.top - gridRect.top);
+        const wx = Math.floor(wx0) - b;
+        const wy = Math.floor(wy0) - b;
+        const ww = Math.max(1, fr.width + b * 2);
+        const wh0 = Math.max(1, fr.height + b * 2);
+        const { drawW, drawH } = flexGridPbloPreviewDrawSize(ww, wh0, pbloImg.naturalWidth, pbloImg.naturalHeight);
+        const dw = Math.max(1, Math.round(drawW));
+        const dh = Math.max(1, Math.round(drawH));
+        ctx.drawImage(pbloImg, wx, wy, dw, dh);
       }
     } catch (e) {
       console.warn("pblo overlay failed for PNG export:", e);
@@ -4763,6 +5325,7 @@ async function exportPNG() {
 
     setStatus("✨ Saved! Check your downloads");
     updateGuideGlow();
+    offerFlexGridShareAfterExport();
   } catch (err) {
     console.error(err);
     setStatus("😕 Oops, export failed. Try again?");
@@ -4847,9 +5410,9 @@ function gridGifFormatSeconds(ms) {
 
 function gridGifGetWorkerScriptUrl() {
   try {
-    return new URL("../OGT/public/gif.worker.js", document.baseURI || window.location.href).href;
+    return new URL("vendor/gif.worker.js", document.baseURI || window.location.href).href;
   } catch (e) {
-    return "../OGT/public/gif.worker.js";
+    return "vendor/gif.worker.js";
   }
 }
 
@@ -4959,22 +5522,27 @@ async function exportGIF() {
       setStatus("✨ GIF saved! Check your downloads");
       updateGuideGlow();
       syncGridFooterButtons(!hasItemsForBuild(), false);
+      var downloadOk = false;
       try {
-        var outBlob = blob && blob.type === "image/gif" ? blob : new Blob([blob], { type: "image/gif" });
-        var url = URL.createObjectURL(outBlob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = "lo-grid.gif";
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function () {
-          URL.revokeObjectURL(url);
-        }, 4000);
+        if (blob) {
+          var outBlob = blob && blob.type === "image/gif" ? blob : new Blob([blob], { type: "image/gif" });
+          var url = URL.createObjectURL(outBlob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = "lo-grid.gif";
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          downloadOk = true;
+          setTimeout(function () {
+            URL.revokeObjectURL(url);
+          }, 4000);
+        }
       } catch (e) {
         console.error(e);
       }
+      if (downloadOk) offerFlexGridShareAfterExport();
     });
 
     // Opening brand frame: first collection logo tile (no pblo overlay).
@@ -5161,56 +5729,55 @@ function toggleCollectionsSection() {
 function toggleTraitOrderSection() {
   state.traitOrderCollapsed = !state.traitOrderCollapsed;
   const el = $("traitOrderSection");
+  const header = $("traitOrderSectionHeader");
   if (el) {
     if (state.traitOrderCollapsed) el.classList.add("collapsed");
     else el.classList.remove("collapsed");
   }
+  if (header) header.setAttribute("aria-expanded", state.traitOrderCollapsed ? "false" : "true");
+}
+
+function toggleStageLayoutSection() {
+  const el = $("stageLayoutSection");
+  const header = $("stageLayoutSectionHeader");
+  if (!el) return;
+  el.classList.toggle("collapsed");
+  const collapsed = el.classList.contains("collapsed");
+  if (header) header.setAttribute("aria-expanded", collapsed ? "false" : "true");
 }
 
 // ---------- Events + Retry ----------
 (function bindEvents() {
+  const hubBackBtn = $("hubBackBtn");
+  if (hubBackBtn && !hubBackBtn.dataset.boundHubBack) {
+    hubBackBtn.dataset.boundHubBack = "1";
+    hubBackBtn.addEventListener("click", onHubBackClick);
+  }
+  syncHubBackButton();
+
   const walletInput = $("walletInput");
   if (walletInput) {
     walletInput.autocapitalize = "none";
     walletInput.autocomplete = "off";
     walletInput.spellcheck = false;
     walletInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        addWallet();
+        loadWallets();
       }
     });
     walletInput.addEventListener("input", () => {
       if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
       walletValidationDebounce = setTimeout(() => {
-        const w = normalizeWallet(walletInput.value);
-        showWalletValidationHint(w && /^0x[a-f0-9]{40}$/.test(w) && !state.wallets.includes(w));
+        syncWalletsFromInput();
         walletValidationDebounce = null;
       }, 200);
     });
     walletInput.addEventListener("blur", () => {
       if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
       walletValidationDebounce = null;
-      clearWalletValidationHint();
+      syncWalletsFromInput();
     });
-  }
-
-  const addBtn = $("addWalletBtn");
-  if (addBtn) {
-    addBtn.type = "button";
-    let lastFire = 0;
-
-    const handler = (e) => {
-      try { e.preventDefault(); } catch {}
-      const now = Date.now();
-      if (now - lastFire < 350) return;
-      lastFire = now;
-      addWallet();
-    };
-
-    addBtn.addEventListener("click", handler, { passive: false });
-    if (window.PointerEvent) addBtn.addEventListener("pointerup", handler, { passive: false });
-    else addBtn.addEventListener("touchend", handler, { passive: false });
   }
 
   const selectAllBtn = $("selectAllBtn");
@@ -5218,7 +5785,6 @@ function toggleTraitOrderSection() {
   if (selectAllBtn) selectAllBtn.addEventListener("click", () => setAllCollections(true));
   if (selectNoneBtn) selectNoneBtn.addEventListener("click", () => setAllCollections(false));
 
-  renderLayoutPicker();
   renderStageLayoutPicker();
   renderCustomImagesPanel();
 
@@ -5234,13 +5800,31 @@ function toggleTraitOrderSection() {
       importInput.value = "";
     });
   }
-  const importBtn = $("importImageBtn");
-  if (importBtn && importInput) importBtn.addEventListener("click", () => importInput.click());
   const gridImportImageBtn = $("gridImportImageBtn");
   if (gridImportImageBtn && importInput) gridImportImageBtn.addEventListener("click", () => importInput.click());
 
+  const gridRemoveImportedBtn = $("gridRemoveImportedBtn");
+  if (gridRemoveImportedBtn) {
+    gridRemoveImportedBtn.addEventListener("click", () => {
+      if (!state.customImages?.length) {
+        setStatus("No imported images to remove");
+        return;
+      }
+      clearAllCustomImages();
+    });
+  }
+
   const gridShuffleBtn = $("gridShuffleBtn");
   if (gridShuffleBtn) gridShuffleBtn.addEventListener("click", () => shuffleCurrentGridOrder());
+
+  const chainSelect = $("chainSelect");
+  if (chainSelect) {
+    chainSelect.addEventListener("change", () => {
+      applyChainSelectionFromDom();
+      const ch = String(chainSelect.value || "eth").trim().toLowerCase();
+      console.log("[FlexGrid] Chain selected:", ch);
+    });
+  }
 
   const loadBtn = $("loadBtn");
   if (loadBtn) loadBtn.addEventListener("click", loadWallets);
@@ -5279,7 +5863,6 @@ function toggleTraitOrderSection() {
   // Step navigation
   const collectionsBackBtn = $("collectionsBackBtn");
   const collectionsNextBtn = $("collectionsNextBtn");
-  const gridBackBtn = $("gridBackBtn");
   if (collectionsBackBtn) collectionsBackBtn.addEventListener("click", () => goToStep(1));
   if (collectionsNextBtn) collectionsNextBtn.addEventListener("click", () => {
     if (!hasItemsForBuild()) {
@@ -5288,7 +5871,6 @@ function toggleTraitOrderSection() {
     }
     goToStep(3);
   });
-  if (gridBackBtn) gridBackBtn.addEventListener("click", () => goToStep(2));
 
   // Step indicator clicks
   document.querySelectorAll(".stepItem").forEach((el) => {
@@ -5321,15 +5903,6 @@ function toggleTraitOrderSection() {
     });
   }
 
-  const walletHeader = $("walletSectionHeader");
-  if (walletHeader) {
-    walletHeader.addEventListener("click", toggleWalletSection);
-    walletHeader.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleWalletSection(); }
-    });
-  }
-  syncWalletHeader();
-
   const collectionsHeader = $("collectionsSectionHeader");
   if (collectionsHeader) {
     collectionsHeader.addEventListener("click", toggleCollectionsSection);
@@ -5343,6 +5916,14 @@ function toggleTraitOrderSection() {
     traitOrderHeader.addEventListener("click", toggleTraitOrderSection);
     traitOrderHeader.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTraitOrderSection(); }
+    });
+  }
+
+  const stageLayoutSectionHeader = $("stageLayoutSectionHeader");
+  if (stageLayoutSectionHeader) {
+    stageLayoutSectionHeader.addEventListener("click", toggleStageLayoutSection);
+    stageLayoutSectionHeader.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleStageLayoutSection(); }
     });
   }
 
@@ -5389,7 +5970,7 @@ async function initializeConfig() {
     if (DEV) console.log("Config loaded");
 
     enableButtons();
-    setStatus("Ready! ➕ Add wallet(s) → 🔍 Load → select collections → 🧩 Build → 📸 Export");
+    setStatus("");
     showConnectionStatus(false);
     updateGuideGlow();
   } catch (error) {

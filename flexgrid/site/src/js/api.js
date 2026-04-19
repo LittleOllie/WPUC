@@ -3,12 +3,48 @@
  * No DOM dependencies.
  */
 
-const WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
+import { getAlchemyNetworkId } from "./alchemyNetworks.js";
+
+export const PRODUCTION_WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
 const NFT_FETCH_TIMEOUT_MS = 35000;
 
+/**
+ * Worker origin for `/api/*` and `/img` after config loads.
+ * `loadConfig()` picks the first working `/api/config/flex-grid` URL (on localhost, production is tried first).
+ */
+let resolvedWorkerApiOrigin = null;
+
+export function setResolvedWorkerApiOrigin(origin) {
+  const o = origin && String(origin).trim().replace(/\/$/, "");
+  resolvedWorkerApiOrigin = o || null;
+}
+
+export function getWorkerBase() {
+  if (resolvedWorkerApiOrigin) return resolvedWorkerApiOrigin;
+  return PRODUCTION_WORKER_BASE;
+}
+
+function flexGridLogNetwork(chainParam) {
+  try {
+    return getAlchemyNetworkId(chainParam);
+  } catch {
+    return String(chainParam || "");
+  }
+}
+
+/**
+ * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
+ */
 export async function fetchNFTsFromWorker({ wallet, chain }) {
-  const chainParam = chain || "eth";
-  const url = `${WORKER_BASE}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${chainParam}`;
+  const chainParam = String(chain || "eth").trim().toLowerCase();
+  const networkLabel = flexGridLogNetwork(chainParam);
+  const backendHint =
+    chainParam === "apechain" ? "Moralis on Worker" : `Alchemy network: ${networkLabel}`;
+
+  console.log(`[FlexGrid] Chain selected: ${chainParam} (${backendHint})`);
+  console.log(`[FlexGrid] Fetching NFTs for ${wallet} on chain=${chainParam}`);
+
+  const url = `${getWorkerBase()}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${encodeURIComponent(chainParam)}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), NFT_FETCH_TIMEOUT_MS);
@@ -27,11 +63,27 @@ export async function fetchNFTsFromWorker({ wallet, chain }) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error || `NFT fetch failed (${res.status})`);
+    const msg = err?.error || `NFT fetch failed (${res.status})`;
+    throw new Error(msg);
   }
 
-  const json = await res.json();
-  return json.nfts || [];
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    throw e instanceof Error ? e : new Error(String(e));
+  }
+
+  const raw = json.nfts || [];
+  console.log(`[FlexGrid] Found ${raw.length} NFT(s) on ${chainParam}`);
+  if (raw.length > 0) {
+    console.log("[FlexGrid] NFT sample:", raw[0]);
+  }
+  if (chainParam === "apechain" && raw.length > 0) {
+    console.log("[FlexGrid][ApeChain] Sample normalized NFT (Worker payload):", raw[0]);
+  }
+
+  return raw;
 }
 
 export async function fetchNFTsFromZora({ wallet, contractAddress }) {
@@ -87,13 +139,14 @@ export async function fetchNFTsFromZora({ wallet, contractAddress }) {
 }
 
 /**
- * Contract-level metadata (OpenSea collection image, etc.) via Worker → Alchemy getContractMetadata.
+ * Contract-level collection image via Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
  * Returns { rawLogoUrl: string | null, error?: string }.
  */
 export async function fetchContractMetadataFromWorker({ contract, chain }) {
-  const chainParam = chain || "eth";
+  const chainParam = String(chain || "eth").trim().toLowerCase();
   const addr = String(contract || "").trim();
-  const url = `${WORKER_BASE}/api/contract-metadata?contract=${encodeURIComponent(addr)}&chain=${encodeURIComponent(chainParam)}`;
+  const url = `${getWorkerBase()}/api/contract-metadata?contract=${encodeURIComponent(addr)}&chain=${encodeURIComponent(chainParam)}`;
+  console.log("[FlexGrid] contract-metadata request:", chainParam, addr);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 22000);
@@ -116,7 +169,11 @@ export async function fetchContractMetadataFromWorker({ contract, chain }) {
   }
   const rawLogoUrl =
     typeof json.rawLogoUrl === "string" && json.rawLogoUrl.trim() ? json.rawLogoUrl.trim() : null;
+  if (chainParam === "apechain") {
+    console.log("[FlexGrid][ApeChain] contract-metadata rawLogoUrl:", rawLogoUrl ? "(set)" : "(null)");
+  }
   return { rawLogoUrl };
 }
 
-export { WORKER_BASE };
+/** @deprecated Use getWorkerBase() after config load. */
+export const WORKER_BASE = PRODUCTION_WORKER_BASE;

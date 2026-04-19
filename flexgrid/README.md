@@ -17,7 +17,7 @@ python -m http.server 8000
 # Or: npx serve .
 ```
 
-Then open http://localhost:8000
+Then open http://localhost:8000/flexgrid/site/ (or use `npx wrangler dev` from the `flexgrid/` folder — app lives in `site/`)
 
 ## Config
 
@@ -29,16 +29,17 @@ Configuration lives in `src/js/config.js`:
 ## Project Structure
 
 ```
-├── index.html              # Entry point
-├── src/
-│   ├── js/
-│   │   ├── app.js          # Core logic
-│   │   └── config.js       # Config loader
-│   ├── styles/
-│   │   └── style.css       # Styles
-│   └── assets/
-│       └── images/         # dad.png, header.png, LO.png, tile.png, pblo.png
-├── docs/                   # Setup guides, notes, worker docs
+├── index.html              # Redirects into site/ (for simple static servers)
+├── site/                   # Static assets served by Wrangler + browser entry
+│   ├── index.html
+│   ├── vendor/             # GIF libs (same-origin)
+│   └── src/
+│       ├── js/             # app.js, api.js, config.js, …
+│       ├── styles/
+│       └── assets/images/
+├── worker.js               # Cloudflare Worker (Alchemy + /img)
+├── wrangler.jsonc
+├── docs/
 └── README.md
 ```
 
