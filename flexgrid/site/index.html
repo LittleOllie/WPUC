@@ -103,17 +103,19 @@
   </script>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-overlay-inner" aria-busy="true">
-      <img
-        src="src/assets/images/LO.png"
-        alt=""
-        class="loading-overlay-lo-img"
-        width="140"
-        height="140"
-        decoding="async"
-      />
-      <p id="loadingOverlayStatus" class="loading-overlay-status"></p>
-      <div class="loading-overlay-barTrack" aria-hidden="true">
-        <div id="loadingOverlayBarFill" class="loading-overlay-barFill"></div>
+      <div class="loading-overlay-orbit">
+        <div class="loading-overlay-ring" aria-hidden="true"></div>
+        <div class="loading-overlay-orbitCenter">
+          <img
+            src="src/assets/images/LO.png"
+            alt=""
+            class="loading-overlay-lo-img"
+            width="140"
+            height="140"
+            decoding="async"
+          />
+          <p id="loadingOverlayStatus" class="loading-overlay-status" aria-live="polite"></p>
+        </div>
       </div>
       <p class="loading-overlay-hint">Loading (this may take a moment)</p>
     </div>

@@ -6,7 +6,20 @@
 import { getAlchemyNetworkId } from "./alchemyNetworks.js";
 
 export const PRODUCTION_WORKER_BASE = "https://loflexgrid.littleollienft.workers.dev";
-const NFT_FETCH_TIMEOUT_MS = 35000;
+
+/**
+ * Client-side cap for `/api/nfts` (single HTTP response).
+ * ApeChain uses Moralis with cursor pagination in the Worker (each page can be slow); 35s was too low
+ * and caused false timeouts for busy wallets. ETH/Base/Polygon use Alchemy with fewer round-trips.
+ */
+const NFT_FETCH_TIMEOUT_MS_DEFAULT = 60000;
+const NFT_FETCH_TIMEOUT_MS_APECHAIN = 120000;
+
+function nftFetchTimeoutMs(chainParam) {
+  return String(chainParam || "").trim().toLowerCase() === "apechain"
+    ? NFT_FETCH_TIMEOUT_MS_APECHAIN
+    : NFT_FETCH_TIMEOUT_MS_DEFAULT;
+}
 
 /**
  * Worker origin for `/api/*` and `/img` after config loads.
@@ -32,29 +45,64 @@ function flexGridLogNetwork(chainParam) {
   }
 }
 
+/** Max NFT rows returned per `/api/nfts` response (reduces payload + downstream work; Worker may still bill). */
+const NFT_FETCH_RESPONSE_CAP = 300;
+
+/** In-memory cache: `wallet::chain::contractFilter` → NFT array (defensive copy on read). */
+const nftFetchCache = Object.create(null);
+
+/** In-flight dedupe: same key shares one HTTP request (parallel UI calls, duplicate wallets in list). */
+const nftFetchInflight = new Map();
+
+export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
+  const w = String(wallet || "")
+    .trim()
+    .toLowerCase();
+  const c = String(chain || "eth")
+    .trim()
+    .toLowerCase();
+  const f = String(contractAddresses || "")
+    .trim()
+    .toLowerCase();
+  return `${w}::${c}::${f}`;
+}
+
+function applyNftResponseCap(list, chainParam) {
+  if (!Array.isArray(list) || list.length <= NFT_FETCH_RESPONSE_CAP) return list;
+  console.warn("[FlexGrid] Limiting NFT load to", NFT_FETCH_RESPONSE_CAP, { chain: chainParam, original: list.length });
+  return list.slice(0, NFT_FETCH_RESPONSE_CAP);
+}
+
 /**
- * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
+ * Single HTTP call to Worker `/api/nfts` (no cache / dedupe).
+ * @param {string} [contractAddresses] Optional comma-separated contract filter (matches Worker query param).
  */
-export async function fetchNFTsFromWorker({ wallet, chain }) {
+async function fetchNFTsFromWorkerHttp({ wallet, chain, contractAddresses }) {
   const chainParam = String(chain || "eth").trim().toLowerCase();
   const networkLabel = flexGridLogNetwork(chainParam);
   const backendHint =
     chainParam === "apechain" ? "Moralis on Worker" : `Alchemy network: ${networkLabel}`;
 
-  console.log(`[FlexGrid] Chain selected: ${chainParam} (${backendHint})`);
-  console.log(`[FlexGrid] Fetching NFTs for ${wallet} on chain=${chainParam}`);
-
-  const url = `${getWorkerBase()}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${encodeURIComponent(chainParam)}`;
+  let url = `${getWorkerBase()}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${encodeURIComponent(chainParam)}`;
+  const contractFilter = String(contractAddresses || "").trim();
+  if (contractFilter) {
+    url += `&contractAddresses=${encodeURIComponent(contractFilter.toLowerCase())}`;
+  }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), NFT_FETCH_TIMEOUT_MS);
+  const timeoutMs = nftFetchTimeoutMs(chainParam);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let res;
   try {
     res = await fetch(url, { signal: controller.signal });
   } catch (e) {
     if (e?.name === "AbortError") {
-      throw new Error("Request timed out. Try with fewer wallets or try again.");
+      const hint =
+        chainParam === "apechain"
+          ? "Request timed out (ApeChain can be slow with many NFTs). Try again or load fewer wallets at once."
+          : "Request timed out. Try with fewer wallets or try again.";
+      throw new Error(hint);
     }
     throw new Error(e?.message || "NFT fetch failed");
   } finally {
@@ -75,15 +123,85 @@ export async function fetchNFTsFromWorker({ wallet, chain }) {
   }
 
   const raw = json.nfts || [];
-  console.log(`[FlexGrid] Found ${raw.length} NFT(s) on ${chainParam}`);
-  if (raw.length > 0) {
-    console.log("[FlexGrid] NFT sample:", raw[0]);
-  }
-  if (chainParam === "apechain" && raw.length > 0) {
-    console.log("[FlexGrid][ApeChain] Sample normalized NFT (Worker payload):", raw[0]);
+  console.log(`[FlexGrid] Worker /api/nfts OK: ${raw.length} row(s) (${backendHint}, network ${networkLabel})`);
+  if (raw.length > 0 && chainParam === "apechain") {
+    console.log("[FlexGrid][ApeChain] Sample NFT (Worker payload):", raw[0]);
   }
 
   return raw;
+}
+
+/**
+ * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
+ * Uses in-memory cache + in-flight coalescing to avoid duplicate Worker/Alchemy work.
+ *
+ * @param {{ wallet: string, chain?: string, contractAddresses?: string, bypassCache?: boolean }} opts
+ */
+export async function fetchNFTsFromWorker(opts = {}) {
+  const wallet = String(opts.wallet || "").trim();
+  const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  const contractFilter = String(opts.contractAddresses || "").trim();
+  const bypassCache = opts.bypassCache === true;
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter);
+
+  if (!wallet) {
+    console.warn("[FlexGrid] fetchNFTsFromWorker: missing wallet");
+    return [];
+  }
+
+  if (!bypassCache && nftFetchCache[cacheKey]) {
+    const cached = nftFetchCache[cacheKey];
+    console.log("[FlexGrid] Using cached NFTs", {
+      cacheKey,
+      count: Array.isArray(cached) ? cached.length : 0,
+      time: Date.now(),
+    });
+    return Array.isArray(cached) ? cached.slice() : [];
+  }
+
+  const existing = nftFetchInflight.get(cacheKey);
+  if (existing) {
+    console.warn("[FlexGrid] Coalescing duplicate NFT fetch (same wallet/chain/filter already in flight)", {
+      cacheKey,
+      time: Date.now(),
+    });
+    return existing;
+  }
+
+  const run = (async () => {
+    console.log("[FlexGrid] Fetching NFTs START", {
+      owner: wallet,
+      chain: chainParam,
+      contractFilter: contractFilter || null,
+      bypassCache,
+      time: Date.now(),
+    });
+    try {
+      const raw = await fetchNFTsFromWorkerHttp({
+        wallet,
+        chain: chainParam,
+        contractAddresses: contractFilter || undefined,
+      });
+      const limited = applyNftResponseCap(raw, chainParam);
+      if (!bypassCache) {
+        nftFetchCache[cacheKey] = limited.slice();
+      }
+      console.log("[FlexGrid] Fetching NFTs DONE", {
+        cacheKey,
+        count: limited.length,
+        capped: Array.isArray(raw) && raw.length > NFT_FETCH_RESPONSE_CAP,
+      });
+      return limited.slice();
+    } catch (err) {
+      console.error("[FlexGrid] Fetching NFTs ERROR", { cacheKey, message: err?.message || String(err) });
+      throw err;
+    } finally {
+      nftFetchInflight.delete(cacheKey);
+    }
+  })();
+
+  nftFetchInflight.set(cacheKey, run);
+  return run;
 }
 
 export async function fetchNFTsFromZora({ wallet, contractAddress }) {
