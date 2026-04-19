@@ -11,7 +11,7 @@
   var WATERMARK_TEXT = "LO Labs";
 
   /** Bump when watermark look changes so in-memory caches refresh. */
-  var WM_RENDER_REV = 4;
+  var WM_RENDER_REV = 6;
 
   var wmCache = {
     w: null,
@@ -49,9 +49,9 @@
     if (wmCache.w === w && wmCache.rev === WM_RENDER_REV && wmCache.font) {
       return wmCache;
     }
-    // Slightly smaller type + lower alpha reads clearly “lighter” on dark frames.
-    var fontSize = Math.max(11, Math.round(w * 0.04));
-    var pad = Math.max(4, Math.round(w * 0.026));
+    // Larger type + stroke/fill (not ultra-low alpha) survives GIF color quantization.
+    var fontSize = Math.max(14, Math.round(w * 0.055));
+    var pad = Math.max(6, Math.round(w * 0.032));
     var font =
       "800 " +
       fontSize +
@@ -68,7 +68,8 @@
   }
 
   /**
-   * Bottom-right subtle watermark. Draw AFTER artwork on the same 2D context.
+   * Bottom-right watermark. Draw AFTER artwork on the same 2D context.
+   * Stroke + solid fill reads clearly on light/dark tiles and after GIF encoding.
    */
   function drawWatermark(ctx, canvasWidth, canvasHeight) {
     if (!ctx) return;
@@ -78,20 +79,21 @@
 
     var x = w - s.pad;
     var yBottom = h - s.pad;
+    var textY = Math.max(s.fontSize + 2, yBottom);
+    var lineW = Math.max(2.5, s.fontSize * 0.16);
 
     ctx.save();
     ctx.font = s.font;
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
-    ctx.fillStyle = "#FFFFFF";
-    /* Clearly lighter than earlier builds (~0.2–0.3); still legible on #0B0F1A. */
-    ctx.globalAlpha = 0.09;
-    var blur = Math.max(1, Math.round(s.fontSize * 0.07));
-    ctx.shadowColor = "rgba(0,0,0,0.22)";
-    ctx.shadowBlur = blur;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = Math.max(1, Math.round(blur * 0.2));
-    ctx.fillText(WATERMARK_TEXT, x, Math.max(s.fontSize + 2, yBottom));
+    ctx.lineJoin = "round";
+    ctx.lineWidth = lineW;
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(5, 12, 28, 0.58)";
+    ctx.strokeText(WATERMARK_TEXT, x, textY);
+    ctx.fillStyle = "#ffffff";
+    ctx.globalAlpha = 0.8;
+    ctx.fillText(WATERMARK_TEXT, x, textY);
     ctx.restore();
   }
 
