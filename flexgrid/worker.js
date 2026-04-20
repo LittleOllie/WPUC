@@ -840,7 +840,62 @@ async function fetchMoralisApeChainNFTsFromMoralis(ownerVal, env, contractAddres
   return all;
 }
 
-async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses) {
+/**
+ * Single Moralis wallet NFT page (ApeChain).
+ * Returns { rows, cursor, chainParam } where cursor is the NEXT cursor (or null).
+ */
+async function fetchMoralisApeChainNFTPage(ownerVal, env, contractAddresses, cursorIn) {
+  const MORALIS_API_BASE_LEGACY = "https://deep-index.moralis.io/api/v2";
+  const cursor = cursorIn && String(cursorIn).trim() ? String(cursorIn).trim() : null;
+  let lockedChain = null;
+  let lockedStrategy = null;
+
+  const chainOpts = lockedChain ? [lockedChain] : null;
+  const strategyList = lockedStrategy
+    ? [lockedStrategy]
+    : [
+        { minimal: false, base: MORALIS_API_BASE, name: "full-v2.2" },
+        { minimal: true, base: MORALIS_API_BASE, name: "minimal-v2.2" },
+        { minimal: true, base: MORALIS_API_BASE_LEGACY, name: "minimal-v2" },
+      ];
+
+  let pagePack = null;
+  let lastPageErr = "";
+  for (const st of strategyList) {
+    try {
+      pagePack = await moralisApeGetParsed(
+        env,
+        (chainParam) => {
+          const urlStr = buildMoralisWalletNftUrl(ownerVal, chainParam, cursor, contractAddresses, st.minimal, st.base);
+          console.log("[FlexGrid][ApeChain] Moralis request (pageOnly):", st.name, urlStr);
+          return urlStr;
+        },
+        30000,
+        chainOpts
+      );
+      lockedStrategy = { minimal: st.minimal, base: st.base, name: st.name };
+      if (st.name !== "full-v2.2") {
+        console.warn("[FlexGrid][ApeChain] Moralis wallet NFT page used fallback strategy:", st.name);
+      }
+      break;
+    } catch (e) {
+      lastPageErr = e?.message || String(e);
+      console.warn("[FlexGrid][ApeChain] strategy failed:", st.name, lastPageErr.slice(0, 280));
+    }
+  }
+  if (!pagePack) {
+    throw new Error(lastPageErr || "[Moralis ApeChain] all strategies failed for wallet NFT page");
+  }
+
+  const { data, chainParam } = pagePack;
+  lockedChain = chainParam;
+  const pageResults = moralisWalletNftRows(data);
+  const nextCursor = data.cursor && String(data.cursor).trim() ? String(data.cursor).trim() : null;
+  console.log("[FlexGrid][ApeChain] Moralis pageOnly results:", pageResults.length, "nextCursor?", !!nextCursor, "chain=", lockedChain);
+  return { rows: pageResults, cursor: nextCursor, chainParam: lockedChain };
+}
+
+async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses, opts = {}) {
   const apiKey = pickAlchemyApiKeyForChain(env, chain);
   if (!apiKey) {
     return corsResponse(
@@ -858,7 +913,9 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses)
 
   const baseUrl = alchemyGetNftsForOwnerUrl(chain, host, apiKey);
   const allNFTs = [];
-  let pageKey = null;
+  const pageOnly = opts && opts.pageOnly === true;
+  const minimal = opts && opts.minimal === true;
+  let pageKey = opts && typeof opts.pageKey === "string" && opts.pageKey.trim() ? opts.pageKey.trim() : null;
 
   console.log("[FlexGrid Worker] NFT fetch (Alchemy)", { chain, host, owner: ownerVal });
 
@@ -866,7 +923,7 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses)
     do {
       const params = new URLSearchParams({
         owner: ownerVal,
-        withMetadata: "true",
+        withMetadata: minimal ? "false" : "true",
         pageSize: "100",
       });
       if (pageKey) params.set("pageKey", pageKey);
@@ -899,11 +956,12 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses)
         totalSoFar: allNFTs.length,
         hasMore: !!pageKey,
       });
+      if (pageOnly) break;
     } while (pageKey);
 
-    console.log("[FlexGrid Worker] total Alchemy NFTs:", allNFTs.length, "chain:", chain);
+    console.log("[FlexGrid Worker] total Alchemy NFTs:", allNFTs.length, "chain:", chain, "pageOnly:", pageOnly);
     const cleaned = allNFTs.map(buildCleanedNft);
-    return corsResponse(JSON.stringify({ nfts: cleaned }));
+    return corsResponse(JSON.stringify({ nfts: cleaned, pageKey: pageOnly ? pageKey : null }));
   } catch (e) {
     const msg =
       e?.name === "AbortError"
@@ -918,6 +976,9 @@ async function handleApiNfts(request, env) {
   const owner = url.searchParams.get("owner");
   const chain = String(url.searchParams.get("chain") || "eth").trim().toLowerCase();
   const contractAddressesParam = url.searchParams.get("contractAddresses");
+  const pageKey = url.searchParams.get("pageKey");
+  const pageOnly = url.searchParams.get("pageOnly") === "1" || url.searchParams.get("pageOnly") === "true";
+  const minimal = url.searchParams.get("minimal") === "1" || url.searchParams.get("minimal") === "true";
 
   if (!owner || String(owner).trim() === "") {
     return corsResponse(JSON.stringify({ error: "Missing owner" }), 400);
@@ -944,7 +1005,12 @@ async function handleApiNfts(request, env) {
     }
     if (hasMoralis) {
       try {
-        const rows = await fetchMoralisApeChainNFTsFromMoralis(ownerVal, env, contractAddresses);
+        // IMPORTANT: Use pageOnly for ApeChain to avoid Cloudflare Worker subrequest limits on very large wallets.
+        // Moralis uses cursor pagination; we expose it through pageKey to the client.
+        const pack = pageOnly
+          ? await fetchMoralisApeChainNFTPage(ownerVal, env, contractAddresses, pageKey)
+          : { rows: await fetchMoralisApeChainNFTsFromMoralis(ownerVal, env, contractAddresses), cursor: null, chainParam: "apechain" };
+        const rows = pack.rows || [];
         const cleaned = [];
         for (const row of rows) {
           try {
@@ -970,6 +1036,10 @@ async function handleApiNfts(request, env) {
           console.warn("[FlexGrid][ApeChain] JSON encode failed; falling back to Alchemy.");
         }
         if (body) {
+          // pageKey here is Moralis cursor; only set when pageOnly is requested.
+          if (pageOnly) {
+            return corsResponse(JSON.stringify({ nfts: cleaned, pageKey: pack.cursor || null }));
+          }
           return corsResponse(body);
         }
       } catch (e) {
@@ -981,10 +1051,11 @@ async function handleApiNfts(request, env) {
         console.warn("[FlexGrid][ApeChain] Falling back to Alchemy getNFTsForOwner (ApeChain).");
       }
     }
-    return fetchAlchemyNftsForOwner(env, ownerVal, "apechain", contractAddresses);
+    // Moralis cursor pagination doesn't map cleanly to Alchemy pageKey. Keep ApeChain behavior unchanged.
+    return fetchAlchemyNftsForOwner(env, ownerVal, "apechain", contractAddresses, { pageKey, pageOnly, minimal });
   }
 
-  return fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses);
+  return fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses, { pageKey, pageOnly, minimal });
 }
 
 async function handleApiNftMetadata(request, env) {

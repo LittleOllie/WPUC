@@ -4,6 +4,7 @@
 */
 import {
   fetchNFTsFromWorker,
+  fetchNFTsInBatches,
   fetchNFTsFromZora,
   fetchContractMetadataFromWorker,
   getWorkerBase,
@@ -258,6 +259,8 @@ const state = {
   settingsTextShadow: true,
   /** Optional caption on stage (export still uses flat fill; caption is on-screen only unless we extend export later) */
   settingsStageCaption: "",
+  /** Animation export choice (GIF or MP4/WebM). Default is set when opening the export modal. */
+  exportType: "gif",
 };
 state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
 
@@ -508,9 +511,14 @@ let BUILD_ID = Date.now();
 const imageCache = new Map();
 
 // ---------- Concurrent load limiter (prevents network overload) ----------
-const MAX_CONCURRENT_LOADS = 12;
+const MAX_CONCURRENT_LOADS_DEFAULT = 6;
+const MAX_CONCURRENT_LOADS_WHALE = 4;
 let activeLoads = 0;
 const loadQueue = [];
+
+function getMaxConcurrentLoads() {
+  return state?.whaleMode ? MAX_CONCURRENT_LOADS_WHALE : MAX_CONCURRENT_LOADS_DEFAULT;
+}
 
 function queueImageLoad(fn) {
   return new Promise((resolve, reject) => {
@@ -520,7 +528,7 @@ function queueImageLoad(fn) {
 }
 
 function processQueue() {
-  if (activeLoads >= MAX_CONCURRENT_LOADS || loadQueue.length === 0) return;
+  if (activeLoads >= getMaxConcurrentLoads() || loadQueue.length === 0) return;
   const { fn, resolve, reject } = loadQueue.shift();
   activeLoads++;
   fn()
@@ -652,6 +660,106 @@ function updateErrorLogDisplay() {
     `;
     })
     .join("");
+}
+
+// ---------- Post-export donation modal ----------
+function showDonationPopup() {
+  try {
+    const existing = document.querySelector(".donation-modal");
+    if (existing) existing.remove();
+  } catch (_) {}
+
+  const address = "0x19d72c2e078fab2dbc70a664e18061dc06eb0fe3";
+  const modal = document.createElement("div");
+  modal.className = "donation-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="donation-content" role="document">
+      <button class="donation-close-x" type="button" aria-label="Close">×</button>
+      <img
+        class="donation-header flexgrid-modal-banner"
+        src="src/assets/images/header.png"
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+      />
+      <div class="donation-body">
+        <h2 class="donation-title">Thanks for using FlexGrid!</h2>
+        <p class="donation-text">
+          If you enjoyed this and want to help us keep improving,
+          feel free to send a donation.
+        </p>
+
+        <div class="wallet-box">
+          <span class="wallet-label">Donation wallet</span>
+          <span id="walletAddress" class="wallet-address">${address}</span>
+          <button id="copyWalletBtn" class="btn btnSmall" type="button">📋 Copy</button>
+        </div>
+
+        <button id="closeDonationModal" class="btn" type="button">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const close = () => {
+    try {
+      modal.remove();
+    } catch (_) {}
+  };
+
+  // Overlay click closes; content click doesn't.
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+  const panel = modal.querySelector(".donation-content");
+  if (panel) panel.addEventListener("click", (e) => e.stopPropagation());
+
+  const closeX = modal.querySelector(".donation-close-x");
+  if (closeX) closeX.addEventListener("click", close);
+  const closeBtn = modal.querySelector("#closeDonationModal");
+  if (closeBtn) closeBtn.addEventListener("click", close);
+
+  const copyBtn = modal.querySelector("#copyWalletBtn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      const txt = address;
+      let ok = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(txt);
+          ok = true;
+        }
+      } catch (_) {}
+      if (!ok) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = txt;
+          ta.setAttribute("readonly", "true");
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand("copy");
+          ta.remove();
+        } catch (_) {}
+      }
+      const prev = copyBtn.textContent;
+      copyBtn.textContent = ok ? "✅ Copied!" : "⚠️ Copy failed";
+      setTimeout(() => {
+        try {
+          copyBtn.textContent = prev || "📋 Copy";
+        } catch (_) {}
+      }, 2000);
+    });
+  }
+
+  // Esc closes
+  const onKey = (e) => {
+    if (e.key === "Escape") close();
+  };
+  document.addEventListener("keydown", onKey, { once: true });
 }
 
 function clearErrorLog() {
@@ -1562,7 +1670,8 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
     try {
       setImgCORS(img, true);
       const proxyUrl = gridProxyUrl(url) || url;
-      await queueImageLoad(() => loadImageWithTimeout(img, proxyUrl, 4000));
+      const timeoutMs = state?.whaleMode ? 7000 : 5000;
+      await queueImageLoad(() => loadImageWithTimeout(img, proxyUrl, timeoutMs));
       imageCache.set(url, url);
       return { ok: true, winningUrl: url };
     } catch (_) {
@@ -2365,11 +2474,20 @@ function renderCollectionsList() {
   const grid = document.createElement("div");
   grid.className = "collection-grid";
 
-  state.collections.forEach((c) => {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "collection-card";
-    card.dataset.collectionKey = String(c.key || "").trim().toLowerCase();
+  const items = (state.collections || []).slice();
+  const totalCollections = items.length;
+  const whaleMode = totalCollections > 120;
+  const RENDER_BATCH = whaleMode ? 30 : 120;
+
+  let i = 0;
+  function renderNextChunk() {
+    const end = Math.min(totalCollections, i + RENDER_BATCH);
+    for (; i < end; i++) {
+      const c = items[i];
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "collection-card";
+      card.dataset.collectionKey = String(c.key || "").trim().toLowerCase();
 
     const count = c.count ?? c.nfts?.length ?? 0;
     const displayName = shortenForDisplay(c.name) || "Unknown Collection";
@@ -2454,14 +2572,19 @@ function renderCollectionsList() {
       openCollectionActionsModal(c.key);
     });
 
-    grid.appendChild(card);
-  });
+      grid.appendChild(card);
+    }
+    if (i < totalCollections) {
+      requestAnimationFrame(renderNextChunk);
+    } else {
+      maybeRefreshManualModalGrid();
+      syncManualSelectionModalHeader();
+      renderTraitFiltersForSelected();
+    }
+  }
 
   wrap.appendChild(grid);
-
-  maybeRefreshManualModalGrid();
-  syncManualSelectionModalHeader();
-  renderTraitFiltersForSelected();
+  renderNextChunk();
 }
 
 function setAllCollections(checked) {
@@ -4052,6 +4175,10 @@ function buildGrid() {
   const requestedLayout = state.selectedLayout || "classic";
   const layoutId = resolveBuildLayoutId(items.length, requestedLayout);
   const layoutDef = getLayoutDefinition(layoutId);
+  state.whaleMode = items.length > 300;
+  if (state.whaleMode) {
+    setStatus("🐋 Large collection detected — Performance Mode enabled");
+  }
   if (
     layoutId !== requestedLayout &&
     LAYOUTS[requestedLayout]?.type === "template" &&
@@ -4073,6 +4200,13 @@ function buildGrid() {
 
   const shuffleBtn = $("gridShuffleBtn");
   if (shuffleBtn) shuffleBtn.style.display = "";
+
+  if (!confirmLargeImageLoadIfNeeded(items.length)) {
+    setStatus("⏸️ Cancelled — try fewer collections or export as MP4 for large sets.");
+    if (exportBtn) exportBtn.disabled = true;
+    syncGridFooterButtons(!hasItemsForBuild(), true);
+    return;
+  }
 
   renderFullLayoutFromItems(items, layoutId, buildId);
   syncLayoutPickerActiveStates();
@@ -4631,6 +4765,21 @@ function enableDragDrop() {
   installGridPointerReorder();
 }
 
+// ---------- Large load guard (UX + crash prevention) ----------
+let didConfirmLargeImageLoadThisSession = false;
+function confirmLargeImageLoadIfNeeded(nftTileCount) {
+  const n = Math.max(0, Math.round(Number(nftTileCount) || 0));
+  if (n <= 200) return true;
+  if (didConfirmLargeImageLoadThisSession) return true;
+  const msg =
+    `⚠️ Large grid detected (${n} tiles).\n\n` +
+    `This is going to take a while to load and may have many failed image loads.\n\n` +
+    `Continue?`;
+  const ok = window.confirm(msg);
+  if (ok) didConfirmLargeImageLoadThisSession = true;
+  return ok;
+}
+
 // ---------- Wallet load ----------
 let loadWalletsInFlight = false;
 let loadWalletsDebounceTimer = null;
@@ -4696,7 +4845,10 @@ async function loadWallets() {
       showLoading(gatherMsg, "");
       setStatus(`Gathering NFTs… batch ${batchNum}/${totalBatches}.`);
       const results = await Promise.all(
-        batch.map((w) => fetchNFTsFromWorker({ wallet: w, chain }))
+        batch.map((w) => {
+          // Paged loading prevents Cloudflare Worker subrequest limits on ApeChain and reduces UI jank on large wallets.
+          return fetchNFTsInBatches({ wallet: w, chain });
+        })
       );
       results.forEach((nfts) => allNfts.push(...(nfts || [])));
     }
@@ -5358,6 +5510,15 @@ function offerFlexGridShareAfterExport() {
   });
 }
 
+function triggerDonationPopupAfterSuccessfulExport() {
+  // Post-export UI only; must not affect export/watermark internals.
+  setTimeout(() => {
+    try {
+      showDonationPopup();
+    } catch (_) {}
+  }, 500);
+}
+
 function isImgUsable(img) {
   return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
 }
@@ -5470,6 +5631,7 @@ async function exportPNG() {
     setStatus("✨ Saved! Check your downloads");
     updateGuideGlow();
     offerFlexGridShareAfterExport();
+    triggerDonationPopupAfterSuccessfulExport();
   } catch (err) {
     console.error(err);
     setStatus("😕 Oops, export failed. Try again?");
@@ -5486,7 +5648,8 @@ var GRID_GIF_CONFIG = {
   // Lower = better quality in gif.js (but slower / larger). Slight bump.
   quality: 10,
 };
-var GRID_GIF_MAX_NFT_FRAMES = 200;
+var MAX_GIF_FRAMES = 400;
+var GRID_GIF_MAX_NFT_FRAMES = MAX_GIF_FRAMES;
 var gridGifLastSpeedPos = 50;
 
 function gridGifBranding() {
@@ -5605,12 +5768,224 @@ function gridGifOpenCreating(on) {
   m.setAttribute("aria-hidden", on ? "false" : "true");
 }
 
+function getRecommendedExportType(nftCount) {
+  var n = Math.max(0, Math.round(Number(nftCount) || 0));
+  if (n <= 200) return "gif";
+  if (n <= 400) return "gif-warning";
+  return "mp4";
+}
+
+function setGridExportTypeUI(type) {
+  var t = type === "mp4" ? "mp4" : "gif";
+  state.exportType = t;
+  var gifBtn = $("gridExportTypeGif");
+  var mp4Btn = $("gridExportTypeMp4");
+  if (gifBtn) {
+    gifBtn.classList.toggle("btnPrimary", t === "gif");
+    gifBtn.setAttribute("aria-pressed", t === "gif" ? "true" : "false");
+  }
+  if (mp4Btn) {
+    mp4Btn.classList.toggle("btnPrimary", t === "mp4");
+    mp4Btn.setAttribute("aria-pressed", t === "mp4" ? "true" : "false");
+  }
+  var confirm = $("gridGifOptionsConfirm");
+  if (confirm) confirm.textContent = t === "mp4" ? "Export MP4" : "Export GIF";
+}
+
+function updateGridExportTypeHint(nftCount) {
+  var hintEl = $("gridExportTypeHint");
+  if (!hintEl) return;
+  var rec = getRecommendedExportType(nftCount);
+  if (rec === "gif-warning") {
+    hintEl.textContent = "⚠️ GIF may be slow for larger collections. MP4 recommended.";
+  } else if (rec === "mp4") {
+    hintEl.textContent = "🚀 MP4 recommended for large collections (faster + smoother).";
+  } else {
+    hintEl.textContent = "";
+  }
+}
+
+function pickVideoMimeType() {
+  try {
+    if (typeof window.MediaRecorder !== "function") return "";
+    var prefers = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+    ];
+    for (var i = 0; i < prefers.length; i++) {
+      var t = prefers[i];
+      if (window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported(t)) return t;
+    }
+  } catch (_) {}
+  return "";
+}
+
+async function exportMP4() {
+  var tiles = getGridGifNftTiles();
+  var nftCount = tiles.length;
+  if (nftCount === 0) {
+    setStatus("😕 Nothing to export yet — build a grid first!");
+    return;
+  }
+
+  var gifBtn = $("gridGifBtn");
+  var pngBtn = $("gridExportBtn");
+  if (gifBtn) gifBtn.disabled = true;
+  if (pngBtn) pngBtn.disabled = true;
+
+  // Safety: huge GIF-like runs as video can still be heavy, but much safer than gif.js.
+  await waitForExportImages(tiles);
+
+  var mime = pickVideoMimeType();
+  if (!mime) {
+    setStatus("😕 Video export not supported in this browser. Try GIF instead.");
+    if (gifBtn) gifBtn.disabled = false;
+    if (pngBtn) pngBtn.disabled = false;
+    return;
+  }
+
+  var bg = "#0B0F1A";
+  var size = GRID_GIF_SIZE;
+  var fps = 30;
+  var frameMs = Math.round(1000 / fps);
+
+  var maxPick = parseInt(String($("gridGifOptionsMax")?.value || GRID_GIF_CONFIG.maxFrames), 10) || GRID_GIF_CONFIG.maxFrames;
+  var speedPos = parseInt(String($("gridGifOptionsSpeed")?.value || gridGifLastSpeedPos), 10) || gridGifLastSpeedPos;
+  gridGifLastSpeedPos = speedPos;
+  var delayMs = gridGifSpeedPosToNftDelayMs(speedPos);
+
+  // Respect the same frame limiting logic as GIF.
+  var cap = Math.min(Math.max(1, Math.floor(maxPick)), GRID_GIF_MAX_NFT_FRAMES, nftCount);
+  var phantom = [];
+  for (var i = 0; i < nftCount; i++) phantom.push(i);
+  var frameIndices = gridGifExportLimitFrames(phantom, cap);
+
+  gridGifOpenCreating(true);
+  setStatus("🎬 Creating MP4…");
+
+  try {
+    var L = gridGifBranding();
+    var canvas = gridGifMakeCanvas(size, bg);
+    var ctx = canvas.getContext("2d");
+    var stream = canvas.captureStream(fps);
+
+    var recorder = new window.MediaRecorder(stream, { mimeType: mime });
+    var chunks = [];
+    recorder.ondataavailable = function (e) {
+      if (e && e.data && e.data.size) chunks.push(e.data);
+    };
+
+    var stopped = new Promise(function (resolve) {
+      recorder.onstop = resolve;
+    });
+
+    recorder.start(250);
+
+    function paintFrame(imgEl, includeWatermark) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, size, size);
+      if (isImgUsable(imgEl)) drawImageContain(ctx, imgEl, 0, 0, size, size);
+      if (includeWatermark) L.drawWatermark(ctx, size, size);
+    }
+
+    async function hold(ms) {
+      var n = Math.max(1, Math.round(ms / frameMs));
+      for (var j = 0; j < n; j++) {
+        await new Promise(function (r) {
+          setTimeout(r, frameMs);
+        });
+      }
+    }
+
+    // Opening brand frame (matches GIF).
+    var firstLogoIndex = -1;
+    for (var li = 0; li < tiles.length; li++) {
+      var k = tiles[li]?.dataset?.key;
+      if (typeof k === "string" && k.startsWith("logo_")) {
+        firstLogoIndex = li;
+        break;
+      }
+    }
+    var logoTile = firstLogoIndex >= 0 ? tiles[firstLogoIndex] : tiles[0];
+    var logoImg = logoTile ? logoTile.querySelector("img") : null;
+    paintFrame(logoImg, true);
+    await hold(1000);
+
+    // NFT frames.
+    for (var fi = 0; fi < frameIndices.length; fi++) {
+      var idx = frameIndices[fi];
+      var tile = tiles[idx];
+      var img = tile ? tile.querySelector("img") : null;
+      paintFrame(img, true);
+      await hold(delayMs);
+      if ((fi & 7) === 7) {
+        // yield a touch on long exports
+        await new Promise(function (r) {
+          setTimeout(r, 0);
+        });
+      }
+    }
+
+    // Final promo frame: draw the cached CTA card.
+    var finalIdata = L.createFinalFrameImageData(size, size);
+    ctx.putImageData(finalIdata, 0, 0);
+    var finalDelay =
+      typeof L.finalFrameDelayMs === "function"
+        ? L.finalFrameDelayMs(delayMs)
+        : Math.round(delayMs * 1.5) + 500;
+    await hold(finalDelay);
+
+    recorder.stop();
+    await stopped;
+
+    var blob = new Blob(chunks, { type: mime.split(";")[0] || "video/webm" });
+    var ext = mime.indexOf("video/mp4") === 0 ? "mp4" : "webm";
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "lo-grid." + ext;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 5000);
+
+    gridGifOpenCreating(false);
+    setStatus("✨ Video saved! Check your downloads");
+    updateGuideGlow();
+    syncGridFooterButtons(!hasItemsForBuild(), false);
+    offerFlexGridShareAfterExport();
+    triggerDonationPopupAfterSuccessfulExport();
+  } catch (e) {
+    gridGifOpenCreating(false);
+    const why = e instanceof Error && e.message ? e.message : String(e || "");
+    setStatus(why ? "😕 MP4 export failed: " + why : "😕 MP4 export failed. Try again?");
+    console.error(e);
+    var gifBtn2 = $("gridGifBtn");
+    var pngBtn2 = $("gridExportBtn");
+    if (gifBtn2) gifBtn2.disabled = false;
+    if (pngBtn2) pngBtn2.disabled = false;
+    syncGridFooterButtons(!hasItemsForBuild(), false);
+  }
+}
+
 async function exportGIF() {
   var tiles = getGridGifNftTiles();
   var nftCount = tiles.length;
   if (nftCount === 0) {
     setStatus("😕 Nothing to export yet — build a grid first!");
     return;
+  }
+
+  if (nftCount > MAX_GIF_FRAMES) {
+    console.warn("[FlexGrid] GIF frame cap applies", { nftCount: nftCount, cap: MAX_GIF_FRAMES });
+  }
+  if (nftCount > 500) {
+    setStatus("⚠️ This may crash your device. MP4 strongly recommended.");
   }
 
   // Prevent multiple concurrent exports.
@@ -5687,7 +6062,10 @@ async function exportGIF() {
       } catch (e) {
         console.error(e);
       }
-      if (downloadOk) offerFlexGridShareAfterExport();
+      if (downloadOk) {
+        offerFlexGridShareAfterExport();
+        triggerDonationPopupAfterSuccessfulExport();
+      }
     });
 
     // Opening brand frame: first collection logo tile (no pblo overlay).
@@ -5765,8 +6143,14 @@ function updateGridGifOptionsUi() {
   if (!maxInput || !speedEl) return;
 
   var cap = GRID_GIF_MAX_NFT_FRAMES;
+  try {
+    maxInput.max = String(cap);
+  } catch (_) {}
   var defaultMaxPick = Math.min(nftCount, cap);
   maxInput.value = String(defaultMaxPick || 1);
+
+  // Default export type is driven by recommendation when the modal opens.
+  updateGridExportTypeHint(nftCount);
 
   var speedPos = parseInt(String(speedEl.value || gridGifLastSpeedPos), 10) || gridGifLastSpeedPos;
   var maxPick = parseInt(String(maxInput.value), 10) || defaultMaxPick;
@@ -5794,6 +6178,11 @@ function updateGridGifOptionsUi() {
 
 function openGridGifOptions() {
   updateGridGifOptionsUi();
+  // Set default export type based on tile count (users can override).
+  var tiles = getGridGifNftTiles();
+  var rec = getRecommendedExportType(tiles.length);
+  if (rec === "mp4") setGridExportTypeUI("mp4");
+  else setGridExportTypeUI("gif");
   gridGifOpenModal(true);
   var maxInput = $("gridGifOptionsMax");
   if (maxInput) maxInput.focus();
@@ -5989,9 +6378,30 @@ function toggleStageLayoutSection() {
   const gifSpeedInput = $("gridGifOptionsSpeed");
 
   if (gifOptionsModal) {
+    // Mobile Safari quirk: dragging the <input type="range"> thumb can end with a click on the overlay,
+    // which closes the modal unexpectedly. Track whether the gesture started inside the panel.
+    let startedInside = false;
+    const panel = gifOptionsModal.querySelector(".grid-gif-options-panel");
+    const markInside = () => {
+      startedInside = true;
+    };
+    const clearInsideSoon = () => {
+      // Clear on next tick so the same pointerup doesn't immediately allow a stray overlay click to close.
+      setTimeout(() => {
+        startedInside = false;
+      }, 0);
+    };
+    if (panel) {
+      panel.addEventListener("pointerdown", markInside);
+      panel.addEventListener("touchstart", markInside, { passive: true });
+      panel.addEventListener("pointerup", clearInsideSoon);
+      panel.addEventListener("pointercancel", clearInsideSoon);
+      panel.addEventListener("touchend", clearInsideSoon);
+      panel.addEventListener("touchcancel", clearInsideSoon);
+    }
     gifOptionsModal.addEventListener("click", (e) => {
-      // Close only when clicking the overlay itself.
-      if (e.target === gifOptionsModal) gridGifOpenModal(false);
+      // Close only when clicking the overlay itself (and not after a drag gesture from inside).
+      if (e.target === gifOptionsModal && !startedInside) gridGifOpenModal(false);
     });
   }
   if (gifOptionsClose) gifOptionsClose.addEventListener("click", () => gridGifOpenModal(false));
@@ -5999,11 +6409,42 @@ function toggleStageLayoutSection() {
   if (gifOptionsConfirm)
     gifOptionsConfirm.addEventListener("click", () => {
       gridGifOpenModal(false);
-      exportGIF();
+      const tiles = getGridGifNftTiles();
+      const nftCount = tiles.length;
+      const rec = getRecommendedExportType(nftCount);
+      const selected = state.exportType === "mp4" ? "mp4" : "gif";
+
+      if (selected === "gif") {
+        if (nftCount > 500) {
+          setStatus("⚠️ This may crash your device. MP4 strongly recommended.");
+        }
+        if (rec === "mp4") {
+          const ok = window.confirm("MP4 is recommended for this size. Continue with GIF anyway?");
+          if (!ok) {
+            setGridExportTypeUI("mp4");
+            gridGifOpenModal(true);
+            return;
+          }
+        }
+        exportGIF();
+        return;
+      }
+      exportMP4();
     });
 
   if (gifMaxInput) gifMaxInput.addEventListener("input", updateGridGifOptionsUi);
   if (gifSpeedInput) gifSpeedInput.addEventListener("input", updateGridGifOptionsUi);
+
+  const exportTypeGif = $("gridExportTypeGif");
+  const exportTypeMp4 = $("gridExportTypeMp4");
+  const triggerExportFromToggle = (t) => {
+    setGridExportTypeUI(t);
+    // These top buttons are treated as quick actions.
+    const c = $("gridGifOptionsConfirm");
+    if (c) c.click();
+  };
+  if (exportTypeGif) exportTypeGif.addEventListener("click", () => triggerExportFromToggle("gif"));
+  if (exportTypeMp4) exportTypeMp4.addEventListener("click", () => triggerExportFromToggle("mp4"));
 
   // Step navigation
   const collectionsBackBtn = $("collectionsBackBtn");

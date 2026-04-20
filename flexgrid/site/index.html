@@ -337,10 +337,23 @@
     <div id="gridGifOptionsModal" class="grid-gif-options-modal hidden" aria-hidden="true">
       <div class="grid-gif-options-panel" role="dialog" aria-modal="true" aria-labelledby="gridGifOptionsTitle">
         <div class="grid-gif-options-head">
-          <h3 id="gridGifOptionsTitle" class="grid-gif-options-title">GIF export</h3>
+          <h3 id="gridGifOptionsTitle" class="grid-gif-options-title">Animation export</h3>
           <button id="gridGifOptionsClose" class="grid-gif-options-close" type="button" aria-label="Close">×</button>
         </div>
+        <img
+          class="grid-gif-options-header flexgrid-modal-banner"
+          src="src/assets/images/header.png"
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+        />
         <p id="gridGifOptionsSummary" class="grid-gif-options-summary" aria-live="polite"></p>
+
+        <div class="grid-gif-options-actions" style="justify-content:flex-start; gap:10px; padding: 6px 0 12px;">
+          <button id="gridExportTypeGif" class="btn btnSmall btnPrimary" type="button" aria-pressed="true">Export as GIF</button>
+          <button id="gridExportTypeMp4" class="btn btnSmall" type="button" aria-pressed="false">Export as MP4</button>
+        </div>
+        <p id="gridExportTypeHint" class="grid-gif-options-duration" aria-live="polite" style="margin-top:-6px;"></p>
 
         <label class="grid-gif-options-label" for="gridGifOptionsMax">NFT frames to include</label>
         <input
@@ -348,7 +361,7 @@
           id="gridGifOptionsMax"
           class="grid-gif-options-input"
           min="1"
-          max="200"
+          max="400"
           step="1"
           value="25"
         />
@@ -374,7 +387,7 @@
 
         <div class="grid-gif-options-actions">
           <button id="gridGifOptionsCancel" class="btn" type="button">Cancel</button>
-          <button id="gridGifOptionsConfirm" class="btn btnPrimary" type="button">Create GIF</button>
+          <button id="gridGifOptionsConfirm" class="btn btnPrimary" type="button">Export</button>
         </div>
       </div>
     </div>

@@ -45,14 +45,48 @@ function flexGridLogNetwork(chainParam) {
   }
 }
 
-/** Max NFT rows returned per `/api/nfts` response (reduces payload + downstream work; Worker may still bill). */
-const NFT_FETCH_RESPONSE_CAP = 300;
+/**
+ * NOTE: Do NOT cap `/api/nfts` results client-side.
+ * Capping here drops real NFTs/collections and does not reduce Alchemy CU (the Worker already fetched them).
+ * We keep a soft warning threshold only for diagnostics.
+ */
+const NFT_FETCH_SOFT_WARN_THRESHOLD = 3000;
 
 /** In-memory cache: `wallet::chain::contractFilter` → NFT array (defensive copy on read). */
 const nftFetchCache = Object.create(null);
 
 /** In-flight dedupe: same key shares one HTTP request (parallel UI calls, duplicate wallets in list). */
 const nftFetchInflight = new Map();
+
+// ---------- Local (TTL) cache to reduce repeat loads ----------
+const NFT_CACHE_TTL_MS = 5 * 60 * 1000;
+const NFT_LS_PREFIX = "flexgrid_nfts_v1::";
+
+function readLocalNftCache(cacheKey) {
+  try {
+    const raw = localStorage.getItem(NFT_LS_PREFIX + cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const ts = Number(parsed?.timestamp || 0);
+    const data = parsed?.data;
+    if (!ts || Date.now() - ts > NFT_CACHE_TTL_MS) return null;
+    return Array.isArray(data) ? data : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeLocalNftCache(cacheKey, data) {
+  try {
+    if (!Array.isArray(data)) return;
+    localStorage.setItem(
+      NFT_LS_PREFIX + cacheKey,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch (_) {
+    // ignore quota / blocked storage
+  }
+}
 
 export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
   const w = String(wallet || "")
@@ -67,10 +101,15 @@ export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
   return `${w}::${c}::${f}`;
 }
 
-function applyNftResponseCap(list, chainParam) {
-  if (!Array.isArray(list) || list.length <= NFT_FETCH_RESPONSE_CAP) return list;
-  console.warn("[FlexGrid] Limiting NFT load to", NFT_FETCH_RESPONSE_CAP, { chain: chainParam, original: list.length });
-  return list.slice(0, NFT_FETCH_RESPONSE_CAP);
+function warnIfHugeNftResponse(list, chainParam) {
+  if (!Array.isArray(list)) return;
+  if (list.length > NFT_FETCH_SOFT_WARN_THRESHOLD) {
+    console.warn("[FlexGrid] Very large NFT response (no cap applied)", {
+      chain: chainParam,
+      count: list.length,
+      threshold: NFT_FETCH_SOFT_WARN_THRESHOLD,
+    });
+  }
 }
 
 /**
@@ -87,6 +126,15 @@ async function fetchNFTsFromWorkerHttp({ wallet, chain, contractAddresses }) {
   const contractFilter = String(contractAddresses || "").trim();
   if (contractFilter) {
     url += `&contractAddresses=${encodeURIComponent(contractFilter.toLowerCase())}`;
+  }
+  if (typeof arguments[0]?.pageKey === "string" && arguments[0].pageKey.trim()) {
+    url += `&pageKey=${encodeURIComponent(arguments[0].pageKey.trim())}`;
+  }
+  if (arguments[0]?.pageOnly === true) {
+    url += `&pageOnly=1`;
+  }
+  if (arguments[0]?.minimal === true) {
+    url += `&minimal=1`;
   }
 
   const controller = new AbortController();
@@ -123,12 +171,13 @@ async function fetchNFTsFromWorkerHttp({ wallet, chain, contractAddresses }) {
   }
 
   const raw = json.nfts || [];
+  const nextPageKey = typeof json.pageKey === "string" && json.pageKey.trim() ? json.pageKey.trim() : null;
   console.log(`[FlexGrid] Worker /api/nfts OK: ${raw.length} row(s) (${backendHint}, network ${networkLabel})`);
   if (raw.length > 0 && chainParam === "apechain") {
     console.log("[FlexGrid][ApeChain] Sample NFT (Worker payload):", raw[0]);
   }
 
-  return raw;
+  return { nfts: raw, pageKey: nextPageKey };
 }
 
 /**
@@ -151,12 +200,27 @@ export async function fetchNFTsFromWorker(opts = {}) {
 
   if (!bypassCache && nftFetchCache[cacheKey]) {
     const cached = nftFetchCache[cacheKey];
+    // Safety: earlier builds accidentally capped at 300; if we see exactly 300, refetch once.
+    if (Array.isArray(cached) && cached.length === 300) {
+      console.warn("[FlexGrid] Ignoring legacy capped cache entry (300). Refetching.", { cacheKey });
+      delete nftFetchCache[cacheKey];
+    } else {
     console.log("[FlexGrid] Using cached NFTs", {
       cacheKey,
       count: Array.isArray(cached) ? cached.length : 0,
       time: Date.now(),
     });
     return Array.isArray(cached) ? cached.slice() : [];
+    }
+  }
+
+  if (!bypassCache) {
+    const ls = readLocalNftCache(cacheKey);
+    if (ls) {
+      console.log("[FlexGrid] Using localStorage cached NFTs", { cacheKey, count: ls.length, time: Date.now() });
+      nftFetchCache[cacheKey] = ls.slice();
+      return ls.slice();
+    }
   }
 
   const existing = nftFetchInflight.get(cacheKey);
@@ -177,24 +241,92 @@ export async function fetchNFTsFromWorker(opts = {}) {
       time: Date.now(),
     });
     try {
-      const raw = await fetchNFTsFromWorkerHttp({
+      const pack = await fetchNFTsFromWorkerHttp({
         wallet,
         chain: chainParam,
         contractAddresses: contractFilter || undefined,
       });
-      const limited = applyNftResponseCap(raw, chainParam);
+      const raw = pack?.nfts || [];
+      warnIfHugeNftResponse(raw, chainParam);
+      const limited = Array.isArray(raw) ? raw : [];
       if (!bypassCache) {
         nftFetchCache[cacheKey] = limited.slice();
+        writeLocalNftCache(cacheKey, limited);
       }
       console.log("[FlexGrid] Fetching NFTs DONE", {
         cacheKey,
         count: limited.length,
-        capped: Array.isArray(raw) && raw.length > NFT_FETCH_RESPONSE_CAP,
+        cached: !bypassCache,
       });
       return limited.slice();
     } catch (err) {
       console.error("[FlexGrid] Fetching NFTs ERROR", { cacheKey, message: err?.message || String(err) });
       throw err;
+    } finally {
+      nftFetchInflight.delete(cacheKey);
+    }
+  })();
+
+  nftFetchInflight.set(cacheKey, run);
+  return run;
+}
+
+/**
+ * Paged NFT loading (best for 300–1000+). Uses Worker pageKey support to avoid one massive response.
+ * IMPORTANT: This does not change watermark/export logic.
+ *
+ * @param {{ wallet: string, chain?: string, contractAddresses?: string, minimal?: boolean }} opts
+ */
+export async function fetchNFTsInBatches(opts = {}) {
+  const wallet = String(opts.wallet || "").trim();
+  const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  const contractFilter = String(opts.contractAddresses || "").trim();
+  const minimal = opts.minimal === true;
+  if (!wallet) return [];
+
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter);
+  if (nftFetchCache[cacheKey]) return nftFetchCache[cacheKey].slice();
+  const ls = readLocalNftCache(cacheKey);
+  if (ls) {
+    console.log("[FlexGrid] Using localStorage cached NFTs", { cacheKey, count: ls.length, time: Date.now() });
+    nftFetchCache[cacheKey] = ls.slice();
+    return ls.slice();
+  }
+
+  const existing = nftFetchInflight.get(cacheKey);
+  if (existing) return existing;
+
+  const run = (async () => {
+    if (chainParam === "apechain") {
+      console.log("[Moralis Calls Triggered]", { wallet, chain: chainParam, time: Date.now() });
+    }
+    console.log("[FlexGrid] Fetching NFTs (paged) START", { wallet, chain: chainParam, minimal, time: Date.now() });
+    const all = [];
+    let pageKey = null;
+    let page = 0;
+    try {
+      do {
+        const pack = await fetchNFTsFromWorkerHttp({
+          wallet,
+          chain: chainParam,
+          contractAddresses: contractFilter || undefined,
+          pageKey: pageKey || undefined,
+          pageOnly: true,
+          minimal,
+        });
+        const rows = Array.isArray(pack?.nfts) ? pack.nfts : [];
+        for (const r of rows) all.push(r);
+        pageKey = pack?.pageKey || null;
+        page++;
+        console.log("[FlexGrid] Fetching NFTs (paged) page", { page, got: rows.length, total: all.length, hasMore: !!pageKey });
+        // small delay to avoid spikes
+        if (pageKey) await new Promise((r) => setTimeout(r, 150));
+      } while (pageKey);
+      warnIfHugeNftResponse(all, chainParam);
+      nftFetchCache[cacheKey] = all.slice();
+      writeLocalNftCache(cacheKey, all);
+      console.log("[FlexGrid] Fetching NFTs (paged) DONE", { cacheKey, count: all.length });
+      return all.slice();
     } finally {
       nftFetchInflight.delete(cacheKey);
     }
