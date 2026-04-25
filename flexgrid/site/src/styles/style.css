@@ -1350,19 +1350,30 @@ body.dark .stageLayoutSectionHeaderHint{
   /* iPhone: clean 2-row header bar */
   .stepBar{
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     grid-template-areas:
-      "toggle settings"
+      "back"
       "steps steps";
     gap: 10px;
     padding: 10px;
     align-items: center;
   }
-  /* Let toggle + settings become grid items */
-  .stepBarTrailing{ display: contents; }
-  #themeToggleWrap{ grid-area: toggle; justify-self: start; }
-  #settingsBtn{ grid-area: settings; justify-self: end; }
-  .hubBackLink{ justify-self: start; }
+  .hubBackLink{ grid-area: back; justify-self: start; }
+  /* Move theme + settings to very top corners (above header) */
+  #themeToggleWrap{
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    left: 10px;
+    z-index: 100200;
+  }
+  #settingsBtn{
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: 10px;
+    z-index: 100200;
+  }
+  /* Back button can live in the bar */
+  .stepBarTrailing{ display: none; }
   .stepIndicator{
     grid-area: steps;
     display: grid;
