@@ -4230,24 +4230,25 @@ body.dark .collection-card.selected{
   right: 10px;
   padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.22);
-  background: rgba(0,0,0,.35);
-  color: rgba(255,255,255,.92);
+  border: 1px solid rgba(255,255,255,.28);
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText, #1a1400);
   font-size: 13px;
   font-weight: 950;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(0,0,0,.20);
 }
 .collection-card-remove:hover{
-  background: rgba(0,0,0,.48);
-  border-color: rgba(255,255,255,.32);
+  filter: brightness(1.06);
+  border-color: rgba(255,255,255,.35);
 }
 .collection-card-remove:active{
   transform: translateY(1px);
 }
 body.dark .collection-card-remove{
-  background: rgba(0,0,0,.45);
-  border-color: rgba(0,255,213,.22);
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText, #1a1400);
+  border-color: rgba(255,255,255,.28);
 }
 
 /* Collection actions modal */
