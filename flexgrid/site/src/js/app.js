@@ -135,7 +135,11 @@ function handleStepClick(stepIdx) {
     return;
   }
   if (targetStep === 4) {
-    // Grid is only reachable through the flow (Build button), not by clicking ahead.
+    // Allow entering Grid any time after Chain + Wallet are set (grid may be empty until built).
+    if (uiState.chain && uiState.wallet) {
+      uiState.step = 4;
+      renderUI({ scrollTop: true });
+    }
     return;
   }
 }
