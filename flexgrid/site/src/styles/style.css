@@ -210,6 +210,46 @@ body{
       margin:0 0 0;
       height:130px;
     }
+    .heroHeader.heroHeaderStack{
+      flex-direction: row;
+      height: auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .heroHeader.heroHeaderStack .heroHeaderSide{
+      height: 174px; /* ~LO1+FG combined */
+      width: auto;
+      min-width: 56px;
+      object-fit: contain;
+      border-radius: 14px;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,.22));
+    }
+    .heroHeader.heroHeaderStack .heroHeaderCenter{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .heroHeader.heroHeaderStack .heroHeaderLo{
+      width: min(520px, 70vw);
+      height: auto;
+      max-height: 64px; /* ~half size */
+      object-fit: contain;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,.22));
+      margin-bottom: -4px;
+    }
+    .heroHeader.heroHeaderStack .heroHeaderFg{
+      width: min(820px, 86vw);
+      height: auto;
+      max-height: 110px;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,.22));
+      margin-top: -4px;
+    }
 
     .heroTagline{
       margin: -8px auto 12px;
@@ -255,6 +295,24 @@ body{
     }
     @media (max-width: 520px){
       .heroHeader{ height:100px; gap:6px; }
+      .heroHeader.heroHeaderStack{
+        height: auto;
+        gap: 8px;
+      }
+      .heroHeader.heroHeaderStack .heroHeaderSide{
+        height: 126px;
+        min-width: 44px;
+      }
+      .heroHeader.heroHeaderStack .heroHeaderLo{
+        max-height: 54px;
+        width: min(360px, 62vw);
+        margin-bottom: -3px;
+      }
+      .heroHeader.heroHeaderStack .heroHeaderFg{
+        max-height: 72px;
+        width: min(520px, 78vw);
+        margin-top: -3px;
+      }
     }
 
     .panel{
@@ -1289,9 +1347,37 @@ body.dark .stageLayoutSectionHeaderHint{
   font-size: 15px;
 }
 @media (max-width: 520px) {
-  .stepBar { gap: 6px; padding: 8px; }
-  .stepIndicator { gap: 4px; }
-  .stepItem { font-size: 15px; }
+  /* iPhone: clean 2-row header bar */
+  .stepBar{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "back trailing"
+      "steps steps";
+    gap: 10px;
+    padding: 10px;
+    align-items: center;
+  }
+  .hubBackLink{ grid-area: back; justify-self: start; }
+  .stepBarTrailing{ grid-area: trailing; justify-self: end; margin-left: 0; }
+  .stepIndicator{
+    grid-area: steps;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+  }
+  .stepItem{
+    font-size: 15px;
+    padding: 10px 10px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(0,0,0,0.10);
+  }
   .stepConnector { display: none; }
   .hubBackLink { font-size: 14px; padding: 7px 10px; }
 }
