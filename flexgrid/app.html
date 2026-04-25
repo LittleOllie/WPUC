@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>FlexGrid — Wallets</title>
+  <link rel="icon" type="image/png" href="site/src/assets/images/LO.png">
+  <link rel="apple-touch-icon" href="site/src/assets/images/LO.png">
+  <style>
+    :root{
+      --blue:#4c6fff;
+      --blue2:#175d8c;
+      --yellow:#ffdd55;
+      --yellow2:#ffd22e;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100dvh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#fff;
+      background:
+        radial-gradient(120% 120% at 20% 10%, rgba(109,224,255,.22), rgba(0,0,0,0) 55%),
+        radial-gradient(120% 120% at 85% 0%, rgba(255,221,85,.16), rgba(0,0,0,0) 55%),
+        linear-gradient(180deg, var(--blue), var(--blue2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 22px 16px;
+    }
+    .wrap{
+      width:100%;
+      max-width: 520px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 18px 18px 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .banner{
+      display:block;
+      width:100%;
+      height: 92px;
+      object-fit: contain;
+      object-position: center;
+      margin: 0 auto 10px;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,0.35));
+    }
+    .back{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight: 950;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      font-size: 13px;
+      color: rgba(255,255,255,0.92);
+      text-decoration:none;
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.16);
+    }
+    .back:hover{ filter: brightness(1.05); }
+    h1{
+      margin: 10px 0 6px;
+      font-size: 26px;
+      font-weight: 950;
+      text-align:center;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+    }
+    .sub{
+      margin: 0 0 14px;
+      font-weight: 800;
+      font-size: 15px;
+      text-align:center;
+      color: rgba(255,255,255,0.9);
+    }
+    .input{
+      width:100%;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 2px solid rgba(109,224,255,0.25);
+      background: rgba(0,0,0,0.20);
+      color:#fff;
+      font-weight: 800;
+      font-size: 15px;
+      outline: none;
+    }
+    textarea.input{
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.35;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 800;
+    }
+    textarea.input::placeholder{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      color: rgba(255,255,255,0.9);
+      opacity: 1;
+    }
+    .input:focus{
+      border-color: rgba(255,221,85,0.6);
+      box-shadow: 0 0 0 3px rgba(255,221,85,0.16);
+    }
+    .cta{
+      margin-top: 12px;
+      width:100%;
+      min-height: 54px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, var(--yellow), var(--yellow2));
+      color: #1a1400;
+      font-weight: 950;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35);
+      transition: transform .08s ease, filter .15s ease;
+    }
+    .cta:active{ transform: translateY(1px) scale(.99); }
+    .cta:hover{ filter: brightness(1.05); }
+    @media (min-width: 900px){
+      .wrap{ max-width: 640px; }
+      h1{ font-size: 30px; }
+      textarea.input{ min-height: 150px; }
+      .cta{ min-height: 62px; font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="back" href="./">← Back</a>
+    <img class="banner" src="site/src/assets/images/header.png" alt="FlexGrid" decoding="async" />
+    <h1>Enter your wallet(s)</h1>
+    <p class="sub" id="chainSub"></p>
+    <textarea id="walletInput" class="input" placeholder="0x…&#10;Add multiple wallets with a comma, space, or new line (max 12)." autocapitalize="none" autocomplete="off" spellcheck="false"></textarea>
+    <button id="continueBtn" class="cta" type="button">Continue</button>
+  </main>
+
+  <script>
+    (function(){
+      var params = new URLSearchParams(window.location.search || "");
+      var chain = (params.get("chain") || "").trim().toLowerCase();
+      if (chain !== "eth" && chain !== "base" && chain !== "ape") chain = "eth";
+
+      var sub = document.getElementById("chainSub");
+      var txt = chain === "base" ? "Base wallet (0x…)" : (chain === "ape" ? "ApeChain wallet (0x…)" : "Ethereum wallet (0x…)");
+      if (sub) sub.textContent = txt;
+
+      function startApp(){
+        var wallet = String(document.getElementById("walletInput").value || "").trim();
+        if (!wallet) { alert("Please enter a wallet"); return; }
+        // Store for the existing FlexGrid app page to consume.
+        try {
+          sessionStorage.setItem("flexgrid_entry_wallet", wallet);
+          sessionStorage.setItem("flexgrid_entry_chain", chain);
+        } catch(e) {}
+        window.location.href = "site/index.html";
+      }
+
+      var btn = document.getElementById("continueBtn");
+      if (btn) btn.addEventListener("click", startApp);
+      var input = document.getElementById("walletInput");
+      if (input) input.focus();
+    })();
+  </script>
+</body>
+</html>
+

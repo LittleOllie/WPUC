@@ -58,9 +58,16 @@ const nftFetchCache = Object.create(null);
 /** In-flight dedupe: same key shares one HTTP request (parallel UI calls, duplicate wallets in list). */
 const nftFetchInflight = new Map();
 
+/** Global lock (last wallet key) for debugging + optional UI; primary dedupe is `nftFetchInflight`. */
+export const walletRequestState = {
+  loading: false,
+  currentWallet: null,
+};
+
 // ---------- Local (TTL) cache to reduce repeat loads ----------
 const NFT_CACHE_TTL_MS = 5 * 60 * 1000;
 const NFT_LS_PREFIX = "flexgrid_nfts_v1::";
+const NFT_SESSION_PREFIX = "flexgrid_nfts_sess_v1::";
 
 function readLocalNftCache(cacheKey) {
   try {
@@ -86,6 +93,60 @@ function writeLocalNftCache(cacheKey, data) {
   } catch (_) {
     // ignore quota / blocked storage
   }
+}
+
+function readSessionNftCache(cacheKey) {
+  try {
+    const raw = sessionStorage.getItem(NFT_SESSION_PREFIX + cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const data = parsed?.data;
+    return Array.isArray(data) ? data : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeSessionNftCache(cacheKey, data) {
+  try {
+    if (!Array.isArray(data)) return;
+    sessionStorage.setItem(
+      NFT_SESSION_PREFIX + cacheKey,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch (_) {
+    // ignore quota / private mode
+  }
+}
+
+function persistNftCaches(cacheKey, data) {
+  if (!Array.isArray(data)) return;
+  nftFetchCache[cacheKey] = data.slice();
+  writeLocalNftCache(cacheKey, data);
+  writeSessionNftCache(cacheKey, data);
+}
+
+/** Memory → sessionStorage → localStorage (no network). */
+function tryReadNftCaches(cacheKey, bypassCache) {
+  if (bypassCache) return null;
+  const mem = nftFetchCache[cacheKey];
+  if (Array.isArray(mem)) {
+    console.log("[CACHE HIT]", cacheKey);
+    return mem;
+  }
+  const ss = readSessionNftCache(cacheKey);
+  if (ss) {
+    console.log("[SESSION CACHE HIT]", cacheKey);
+    nftFetchCache[cacheKey] = ss.slice();
+    return nftFetchCache[cacheKey];
+  }
+  const ls = readLocalNftCache(cacheKey);
+  if (ls) {
+    console.log("[LS CACHE HIT]", cacheKey);
+    nftFetchCache[cacheKey] = ls.slice();
+    return nftFetchCache[cacheKey];
+  }
+  return null;
 }
 
 export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
@@ -114,26 +175,31 @@ function warnIfHugeNftResponse(list, chainParam) {
 
 /**
  * Single HTTP call to Worker `/api/nfts` (no cache / dedupe).
- * @param {string} [contractAddresses] Optional comma-separated contract filter (matches Worker query param).
+ * Routing: Worker uses Moralis for ApeChain (paged via `pageOnly`) and Alchemy for eth/base/polygon.
  */
-async function fetchNFTsFromWorkerHttp({ wallet, chain, contractAddresses }) {
-  const chainParam = String(chain || "eth").trim().toLowerCase();
+async function fetchNFTsFromWorkerHttp(opts = {}) {
+  const wallet = String(opts.wallet || "").trim();
+  const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  const contractFilter = String(opts.contractAddresses || "").trim();
+  const pageKey = typeof opts.pageKey === "string" && opts.pageKey.trim() ? opts.pageKey.trim() : null;
+  const pageOnly = opts.pageOnly === true;
+  const minimal = opts.minimal === true;
+
   const networkLabel = flexGridLogNetwork(chainParam);
   const backendHint =
     chainParam === "apechain" ? "Moralis on Worker" : `Alchemy network: ${networkLabel}`;
 
   let url = `${getWorkerBase()}/api/nfts?owner=${encodeURIComponent(wallet)}&chain=${encodeURIComponent(chainParam)}`;
-  const contractFilter = String(contractAddresses || "").trim();
   if (contractFilter) {
     url += `&contractAddresses=${encodeURIComponent(contractFilter.toLowerCase())}`;
   }
-  if (typeof arguments[0]?.pageKey === "string" && arguments[0].pageKey.trim()) {
-    url += `&pageKey=${encodeURIComponent(arguments[0].pageKey.trim())}`;
+  if (pageKey) {
+    url += `&pageKey=${encodeURIComponent(pageKey)}`;
   }
-  if (arguments[0]?.pageOnly === true) {
+  if (pageOnly) {
     url += `&pageOnly=1`;
   }
-  if (arguments[0]?.minimal === true) {
+  if (minimal) {
     url += `&minimal=1`;
   }
 
@@ -181,12 +247,10 @@ async function fetchNFTsFromWorkerHttp({ wallet, chain, contractAddresses }) {
 }
 
 /**
- * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
- * Uses in-memory cache + in-flight coalescing to avoid duplicate Worker/Alchemy work.
- *
- * @param {{ wallet: string, chain?: string, contractAddresses?: string, bypassCache?: boolean }} opts
+ * One-shot Worker fetch for Alchemy-backed chains (eth/base/polygon): Worker paginates Alchemy internally.
+ * ApeChain must NOT use this path from the browser — it triggers an unbounded Moralis loop in the Worker.
  */
-export async function fetchNFTsFromWorker(opts = {}) {
+async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
   const wallet = String(opts.wallet || "").trim();
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
   const contractFilter = String(opts.contractAddresses || "").trim();
@@ -198,29 +262,18 @@ export async function fetchNFTsFromWorker(opts = {}) {
     return [];
   }
 
-  if (!bypassCache && nftFetchCache[cacheKey]) {
-    const cached = nftFetchCache[cacheKey];
-    // Safety: earlier builds accidentally capped at 300; if we see exactly 300, refetch once.
-    if (Array.isArray(cached) && cached.length === 300) {
-      console.warn("[FlexGrid] Ignoring legacy capped cache entry (300). Refetching.", { cacheKey });
-      delete nftFetchCache[cacheKey];
-    } else {
-    console.log("[FlexGrid] Using cached NFTs", {
-      cacheKey,
-      count: Array.isArray(cached) ? cached.length : 0,
-      time: Date.now(),
-    });
-    return Array.isArray(cached) ? cached.slice() : [];
-    }
+  if (chainParam === "apechain") {
+    throw new Error("[FlexGrid] Internal: use fetchNFTsInBatches for apechain (Moralis pagination).");
   }
 
-  if (!bypassCache) {
-    const ls = readLocalNftCache(cacheKey);
-    if (ls) {
-      console.log("[FlexGrid] Using localStorage cached NFTs", { cacheKey, count: ls.length, time: Date.now() });
-      nftFetchCache[cacheKey] = ls.slice();
-      return ls.slice();
-    }
+  const cachedHit = tryReadNftCaches(cacheKey, bypassCache);
+  if (cachedHit) {
+    console.log("[FlexGrid] Using cached NFTs", {
+      cacheKey,
+      count: cachedHit.length,
+      time: Date.now(),
+    });
+    return cachedHit.slice();
   }
 
   const existing = nftFetchInflight.get(cacheKey);
@@ -233,6 +286,8 @@ export async function fetchNFTsFromWorker(opts = {}) {
   }
 
   const run = (async () => {
+    console.log("[LOAD WALLET]", wallet, chainParam);
+    console.log("[FETCH START]");
     console.log("[FlexGrid] Fetching NFTs START", {
       owner: wallet,
       chain: chainParam,
@@ -250,9 +305,9 @@ export async function fetchNFTsFromWorker(opts = {}) {
       warnIfHugeNftResponse(raw, chainParam);
       const limited = Array.isArray(raw) ? raw : [];
       if (!bypassCache) {
-        nftFetchCache[cacheKey] = limited.slice();
-        writeLocalNftCache(cacheKey, limited);
+        persistNftCaches(cacheKey, limited);
       }
+      console.log("[FETCH END]");
       console.log("[FlexGrid] Fetching NFTs DONE", {
         cacheKey,
         count: limited.length,
@@ -272,6 +327,52 @@ export async function fetchNFTsFromWorker(opts = {}) {
 }
 
 /**
+ * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
+ * Uses in-memory cache + in-flight coalescing to avoid duplicate Worker/Alchemy work.
+ *
+ * @param {{ wallet: string, chain?: string, contractAddresses?: string, bypassCache?: boolean }} opts
+ */
+export async function fetchNFTsFromWorker(opts = {}) {
+  const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  if (chainParam === "apechain") {
+    return fetchNFTsInBatches(opts);
+  }
+  return fetchNFTsFromWorkerAlchemyOnce(opts);
+}
+
+/** Explicit cache-first entry (same behavior as `fetchNFTsFromWorker`). */
+export async function getNFTsCached(opts = {}) {
+  return fetchNFTsFromWorker(opts);
+}
+
+/**
+ * Wraps owner fetch with a soft global lock for observability; duplicate same-wallet calls join in-flight dedupe.
+ */
+export async function loadWalletSafe(opts = {}) {
+  const wallet = String(opts.wallet || "").trim();
+  const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  const wKey = wallet.toLowerCase();
+  if (!wallet) return [];
+
+  if (walletRequestState.loading && walletRequestState.currentWallet === wKey) {
+    console.warn("[BLOCKED] Duplicate wallet load prevented:", wallet);
+    return fetchNFTsFromWorker({ ...opts, wallet, chain: chainParam });
+  }
+
+  walletRequestState.loading = true;
+  walletRequestState.currentWallet = wKey;
+  try {
+    return await fetchNFTsFromWorker({ ...opts, wallet, chain: chainParam });
+  } catch (err) {
+    console.error("Wallet load failed:", err);
+    throw err;
+  } finally {
+    walletRequestState.loading = false;
+    walletRequestState.currentWallet = null;
+  }
+}
+
+/**
  * Paged NFT loading (best for 300–1000+). Uses Worker pageKey support to avoid one massive response.
  * IMPORTANT: This does not change watermark/export logic.
  *
@@ -282,15 +383,14 @@ export async function fetchNFTsInBatches(opts = {}) {
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
   const contractFilter = String(opts.contractAddresses || "").trim();
   const minimal = opts.minimal === true;
+  const bypassCache = opts.bypassCache === true;
   if (!wallet) return [];
 
   const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter);
-  if (nftFetchCache[cacheKey]) return nftFetchCache[cacheKey].slice();
-  const ls = readLocalNftCache(cacheKey);
-  if (ls) {
-    console.log("[FlexGrid] Using localStorage cached NFTs", { cacheKey, count: ls.length, time: Date.now() });
-    nftFetchCache[cacheKey] = ls.slice();
-    return ls.slice();
+  const cachedHit = tryReadNftCaches(cacheKey, bypassCache);
+  if (cachedHit) {
+    console.log("[FlexGrid] Using cached NFTs (paged path)", { cacheKey, count: cachedHit.length });
+    return cachedHit.slice();
   }
 
   const existing = nftFetchInflight.get(cacheKey);
@@ -300,31 +400,54 @@ export async function fetchNFTsInBatches(opts = {}) {
     if (chainParam === "apechain") {
       console.log("[Moralis Calls Triggered]", { wallet, chain: chainParam, time: Date.now() });
     }
+    console.log("[LOAD WALLET]", wallet, chainParam);
+    console.log("[FETCH START]");
     console.log("[FlexGrid] Fetching NFTs (paged) START", { wallet, chain: chainParam, minimal, time: Date.now() });
     const all = [];
     let pageKey = null;
     let page = 0;
+    const MAX_PAGES = 50;
     try {
       do {
+        if (page >= MAX_PAGES) {
+          console.warn("[STOP] Max pagination limit reached", { MAX_PAGES, cacheKey, total: all.length });
+          break;
+        }
+        page++;
+        const cursorSent = pageKey;
+        console.log(`[API PAGE ${page}] cursor/pageKey:`, cursorSent);
+
         const pack = await fetchNFTsFromWorkerHttp({
           wallet,
           chain: chainParam,
           contractAddresses: contractFilter || undefined,
-          pageKey: pageKey || undefined,
+          pageKey: cursorSent || undefined,
           pageOnly: true,
           minimal,
         });
         const rows = Array.isArray(pack?.nfts) ? pack.nfts : [];
         for (const r of rows) all.push(r);
-        pageKey = pack?.pageKey || null;
-        page++;
+        const nextKey = pack?.pageKey || null;
+        if (nextKey && cursorSent != null && String(nextKey) === String(cursorSent)) {
+          console.warn("[STOP] API returned same cursor as sent; breaking to avoid Moralis loop", {
+            cursor: cursorSent,
+          });
+          break;
+        }
+        if (rows.length === 0 && !nextKey) {
+          break;
+        }
+        pageKey = nextKey;
         console.log("[FlexGrid] Fetching NFTs (paged) page", { page, got: rows.length, total: all.length, hasMore: !!pageKey });
         // small delay to avoid spikes
         if (pageKey) await new Promise((r) => setTimeout(r, 150));
       } while (pageKey);
       warnIfHugeNftResponse(all, chainParam);
-      nftFetchCache[cacheKey] = all.slice();
-      writeLocalNftCache(cacheKey, all);
+      if (!bypassCache) {
+        persistNftCaches(cacheKey, all);
+      }
+      console.log("[FETCH END]");
+      console.log("[DONE] Total NFTs:", all.length);
       console.log("[FlexGrid] Fetching NFTs (paged) DONE", { cacheKey, count: all.length });
       return all.slice();
     } finally {

@@ -560,57 +560,6 @@ body{
     }
     .stageMeta{ font-size: 19px; opacity:.95; text-align:center; width:100%; }
 
-    /* Grid status bar - below grid, shows image loading + retry */
-    .stageFooter.gridStatusBar{
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border-top: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.1);
-      flex-wrap: wrap;
-    }
-    .gridStatusContent{
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      width: 100%;
-    }
-    .gridStatusHint{
-      font-size: 21px;
-      font-weight: 700;
-      color: rgba(255,255,255,.9);
-      font-style: italic;
-      opacity: 0.95;
-    }
-    .gridStatusText{
-      font-size: 18px;
-      font-weight: 800;
-      color: rgba(255,255,255,.95);
-    }
-    .gridStatusProgressWrap{
-      height: 6px;
-      background: rgba(0,0,0,.2);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .gridStatusProgress{
-      height: 100%;
-      background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
-      border-radius: 4px;
-      transition: width 0.2s ease;
-    }
-    .gridStatusRetryArea{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .gridStatusRetryHint{
-      font-size: 17px;
-      font-weight: 700;
-      color: rgba(255,255,255,.85);
-    }
     .gridExportBar{
       display: flex;
       justify-content: stretch;
@@ -620,13 +569,6 @@ body{
     }
     .gridExportBar .btn{
       width: 100%;
-      font-size: 19px;
-      font-weight: 800;
-    }
-    .stageFooterBtn{
-      flex: 1;
-      min-width: 140px;
-      padding: 12px 20px;
       font-size: 19px;
       font-weight: 800;
     }
@@ -1354,6 +1296,64 @@ body.dark .stageLayoutSectionHeaderHint{
   .hubBackLink { font-size: 14px; padding: 7px 10px; }
 }
 
+/* ==========================
+   Chain step (new Step 1)
+   ========================== */
+.flexgrid-chain-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.flexgrid-chain-btn{
+  width: 100%;
+  min-height: 78px;
+  border-radius: 18px;
+  border: 2px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.16);
+  color: rgba(255,255,255,0.96);
+  font-family: inherit;
+  font-weight: 950;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.flexgrid-chain-btn:hover{ filter: brightness(1.05); }
+.flexgrid-chain-btn:active{ transform: translateY(1px) scale(0.99); }
+.flexgrid-chain-btn:focus-visible{
+  outline: 3px solid rgba(255,221,85,0.95);
+  outline-offset: 2px;
+}
+.flexgrid-chain-btn[data-chain="eth"]{ border-color: rgba(109,224,255,0.40); box-shadow: 0 0 0 2px rgba(109,224,255,0.18); }
+.flexgrid-chain-btn[data-chain="base"]{ border-color: rgba(76,111,255,0.45); box-shadow: 0 0 0 2px rgba(76,111,255,0.16); }
+.flexgrid-chain-btn[data-chain="apechain"]{ border-color: rgba(255,221,85,0.42); box-shadow: 0 0 0 2px rgba(255,221,85,0.14); }
+.flexgrid-chain-btn.isSelected{
+  border-color: rgba(255,221,85,0.85) !important;
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText, #1a1400);
+  box-shadow:
+    0 0 0 3px rgba(255,221,85,0.22),
+    0 0 22px rgba(255,221,85,0.18),
+    0 18px 40px rgba(0,0,0,0.18);
+}
+.flexgrid-chain-btn.isSelected:hover{
+  filter: brightness(1.02);
+}
+.flexgrid-chain-btn.isSelected:focus-visible{
+  outline: 3px solid rgba(255,221,85,0.95);
+  outline-offset: 2px;
+}
+.flexgrid-chain-btn--disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.15);
+}
+
+@media (min-width: 900px){
+  .flexgrid-chain-btn{ min-height: 88px; font-size: 22px; }
+  .flexgrid-chain-grid{ grid-template-columns: 1fr 1fr; }
+}
+
 /* Step navigation */
 .stepNav {
   display: flex;
@@ -1449,6 +1449,11 @@ body.dark .walletFlowStack select.input.wallet-flow-field {
   line-height: 1.15;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
+
+/* Wallet step: chain is chosen in Step 1, so hide dropdown but keep in DOM for logic. */
+#walletFlowChainRow{
+  display: none;
+}
 body.dark .walletFlowChainLbl {
   color: rgba(255, 255, 255, 0.98);
 }
@@ -1476,6 +1481,67 @@ body.dark .walletFlowChainLbl {
   text-align: left;
   align-self: stretch;
 }
+
+/* Wallet textarea overlay: lets us show green validated addresses + ✓ per line */
+.walletInputOverlayWrap{
+  position: relative;
+  width: 100%;
+}
+.walletInputOverlayWrap .wallet-textarea{
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  color: transparent;         /* hide raw typed text */
+  caret-color: rgba(245, 248, 252, 0.96); /* keep caret visible */
+}
+.walletInputOverlayWrap .wallet-textarea::placeholder{
+  color: rgba(160, 170, 185, 0.88); /* keep placeholder visible */
+}
+.walletInputOverlay{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 12px 14px; /* must match .wallet-textarea */
+  border-radius: 14px;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Monaco, monospace;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.45;
+  color: rgba(245, 248, 252, 0.96);
+}
+@media (max-width: 900px){
+  .walletInputOverlay{
+    font-size: 24px;
+  }
+}
+.walletTokenValid{
+  /* Start as normal text, then "verify" after a short delay */
+  color: rgba(245, 248, 252, 0.96);
+  animation: walletTurnGreen 0ms linear forwards;
+  animation-delay: 1000ms;
+}
+.walletTokenInvalid{
+  color: rgba(255, 255, 255, 0.72);
+}
+.walletTokenTick{
+  margin-left: 10px;
+  color: rgba(56, 214, 110, 0.98);
+  font-weight: 950;
+  opacity: 0;
+  transform: translateY(-2px) scale(0.95);
+  animation: walletTickPop 220ms ease-out forwards;
+  animation-delay: 1200ms;
+}
+@keyframes walletTurnGreen{
+  to { color: rgba(56, 214, 110, 0.98); }
+}
+@keyframes walletTickPop{
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 .walletInputRow {
   display: flex;
   flex-direction: column;
@@ -1496,14 +1562,22 @@ body.dark .walletFlowChainLbl {
   min-height: 5.5rem;
   line-height: 1.45;
   font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Monaco, monospace;
-  font-size: 15px;
+  font-size: 22px;
+  font-weight: 900;
   padding: 12px 14px;
   color: rgba(245, 248, 252, 0.96);
 }
 @media (max-width: 900px) {
   .walletFlowStack .wallet-textarea {
-    font-size: 16px;
+    font-size: 24px;
   }
+}
+
+.walletFlowSubHint{
+  margin: 0 0 12px;
+  font-weight: 800;
+  font-size: 20px;
+  color: rgba(255,255,255,0.9);
 }
 .wallet-textarea::placeholder {
   color: rgba(160, 170, 185, 0.88);
@@ -2141,10 +2215,10 @@ body.dark{
   --stroke: rgba(0,255,213,.22);
   --shadow: 0 18px 40px rgba(0,0,0,.55);
 
-  /* Button becomes neon */
-  --btnYellow:#00ffd5;
-  --btnYellow2:#00c2a3;
-  --btnText:#001a14;
+  /* Keep LO yellow CTA even in dark mode */
+  --btnYellow:#ffdd55;
+  --btnYellow2:#ffd22e;
+  --btnText:#1a1400;
 
   /* Text */
   --muted: rgba(255,255,255,.78);
@@ -2180,30 +2254,48 @@ body.dark .guideGlow::after{
   background: rgba(0,255,213,1);
   box-shadow: 0 0 12px rgba(0,255,213,.9);
 }
-/* Collections search: keep green guide ring in dark mode too */
+/* Collections search: yellow guide ring (matches CTA yellow) */
 #collectionSearch.guideGlow{
   box-shadow:
-    0 0 0 2px rgba(46, 204, 113, 0.95),
-    0 0 22px rgba(46, 204, 113, 0.65),
-    0 0 36px rgba(46, 204, 113, 0.35);
+    0 0 0 2px rgba(255, 221, 85, 0.95),
+    0 0 22px rgba(255, 221, 85, 0.72),
+    0 0 40px rgba(255, 200, 46, 0.42);
+}
+#collectionSearch.guideGlow::after{
+  background: rgba(255, 221, 85, 1);
+  box-shadow: 0 0 12px rgba(255, 210, 46, 0.95);
+}
+#collectionSearch.guideGlow:focus,
+#collectionSearch.guideGlow:focus-visible{
+  box-shadow:
+    0 0 0 2px rgba(255, 221, 85, 1),
+    0 0 28px rgba(255, 221, 85, 0.85),
+    0 0 48px rgba(255, 200, 46, 0.5);
 }
 body.dark #collectionSearch.guideGlow{
   box-shadow:
-    0 0 0 2px rgba(46, 204, 113, 0.95),
-    0 0 24px rgba(46, 204, 113, 0.7),
-    0 0 40px rgba(46, 204, 113, 0.4);
+    0 0 0 2px rgba(255, 221, 85, 0.95),
+    0 0 26px rgba(255, 221, 85, 0.78),
+    0 0 44px rgba(255, 200, 46, 0.48);
 }
 body.dark #collectionSearch.guideGlow::after{
-  background: rgba(46, 204, 113, 1);
-  box-shadow: 0 0 12px rgba(46, 204, 113, 0.9);
+  background: rgba(255, 221, 85, 1);
+  box-shadow: 0 0 14px rgba(255, 210, 46, 0.95);
 }
-/* Dark mode: step indicator uses neon cyan */
+body.dark #collectionSearch.guideGlow:focus,
+body.dark #collectionSearch.guideGlow:focus-visible{
+  box-shadow:
+    0 0 0 2px rgba(255, 221, 85, 1),
+    0 0 32px rgba(255, 221, 85, 0.88),
+    0 0 52px rgba(255, 200, 46, 0.55);
+}
+/* Dark mode: keep step indicator LO yellow (not cyan) */
 body.dark .stepItem.active,
 body.dark .stepItem.completed{
-  background: linear-gradient(180deg, rgba(0,255,213,.4), rgba(0,255,213,.3));
-  color: rgba(255,255,255,.98);
-  border-color: rgba(0,255,213,.5);
-  box-shadow: 0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(0,255,213,.3);
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText);
+  border-color: rgba(255,255,255,.35);
+  box-shadow: 0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.45);
 }
 body.dark .tile[data-kind="empty"]{
   background:rgba(255,255,255,0.08) !important;
@@ -2547,6 +2639,17 @@ body.dark .tile[data-kind="empty"]{
     max-width: 70%;
     text-align: center;
   }
+  #loadingOverlay .loading-overlay-title{
+    margin: 0;
+    padding: 0 4px;
+    font-family: "Baloo 2", system-ui, sans-serif;
+    font-size: clamp(22px, 5.8vw, 30px);
+    font-weight: 950;
+    letter-spacing: 0.02em;
+    color: rgba(255, 221, 85, 0.98);
+    text-shadow: 0 2px 18px rgba(0,0,0,0.45);
+    line-height: 1.05;
+  }
   #loadingOverlay .loading-overlay-lo-img{
     display:block;
     width:min(140px, 38vw);
@@ -2560,7 +2663,7 @@ body.dark .tile[data-kind="empty"]{
     margin: 0;
     padding: 0 4px;
     font-family: "Baloo 2", system-ui, sans-serif;
-    font-size: clamp(15px, 3.6vw, 18px);
+    font-size: clamp(16px, 3.9vw, 19px);
     font-weight: 800;
     color: rgba(255,255,255,.95);
     text-align: center;
@@ -2573,8 +2676,8 @@ body.dark .tile[data-kind="empty"]{
   #loadingOverlay .loading-overlay-hint{
     margin: 0;
     font-family: system-ui, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 650;
     color: rgba(255,255,255,.78);
     text-align: center;
     letter-spacing: 0.02em;
@@ -3513,10 +3616,10 @@ body.dark .manual-selection-footer{
 }
 .donation-content{
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   background: #4c6fff;
   color: rgba(255,255,255,0.92);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 0;
   text-align: center;
   box-shadow: 0 16px 60px rgba(0,0,0,0.45);
@@ -3527,6 +3630,10 @@ body.dark .manual-selection-footer{
     0 0 0 2px rgba(255, 221, 85, 0.10),
     0 0 32px rgba(109, 224, 255, 0.18);
   overflow: hidden;
+}
+.donation-header.flexgrid-modal-banner{
+  height: 108px;
+  padding: 4px 10px 8px;
 }
 .donation-close-x{
   position: absolute;
@@ -3550,24 +3657,25 @@ body.dark .manual-selection-footer{
   filter: brightness(1.05);
 }
 .donation-content #copyWalletBtn.btn{
-  background: linear-gradient(180deg, rgba(109, 224, 255, 0.95), rgba(76, 111, 255, 0.92));
-  color: #0a1628;
-  border-color: rgba(255,255,255,0.35);
+  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
+  color: var(--btnText, #1a1400);
+  border-color: rgba(255,255,255,0.28);
+  box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.32);
 }
 .donation-body{
-  padding: 18px 16px 16px;
+  padding: 20px 22px 22px;
 }
 .donation-title{
   margin: 0 0 10px;
   font-weight: 900;
-  font-size: 1.15rem;
+  font-size: 24px;
   color: rgba(255, 221, 85, 0.98);
   text-shadow: 0 2px 16px rgba(0,0,0,0.45);
 }
 .donation-text{
   margin: 0 0 14px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 18px;
   color: inherit;
   opacity: 0.9;
 }
@@ -3582,14 +3690,14 @@ body.dark .manual-selection-footer{
   background: rgba(109, 224, 255, 0.08);
 }
 .wallet-box .wallet-label{
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   color: rgba(109, 224, 255, 0.9);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .wallet-box .wallet-address{
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 950;
   letter-spacing: 0.02em;
   color: rgba(255,255,255,0.98);
@@ -3598,12 +3706,29 @@ body.dark .manual-selection-footer{
 
 /* Donation buttons: make Close feel like LO primary (yellow) */
 .donation-content #closeDonationModal.btn{
-  background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
-  color: var(--btnText, #1a1400);
-  border-color: rgba(255,255,255,0.28);
-  box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.32);
+  width: 100%;
+  min-height: 64px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 10px 18px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.96);
+  font-family: inherit;
 }
-.donation-content #closeDonationModal.btn:hover{ filter: brightness(1.06); }
+.donation-content #closeDonationModal.btn:hover{
+  background: rgba(255, 255, 255, 0.10);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    0 12px 22px rgba(0,0,0,0.22);
+}
 .grid-gif-options-panel{
   width: 100%;
   max-width: 520px;
@@ -4246,11 +4371,11 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   color: #fff;
   padding: 0;
   border-radius: 18px;
-  max-width: 400px;
+  max-width: 520px;
   width: 100%;
   text-align: center;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-  border: 2px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(109, 224, 255, 0.28);
   overflow: hidden;
 }
 .flexgrid-share-banner{
@@ -4266,11 +4391,11 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   box-sizing: border-box;
 }
 .flexgrid-share-inner{
-  padding: 18px 20px 20px;
+  padding: 20px 22px 22px;
 }
 .flexgrid-share-content h2{
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 950;
   line-height: 1.25;
   color: #fff;
@@ -4278,7 +4403,7 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
 }
 .flexgrid-share-sub{
   margin: 0 0 20px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.9);
@@ -4295,7 +4420,7 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   border-radius: 12px;
   text-decoration: none;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.2;
   box-sizing: border-box;
   text-align: center;
@@ -4317,21 +4442,47 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
 }
 .flexgrid-share-close{
   margin-top: 14px;
-  padding: 10px 14px;
-  min-height: 44px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.82);
-  font-family: inherit;
   width: 100%;
-  border-radius: 10px;
+  min-height: 64px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 10px 18px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.96);
+  font-family: inherit;
 }
 .flexgrid-share-close:hover{
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.10);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    0 12px 22px rgba(0,0,0,0.22);
+}
+.flexgrid-share-close-x{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.82);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.flexgrid-share-close-x:hover{ filter: brightness(1.08); }
+.flexgrid-share-close-x:focus-visible{
+  outline: 3px solid rgba(255, 235, 120, 0.95);
+  outline-offset: 2px;
 }
 .flexgrid-share-close:focus-visible,
 .flexgrid-share-btn:focus-visible{

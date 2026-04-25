@@ -114,10 +114,11 @@
             height="140"
             decoding="async"
           />
-          <p id="loadingOverlayStatus" class="loading-overlay-status" aria-live="polite"></p>
+          <div class="loading-overlay-title" aria-hidden="true">Loading</div>
         </div>
       </div>
-      <p class="loading-overlay-hint">Loading (this may take a moment)</p>
+      <p id="loadingOverlayStatus" class="loading-overlay-status" aria-live="polite"></p>
+      <p class="loading-overlay-hint">This may take a moment</p>
     </div>
   </div>
   <div class="wrap container">
@@ -133,11 +134,13 @@
     <div class="stepBar">
     <button type="button" id="hubBackBtn" class="hubBackLink">← BACK</button>
     <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
-      <span class="stepItem" data-step="1">1. Wallets</span>
+      <span class="stepItem" data-step="0">1. Chain</span>
       <span class="stepConnector">→</span>
-      <span class="stepItem" data-step="2">2. Collections</span>
+      <span class="stepItem" data-step="1">2. Wallets</span>
       <span class="stepConnector">→</span>
-      <span class="stepItem" data-step="3">3. Grid</span>
+      <span class="stepItem" data-step="2">3. Collections</span>
+      <span class="stepConnector">→</span>
+      <span class="stepItem" data-step="3">4. Grid</span>
     </nav>
     <div class="stepBarTrailing">
     <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
@@ -150,8 +153,32 @@
     </div>
     </div>
 
-    <!-- STEP 1: Add Wallets -->
-    <div id="screen-wallets" class="screen">
+    <!-- STEP 1: Chain selection -->
+    <div id="screen-chain" class="screen">
+    <section class="panel" id="chainPanel">
+      <div class="walletSection" style="margin-top:0;">
+        <div class="walletSectionContent">
+          <div class="walletFlowStack">
+            <h2 class="walletFlowTitle">Chain</h2>
+            <p style="margin:0 0 12px; font-weight:800; color: rgba(255,255,255,0.9);">Choose your chain to get started</p>
+
+            <div class="flexgrid-chain-grid" role="group" aria-label="Choose chain">
+              <button type="button" class="flexgrid-chain-btn" data-chain="eth" aria-pressed="false">Ethereum</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="base" aria-pressed="false">Base</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
+              <button type="button" class="flexgrid-chain-btn flexgrid-chain-btn--disabled" disabled aria-disabled="true">Polygon (Coming Soon)</button>
+              <button type="button" class="flexgrid-chain-btn flexgrid-chain-btn--disabled" disabled aria-disabled="true">Solana (Coming Soon)</button>
+            </div>
+
+            <button id="chainNextBtn" class="btn walletFlowLoadBtn" type="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- STEP 2: Add Wallets -->
+    <div id="screen-wallets" class="screen" style="display:none;">
     <section class="panel" id="setupPanel">
       <div class="topSection">
 
@@ -160,19 +187,24 @@
           <div class="walletSectionContent">
           <div class="walletFlowStack">
             <h2 class="walletFlowTitle">Wallet</h2>
+            <p class="walletFlowSubHint">Add multiple wallets with a comma, space, or new line (max 12).</p>
             <div class="walletInputRow">
+              <div class="walletInputOverlayWrap">
               <textarea
                 id="walletInput"
                 class="input guideGlow wallet-flow-field wallet-textarea"
                 rows="4"
-                placeholder="0xabc… or ollie.eth&#10;Multiple: comma, space, or new line (max 12)"
+                placeholder="0xabc…&#10;Multiple: comma, space, or new line (max 12)"
                 autocomplete="off"
                 autocapitalize="none"
                 spellcheck="false"
                 inputmode="text"
               ></textarea>
+              <div id="walletInputOverlay" class="walletInputOverlay" aria-hidden="true"></div>
+              </div>
               <span id="walletValidationHint" class="walletValidationHint"></span>
             </div>
+            <div class="walletFlowChainRow" id="walletFlowChainRow">
             <label class="walletFlowChainLbl" for="chainSelect">Chain</label>
             <select id="chainSelect" class="input wallet-flow-field chainSelectGlow" aria-label="Blockchain network">
               <option value="eth" selected>Ethereum</option>
@@ -181,6 +213,7 @@
               <option value="polygon">Polygon (Coming Soon)</option>
               <option value="solana">Solana (Coming Soon)</option>
             </select>
+            </div>
             <button id="loadBtn" class="btn walletFlowLoadBtn" type="button" disabled>🔍 LOAD WALLET</button>
           </div>
           </div>
@@ -215,7 +248,7 @@
         <div class="collectionsCardGrid">
           <div class="collectionsRow">
             <div class="searchWrap">
-              <input id="collectionSearch" class="input" placeholder="Search collections..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+              <input id="collectionSearch" class="input guideGlow" placeholder="Search collections..." autocomplete="off" autocapitalize="none" spellcheck="false" />
               <div class="hint">Use Select All or Select Manually on each collection.</div>
             </div>
             <div class="collectionsRowBtns">
@@ -312,18 +345,6 @@
 
         </div>
 
-        <div id="stageFooter" class="stageFooter gridStatusBar" style="display: none;">
-          <div class="gridStatusContent">
-            <div id="gridStatusHint" class="gridStatusHint" style="display: none;">🐻 Bear with us as we load all these — I'm only a kid, let's see how I go!</div>
-            <div id="gridStatusText" class="gridStatusText"></div>
-            <div id="gridStatusProgressWrap" class="gridStatusProgressWrap" style="display: none;">
-              <div id="gridStatusProgress" class="gridStatusProgress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div id="gridStatusRetryArea" class="gridStatusRetryArea" style="display: none;">
-              <span class="gridStatusRetryHint">If real NFT art didn’t load (blank or missing tiles), use <strong>Retry missing</strong> to fetch again — not the collection logo. Or <strong>Remove unloaded and reshuffle</strong> to keep only tiles that loaded.</span>
-            </div>
-          </div>
-        </div>
         <div class="gridExportBar">
           <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
         </div>

@@ -4,12 +4,20 @@
 */
 import {
   fetchNFTsFromWorker,
-  fetchNFTsInBatches,
-  fetchNFTsFromZora,
+  loadWalletSafe,
   fetchContractMetadataFromWorker,
   getWorkerBase,
 } from "./api.js";
 import { getAlchemyNetworkId } from "./alchemyNetworks.js";
+import {
+  hydrateImageLoaderFromSession,
+  resolveImageUrlWithCandidates,
+  preloadResolvedUrlsForExport,
+  clearImageLoaderFailure,
+  cacheKeyFromRawArt,
+} from "./modules/imageLoader.js";
+
+hydrateImageLoaderFromSession();
 
 const DEV = window.location.hostname === "localhost";
 /** Max NFTs (including custom uploads) in one grid build / reorder. */
@@ -42,17 +50,29 @@ function queryAllGridTiles() {
   return tiles;
 }
 
-// ---------- Step-based UI flow ----------
-let currentStep = 1;
+// ---------- Step-based UI flow (wizard) ----------
+// Welcome overlay first; then 0 = 1. Chain, 1 = 2. Wallets, 2 = 3. Collections, 3 = 4. Grid — one screen at a time.
+let currentStep = 0;
 
-function goToStep(step) {
-  currentStep = Math.max(1, Math.min(3, step));
+// ---------- UI-only onboarding state ----------
+// This is a UX control layer only. It must not replace or interfere with existing app state / data logic.
+const uiState = {
+  step: 1, // 1..4
+  chain: null,
+  wallet: null,
+};
 
+function renderUI({ scrollTop = false } = {}) {
+  // Keep legacy step index in sync (0..3) so existing UI helpers keep working.
+  currentStep = Math.max(0, Math.min(3, (uiState.step || 1) - 1));
+
+  const chain = $("screen-chain");
   const wallets = $("screen-wallets");
   const collections = $("screen-collections");
   const grid = $("screen-grid");
   const gridStage = $("gridStageWrapper");
 
+  if (chain) chain.style.display = currentStep === 0 ? "block" : "none";
   if (wallets) wallets.style.display = currentStep === 1 ? "block" : "none";
   if (collections) collections.style.display = currentStep === 2 ? "block" : "none";
   if (grid) grid.style.display = currentStep === 3 ? "block" : "none";
@@ -69,7 +89,6 @@ function goToStep(step) {
   // Expand sections when entering their step
   const walletSection = $("walletSection");
   const collectionsSection = $("collectionsSection");
-  const traitOrderSection = $("traitOrderSection");
   if (currentStep === 1 && walletSection) {
     walletSection.classList.remove("collapsed");
     state.walletCollapsed = false;
@@ -84,6 +103,47 @@ function goToStep(step) {
 
   syncHubBackButton();
   updateGuideGlow();
+
+  if (scrollTop) {
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (_) {
+      window.scrollTo(0, 0);
+    }
+  }
+}
+
+function handleStepClick(stepIdx) {
+  const targetStep = Math.max(1, Math.min(4, stepIdx + 1));
+
+  // Allow going backwards anytime
+  if (targetStep < uiState.step) {
+    uiState.step = targetStep;
+    renderUI({ scrollTop: true });
+    return;
+  }
+
+  // Prevent skipping forward unless valid
+  if (targetStep === 2 && uiState.chain) {
+    uiState.step = 2;
+    renderUI({ scrollTop: true });
+    return;
+  }
+  if (targetStep === 3 && uiState.chain && uiState.wallet) {
+    uiState.step = 3;
+    renderUI({ scrollTop: true });
+    return;
+  }
+  if (targetStep === 4) {
+    // Grid is only reachable through the flow (Build button), not by clicking ahead.
+    return;
+  }
+}
+
+function goToStep(step) {
+  const prevStep = currentStep;
+  uiState.step = Math.max(1, Math.min(4, step + 1));
+  renderUI({ scrollTop: prevStep !== step });
 }
 
 /** Little Ollie Labs links hub (absolute so it works from /flexgrid/site/ or any deploy path). */
@@ -93,9 +153,12 @@ function syncHubBackButton() {
   const btn = $("hubBackBtn");
   if (!btn) return;
   btn.textContent = "← BACK";
-  if (currentStep === 1) {
+  if (currentStep === 0) {
     btn.title = "Back to Links";
     btn.setAttribute("aria-label", "Back to Links");
+  } else if (currentStep === 1) {
+    btn.title = "Back to Chain";
+    btn.setAttribute("aria-label", "Back to Chain");
   } else if (currentStep === 2) {
     btn.title = "Back to Wallets";
     btn.setAttribute("aria-label", "Back to Wallets");
@@ -106,8 +169,12 @@ function syncHubBackButton() {
 }
 
 function onHubBackClick() {
-  if (currentStep === 1) {
+  if (currentStep === 0) {
     window.location.href = HUB_LINKS_PAGE;
+    return;
+  }
+  if (currentStep === 1) {
+    goToStep(0);
     return;
   }
   if (currentStep === 2) {
@@ -835,13 +902,6 @@ function updateImageProgress() {
   const barWrap = document.getElementById("imageProgressBarWrap");
   const bar = document.getElementById("imageProgressBar");
   const retryBtn = document.getElementById("retryBtn");
-  const stageFooter = document.getElementById("stageFooter");
-  const gridStatusText = document.getElementById("gridStatusText");
-  const gridStatusHint = document.getElementById("gridStatusHint");
-  const gridStatusProgressWrap = document.getElementById("gridStatusProgressWrap");
-  const gridStatusProgress = document.getElementById("gridStatusProgress");
-  const gridStatusRetryArea = document.getElementById("gridStatusRetryArea");
-
   const stageLoadBar = document.getElementById("gridStageImageLoading");
 
   const stageFill = document.getElementById("gridStageImageLoadingBarFill");
@@ -850,8 +910,6 @@ function updateImageProgress() {
   if (total === 0) {
     if (barWrap) barWrap.style.display = "none";
     if (retryBtn) retryBtn.classList.remove("pulseAlert");
-    if (stageFooter) stageFooter.style.display = "none";
-    if (gridStatusHint) gridStatusHint.style.display = "none";
     const rb = $("removeUnloadedBtn");
     if (rb) rb.style.display = "none";
     if (stageLoadBar) {
@@ -894,22 +952,6 @@ function updateImageProgress() {
         stageHint.textContent = `Loading images… ${settled}/${total}`;
       }
     }
-  }
-
-  /* Below-grid status bar */
-  if (stageFooter) stageFooter.style.display = "flex";
-  if (gridStatusHint) {
-    const showHint = total >= 40 && settled < total;
-    gridStatusHint.style.display = showHint ? "block" : "none";
-  }
-  if (gridStatusText) gridStatusText.textContent = statusMsg;
-  if (gridStatusProgressWrap) gridStatusProgressWrap.style.display = settled < total ? "" : "none";
-  if (gridStatusProgress) {
-    gridStatusProgress.style.width = progress + "%";
-    gridStatusProgress.setAttribute("aria-valuenow", String(progress));
-  }
-  if (gridStatusRetryArea) {
-    gridStatusRetryArea.style.display = failed > 0 ? "flex" : "none";
   }
 
   /* Legacy left-panel elements */
@@ -1424,6 +1466,7 @@ function updateWalletInputHint() {
   const n = state.wallets.length;
   if (!raw) {
     clearWalletValidationHint();
+    renderWalletInputOverlay();
     return;
   }
   if (n > 0) {
@@ -1432,6 +1475,86 @@ function updateWalletInputHint() {
   } else {
     hint.textContent = "Enter valid 0x addresses (comma, space, or new line)";
     hint.style.color = "#ff9800";
+  }
+  renderWalletInputOverlay();
+}
+
+function renderWalletInputOverlay() {
+  const overlay = $("walletInputOverlay");
+  const input = $("walletInput");
+  if (!overlay || !input) return;
+  const raw = String(input.value || "");
+  if (!raw) {
+    overlay.innerHTML = "";
+    return;
+  }
+
+  // Render tokens while preserving user newlines/spaces via `white-space: pre-wrap`.
+  // We transform valid addresses into green + add a ✓ at the end of that address.
+  const re = /0x[a-fA-F0-9]{40}/g;
+  const lower = raw.toLowerCase();
+  let lastIndex = 0;
+  const seen = new Set();
+  const parts = [];
+
+  while (true) {
+    const m = re.exec(raw);
+    if (!m) break;
+    const start = m.index;
+    const end = start + m[0].length;
+
+    const before = raw.slice(lastIndex, start);
+    if (before) parts.push(escapeHtml(before));
+
+    const addr = lower.slice(start, end);
+    const isValid = /^0x[a-f0-9]{40}$/.test(addr) && !seen.has(addr) && seen.size < MAX_WALLET_ADDRESSES;
+    if (isValid) {
+      seen.add(addr);
+      parts.push(
+        `<span class="walletTokenValid">${escapeHtml(addr)}<span class="walletTokenTick" aria-hidden="true">✓</span></span>`
+      );
+    } else {
+      parts.push(`<span class="walletTokenInvalid">${escapeHtml(addr)}</span>`);
+    }
+
+    lastIndex = end;
+  }
+
+  const tail = raw.slice(lastIndex);
+  if (tail) parts.push(escapeHtml(tail));
+
+  overlay.innerHTML = parts.join("");
+
+  // Keep overlay scroll aligned with the textarea.
+  overlay.scrollTop = input.scrollTop || 0;
+  overlay.scrollLeft = input.scrollLeft || 0;
+}
+
+let _walletAutoNewlineLock = false;
+function maybeAutoNewlineWalletInput() {
+  const input = $("walletInput");
+  if (!input) return;
+  if (_walletAutoNewlineLock) return;
+  // Only when cursor is at end (so we don't mess with editing a previous line)
+  const atEnd = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
+  if (!atEnd) return;
+
+  const v = String(input.value || "");
+  if (!v) return;
+  if (/[,\s]$/.test(v)) return; // already has a delimiter/newline
+
+  const lastToken = v.split(/[\s,;]+/g).filter(Boolean).slice(-1)[0];
+  if (!lastToken) return;
+  const w = String(lastToken).trim().toLowerCase();
+  if (!/^0x[a-f0-9]{40}$/.test(w)) return;
+
+  _walletAutoNewlineLock = true;
+  try {
+    input.value = v + "\n";
+    input.selectionStart = input.selectionEnd = input.value.length;
+    syncWalletsFromInput();
+  } finally {
+    _walletAutoNewlineLock = false;
   }
 }
 
@@ -1445,6 +1568,7 @@ function syncWalletsFromInput() {
   enableButtons();
   updateGuideGlow();
   updateWalletInputHint();
+  renderWalletInputOverlay();
   return state.wallets.length;
 }
 
@@ -1640,6 +1764,7 @@ function isManualModalImageRenderable(img) {
 
 /**
  * Same resolution path as grid tiles: cache, Worker proxy, gateway fallbacks, queued + timeout loads.
+ * Uses `modules/imageLoader.js` for IPFS/Arweave gateway rotation + session cache (no indexer calls).
  * @returns {{ ok: boolean, winningUrl?: string }}
  */
 async function resolveRawUrlOntoImage(img, rawUrl) {
@@ -1664,20 +1789,32 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
 
   for (const url of candidates) {
     if (imageCache.has(url)) {
-      img.src = imageCache.get(url);
-      return { ok: true, winningUrl: url };
-    }
-    try {
+      const hit = imageCache.get(url);
       setImgCORS(img, true);
-      const proxyUrl = gridProxyUrl(url) || url;
-      const timeoutMs = state?.whaleMode ? 7000 : 5000;
-      await queueImageLoad(() => loadImageWithTimeout(img, proxyUrl, timeoutMs));
-      imageCache.set(url, url);
-      return { ok: true, winningUrl: url };
-    } catch (_) {
-      /* try next candidate */
+      img.src = hit;
+      return { ok: true, winningUrl: hit };
     }
   }
+
+  const loaderId = cacheKeyFromRawArt(raw);
+  const timeoutMs = state?.whaleMode ? 7000 : 11000;
+  const resolved = await queueImageLoad(() =>
+    resolveImageUrlWithCandidates(loaderId, candidates, {
+      rawArt: raw,
+      mapTryUrl: (u) => gridProxyUrl(u) || u,
+      timeoutMs,
+    })
+  );
+
+  if (resolved) {
+    setImgCORS(img, true);
+    img.src = resolved;
+    for (const c of candidates) {
+      if (c) imageCache.set(c, resolved);
+    }
+    return { ok: true, winningUrl: resolved };
+  }
+
   return { ok: false };
 }
 
@@ -1700,6 +1837,8 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSet
   }
 
   img.src = GRID_LOADING_PLACEHOLDER_SRC;
+
+  clearImageLoaderFailure(cacheKeyFromRawArt(String(raw || "").trim()));
 
   const res = await resolveRawUrlOntoImage(img, raw);
   let ok = res.ok;
@@ -2931,14 +3070,6 @@ async function addCollectionByContract(contractInput) {
         contractAddresses: normAddr,
       }).catch(() => []);
       allNfts.push(...(nfts || []));
-    }
-
-    if (allNfts.length === 0 && (state.chain === "eth" || state.host?.includes("eth"))) {
-      setAddStatus("Trying Zora…");
-      for (const wallet of state.wallets) {
-        const nfts = await fetchNFTsFromZora({ wallet, contractAddress: normAddr }).catch(() => []);
-        allNfts.push(...nfts);
-      }
     }
 
     if (allNfts.length === 0) {
@@ -4436,6 +4567,7 @@ async function retryMissingTiles() {
     tile.classList.remove("isMissing");
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
+    clearImageLoaderFailure(cacheKeyFromRawArt(rawUrl));
     let img = tile.querySelector("img");
     if (!img) {
       img = document.createElement("img");
@@ -4765,6 +4897,35 @@ function enableDragDrop() {
   installGridPointerReorder();
 }
 
+// ---------- Entry wrapper bridge (/flexgrid/app.html → /flexgrid/site/) ----------
+function loadWallet({ wallet, chain } = {}) {
+  const input = $("walletInput");
+  const sel = $("chainSelect");
+  const w = String(wallet || "").trim();
+  const cRaw = String(chain || "").trim().toLowerCase();
+  const c = cRaw === "ape" ? "apechain" : cRaw; // wrapper uses "ape", app uses "apechain"
+  if (!input || !sel) return;
+  if (!w) {
+    setStatus("👋 Enter at least one valid wallet — 0x + 40 hex chars.");
+    return;
+  }
+  // Ensure we're on the Wallets step.
+  goToStep(1);
+  if (c === "eth" || c === "base" || c === "apechain") {
+    sel.value = c;
+    try {
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {
+      applyChainSelectionFromDom();
+    }
+  } else {
+    console.warn("[FlexGrid] Unsupported chain from wrapper:", cRaw);
+  }
+  input.value = w;
+  // Kick off the existing load flow (debounced + overlap guard).
+  triggerLoadWallets();
+}
+
 // ---------- Large load guard (UX + crash prevention) ----------
 let didConfirmLargeImageLoadThisSession = false;
 function confirmLargeImageLoadIfNeeded(nftTileCount) {
@@ -4784,13 +4945,13 @@ function confirmLargeImageLoadIfNeeded(nftTileCount) {
 let loadWalletsInFlight = false;
 let loadWalletsDebounceTimer = null;
 
-/** Debounced load so rapid clicks / key repeats do not stack multiple Worker runs (saves Alchemy CU). */
+/** Debounced load so rapid clicks / key repeats do not stack multiple Worker runs (saves Alchemy / Moralis CU). */
 function triggerLoadWallets() {
   clearTimeout(loadWalletsDebounceTimer);
   loadWalletsDebounceTimer = setTimeout(() => {
     loadWalletsDebounceTimer = null;
     void loadWallets();
-  }, 400);
+  }, 500);
 }
 
 async function loadWallets() {
@@ -4837,20 +4998,35 @@ async function loadWallets() {
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
 
     const allNfts = [];
-    const WALLET_BATCH_SIZE = 3;
-    for (let i = 0; i < state.wallets.length; i += WALLET_BATCH_SIZE) {
-      const batch = state.wallets.slice(i, i + WALLET_BATCH_SIZE);
-      const batchNum = Math.floor(i / WALLET_BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(state.wallets.length / WALLET_BATCH_SIZE);
-      showLoading(gatherMsg, "");
-      setStatus(`Gathering NFTs… batch ${batchNum}/${totalBatches}.`);
-      const results = await Promise.all(
-        batch.map((w) => {
-          // Paged loading prevents Cloudflare Worker subrequest limits on ApeChain and reduces UI jank on large wallets.
-          return fetchNFTsInBatches({ wallet: w, chain });
-        })
-      );
-      results.forEach((nfts) => allNfts.push(...(nfts || [])));
+    console.log("[LOAD WALLET]", state.wallets.join(", "), chain);
+
+    if (chain === "apechain") {
+      let wi = 0;
+      for (const w of state.wallets) {
+        wi++;
+        showLoading(gatherMsg, "");
+        setStatus(`Gathering NFTs… wallet ${wi}/${state.wallets.length} (ApeChain — one Moralis sequence at a time).`);
+        const nfts = await loadWalletSafe({ wallet: w, chain });
+        allNfts.push(...(nfts || []));
+      }
+    } else {
+      const WALLET_BATCH_SIZE = 3;
+      for (let i = 0; i < state.wallets.length; i += WALLET_BATCH_SIZE) {
+        const batch = state.wallets.slice(i, i + WALLET_BATCH_SIZE);
+        const batchNum = Math.floor(i / WALLET_BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(state.wallets.length / WALLET_BATCH_SIZE);
+        showLoading(gatherMsg, "");
+        setStatus(`Gathering NFTs… batch ${batchNum}/${totalBatches}.`);
+        const results = await Promise.all(
+          batch.map((w) =>
+            fetchNFTsFromWorker({
+              wallet: w,
+              chain,
+            })
+          )
+        );
+        results.forEach((nfts) => allNfts.push(...(nfts || [])));
+      }
     }
 
     showLoading(gatherMsg, "");
@@ -5455,6 +5631,7 @@ function createShareModal({ shareText, shareUrl }) {
   modal.className = "flexgrid-share-modal";
   modal.innerHTML = `
     <div class="flexgrid-share-content">
+      <button type="button" class="flexgrid-share-close-x" aria-label="Close">×</button>
       <img class="flexgrid-share-banner" src="src/assets/images/header.png" alt="" width="560" height="120" decoding="async" aria-hidden="true" />
       <div class="flexgrid-share-inner">
         <h2 id="flexgrid-share-title">🔥 Your FlexGrid is ready</h2>
@@ -5487,6 +5664,7 @@ function createShareModal({ shareText, shareUrl }) {
   document.addEventListener("keydown", onKeyDown);
 
   modal.addEventListener("click", (e) => e.stopPropagation());
+  modal.querySelector(".flexgrid-share-close-x")?.addEventListener("click", close);
   modal.querySelector(".flexgrid-share-close")?.addEventListener("click", close);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) close();
@@ -5524,6 +5702,23 @@ function isImgUsable(img) {
 }
 
 async function waitForExportImages(tiles) {
+  const preloadById = new Map();
+  for (const t of tiles || []) {
+    const raw = String(t?.dataset?.rawUrl || "").trim();
+    if (!raw || t?.dataset?.kind === "empty") continue;
+    const candidates = buildImageCandidates(raw);
+    if (!candidates.length) continue;
+    const id = cacheKeyFromRawArt(raw);
+    if (!preloadById.has(id)) preloadById.set(id, { id, candidates, rawArt: raw });
+  }
+  const preloadRows = [...preloadById.values()];
+  if (preloadRows.length) {
+    await preloadResolvedUrlsForExport(preloadRows, {
+      mapTryUrl: (u) => gridProxyUrl(u) || u,
+      timeoutMs: state?.whaleMode ? 7000 : 11000,
+    });
+  }
+
   const imgs = tiles.map((t) => t.querySelector("img")).filter(Boolean);
   await Promise.all(
     imgs.map(
@@ -6282,6 +6477,10 @@ function toggleStageLayoutSection() {
 
 // ---------- Events + Retry ----------
 (function bindEvents() {
+  if (globalThis.__FLEXGRID_UI_EVENTS_BOUND__) return;
+  globalThis.__FLEXGRID_UI_EVENTS_BOUND__ = true;
+  console.log("[INIT] App started");
+
   const hubBackBtn = $("hubBackBtn");
   if (hubBackBtn && !hubBackBtn.dataset.boundHubBack) {
     hubBackBtn.dataset.boundHubBack = "1";
@@ -6297,20 +6496,31 @@ function toggleStageLayoutSection() {
     walletInput.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
+        // UX: submitting wallet is what triggers the existing wallet load.
+        const value = String(walletInput.value || "").trim();
+        if (!value) return;
+        uiState.wallet = value;
+        uiState.step = 3;
         triggerLoadWallets();
+        renderUI({ scrollTop: true });
       }
     });
     walletInput.addEventListener("input", () => {
       if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
       walletValidationDebounce = setTimeout(() => {
         syncWalletsFromInput();
+        maybeAutoNewlineWalletInput();
         walletValidationDebounce = null;
       }, 200);
+    });
+    walletInput.addEventListener("scroll", () => {
+      renderWalletInputOverlay();
     });
     walletInput.addEventListener("blur", () => {
       if (walletValidationDebounce) clearTimeout(walletValidationDebounce);
       walletValidationDebounce = null;
       syncWalletsFromInput();
+      maybeAutoNewlineWalletInput();
     });
   }
 
@@ -6361,10 +6571,25 @@ function toggleStageLayoutSection() {
   }
 
   const loadBtn = $("loadBtn");
-  if (loadBtn) loadBtn.addEventListener("click", triggerLoadWallets);
+  if (loadBtn)
+    loadBtn.addEventListener("click", () => {
+      // Step 2 submit: set UI-only wallet, then trigger existing wallet/NFT load logic.
+      const value = String(($("walletInput")?.value || "")).trim();
+      if (!value) return;
+      uiState.wallet = value;
+      uiState.step = 3;
+      triggerLoadWallets();
+      renderUI({ scrollTop: true });
+    });
   const gridBuildBtn = $("gridBuildBtn");
   const gridExportBtn = $("gridExportBtn");
-  if (gridBuildBtn) gridBuildBtn.addEventListener("click", buildGrid);
+  if (gridBuildBtn)
+    gridBuildBtn.addEventListener("click", () => {
+      // Step 3 -> Step 4: keep build logic intact, only control visibility after.
+      buildGrid();
+      uiState.step = 4;
+      renderUI({ scrollTop: true });
+    });
   if (gridExportBtn) gridExportBtn.addEventListener("click", exportPNG);
 
   const gridGifBtn = $("gridGifBtn");
@@ -6446,25 +6671,53 @@ function toggleStageLayoutSection() {
   if (exportTypeGif) exportTypeGif.addEventListener("click", () => triggerExportFromToggle("gif"));
   if (exportTypeMp4) exportTypeMp4.addEventListener("click", () => triggerExportFromToggle("mp4"));
 
-  // Step navigation
-  const collectionsBackBtn = $("collectionsBackBtn");
-  const collectionsNextBtn = $("collectionsNextBtn");
-  if (collectionsBackBtn) collectionsBackBtn.addEventListener("click", () => goToStep(1));
-  if (collectionsNextBtn) collectionsNextBtn.addEventListener("click", () => {
-    if (!hasItemsForBuild()) {
-      setStatus("🎯 Select collections or custom images to continue");
-      return;
-    }
-    goToStep(3);
-  });
+  // Anti-regression: never auto-load wallets / skip chain selection on entry.
+  // Any wrapper-provided sessionStorage shortcuts are intentionally ignored for the 4-step onboarding UX.
 
   // Step indicator clicks
   document.querySelectorAll(".stepItem").forEach((el) => {
     el.addEventListener("click", () => {
       const s = parseInt(el.dataset.step, 10);
-      if (s >= 1 && s <= 3) goToStep(s);
+      if (s >= 0 && s <= 3) handleStepClick(s);
     });
   });
+
+  // Chain selection step
+  const chainNext = $("chainNextBtn");
+  const chainBtns = document.querySelectorAll(".flexgrid-chain-btn[data-chain]");
+  const chainSelectEl = $("chainSelect");
+  let selectedChain = "";
+
+  const setChain = (c) => {
+    selectedChain = String(c || "").trim().toLowerCase();
+    chainBtns.forEach((b) => {
+      const on = b.dataset.chain === selectedChain;
+      b.classList.toggle("isSelected", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (chainNext) chainNext.disabled = !selectedChain;
+    uiState.chain = selectedChain || null;
+    if (chainSelectEl && (selectedChain === "eth" || selectedChain === "base" || selectedChain === "apechain")) {
+      chainSelectEl.value = selectedChain;
+      try {
+        chainSelectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      } catch (_) {
+        applyChainSelectionFromDom();
+      }
+    }
+    renderUI();
+  };
+
+  chainBtns.forEach((b) => {
+    b.addEventListener("click", () => setChain(b.dataset.chain));
+  });
+  if (chainNext) {
+    chainNext.addEventListener("click", () => {
+      if (!selectedChain) return;
+      uiState.step = 2;
+      renderUI({ scrollTop: true });
+    });
+  }
 
   const retryBtn = $("retryBtn");
   if (retryBtn && typeof retryMissingTiles === "function") {
@@ -6513,7 +6766,9 @@ function toggleStageLayoutSection() {
     });
   }
 
-  goToStep(1);
+  // Entry point
+  uiState.step = 1;
+  renderUI();
 
   const settingsBtn = $("settingsBtn");
   if (settingsBtn) {
@@ -6540,59 +6795,66 @@ function toggleStageLayoutSection() {
   window.addEventListener("orientationchange", syncWatermarkDOMToOneTile);
 })();
 
-// Load configuration securely
+// Load configuration securely (deduped if the module is evaluated more than once)
+let flexgridConfigInitPromise = null;
 async function initializeConfig() {
-  try {
-    const { loadConfig } = await import("./config.js");
-    const config = await loadConfig();
+  if (flexgridConfigInitPromise) return flexgridConfigInitPromise;
+  flexgridConfigInitPromise = (async () => {
+    try {
+      const { loadConfig } = await import("./config.js");
+      const config = await loadConfig();
 
-    IMG_PROXY = config.workerUrl;
+      IMG_PROXY = config.workerUrl;
 
-    if (!IMG_PROXY) {
-      throw new Error("Unable to load configuration. Ensure your Worker supplies workerUrl.");
-    }
-    configLoaded = true;
+      if (!IMG_PROXY) {
+        throw new Error("Unable to load configuration. Ensure your Worker supplies workerUrl.");
+      }
+      configLoaded = true;
 
-    if (DEV) console.log("Config loaded");
+      if (DEV) console.log("Config loaded");
 
-    enableButtons();
-    setStatus("");
-    showConnectionStatus(false);
-    updateGuideGlow();
-  } catch (error) {
-    const statusEl = $("status");
-    if (statusEl) {
-      statusEl.innerHTML = `
+      enableButtons();
+      setStatus("");
+      showConnectionStatus(false);
+      updateGuideGlow();
+    } catch (error) {
+      flexgridConfigInitPromise = null;
+      const statusEl = $("status");
+      if (statusEl) {
+        statusEl.innerHTML = `
         <div style="color: #ff6b6b; font-weight: 900; margin-bottom: 8px;">
           ⚠️ Configuration Error
         </div>
       `;
 
-      const msg = document.createElement("div");
-      msg.style.marginBottom = "8px";
-      msg.textContent = error.message;
+        const msg = document.createElement("div");
+        msg.style.marginBottom = "8px";
+        msg.textContent = error.message;
 
-      statusEl.appendChild(msg);
+        statusEl.appendChild(msg);
 
-      const hint = document.createElement("div");
-      hint.style.fontSize = "16px";
-      hint.style.opacity = "0.9";
-      hint.innerHTML = "See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.";
-      statusEl.appendChild(hint);
+        const hint = document.createElement("div");
+        hint.style.fontSize = "16px";
+        hint.style.opacity = "0.9";
+        hint.innerHTML = "See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.";
+        statusEl.appendChild(hint);
+      }
+      addError(error, "Config Loading");
+
+      const loadBtn = $("loadBtn");
+      const buildBtn = $("gridBuildBtn");
+      const exportBtn = $("gridExportBtn");
+      if (loadBtn) loadBtn.disabled = true;
+      if (buildBtn) buildBtn.disabled = true;
+      if (exportBtn) exportBtn.disabled = true;
+      syncGridFooterButtons(true, true);
+
+      showConnectionStatus(false);
+      throw error;
     }
-    addError(error, "Config Loading");
-
-    const loadBtn = $("loadBtn");
-    const buildBtn = $("gridBuildBtn");
-    const exportBtn = $("gridExportBtn");
-    if (loadBtn) loadBtn.disabled = true;
-    if (buildBtn) buildBtn.disabled = true;
-    if (exportBtn) exportBtn.disabled = true;
-    syncGridFooterButtons(true, true);
-
-    showConnectionStatus(false);
-  }
+  })();
+  return flexgridConfigInitPromise;
 }
 
-initializeConfig();
+void initializeConfig();
 enableButtons();
