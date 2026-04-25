@@ -1,33 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <base href="site/">
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>FlexGrid</title>
-  <link rel="icon" type="image/png" href="site/src/assets/images/LO.png" />
-  <link rel="apple-touch-icon" href="site/src/assets/images/LO.png" />
-  <meta http-equiv="refresh" content="0; url=site/" />
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: #0b1020;
-      color: rgba(255, 255, 255, 0.9);
-      display: grid;
-      place-items: center;
-      min-height: 100dvh;
-      padding: 20px;
-    }
-    a {
-      color: #ffdd55;
-      font-weight: 900;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Little Ollie Flex Grid</title>
+
+  <!-- Favicon & app icons -->
+  <link rel="icon" type="image/png" href="src/assets/images/LO.png">
+  <link rel="shortcut icon" href="src/assets/images/LO.png">
+  <link rel="apple-touch-icon" href="src/assets/images/LO.png">
+  <link rel="mask-icon" href="src/assets/images/LO.png" color="#000000">
+
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles/style.css">
 </head>
 <body>
-  <main>
-    <p>Redirecting to FlexGrid…</p>
-    <p>If you aren’t redirected, open <a href="site/">FlexGrid</a>.</p>
-  </main>
+  <script>
+    // Ensure trailing slash so relative URLs behave.
+    (function () {
+      var loc = window.location;
+      var p = loc.pathname;
+      if (/\/flexgrid$/i.test(p)) {
+        loc.replace(loc.origin + p + "/" + loc.search + loc.hash);
+      }
+    })();
+  </script>
+
+  <!-- App HTML is served from /flexgrid/ with base href="site/" -->
+  <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
+    <div class="disclaimer-modal">
+      <a href="https://littleollielabs.com/links/" class="disclaimer-back-link">← BACK TO LINKS</a>
+      <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
+      <div class="disclaimer-content">
+        <h2 class="disclaimer-title">👋 Welcome to Little Ollie Flex Grid!</h2>
+        <p class="disclaimer-text">Unfortunately, not all collections work 100% yet — we're actively looking into compatibility. Please reach out with any issues so we can keep improving this for everyone!</p>
+        <div class="disclaimer-socials">
+          <a href="mailto:Littleollienft@gmail.com" class="disclaimer-link" aria-label="Email us">✉️ Email</a>
+          <a href="https://instagram.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Instagram">📷 Instagram</a>
+          <a href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Twitter / X">🐦 Twitter</a>
+        </div>
+        <button id="disclaimerContinue" class="btn disclaimer-continue" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var overlay = document.getElementById("disclaimerOverlay");
+      var btn = document.getElementById("disclaimerContinue");
+      if (btn && overlay) {
+        btn.addEventListener("click", function(){
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        });
+      }
+    })();
+  </script>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-overlay-inner" aria-busy="true">
+      <div class="loading-overlay-orbit">
+        <div class="loading-overlay-ring" aria-hidden="true"></div>
+        <div class="loading-overlay-orbitCenter">
+          <img
+            src="src/assets/images/LO.png"
+            alt=""
+            class="loading-overlay-lo-img"
+            width="140"
+            height="140"
+            decoding="async"
+          />
+          <div class="loading-overlay-title" aria-hidden="true">Loading</div>
+        </div>
+      </div>
+      <p id="loadingOverlayStatus" class="loading-overlay-status" aria-live="polite"></p>
+      <p class="loading-overlay-hint">This may take a moment</p>
+    </div>
+  </div>
+
+  <div class="wrap container">
+    <div class="heroHeader heroHeaderStack" aria-label="Little Ollie FlexGrid">
+      <img src="src/assets/images/dad.png" class="heroHeaderSide heroHeaderSide--left" alt="Dad" loading="eager" decoding="async" />
+      <div class="heroHeaderCenter">
+        <img src="src/assets/images/lo1.png" class="heroHeaderLo" alt="Little Ollie" loading="eager" decoding="async" />
+        <img src="src/assets/images/FG.png" class="heroHeaderFg" alt="Flex Grid" loading="eager" decoding="async" />
+      </div>
+      <img src="src/assets/images/LO.png" class="heroHeaderSide heroHeaderSide--right" alt="Little Ollie character" loading="eager" decoding="async" />
+    </div>
+    <p class="heroTagline">Your NFTs. One Grid. Multi-Chain.</p>
+
+    <div class="stepBar">
+      <button type="button" id="hubBackBtn" class="hubBackLink">← BACK</button>
+      <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
+        <span class="stepItem" data-step="0">1. Chain</span>
+        <span class="stepConnector">→</span>
+        <span class="stepItem" data-step="1">2. Wallets</span>
+        <span class="stepConnector">→</span>
+        <span class="stepItem" data-step="2">3. Collections</span>
+        <span class="stepConnector">→</span>
+        <span class="stepItem" data-step="3">4. Grid</span>
+      </nav>
+      <div class="stepBarTrailing">
+        <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
+          <span class="themeToggleKnob" aria-hidden="true">
+            <span class="themeToggleGlyph themeToggleGlyphSun">☀️</span>
+            <span class="themeToggleGlyph themeToggleGlyphMoon">🌙</span>
+          </span>
+        </div>
+        <button type="button" id="settingsBtn" class="settingsTopBtn" aria-label="Settings" aria-expanded="false" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+    <!-- Main screens are still loaded by the existing app.js -->
+    <div id="screen-chain" class="screen"></div>
+    <div id="screen-wallets" class="screen" style="display:none;"></div>
+    <div id="screen-collections" class="screen" style="display:none;"></div>
+    <div id="screen-grid" class="screen" style="display:none;"></div>
+    <div id="gridStageWrapper" class="screen" style="display:none;"></div>
+  </div>
+
+  <script>
+    // Theme toggle script is still expected by the CSS; keep behavior consistent.
+    (function(){
+      const key = "lo_theme";
+      const wrap = document.getElementById("themeToggleWrap");
+      if(!wrap) return;
+
+      const updateState = () => {
+        wrap.classList.toggle("dark", document.body.classList.contains("dark"));
+        wrap.setAttribute("aria-checked", document.body.classList.contains("dark"));
+      };
+
+      const saved = localStorage.getItem(key);
+      if(saved === "dark"){
+        document.body.classList.add("dark");
+      }else if(saved === "light"){
+        document.body.classList.remove("dark");
+      }else{
+        if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+          document.body.classList.add("dark");
+        }
+      }
+      updateState();
+
+      const toggle = () => {
+        document.body.classList.toggle("dark");
+        localStorage.setItem(key, document.body.classList.contains("dark") ? "dark" : "light");
+        updateState();
+      };
+      wrap.addEventListener("click", toggle);
+      wrap.addEventListener("keydown", (e) => { if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
+    })();
+  </script>
+
+  <script src="vendor/loGifBranding.js"></script>
+  <script src="vendor/gif.js"></script>
+  <script type="module" src="src/js/app.js"></script>
 </body>
 </html>

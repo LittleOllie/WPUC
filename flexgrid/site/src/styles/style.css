@@ -300,17 +300,17 @@ body{
         gap: 8px;
       }
       .heroHeader.heroHeaderStack .heroHeaderSide{
-        height: 126px;
+        height: 92px;
         min-width: 44px;
       }
       .heroHeader.heroHeaderStack .heroHeaderLo{
-        max-height: 54px;
-        width: min(360px, 62vw);
+        max-height: 38px;
+        width: min(260px, 52vw);
         margin-bottom: -3px;
       }
       .heroHeader.heroHeaderStack .heroHeaderFg{
-        max-height: 72px;
-        width: min(520px, 78vw);
+        max-height: 54px;
+        width: min(360px, 64vw);
         margin-top: -3px;
       }
     }
@@ -1350,16 +1350,19 @@ body.dark .stageLayoutSectionHeaderHint{
   /* iPhone: clean 2-row header bar */
   .stepBar{
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "back trailing"
+      "toggle settings"
       "steps steps";
     gap: 10px;
     padding: 10px;
     align-items: center;
   }
-  .hubBackLink{ grid-area: back; justify-self: start; }
-  .stepBarTrailing{ grid-area: trailing; justify-self: end; margin-left: 0; }
+  /* Let toggle + settings become grid items */
+  .stepBarTrailing{ display: contents; }
+  #themeToggleWrap{ grid-area: toggle; justify-self: start; }
+  #settingsBtn{ grid-area: settings; justify-self: end; }
+  .hubBackLink{ justify-self: start; }
   .stepIndicator{
     grid-area: steps;
     display: grid;
