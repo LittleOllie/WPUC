@@ -45,6 +45,7 @@
       <main class="content">
         <div class="card">
           <div class="nft-stage" aria-live="polite">
+            <div id="progress-badge" class="progress-badge" aria-live="polite" aria-atomic="true"></div>
             <div id="nft-score-badge" class="nft-score-badge" aria-label="Dope score">
               <span id="nft-score-value" class="nft-score-badge__value">—</span>
               <span id="nft-score-votes" class="nft-score-badge__votes"></span>
@@ -171,6 +172,36 @@
         </div>
       </main>
     </section>
+
+    <div
+      id="intro-modal"
+      class="intro-modal"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Dope or Nope — how it works"
+    >
+      <div class="intro-modal__backdrop" data-intro-close="backdrop"></div>
+      <div class="intro-modal__card">
+        <div class="intro-modal__logos">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img
+            class="intro-modal__brand"
+            src="./assets/dopeornope.png"
+            alt="Dope or Nope"
+            width="320"
+            height="120"
+          />
+        </div>
+        <div class="intro-modal__info">
+          <p class="intro-modal__body-line">Tap <strong>🔥 Dope</strong> or <strong>🧊 Nope</strong> to rate each NFT.</p>
+          <p class="intro-modal__body-line">Scores update live.</p>
+          <p class="intro-modal__body-line">Add your own NFTs anytime from the button below.</p>
+        </div>
+        <button id="btn-intro-continue" class="btn btn--accent intro-modal__continue" type="button">Continue</button>
+      </div>
+    </div>
 
     <script type="module" src="./app.js"></script>
   </body>

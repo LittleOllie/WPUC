@@ -7,6 +7,7 @@ import {
   doc,
   query,
   limit,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { seedNFTs } from "./data.js";
 import { loadNFTsFromWallet, groupNFTsByCollection, isValidEvmAddress } from "./nftLoader.js";
@@ -22,8 +23,39 @@ let nftMap = {};
 /** @type {any[]} */
 let sessionQueue = [];
 const sessionSeen = new Set();
-/** Count of unique NFT ids in the current cycle (for prefetch cap). */
-let sessionUniqueTotal = 0;
+let sessionRated = 0;
+let progressBumpT = 0;
+let progressGlowT = 0;
+let nftsRealtimeListenerStarted = false;
+
+/** NFTs in this round: already pulled from queue + still waiting (updates live when new NFTs are added). */
+function getSessionProgressDenom() {
+  return sessionSeen.size + sessionQueue.length;
+}
+
+/** @param {{ glow?: boolean }} [opts] */
+function updateProgressBadge(opts = {}) {
+  const el = $("progress-badge");
+  if (!el) return;
+
+  const total = Math.max(0, getSessionProgressDenom());
+  const rated = total ? Math.min(Math.max(0, sessionRated), total) : 0;
+  el.textContent = `${rated} / ${total}`;
+  el.setAttribute("aria-label", total ? `${rated} of ${total} NFTs rated this round` : "No NFTs in round");
+
+  el.classList.remove("bump");
+  el.classList.add("bump");
+  window.clearTimeout(progressBumpT);
+  progressBumpT = window.setTimeout(() => el.classList.remove("bump"), 150);
+
+  if (opts.glow) {
+    el.classList.remove("progress-badge--glow");
+    void el.offsetWidth;
+    el.classList.add("progress-badge--glow");
+    window.clearTimeout(progressGlowT);
+    progressGlowT = window.setTimeout(() => el.classList.remove("progress-badge--glow"), 700);
+  }
+}
 
 function shuffleArray(arr) {
   const copy = [...arr];
@@ -43,8 +75,9 @@ function initSessionQueue() {
     unique.push(n);
   }
   sessionQueue = shuffleArray(unique);
-  sessionUniqueTotal = unique.length;
   sessionSeen.clear();
+  sessionRated = 0;
+  updateProgressBadge();
 }
 
 function showSessionCompleteMessage() {
@@ -320,8 +353,9 @@ async function appMain() {
 
   async function ensureQueue(targetLen) {
     if (!allNFTs.length) return;
-    if (!sessionUniqueTotal) return;
-    const cap = Math.min(targetLen, sessionUniqueTotal);
+    const denom = getSessionProgressDenom();
+    if (!denom) return;
+    const cap = Math.min(targetLen, denom);
     let guard = 0;
     while (feedQueue.length < cap && guard++ < 100) {
       const last = feedQueue[feedQueue.length - 1];
@@ -559,11 +593,18 @@ async function appMain() {
     const isHot = kind === "hot";
     const prevHot = Number(currentNFT.votesHot) || 0;
     const prevCold = Number(currentNFT.votesCold) || 0;
+    let voteSaved = false;
     try {
       await voteNFT(currentNFT, isHot);
+      voteSaved = true;
     } catch {
       currentNFT.votesHot = prevHot;
       currentNFT.votesCold = prevCold;
+    }
+
+    if (voteSaved && getSessionProgressDenom() > 0) {
+      sessionRated = Math.min(sessionRated + 1, getSessionProgressDenom());
+      updateProgressBadge();
     }
 
     const score = vibeScore(currentNFT);
@@ -1102,6 +1143,129 @@ async function appMain() {
 
   const FIRESTORE_BOOT_MS = 12000;
 
+  function startNftsRealtimeSync() {
+    if (nftsRealtimeListenerStarted) return;
+    nftsRealtimeListenerStarted = true;
+
+    const q = query(collection(db, "nfts"), limit(200));
+    let firstSnapshot = true;
+
+    onSnapshot(
+      q,
+      (snap) => {
+        if (firstSnapshot) {
+          firstSnapshot = false;
+          return;
+        }
+
+        const prevDenom = getSessionProgressDenom();
+        let addedForPrefetch = false;
+        let refreshScore = false;
+
+        for (const change of snap.docChanges()) {
+          const data = change.doc.data();
+          if (!data) continue;
+          const id = data.id;
+          if (!id) continue;
+
+          if (change.type === "modified") {
+            const ex = nftMap[id];
+            if (ex) {
+              ex.votesHot = Number(data.votesHot) || 0;
+              ex.votesCold = Number(data.votesCold) || 0;
+              if (currentNFT?.id === id) refreshScore = true;
+            } else {
+              const nft = { ...data, _docId: change.doc.id };
+              allNFTs.push(nft);
+              nftMap[id] = nft;
+              if (!sessionSeen.has(id)) {
+                sessionQueue.push(nft);
+                addedForPrefetch = true;
+              }
+            }
+          } else if (change.type === "added") {
+            if (nftMap[id]) continue;
+            const nft = { ...data, _docId: change.doc.id };
+            allNFTs.push(nft);
+            nftMap[id] = nft;
+            if (!sessionSeen.has(id)) {
+              sessionQueue.push(nft);
+              addedForPrefetch = true;
+            }
+          }
+        }
+
+        const newDenom = getSessionProgressDenom();
+        const poolGrew = newDenom > prevDenom;
+        updateProgressBadge({ glow: poolGrew });
+        if (refreshScore && currentNFT) updateNftScoreBadge(currentNFT);
+        if (addedForPrefetch) void ensureQueue(4);
+      },
+      (err) => console.warn("NFTs realtime listener:", err)
+    );
+  }
+
+  const INTRO_MODAL_KEY = "dopeornope_intro_v1";
+  const introModal = $("intro-modal");
+  const btnIntroContinue = $("btn-intro-continue");
+
+  function openIntroModal() {
+    if (!introModal) return;
+    introModal.classList.add("is-open");
+    introModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnIntroContinue?.focus(), 50);
+  }
+
+  function closeIntroModal() {
+    if (!introModal) return;
+    introModal.classList.remove("is-open");
+    introModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  function maybeShowIntroModal() {
+    if (!introModal) return;
+    try {
+      if (sessionStorage.getItem(INTRO_MODAL_KEY)) return;
+    } catch {
+      /* private mode */
+    }
+    openIntroModal();
+  }
+
+  btnIntroContinue?.addEventListener("click", () => {
+    try {
+      sessionStorage.setItem(INTRO_MODAL_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    closeIntroModal();
+  });
+
+  introModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-intro-close") === "backdrop") {
+      try {
+        sessionStorage.setItem(INTRO_MODAL_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      closeIntroModal();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!introModal?.classList.contains("is-open")) return;
+    try {
+      sessionStorage.setItem(INTRO_MODAL_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    closeIntroModal();
+  });
+
   async function boot() {
     showScreen("loading");
     try {
@@ -1121,6 +1285,8 @@ async function appMain() {
       for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
     }
     showScreen("main");
+    maybeShowIntroModal();
+    startNftsRealtimeSync();
   }
 
   // `type="module"` is deferred; DOMContentLoaded may have already fired before this file runs.

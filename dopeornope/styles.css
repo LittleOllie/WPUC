@@ -386,6 +386,49 @@ a.icon-btn {
   }
 }
 
+.progress-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(15, 47, 110, 0.82);
+  box-shadow: 0 3px 10px rgba(15, 47, 110, 0.12);
+  line-height: 1.2;
+  pointer-events: none;
+  transform-origin: center;
+  transition: transform 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-badge.bump {
+  transform: scale(1.08);
+}
+
+@keyframes progress-badge-glow {
+  0%,
+  100% {
+    box-shadow: 0 3px 10px rgba(15, 47, 110, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 3px 10px rgba(15, 47, 110, 0.12),
+      0 0 14px rgba(255, 216, 77, 0.75),
+      0 0 26px rgba(30, 115, 255, 0.28);
+  }
+}
+
+.progress-badge--glow {
+  animation: progress-badge-glow 0.65s ease-out;
+}
+
 .nft-score-badge {
   position: absolute;
   top: 10px;
@@ -647,6 +690,119 @@ a.icon-btn {
   z-index: 999;
   text-align: center;
   pointer-events: none;
+}
+
+/* ——— Welcome intro (centered modal, Flex Grid–style) ——— */
+.intro-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.intro-modal.is-open {
+  display: flex;
+}
+
+.intro-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 16, 32, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.intro-modal__card {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 96vw);
+  max-height: min(90dvh, 720px);
+  overflow: auto;
+  border-radius: 28px;
+  padding: 34px 30px 28px;
+  background: linear-gradient(180deg, var(--lo-blue-mid) 0%, var(--lo-blue-deep) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(15, 47, 110, 0.2);
+  text-align: center;
+}
+
+.intro-modal__logos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+  margin-bottom: 14px;
+}
+
+.intro-modal__logos .intro-modal__lo-png {
+  margin-bottom: 10px;
+  transform: translateY(-4px);
+}
+
+.intro-modal__logos .intro-modal__logo {
+  margin-top: 0;
+}
+
+.intro-modal__logos .intro-modal__brand {
+  margin-top: -6px;
+}
+
+/* Same size relationship as main hero `.logo--hero` + `.logo--brand` */
+.intro-modal__logo {
+  width: min(184px, 48vw);
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(15, 47, 110, 0.35));
+}
+
+.intro-modal__lo-png {
+  width: min(136px, 36vw);
+  height: auto;
+  max-height: 148px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(15, 47, 110, 0.32));
+}
+
+.intro-modal__brand {
+  width: 100%;
+  height: auto;
+  max-height: 110px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(15, 47, 110, 0.28));
+}
+
+.intro-modal__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.intro-modal__body-line {
+  margin: 0;
+  max-width: 36ch;
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.94);
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.25);
+}
+
+.intro-modal__continue {
+  width: 100%;
+  margin-top: 22px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 18px;
 }
 
 /* ——— Share button + sheet ——— */
@@ -1314,6 +1470,21 @@ a.icon-btn {
   }
 
   .logo--brand {
+    width: min(380px, 72vw);
+    max-height: 130px;
+  }
+
+  .intro-modal__logo {
+    width: min(208px, 22vw);
+    max-height: 220px;
+  }
+
+  .intro-modal__lo-png {
+    width: min(156px, 17vw);
+    max-height: 168px;
+  }
+
+  .intro-modal__brand {
     width: min(380px, 72vw);
     max-height: 130px;
   }
