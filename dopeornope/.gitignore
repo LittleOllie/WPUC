@@ -1,0 +1,2 @@
+# Optional: move Alchemy key out of nftLoader.js into this file (not committed) and load it via a tiny script tag.
+alchemy-config.local.js

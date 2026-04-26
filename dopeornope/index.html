@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Dope or Nope (by Little Ollie Labs)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- SCREEN 1: Loading -->
+    <section id="screen-loading" class="screen screen--active" aria-label="Loading">
+      <div class="center-stack">
+        <div class="lo-logo-pair">
+          <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img
+            class="logo logo--brand"
+            src="./assets/dopeornope.png"
+            alt="Dope or Nope"
+            width="320"
+            height="120"
+          />
+        </div>
+        <p class="muted">Loading the vibes...</p>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: Main rating -->
+    <section id="screen-main" class="screen" aria-label="Rate NFTs">
+      <header class="lo-hero" aria-label="Dope or Nope by Little Ollie Labs">
+        <div class="lo-logo-pair">
+          <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img
+            class="logo logo--brand"
+            src="./assets/dopeornope.png"
+            alt="Dope or Nope"
+            width="320"
+            height="120"
+          />
+        </div>
+        <div class="lo-subtitle">by Little Ollie Labs</div>
+        <p id="microtext" class="lo-microtext" aria-live="polite">Dope or Nope? 🤔</p>
+      </header>
+
+      <main class="content">
+        <div class="card">
+          <div class="nft-stage" aria-live="polite">
+            <img id="nft-image" class="nft-image" alt="NFT" />
+            <div id="nft-image-skeleton" class="nft-skeleton" aria-hidden="true"></div>
+          </div>
+          <div id="nft-collection" class="collection">—</div>
+        </div>
+
+        <div class="buttons">
+          <button id="btn-hot" class="btn btn--accent" type="button">
+            🔥 Dope
+          </button>
+          <button id="btn-cold" class="btn btn--primary" type="button">
+            🧊 Nope
+          </button>
+        </div>
+
+        <button id="btn-add" class="btn btn--ghost" type="button">➕ Add Your NFTs</button>
+      </main>
+
+      <button id="btn-share" class="share-btn" type="button" aria-label="Share this result">
+        Share this result
+      </button>
+
+      <div id="score-overlay" class="score-overlay" aria-hidden="true">
+        <div class="score-overlay__card">
+          <div id="score-title" class="score-title">🔥 0.0</div>
+          <div id="score-subtitle" class="score-subtitle">Dope Score</div>
+          <div id="score-votes" class="score-votes">0 votes</div>
+        </div>
+      </div>
+
+      <div id="share-sheet" class="share-sheet" aria-hidden="true" role="dialog" aria-label="Share">
+        <div class="share-sheet__backdrop" data-close="true"></div>
+        <div class="share-sheet__card">
+          <div class="share-sheet__header">
+            <div class="share-sheet__title">Share</div>
+            <button id="btn-share-close" class="share-close" type="button" aria-label="Close">✕</button>
+          </div>
+          <img id="share-preview" class="share-preview" alt="Share preview" />
+          <div class="share-actions">
+            <button id="btn-share-native" class="btn btn--accent" type="button">Share</button>
+            <button id="btn-share-download" class="btn btn--primary" type="button">Download</button>
+          </div>
+          <div class="share-hint">Rate yours → <span id="share-url">https://your-site-url</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: Add your NFTs -->
+    <section id="screen-add" class="screen" aria-label="Add NFTs">
+      <header class="lo-hero lo-hero--add" aria-label="Add NFTs">
+        <button id="btn-back" class="icon-btn icon-btn--overlay" type="button" aria-label="Back">←</button>
+        <div class="lo-logo-pair">
+          <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img
+            class="logo logo--brand"
+            src="./assets/dopeornope.png"
+            alt="Dope or Nope"
+            width="320"
+            height="120"
+          />
+        </div>
+        <div class="lo-subtitle">by Little Ollie Labs</div>
+        <div class="title title--on-lo">Add Your NFTs</div>
+        <div class="subtitle subtitle--small subtitle--on-lo">Pick up to 10</div>
+      </header>
+
+      <main class="content">
+        <div class="input-row">
+          <label class="field">
+            <span class="field__label">Wallet</span>
+            <input
+              id="wallet-input"
+              class="input"
+              inputmode="text"
+              autocomplete="off"
+              placeholder="Paste wallet address"
+            />
+          </label>
+          <button id="btn-load-wallet" class="btn btn--primary btn--compact" type="button">
+            Load NFTs
+          </button>
+        </div>
+
+        <p id="add-nft-message" class="add-nft-message" role="status" aria-live="polite"></p>
+
+        <div class="helper">
+          Enter an Ethereum (0x…) wallet. NFTs load via Alchemy (restrict your key by domain in the Alchemy dashboard).
+        </div>
+
+        <div class="grid-wrap">
+          <div id="wallet-grid" class="wallet-nft-area" aria-label="Wallet NFTs"></div>
+        </div>
+
+        <div class="footer-actions">
+          <div id="selected-count" class="selected-count">0 / 10 selected</div>
+          <button id="btn-submit-nfts" class="btn btn--accent" type="button" disabled>
+            Add to Dope or Nope
+          </button>
+          <div id="add-success" class="toast" role="status" aria-live="polite"></div>
+        </div>
+      </main>
+    </section>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
