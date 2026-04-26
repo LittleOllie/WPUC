@@ -18,6 +18,76 @@ let allNFTs = [];
 /** @type {Record<string, any>} */
 let nftMap = {};
 
+/** Shuffled once per cycle; each NFT shown once before reshuffle. */
+/** @type {any[]} */
+let sessionQueue = [];
+const sessionSeen = new Set();
+/** Count of unique NFT ids in the current cycle (for prefetch cap). */
+let sessionUniqueTotal = 0;
+
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function initSessionQueue() {
+  const seen = new Set();
+  const unique = [];
+  for (const n of allNFTs) {
+    if (!n?.id || seen.has(n.id)) continue;
+    seen.add(n.id);
+    unique.push(n);
+  }
+  sessionQueue = shuffleArray(unique);
+  sessionUniqueTotal = unique.length;
+  sessionSeen.clear();
+}
+
+function showSessionCompleteMessage() {
+  const msg = document.createElement("div");
+  msg.className = "session-complete-msg";
+  msg.textContent = "You're all caught up 🔥";
+  document.body.appendChild(msg);
+  window.setTimeout(() => {
+    msg.remove();
+  }, 1200);
+}
+
+function handleSessionComplete() {
+  if (!allNFTs.length) return;
+  showSessionCompleteMessage();
+  initSessionQueue();
+}
+
+function collectionKeyForFeed(nft) {
+  const s = String(nft?.collection ?? "").trim();
+  return s || "Unknown Collection";
+}
+
+/** Prefer an NFT whose collection differs from the last queued (reduces back-to-back same collection). */
+function getNextNFT(avoidCollectionKey) {
+  if (!allNFTs.length) return null;
+  if (!sessionQueue.length) {
+    handleSessionComplete();
+  }
+  if (!sessionQueue.length) return null;
+
+  const avoid = (avoidCollectionKey || "").trim() || null;
+  let pickIdx = 0;
+  if (avoid) {
+    const idx = sessionQueue.findIndex((n) => collectionKeyForFeed(n) !== avoid);
+    if (idx !== -1) pickIdx = idx;
+  }
+
+  const nft = sessionQueue.splice(pickIdx, 1)[0];
+  if (nft?.id != null) sessionSeen.add(nft.id);
+  return nft;
+}
+
 async function loadNFTsFromDB() {
   const q = query(collection(db, "nfts"), limit(200));
   const snapshot = await getDocs(q);
@@ -112,6 +182,9 @@ async function appMain() {
   const walletInput = $("wallet-input");
   const btnLoadWallet = $("btn-load-wallet");
   const walletGrid = $("wallet-grid");
+  const collectionSearchWrap = $("collection-search-wrap");
+  const collectionSearch = $("collection-search");
+  const walletLoadingEl = $("wallet-loading");
   const addNftMessage = $("add-nft-message");
   const selectedCount = $("selected-count");
   const btnSubmitNFTs = $("btn-submit-nfts");
@@ -229,49 +302,6 @@ async function appMain() {
     }
   }
 
-  function pickPool() {
-    return allNFTs;
-  }
-
-  function pickFromPool(pool) {
-    if (!pool || pool.length === 0) return null;
-
-    // Priority boost: if <5 votes, always prioritize these first
-    const superFresh = pool.filter((n) => totalVotes(n) < 5);
-    if (superFresh.length > 0) return superFresh[Math.floor(Math.random() * superFresh.length)] || null;
-
-    const lowVote = pool.filter((n) => totalVotes(n) < 10);
-    const preferLow = lowVote.length > 0 && Math.random() < 0.5;
-    const source = preferLow ? lowVote : pool;
-    return source[Math.floor(Math.random() * source.length)] || null;
-  }
-
-  function feedQueuedIds() {
-    return new Set(feedQueue.map((n) => n.id));
-  }
-
-  function getNextNFT() {
-    const pool = pickPool();
-    if (!pool || pool.length === 0) return null;
-
-    const blocked = new Set([...recentlySeen, ...feedQueuedIds()]);
-
-    const maxAttempts = 60;
-    for (let i = 0; i < maxAttempts; i++) {
-      const nft = pickFromPool(pool);
-      if (!nft) break;
-      if (!blocked.has(nft.id)) return nft;
-    }
-
-    const candidates = pool.filter((n) => !blocked.has(n.id));
-    if (candidates.length > 0) {
-      return candidates[Math.floor(Math.random() * candidates.length)] || null;
-    }
-
-    // Tiny pool: everything is blocked — allow least-worst random from pool
-    return pool[Math.floor(Math.random() * pool.length)] || null;
-  }
-
   function preloadImage(url) {
     if (!url) return Promise.resolve(null);
     if (preloadCache.has(url)) return Promise.resolve(preloadCache.get(url));
@@ -289,9 +319,14 @@ async function appMain() {
   }
 
   async function ensureQueue(targetLen) {
+    if (!allNFTs.length) return;
+    if (!sessionUniqueTotal) return;
+    const cap = Math.min(targetLen, sessionUniqueTotal);
     let guard = 0;
-    while (feedQueue.length < targetLen && guard++ < 100) {
-      const next = getNextNFT();
+    while (feedQueue.length < cap && guard++ < 100) {
+      const last = feedQueue[feedQueue.length - 1];
+      const avoidCollection = last ? collectionKeyForFeed(last) : null;
+      const next = getNextNFT(avoidCollection);
       if (!next) break;
       if (feedQueue.some((n) => n.id === next.id)) continue;
       feedQueue.push(next);
@@ -510,6 +545,7 @@ async function appMain() {
     updateRecentLimit();
     if (resetRecent) recentlySeen.length = 0;
     feedQueue = [];
+    initSessionQueue();
     await ensureQueue(4);
     if (feedQueue[0]) await renderNFT(feedQueue[0]);
     for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
@@ -611,6 +647,10 @@ async function appMain() {
     btnSubmitNFTs.disabled = count === 0;
   }
 
+  function isNftAlreadyInApp(nft) {
+    return Boolean(nft?.id && nftMap[nft.id]);
+  }
+
   function toggleSelectNFT(nft) {
     if (selectedNFTs[nft.id]) {
       delete selectedNFTs[nft.id];
@@ -628,16 +668,48 @@ async function appMain() {
     updateSelectedCount();
   }
 
+  function setCollectionSearchVisible(visible) {
+    if (!collectionSearchWrap) return;
+    collectionSearchWrap.classList.toggle("is-hidden", !visible);
+    collectionSearchWrap.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (!visible && collectionSearch) collectionSearch.value = "";
+  }
+
+  function setWalletLoading(visible) {
+    if (!walletLoadingEl) return;
+    walletLoadingEl.classList.toggle("is-hidden", !visible);
+    walletLoadingEl.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (visible) walletLoadingEl.setAttribute("aria-busy", "true");
+    else walletLoadingEl.removeAttribute("aria-busy");
+  }
+
+  function getFilteredCollectionEntries(sortedEntries) {
+    const q = (collectionSearch?.value || "").trim().toLowerCase();
+    if (!q) return sortedEntries;
+    return sortedEntries.filter(([name]) => String(name).toLowerCase().includes(q));
+  }
+
   function renderCollectionList(groups) {
     activeCollectionName = null;
     walletGrid.innerHTML = "";
 
-    const entries = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+    const sorted = Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+    const entries = getFilteredCollectionEntries(sorted);
 
-    if (!entries.length) {
+    if (!sorted.length) {
+      setCollectionSearchVisible(false);
       showAddNFTMessage("No collections found.");
       return;
     }
+
+    if (!entries.length) {
+      setCollectionSearchVisible(true);
+      showAddNFTMessage("No collections match your search.");
+      return;
+    }
+
+    setCollectionSearchVisible(true);
+    showAddNFTMessage("");
 
     const wrapper = document.createElement("div");
     wrapper.className = "collection-list";
@@ -670,6 +742,7 @@ async function appMain() {
   }
 
   function renderCollectionNFTs(collectionName, nfts) {
+    setCollectionSearchVisible(false);
     walletGrid.innerHTML = "";
 
     const header = document.createElement("div");
@@ -694,6 +767,9 @@ async function appMain() {
     grid.className = "nft-select-grid";
 
     for (const nft of nfts) {
+      const wrap = document.createElement("div");
+      wrap.className = "nft-select-tile-wrap";
+
       const tile = document.createElement("button");
       tile.className = "nft-select-tile";
       tile.type = "button";
@@ -701,24 +777,131 @@ async function appMain() {
 
       if (selectedNFTs[nft.id]) tile.classList.add("selected");
 
+      const inApp = isNftAlreadyInApp(nft);
+      if (inApp) {
+        tile.classList.add("nft-select-tile--in-app");
+        tile.setAttribute("aria-label", `${nft.name || "NFT"} — already in Dope or Nope`);
+      }
+
       const img = document.createElement("img");
       img.alt = nft.name || "NFT";
       img.loading = "lazy";
-      img.src = nft.image || "";
+      img.decoding = "async";
 
       const check = document.createElement("span");
       check.className = "selected-check";
       check.textContent = "✓";
 
+      const retryBtn = document.createElement("button");
+      retryBtn.type = "button";
+      retryBtn.className = "nft-tile-retry is-hidden";
+      retryBtn.textContent = "Refresh";
+      retryBtn.setAttribute("aria-label", `Retry image for ${nft.name || "NFT"}`);
+
       tile.appendChild(img);
+      if (inApp) {
+        const badge = document.createElement("span");
+        badge.className = "nft-in-app-badge";
+        badge.textContent = "In app";
+        tile.appendChild(badge);
+      }
       tile.appendChild(check);
 
+      wrap.appendChild(tile);
+      wrap.appendChild(retryBtn);
+
+      const baseUrl = String(nft.image || "").trim();
+
+      function finalizeImageOk() {
+        tile.disabled = false;
+        tile.classList.remove("nft-select-tile--image-loading", "nft-select-tile--image-failed");
+        wrap.classList.remove("nft-select-tile-wrap--failed");
+        retryBtn.classList.add("is-hidden");
+      }
+
+      function finalizeImageFail() {
+        tile.disabled = true;
+        tile.classList.remove("nft-select-tile--image-loading");
+        tile.classList.add("nft-select-tile--image-failed");
+        wrap.classList.add("nft-select-tile-wrap--failed");
+        if (baseUrl) retryBtn.classList.remove("is-hidden");
+        else retryBtn.classList.add("is-hidden");
+        if (selectedNFTs[nft.id]) {
+          delete selectedNFTs[nft.id];
+          tile.classList.remove("selected");
+          updateSelectedCount();
+        }
+      }
+
+      let imageResolved = false;
+
+      function clearImgHandlers() {
+        img.onload = null;
+        img.onerror = null;
+      }
+
+      function armImgHandlers() {
+        imageResolved = false;
+        img.onload = () => {
+          if (imageResolved) return;
+          imageResolved = true;
+          clearImgHandlers();
+          finalizeImageOk();
+        };
+        img.onerror = () => {
+          if (imageResolved) return;
+          imageResolved = true;
+          clearImgHandlers();
+          finalizeImageFail();
+        };
+      }
+
+      function startImageLoad(url) {
+        if (!url) {
+          tile.classList.add("nft-select-tile--image-loading");
+          tile.disabled = true;
+          finalizeImageFail();
+          return;
+        }
+        tile.disabled = true;
+        tile.classList.add("nft-select-tile--image-loading");
+        tile.classList.remove("nft-select-tile--image-failed");
+        wrap.classList.remove("nft-select-tile-wrap--failed");
+        retryBtn.classList.add("is-hidden");
+        armImgHandlers();
+        img.src = url;
+        window.requestAnimationFrame(() => {
+          if (imageResolved) return;
+          if (img.complete) {
+            imageResolved = true;
+            clearImgHandlers();
+            if (img.naturalWidth > 0) finalizeImageOk();
+            else finalizeImageFail();
+          }
+        });
+      }
+
+      startImageLoad(baseUrl);
+
+      retryBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const u = baseUrl;
+        if (!u) {
+          startImageLoad("");
+          return;
+        }
+        const join = u.includes("?") ? "&" : "?";
+        startImageLoad(`${u}${join}_retry=${Date.now()}`);
+      });
+
       tile.addEventListener("click", () => {
+        if (tile.disabled || tile.classList.contains("nft-select-tile--image-failed")) return;
         toggleSelectNFT(nft);
         tile.classList.toggle("selected", !!selectedNFTs[nft.id]);
       });
 
-      grid.appendChild(tile);
+      grid.appendChild(wrap);
     }
 
     walletGrid.appendChild(header);
@@ -733,10 +916,9 @@ async function appMain() {
       return;
     }
 
-    const prevLabel = btnLoadWallet.textContent;
     try {
       btnLoadWallet.disabled = true;
-      btnLoadWallet.textContent = "Loading...";
+      setWalletLoading(true);
       showAddNFTMessage("");
 
       const nfts = await loadNFTsFromWallet(wallet);
@@ -745,9 +927,8 @@ async function appMain() {
         walletLoadedNFTs = [];
         collectionGroups = {};
         walletGrid.innerHTML = "";
+        setCollectionSearchVisible(false);
         showAddNFTMessage("No NFTs found for this wallet.");
-        btnLoadWallet.disabled = false;
-        btnLoadWallet.textContent = prevLabel;
         return;
       }
 
@@ -771,6 +952,7 @@ async function appMain() {
     } finally {
       btnLoadWallet.disabled = false;
       btnLoadWallet.textContent = "Load NFTs";
+      setWalletLoading(false);
     }
   }
 
@@ -828,6 +1010,7 @@ async function appMain() {
     collectionGroups = {};
     activeCollectionName = null;
     walletGrid.innerHTML = "";
+    setCollectionSearchVisible(false);
     showAddNFTMessage("");
     updateSelectedCount();
     addSuccess.textContent = "";
@@ -842,6 +1025,12 @@ async function appMain() {
   btnLoadWallet.addEventListener("click", () => void handleLoadWalletNFTs());
 
   btnSubmitNFTs.addEventListener("click", () => void handleSubmitSelectedNFTs());
+
+  collectionSearch?.addEventListener("input", () => {
+    if (!collectionSearchWrap || collectionSearchWrap.classList.contains("is-hidden")) return;
+    if (!Object.keys(collectionGroups).length) return;
+    renderCollectionList(collectionGroups);
+  });
 
   // --- Boot ---
   wireTapScale(btnHot);
@@ -926,6 +1115,7 @@ async function appMain() {
       for (const n of allNFTs) nftMap[n.id] = n;
       updateRecentLimit();
       feedQueue = [];
+      initSessionQueue();
       await ensureQueue(4);
       if (feedQueue[0]) await renderNFT(feedQueue[0]);
       for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);

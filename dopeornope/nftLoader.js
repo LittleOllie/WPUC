@@ -64,21 +64,39 @@ export async function loadNFTsFromWallet(wallet) {
   }
 
   const key = alchemyNftKey();
-  const url = `https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner?owner=${encodeURIComponent(
-    cleanWallet
-  )}&withMetadata=true&pageSize=100`;
 
-  const res = await fetch(url);
+  let allOwned = [];
+  let pageKey = null;
+  let pageCount = 0;
+  const MAX_PAGES = 10; // safety limit
 
-  if (!res.ok) {
-    throw new Error("NFT_FETCH_FAILED");
-  }
+  do {
+    let url = `https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner?owner=${encodeURIComponent(
+      cleanWallet
+    )}&withMetadata=true&pageSize=100`;
 
-  const data = await res.json();
+    if (pageKey) {
+      url += `&pageKey=${encodeURIComponent(pageKey)}`;
+    }
 
-  const ownedNfts = data?.ownedNfts || [];
+    const res = await fetch(url);
 
-  return ownedNfts
+    if (!res.ok) {
+      throw new Error("NFT_FETCH_FAILED");
+    }
+
+    const data = await res.json();
+
+    const owned = data?.ownedNfts || [];
+    allOwned = allOwned.concat(owned);
+
+    pageKey = data?.pageKey || null;
+    pageCount++;
+  } while (pageKey && pageCount < MAX_PAGES);
+
+  console.log(`Loaded ${allOwned.length} NFTs across ${pageCount} pages`);
+
+  return allOwned
     .map((nft) => {
       const contractAddr = nft?.contract?.address?.toLowerCase() || "";
       const tokenId = String(nft?.tokenId ?? "");

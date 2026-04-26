@@ -134,20 +134,40 @@
 
         <p id="add-nft-message" class="add-nft-message" role="status" aria-live="polite"></p>
 
-        <div class="helper">
-          Enter an Ethereum (0x…) wallet. NFTs load via Alchemy (restrict your key by domain in the Alchemy dashboard).
-        </div>
-
         <div class="grid-wrap">
+          <div class="add-top-actions" aria-label="Submit selected NFTs">
+            <button id="btn-submit-nfts" class="btn btn--accent" type="button" disabled>
+              Add to Dope or Nope
+            </button>
+            <div id="selected-count" class="selected-count">0 / 10 selected</div>
+            <div id="add-success" class="toast" role="status" aria-live="polite"></div>
+          </div>
+          <div id="collection-search-wrap" class="collection-search-wrap is-hidden" aria-hidden="true">
+            <label class="collection-search-label" for="collection-search">Search collections</label>
+            <input
+              id="collection-search"
+              class="input collection-search-input"
+              type="search"
+              autocomplete="off"
+              placeholder="Search collections…"
+              enterkeyhint="search"
+            />
+          </div>
           <div id="wallet-grid" class="wallet-nft-area" aria-label="Wallet NFTs"></div>
-        </div>
-
-        <div class="footer-actions">
-          <div id="selected-count" class="selected-count">0 / 10 selected</div>
-          <button id="btn-submit-nfts" class="btn btn--accent" type="button" disabled>
-            Add to Dope or Nope
-          </button>
-          <div id="add-success" class="toast" role="status" aria-live="polite"></div>
+          <div
+            id="wallet-loading"
+            class="wallet-loading is-hidden"
+            aria-hidden="true"
+            aria-label="Loading wallet NFTs"
+          >
+            <div class="wallet-loading__inner">
+              <div class="wallet-loading__ring" aria-hidden="true">
+                <span class="wallet-loading__orbit"></span>
+                <img class="wallet-loading__logo" src="./assets/LO.png" alt="" width="96" height="96" />
+              </div>
+              <p class="wallet-loading__label">Loading</p>
+            </div>
+          </div>
         </div>
       </main>
     </section>

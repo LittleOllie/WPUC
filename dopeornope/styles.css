@@ -139,10 +139,14 @@ a.icon-btn {
 
 .lo-hero--add .title {
   margin-top: 6px;
+  font-size: 22px;
+  letter-spacing: 0.02em;
 }
 
 .lo-hero--add .subtitle--small {
   margin-top: -2px;
+  font-size: 16px;
+  font-weight: 900;
 }
 
 .lo-logo-pair {
@@ -252,6 +256,42 @@ a.icon-btn {
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.96);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+/* Main rating: yellow “mat” behind the NFT art */
+#screen-main .nft-stage {
+  background: linear-gradient(
+    165deg,
+    var(--lo-yellow-bright) 0%,
+    var(--lo-yellow) 42%,
+    rgba(255, 200, 60, 0.92) 100%
+  );
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    inset 0 -8px 24px rgba(180, 140, 0, 0.18);
+}
+
+/* Main rating: whole card (padding + label strip) reads yellow, not blue glass */
+#screen-main .card {
+  padding: 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 236, 150, 0.96) 0%,
+    rgba(255, 216, 77, 0.94) 38%,
+    rgba(255, 200, 70, 0.93) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 18px 50px rgba(15, 47, 110, 0.2), 0 8px 22px rgba(180, 140, 0, 0.28);
+}
+
+#screen-main .card::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 48%);
+  opacity: 0.45;
+}
+
+#screen-main .card::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  opacity: 0.65;
 }
 
 .nft-image {
@@ -391,6 +431,16 @@ a.icon-btn {
   color: var(--text-on-lo);
   text-align: center;
   text-shadow: 0 1px 2px rgba(15, 47, 110, 0.4);
+}
+
+/* Main rating: collection name under the NFT (only #nft-collection uses .collection) */
+#screen-main #nft-collection.collection {
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  margin-top: 12px;
+  color: var(--lo-navy);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .buttons {
@@ -580,6 +630,23 @@ a.icon-btn {
   font-weight: 800;
   color: #3d5a80;
   opacity: 0.92;
+}
+
+.session-complete-msg {
+  position: fixed;
+  bottom: max(20%, calc(env(safe-area-inset-bottom) + 120px));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  background: #ffd84d;
+  color: #111;
+  font-weight: 800;
+  padding: 12px 18px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  text-align: center;
+  pointer-events: none;
 }
 
 /* ——— Share button + sheet ——— */
@@ -800,16 +867,8 @@ a.icon-btn {
   box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.35);
 }
 
-.helper {
-  margin-top: -4px;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--muted-on-lo);
-  line-height: 1.4;
-  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.25);
-}
-
 .grid-wrap {
+  position: relative;
   background: var(--glass);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
@@ -817,6 +876,116 @@ a.icon-btn {
   padding: 12px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wallet-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: rgba(15, 47, 110, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.wallet-loading.is-hidden {
+  display: none;
+}
+
+.wallet-loading__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.wallet-loading__ring {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+}
+
+.wallet-loading__orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.22);
+  border-top-color: var(--lo-yellow);
+  border-right-color: rgba(255, 216, 77, 0.35);
+  animation: wallet-load-spin 0.9s linear infinite;
+  box-sizing: border-box;
+}
+
+.wallet-loading__logo {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(15, 47, 110, 0.35));
+}
+
+.wallet-loading__label {
+  margin: 0;
+  font-weight: 1000;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-lo);
+  text-shadow: 0 2px 4px rgba(15, 47, 110, 0.45);
+}
+
+@keyframes wallet-load-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.add-top-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.add-top-actions .selected-count {
+  text-align: left;
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+.add-top-actions .toast {
+  text-align: left;
+}
+
+.collection-search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collection-search-wrap.is-hidden {
+  display: none;
+}
+
+.collection-search-label {
+  font-weight: 900;
+  font-size: 12px;
+  color: var(--muted-on-lo);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
+}
+
+.collection-search-input {
+  width: 100%;
 }
 
 .nft-grid {
@@ -914,13 +1083,6 @@ a.icon-btn {
   text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
 }
 
-.helper code {
-  font-size: 0.85em;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
 .wallet-nft-area {
   min-height: 120px;
 }
@@ -934,19 +1096,18 @@ a.icon-btn {
 
 .collection-item {
   width: 100%;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.55);
   border-radius: 18px;
   padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 10px 26px rgba(15, 47, 110, 0.18);
   cursor: pointer;
   font: inherit;
   -webkit-tap-highlight-color: transparent;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, var(--lo-yellow-bright) 0%, var(--lo-yellow) 100%);
+  color: var(--lo-navy);
+  box-shadow: 0 7px 0 rgba(180, 140, 0, 0.35), 0 10px 26px rgba(15, 47, 110, 0.16);
   transition: transform 120ms ease, filter 160ms ease, border-color 160ms ease;
 }
 
@@ -960,16 +1121,15 @@ a.icon-btn {
 
 .collection-name {
   font-weight: 800;
-  color: var(--text-on-lo);
+  color: var(--lo-navy);
   text-align: left;
-  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
 }
 
 .collection-count {
-  font-weight: 700;
-  color: var(--lo-yellow);
+  font-weight: 1000;
+  color: var(--lo-navy);
+  opacity: 0.82;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
 }
 
 .collection-picker-header {
@@ -1007,6 +1167,17 @@ a.icon-btn {
   gap: 10px;
 }
 
+.nft-select-tile-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+.nft-select-tile-wrap > .nft-select-tile {
+  width: 100%;
+  height: 100%;
+}
+
 .nft-select-tile {
   position: relative;
   border: 3px solid transparent;
@@ -1014,11 +1185,55 @@ a.icon-btn {
   overflow: hidden;
   background: rgba(255, 255, 255, 0.32);
   padding: 0;
-  aspect-ratio: 1 / 1;
   cursor: pointer;
   font: inherit;
   -webkit-tap-highlight-color: transparent;
   box-shadow: 0 6px 18px rgba(15, 47, 110, 0.18);
+}
+
+.nft-select-tile--image-loading {
+  cursor: wait;
+}
+
+.nft-select-tile--image-failed {
+  cursor: default;
+}
+
+.nft-select-tile:disabled {
+  opacity: 0.78;
+}
+
+.nft-select-tile-wrap--failed .nft-select-tile {
+  filter: grayscale(0.35);
+}
+
+.nft-tile-retry {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  z-index: 6;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-weight: 1000;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--lo-yellow-bright) 0%, var(--lo-yellow) 100%);
+  color: var(--lo-navy);
+  box-shadow: 0 5px 0 rgba(180, 140, 0, 0.35);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nft-tile-retry:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.nft-tile-retry.is-hidden {
+  display: none;
 }
 
 .nft-select-tile img {
@@ -1033,11 +1248,45 @@ a.icon-btn {
   box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.35);
 }
 
+.nft-select-tile--in-app {
+  border-color: rgba(30, 115, 255, 0.45);
+  box-shadow:
+    inset 0 0 0 2px rgba(30, 115, 255, 0.22),
+    0 6px 18px rgba(15, 47, 110, 0.22);
+}
+
+.nft-select-tile--in-app img {
+  opacity: 0.88;
+}
+
+.nft-select-tile--in-app.selected {
+  border-color: #ffd84d;
+  box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.35);
+}
+
+.nft-in-app-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--lo-blue-primary);
+  box-shadow: 0 2px 8px rgba(15, 47, 110, 0.2);
+  pointer-events: none;
+}
+
 .selected-check {
   display: none;
   position: absolute;
   top: 6px;
   right: 6px;
+  z-index: 3;
   background: #ffd84d;
   color: #111;
   border-radius: 999px;
