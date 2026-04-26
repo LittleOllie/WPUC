@@ -79,6 +79,7 @@ async function voteNFT(nft, isHot) {
   nftMap[nft.id] = nft;
 }
 
+async function appMain() {
   const screenLoading = $("screen-loading");
   const screenMain = $("screen-main");
   const screenAdd = $("screen-add");
@@ -86,6 +87,9 @@ async function voteNFT(nft, isHot) {
   const nftImg = $("nft-image");
   const nftSkeleton = $("nft-image-skeleton");
   const nftCollection = $("nft-collection");
+  const nftScoreBadge = $("nft-score-badge");
+  const nftScoreValue = $("nft-score-value");
+  const nftScoreVotes = $("nft-score-votes");
 
   const btnHot = $("btn-hot");
   const btnCold = $("btn-cold");
@@ -175,7 +179,6 @@ async function voteNFT(nft, isHot) {
   ];
 
   let lastResult = null;
-  let shareHideT = 0;
   let shareBlobUrl = "";
 
   function showScreen(name) {
@@ -203,6 +206,27 @@ async function voteNFT(nft, isHot) {
     const cold = nft.votesCold || 0;
     const total = hot + cold;
     return ((hot + 3) / (total + 6)) * 10;
+  }
+
+  function updateNftScoreBadge(nft) {
+    if (!nftScoreValue) return;
+    if (!nft) {
+      nftScoreValue.textContent = "—";
+      if (nftScoreVotes) nftScoreVotes.textContent = "";
+      return;
+    }
+    const score = vibeScore(nft);
+    const votes = totalVotes(nft);
+    nftScoreValue.textContent = score.toFixed(1);
+    if (nftScoreVotes) {
+      nftScoreVotes.textContent = votes === 1 ? "1 vote" : `${votes} votes`;
+    }
+    if (nftScoreBadge) {
+      nftScoreBadge.setAttribute(
+        "aria-label",
+        `Dope score ${score.toFixed(1)}, ${votes} vote${votes === 1 ? "" : "s"}`
+      );
+    }
   }
 
   function pickPool() {
@@ -286,6 +310,7 @@ async function voteNFT(nft, isHot) {
     if (!nft) return;
 
     nftCollection.textContent = nft.collection || "—";
+    updateNftScoreBadge(nft);
     nftSkeleton.classList.remove("is-hidden");
     nftImg.classList.add("is-reset");
     nftImg.classList.remove("is-ready", "vote-hot", "vote-cold");
@@ -342,14 +367,6 @@ async function voteNFT(nft, isHot) {
       microtext.textContent = next;
       microtext.classList.remove("is-fading");
     }, 180);
-  }
-
-  function showShareCTA(result) {
-    if (!btnShare) return;
-    lastResult = result;
-    btnShare.classList.add("is-visible");
-    window.clearTimeout(shareHideT);
-    shareHideT = window.setTimeout(() => btnShare.classList.remove("is-visible"), 2000);
   }
 
   function closeShareSheet() {
@@ -515,6 +532,8 @@ async function voteNFT(nft, isHot) {
 
     const score = vibeScore(currentNFT);
     const votes = totalVotes(currentNFT);
+    lastResult = { nft: currentNFT, kind, score, votes };
+    updateNftScoreBadge(currentNFT);
 
     nftImg.classList.add(kind === "hot" ? "vote-hot" : "vote-cold");
     showOverlay(kind, score, votes);
@@ -523,8 +542,6 @@ async function voteNFT(nft, isHot) {
     await new Promise((r) => setTimeout(r, 800));
 
     hideOverlay();
-    // Share prompt right after score fades
-    window.setTimeout(() => showShareCTA({ nft: currentNFT, kind, score, votes }), 140);
 
     await advanceFeed();
 
@@ -922,3 +939,6 @@ async function voteNFT(nft, isHot) {
   } else {
     void boot();
   }
+}
+
+void appMain();

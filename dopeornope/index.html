@@ -26,7 +26,8 @@
 
     <!-- SCREEN 2: Main rating -->
     <section id="screen-main" class="screen" aria-label="Rate NFTs">
-      <header class="lo-hero" aria-label="Dope or Nope by Little Ollie Labs">
+      <header class="lo-hero lo-hero--main" aria-label="Dope or Nope by Little Ollie Labs">
+        <a href="../links/" class="icon-btn icon-btn--overlay" aria-label="Back to Links">←</a>
         <div class="lo-logo-pair">
           <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
           <img
@@ -44,6 +45,10 @@
       <main class="content">
         <div class="card">
           <div class="nft-stage" aria-live="polite">
+            <div id="nft-score-badge" class="nft-score-badge" aria-label="Dope score">
+              <span id="nft-score-value" class="nft-score-badge__value">—</span>
+              <span id="nft-score-votes" class="nft-score-badge__votes"></span>
+            </div>
             <img id="nft-image" class="nft-image" alt="NFT" />
             <div id="nft-image-skeleton" class="nft-skeleton" aria-hidden="true"></div>
           </div>
