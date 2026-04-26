@@ -65,6 +65,10 @@
           </button>
         </div>
 
+        <button id="btn-round-replay" class="btn btn--ghost btn-round-replay" type="button" hidden>
+          🔁 Shuffle & vote again
+        </button>
+
         <button id="btn-add" class="btn btn--ghost" type="button">➕ Add Your NFTs</button>
       </main>
 
@@ -200,6 +204,37 @@
           <p class="intro-modal__body-line">Add your own NFTs anytime from the button below.</p>
         </div>
         <button id="btn-intro-continue" class="btn btn--accent intro-modal__continue" type="button">Continue</button>
+      </div>
+    </div>
+
+    <div
+      id="round-complete-modal"
+      class="intro-modal intro-modal--round-complete"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="round-complete-title"
+    >
+      <div class="intro-modal__backdrop" data-round-complete-close="backdrop"></div>
+      <div class="intro-modal__card">
+        <div class="intro-modal__logos">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img
+            class="intro-modal__brand"
+            src="./assets/dopeornope.png"
+            alt="Dope or Nope"
+            width="320"
+            height="120"
+          />
+        </div>
+        <h2 id="round-complete-title" class="intro-modal__title">Round complete</h2>
+        <div class="intro-modal__info">
+          <p id="round-complete-line" class="intro-modal__body-line">You've rated every NFT in this round.</p>
+          <p class="intro-modal__body-line">Want to shuffle and go through them again?</p>
+        </div>
+        <button id="btn-round-again" class="btn btn--accent intro-modal__continue" type="button">Shuffle & vote again</button>
+        <button id="btn-round-done" class="btn btn--ghost intro-modal__cta-secondary" type="button">Not now</button>
       </div>
     </div>
 

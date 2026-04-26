@@ -80,22 +80,6 @@ function initSessionQueue() {
   updateProgressBadge();
 }
 
-function showSessionCompleteMessage() {
-  const msg = document.createElement("div");
-  msg.className = "session-complete-msg";
-  msg.textContent = "You're all caught up 🔥";
-  document.body.appendChild(msg);
-  window.setTimeout(() => {
-    msg.remove();
-  }, 1200);
-}
-
-function handleSessionComplete() {
-  if (!allNFTs.length) return;
-  showSessionCompleteMessage();
-  initSessionQueue();
-}
-
 function collectionKeyForFeed(nft) {
   const s = String(nft?.collection ?? "").trim();
   return s || "Unknown Collection";
@@ -104,9 +88,6 @@ function collectionKeyForFeed(nft) {
 /** Prefer an NFT whose collection differs from the last queued (reduces back-to-back same collection). */
 function getNextNFT(avoidCollectionKey) {
   if (!allNFTs.length) return null;
-  if (!sessionQueue.length) {
-    handleSessionComplete();
-  }
   if (!sessionQueue.length) return null;
 
   const avoid = (avoidCollectionKey || "").trim() || null;
@@ -198,6 +179,11 @@ async function appMain() {
   const btnCold = $("btn-cold");
   const btnAdd = $("btn-add");
   const btnBack = $("btn-back");
+  const roundCompleteModal = $("round-complete-modal");
+  const btnRoundAgain = $("btn-round-again");
+  const btnRoundDone = $("btn-round-done");
+  const btnRoundReplay = $("btn-round-replay");
+  const roundCompleteLine = $("round-complete-line");
 
   const overlay = $("score-overlay");
   const overlayTitle = $("score-title");
@@ -552,13 +538,85 @@ async function appMain() {
     return blob;
   }
 
+  function openRoundCompleteModal() {
+    if (!roundCompleteModal) return;
+    const n = sessionSeen.size;
+    if (roundCompleteLine) {
+      roundCompleteLine.textContent =
+        n === 1
+          ? "You've rated every NFT in this round (1 NFT)."
+          : `You've rated every NFT in this round (${n} NFTs).`;
+    }
+    roundCompleteModal.classList.add("is-open");
+    roundCompleteModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+    window.setTimeout(() => btnRoundAgain?.focus(), 50);
+  }
+
+  function closeRoundCompleteModal(showReplayAfter) {
+    if (!roundCompleteModal) return;
+    roundCompleteModal.classList.remove("is-open");
+    roundCompleteModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    if (showReplayAfter && btnRoundReplay && !sessionQueue.length && !feedQueue.length) {
+      btnRoundReplay.removeAttribute("hidden");
+    }
+    if (sessionQueue.length && !feedQueue.length) {
+      void (async () => {
+        await ensureQueue(4);
+        if (!feedQueue[0]) return;
+        await renderNFT(feedQueue[0]);
+        for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+        btnHot.disabled = false;
+        btnCold.disabled = false;
+        if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+      })();
+    }
+  }
+
+  async function startNewVotingRound() {
+    closeRoundCompleteModal(false);
+    if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+    initSessionQueue();
+    feedQueue = [];
+    await ensureQueue(4);
+    if (feedQueue[0]) await renderNFT(feedQueue[0]);
+    for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+    updateProgressBadge();
+    btnHot.disabled = false;
+    btnCold.disabled = false;
+    btnAdd.disabled = false;
+  }
+
   async function advanceFeed() {
     clampRecent(currentNFT?.id);
     feedQueue.shift();
     await ensureQueue(4); // current + next 3
-    await renderNFT(feedQueue[0]);
-    // keep preloading next 3 for smoothness
-    for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+    const next = feedQueue[0];
+    if (next) {
+      await renderNFT(next);
+      for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+      if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+      return true;
+    }
+
+    currentNFT = null;
+    nftImg.removeAttribute("src");
+    nftImg.alt = "";
+    nftImg.classList.remove("is-ready", "vote-hot", "vote-cold");
+    nftImg.classList.add("is-reset");
+    nftSkeleton.classList.add("is-hidden");
+    nftCollection.textContent = allNFTs.length ? "Round complete" : "—";
+    updateNftScoreBadge(null);
+    if (microtext) microtext.textContent = "You're all caught up 🔥";
+    updateProgressBadge();
+
+    if (allNFTs.length && !sessionQueue.length) {
+      openRoundCompleteModal();
+    }
+
+    return false;
   }
 
   async function reloadFromFirestore(options = {}) {
@@ -620,9 +678,15 @@ async function appMain() {
 
     hideOverlay();
 
-    await advanceFeed();
+    const hasNext = await advanceFeed();
 
-    setButtonsEnabled(true);
+    if (hasNext) {
+      setButtonsEnabled(true);
+    } else {
+      btnHot.disabled = true;
+      btnCold.disabled = true;
+      btnAdd.disabled = false;
+    }
     isTransitioning = false;
   }
 
@@ -1141,6 +1205,17 @@ async function appMain() {
   btnHot.addEventListener("click", () => void handleVote("hot"));
   btnCold.addEventListener("click", () => void handleVote("cold"));
 
+  btnRoundAgain?.addEventListener("click", () => void startNewVotingRound());
+  btnRoundReplay?.addEventListener("click", () => void startNewVotingRound());
+  btnRoundDone?.addEventListener("click", () => closeRoundCompleteModal(true));
+
+  roundCompleteModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-round-complete-close") === "backdrop") {
+      closeRoundCompleteModal(true);
+    }
+  });
+
   const FIRESTORE_BOOT_MS = 12000;
 
   function startNftsRealtimeSync() {
@@ -1199,7 +1274,7 @@ async function appMain() {
         const poolGrew = newDenom > prevDenom;
         updateProgressBadge({ glow: poolGrew });
         if (refreshScore && currentNFT) updateNftScoreBadge(currentNFT);
-        if (addedForPrefetch) void ensureQueue(4);
+        if (addedForPrefetch && !roundCompleteModal?.classList.contains("is-open")) void ensureQueue(4);
       },
       (err) => console.warn("NFTs realtime listener:", err)
     );
@@ -1257,6 +1332,10 @@ async function appMain() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (roundCompleteModal?.classList.contains("is-open")) {
+      closeRoundCompleteModal(true);
+      return;
+    }
     if (!introModal?.classList.contains("is-open")) return;
     try {
       sessionStorage.setItem(INTRO_MODAL_KEY, "1");

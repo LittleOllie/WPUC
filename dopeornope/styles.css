@@ -675,23 +675,6 @@ a.icon-btn {
   opacity: 0.92;
 }
 
-.session-complete-msg {
-  position: fixed;
-  bottom: max(20%, calc(env(safe-area-inset-bottom) + 120px));
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: calc(100vw - 32px);
-  background: #ffd84d;
-  color: #111;
-  font-weight: 800;
-  padding: 12px 18px;
-  border-radius: 999px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  z-index: 999;
-  text-align: center;
-  pointer-events: none;
-}
-
 /* ——— Welcome intro (centered modal, Flex Grid–style) ——— */
 .intro-modal {
   position: fixed;
@@ -707,6 +690,10 @@ a.icon-btn {
 
 .intro-modal.is-open {
   display: flex;
+}
+
+.intro-modal--round-complete {
+  z-index: 2100;
 }
 
 .intro-modal__backdrop {
@@ -778,6 +765,16 @@ a.icon-btn {
   filter: drop-shadow(0 8px 18px rgba(15, 47, 110, 0.28));
 }
 
+.intro-modal__title {
+  margin: 0 0 14px;
+  font-weight: 1000;
+  font-size: 1.45rem;
+  letter-spacing: 0.02em;
+  color: var(--text-on-lo);
+  text-shadow: 0 2px 0 rgba(15, 47, 110, 0.35);
+  text-align: center;
+}
+
 .intro-modal__info {
   display: flex;
   flex-direction: column;
@@ -803,6 +800,17 @@ a.icon-btn {
   padding-top: 16px;
   padding-bottom: 16px;
   font-size: 18px;
+}
+
+.intro-modal__cta-secondary {
+  width: 100%;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+
+.btn-round-replay {
+  width: 100%;
+  margin-top: 10px;
 }
 
 /* ——— Share button + sheet ——— */
