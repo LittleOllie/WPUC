@@ -932,7 +932,6 @@ async function mountRoom(app, code, tabFromRoute) {
   const elTitle = $("room-title");
   const elDesc = $("room-desc");
   const btnCopy = $("btn-copy-code");
-  const btnFinish = $("btn-finish");
   const btnFinishResults = $("btn-finish-results");
   const btnDownloadResults = $("btn-download-results");
   const btnRoomHome = $("btn-room-home");
@@ -1487,26 +1486,17 @@ async function mountRoom(app, code, tabFromRoute) {
     renderVoteUI();
     renderResultsUI();
 
-    // Admin-only finish button
-    if (btnFinish) {
-      const isAdmin = voterId && state.createdBy && voterId === state.createdBy;
-      btnFinish.hidden = !isAdmin;
-      btnFinish.disabled = state.finished;
-      btnFinish.textContent = state.finished ? "🏁 Voting finished" : "🏁 Finish voting";
-    }
-
-    if (btnFinishResults || btnDownloadResults) {
+    if (btnFinishResults) {
       const isAdmin = voterId && state.createdBy && voterId === state.createdBy;
       if (btnFinishResults) {
         btnFinishResults.hidden = !isAdmin;
         btnFinishResults.disabled = state.finished;
         btnFinishResults.textContent = state.finished ? "🏁 Voting finished" : "🏁 Finish voting";
       }
-      if (btnDownloadResults) {
-        // Anyone can download the leaderboard at any time.
-        btnDownloadResults.hidden = false;
-        btnDownloadResults.disabled = lastLeaderboardRows.length === 0;
-      }
+    }
+
+    if (btnDownloadResults) {
+      btnDownloadResults.disabled = lastLeaderboardRows.length === 0;
     }
   }
 
@@ -1558,7 +1548,6 @@ async function mountRoom(app, code, tabFromRoute) {
   );
 
   btnCopy.addEventListener("click", () => copyToClipboard(state.code));
-  btnFinish?.addEventListener("click", () => finishVoting());
   btnFinishResults?.addEventListener("click", async () => {
     await finishVoting();
     await downloadLeaderboardImage();
