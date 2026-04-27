@@ -137,6 +137,16 @@ function byScoreDesc(a, b) {
   return (a.name || "").localeCompare(b.name || "");
 }
 
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 function createImageLightbox() {
   const existing = document.getElementById("ogtvote-lightbox");
   if (existing) {
@@ -923,6 +933,8 @@ async function mountRoom(app, code, tabFromRoute) {
   const elDesc = $("room-desc");
   const btnCopy = $("btn-copy-code");
   const btnFinish = $("btn-finish");
+  const btnFinishResults = $("btn-finish-results");
+  const btnDownloadResults = $("btn-download-results");
   const btnRoomHome = $("btn-room-home");
   const btnRoomNewVote = $("btn-room-new-vote");
 
@@ -936,6 +948,7 @@ async function mountRoom(app, code, tabFromRoute) {
   const btnSubmitVote = $("btn-submit-vote");
   const votesCount = $("votes-count");
   const leaderboardEl = $("leaderboard");
+  let lastLeaderboardRows = [];
 
   const modal = $("entry-modal");
   const btnOpenAdd = $("btn-open-add-entry");
@@ -1023,6 +1036,123 @@ async function mountRoom(app, code, tabFromRoute) {
     }
   }
 
+  async function downloadLeaderboardImage() {
+    const rows = lastLeaderboardRows || [];
+    if (!rows.length) {
+      window.alert("No leaderboard to download yet.");
+      return;
+    }
+
+    const dpr = Math.max(1, Math.min(3, Math.round((globalThis.devicePixelRatio || 2) * 10) / 10));
+    const W = 1080;
+    const pad = 64;
+    const maxRows = Math.min(10, rows.length);
+    const headerH = 410;
+    const rowH = 94;
+    const footerH = 120;
+    const H = headerH + maxRows * rowH + footerH;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#060606");
+    bg.addColorStop(1, "#0b0b0b");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Brand row (match page vibe: LO × OGT centered)
+    const lo = await loadImage("/flexgrid/site/src/assets/images/LO.png");
+    const ogt = await loadImage("/ogtriplelogo.png");
+    const brandY = 40;
+    const logoH = 120; // same visual height for both
+    const gap = 26;
+    const xW = 46;
+    const xFont = 64;
+
+    const loW = lo ? Math.round((lo.naturalWidth / Math.max(1, lo.naturalHeight)) * logoH) : 300;
+    const ogW = ogt ? Math.round((ogt.naturalWidth / Math.max(1, ogt.naturalHeight)) * logoH) : 120;
+    const totalW = loW + gap + xW + gap + ogW;
+    const startX = Math.round((W - totalW) / 2);
+
+    if (lo) ctx.drawImage(lo, startX, brandY, loW, logoH);
+    ctx.fillStyle = "rgba(223,255,0,0.95)";
+    ctx.font = `900 ${xFont}px Outfit, system-ui, -apple-system, Segoe UI, sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText("×", startX + loW + gap + xW / 2, brandY + logoH / 2 + 2);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    if (ogt) ctx.drawImage(ogt, startX + loW + gap + xW + gap, brandY, ogW, logoH);
+
+    // Accent rule under brand row
+    ctx.fillStyle = "rgba(223,255,0,0.20)";
+    ctx.fillRect(pad, 190, W - pad * 2, 3);
+
+    ctx.fillStyle = "rgba(223,255,0,0.9)";
+    ctx.font = "800 28px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.fillText("LO LABS UTILITY - OGTriple Media", pad, 240);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 66px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.fillText("OGT Vote", pad, 316);
+
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = "800 34px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.fillText(state.name ? String(state.name) : "Leaderboard", pad, 358);
+
+    ctx.fillStyle = "rgba(223,255,0,0.9)";
+    ctx.font = "900 38px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    const codeText = state.code;
+    ctx.fillText(codeText, W - pad - ctx.measureText(codeText).width, 358);
+
+    const startY = 450;
+    for (let i = 0; i < maxRows; i++) {
+      const r = rows[i];
+      const y = startY + i * rowH;
+
+      // Row card
+      const cardX = pad;
+      const cardY = y - 64;
+      const cardW = W - pad * 2;
+      const cardH = 78;
+      ctx.fillStyle = "rgba(255,255,255,0.055)";
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeStyle = "rgba(255,255,255,0.11)";
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+      ctx.fillStyle = "rgba(223,255,0,0.95)";
+      ctx.font = "900 36px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.fillText(String(medal), pad + 22, y - 12);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 36px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+      const name = String(r.name || "—");
+      ctx.fillText(name.length > 28 ? `${name.slice(0, 28)}…` : name, pad + 120, y - 12);
+
+      const score = `${r.score} pts`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "900 34px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.fillText(score, W - pad - ctx.measureText(score).width - 22, y - 12);
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "800 28px Outfit, system-ui, -apple-system, Segoe UI, sans-serif";
+    ctx.fillText("Powered by Little Ollie Labs", pad, H - 54);
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `ogtvote_${state.code}_leaderboard.png`;
+    a.click();
+  }
+
   async function saveVoteSelections() {
     const n = maxRanks();
     const selections = [];
@@ -1030,7 +1160,9 @@ async function mountRoom(app, code, tabFromRoute) {
       const entryId = selectionByRank.get(r);
       if (entryId) selections.push({ entryId, rank: r });
     }
-    if (selections.length !== n) return false;
+    if (selections.length !== n) {
+      return false;
+    }
 
     const fv = globalThis.firebase.firestore.FieldValue;
     try {
@@ -1045,12 +1177,13 @@ async function mountRoom(app, code, tabFromRoute) {
       return true;
     } catch (e) {
       console.error(e);
-      window.alert("Could not save vote.");
+      voteHint.textContent = "Could not save vote. Check your connection and try again.";
       return false;
     }
   }
 
   function clearSelections() {
+    if (state.finished) return;
     selectionByRank.clear();
     renderVoteUI();
   }
@@ -1164,6 +1297,7 @@ async function mountRoom(app, code, tabFromRoute) {
     if (mode === "vote") {
       card.addEventListener("click", () => {
         if (!state.entries?.length) return;
+        if (state.finished) return;
 
         let currentRank = null;
         for (let r = 1; r <= mr; r++) {
@@ -1261,6 +1395,7 @@ async function mountRoom(app, code, tabFromRoute) {
     const filled = Array.from(selectionByRank.keys()).length;
     voteHint.textContent = state.votingType === "top1" ? "Pick 1 entry." : "Pick 3 entries (3–2–1 pts).";
     btnSubmitVote.disabled = state.finished || filled !== mr;
+    btnClearVote.disabled = state.finished;
 
     voteGrid.innerHTML = "";
     if (!state.entries.length) {
@@ -1276,6 +1411,7 @@ async function mountRoom(app, code, tabFromRoute) {
 
   function renderResultsUI() {
     const rows = computeLeaderboard(state.entries, state.ballots);
+    lastLeaderboardRows = rows;
     votesCount.textContent = `${state.ballots.length} vote${state.ballots.length === 1 ? "" : "s"}`;
 
     leaderboardEl.innerHTML = "";
@@ -1358,6 +1494,20 @@ async function mountRoom(app, code, tabFromRoute) {
       btnFinish.disabled = state.finished;
       btnFinish.textContent = state.finished ? "🏁 Voting finished" : "🏁 Finish voting";
     }
+
+    if (btnFinishResults || btnDownloadResults) {
+      const isAdmin = voterId && state.createdBy && voterId === state.createdBy;
+      if (btnFinishResults) {
+        btnFinishResults.hidden = !isAdmin;
+        btnFinishResults.disabled = state.finished;
+        btnFinishResults.textContent = state.finished ? "🏁 Voting finished" : "🏁 Finish voting";
+      }
+      if (btnDownloadResults) {
+        // Anyone can download the leaderboard at any time.
+        btnDownloadResults.hidden = false;
+        btnDownloadResults.disabled = lastLeaderboardRows.length === 0;
+      }
+    }
   }
 
   const unsubs = [];
@@ -1409,6 +1559,11 @@ async function mountRoom(app, code, tabFromRoute) {
 
   btnCopy.addEventListener("click", () => copyToClipboard(state.code));
   btnFinish?.addEventListener("click", () => finishVoting());
+  btnFinishResults?.addEventListener("click", async () => {
+    await finishVoting();
+    await downloadLeaderboardImage();
+  });
+  btnDownloadResults?.addEventListener("click", downloadLeaderboardImage);
   btnRoomHome?.addEventListener("click", goHome);
   btnRoomNewVote?.addEventListener("click", () => setRoute({ flow: "create" }));
 
@@ -1536,7 +1691,18 @@ async function mountRoom(app, code, tabFromRoute) {
     r.addEventListener("change", () => {
       if (!(r instanceof HTMLInputElement) || !r.checked) return;
       const t = String(r.value || "entries");
-      setRoute({ code: state.code, tab: t });
+      // Instant tab switching on mobile: avoid remounting the room (hashchange render).
+      // Update the URL without triggering a hashchange event.
+      try {
+        const p = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        p.set("code", state.code);
+        p.set("tab", t);
+        const next = `#${p.toString()}`;
+        if (window.location.hash !== next) history.replaceState(null, "", next);
+      } catch {
+        /* ignore */
+      }
+      setTab(root, t);
     });
   });
 
@@ -1545,7 +1711,10 @@ async function mountRoom(app, code, tabFromRoute) {
     const ok = window.confirm("✅ Submit this vote to the leaderboard?");
     if (!ok) return;
     const saved = await saveVoteSelections();
-    if (!saved) return;
+    if (!saved) {
+      voteHint.textContent = "Could not save. Make sure 🥇🥈🥉 are all selected, then try again.";
+      return;
+    }
     setRoute({ code: state.code, tab: "results" });
   });
 
