@@ -57,6 +57,10 @@ function getBestImage(nft) {
 }
 
 export async function loadNFTsFromWallet(wallet) {
+  return await loadNFTsFromWalletOnChain(wallet, "ethereum");
+}
+
+export async function loadNFTsFromWalletOnChain(wallet, chain) {
   const cleanWallet = wallet.trim();
 
   if (!isValidEvmAddress(cleanWallet)) {
@@ -64,6 +68,11 @@ export async function loadNFTsFromWallet(wallet) {
   }
 
   const key = alchemyNftKey();
+  const desiredChain = String(chain || "ethereum").trim().toLowerCase();
+
+  let network = "eth-mainnet";
+  if (desiredChain === "base") network = "base-mainnet";
+  if (desiredChain === "apechain") network = "apechain-mainnet";
 
   let allOwned = [];
   let pageKey = null;
@@ -71,7 +80,7 @@ export async function loadNFTsFromWallet(wallet) {
   const MAX_PAGES = 10; // safety limit
 
   do {
-    let url = `https://eth-mainnet.g.alchemy.com/nft/v3/${key}/getNFTsForOwner?owner=${encodeURIComponent(
+    let url = `https://${network}.g.alchemy.com/nft/v3/${key}/getNFTsForOwner?owner=${encodeURIComponent(
       cleanWallet
     )}&withMetadata=true&pageSize=100`;
 
@@ -94,18 +103,18 @@ export async function loadNFTsFromWallet(wallet) {
     pageCount++;
   } while (pageKey && pageCount < MAX_PAGES);
 
-  console.log(`Loaded ${allOwned.length} NFTs across ${pageCount} pages`);
+  console.log(`Loaded ${allOwned.length} NFTs across ${pageCount} pages from ${desiredChain}`);
 
   return allOwned
     .map((nft) => {
       const contractAddr = nft?.contract?.address?.toLowerCase() || "";
       const tokenId = String(nft?.tokenId ?? "");
-      const chain = "ethereum";
+      const chainKey = desiredChain || "ethereum";
 
       if (!contractAddr || !tokenId) return null;
 
       return {
-        id: `${chain}_${contractAddr}_${tokenId}`,
+        id: `${chainKey}_${contractAddr}_${tokenId}`,
         image: getBestImage(nft),
         collection:
           nft?.collection?.name ||
@@ -115,7 +124,7 @@ export async function loadNFTsFromWallet(wallet) {
         name: nft?.name || nft?.title || `#${tokenId}`,
         contract: contractAddr,
         tokenId,
-        chain,
+        chain: chainKey,
         source: "user",
         votesHot: 0,
         votesCold: 0,

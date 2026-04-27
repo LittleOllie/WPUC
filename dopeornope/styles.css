@@ -61,6 +61,8 @@ input {
 .screen {
   display: none;
   min-height: 100dvh;
+  background: linear-gradient(180deg, var(--lo-blue-light) 0%, var(--lo-blue-mid) 42%, var(--lo-blue-deep) 100%);
+  background-attachment: fixed;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
 }
@@ -1149,6 +1151,38 @@ a.icon-btn {
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: end;
+}
+
+.chain-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chain-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--text-on-lo);
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(15, 47, 110, 0.18);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease, filter 140ms ease, background 140ms ease;
+}
+
+.chain-btn:active {
+  transform: scale(var(--tap));
+}
+
+.chain-btn.active {
+  background: linear-gradient(180deg, var(--lo-yellow-bright) 0%, var(--lo-yellow) 100%);
+  color: var(--lo-navy);
+  border-color: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 7px 0 rgba(180, 140, 0, 0.35), 0 10px 26px rgba(15, 47, 110, 0.16);
 }
 
 .field {

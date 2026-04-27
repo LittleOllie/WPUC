@@ -10,7 +10,7 @@ import {
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { seedNFTs } from "./data.js";
-import { loadNFTsFromWallet, groupNFTsByCollection, isValidEvmAddress } from "./nftLoader.js";
+import { loadNFTsFromWalletOnChain, groupNFTsByCollection, isValidEvmAddress } from "./nftLoader.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -221,6 +221,8 @@ async function appMain() {
   const selectedCount = $("selected-count");
   const btnSubmitNFTs = $("btn-submit-nfts");
   const addSuccess = $("add-success");
+  const chainButtons = Array.from(document.querySelectorAll(".chain-btn"));
+  let activeChain = "ethereum";
 
   /** @type {string[]} */
   const recentlySeen = [];
@@ -1039,7 +1041,7 @@ async function appMain() {
       setWalletLoading(true);
       showAddNFTMessage("");
 
-      const nfts = await loadNFTsFromWallet(wallet);
+      const nfts = await loadNFTsFromWalletOnChain(wallet, activeChain);
 
       if (!nfts.length) {
         walletLoadedNFTs = [];
@@ -1055,6 +1057,7 @@ async function appMain() {
 
       renderCollectionList(collectionGroups);
       updateSelectedCount();
+      showAddNFTMessage(`Loaded NFTs from ${activeChain.toUpperCase()}`);
 
       for (const n of nfts.slice(0, 24)) void preloadImage(n.image);
     } catch (err) {
@@ -1259,6 +1262,14 @@ async function appMain() {
 
   btnLoadWallet.addEventListener("click", () => void handleLoadWalletNFTs());
 
+  for (const btn of chainButtons) {
+    btn.addEventListener("click", () => {
+      for (const b of chainButtons) b.classList.remove("active");
+      btn.classList.add("active");
+      activeChain = String(btn.dataset.chain || "ethereum");
+    });
+  }
+
   btnSubmitNFTs.addEventListener("click", () => void handleSubmitSelectedNFTs());
 
   collectionSearch?.addEventListener("input", () => {
@@ -1425,7 +1436,7 @@ async function appMain() {
     );
   }
 
-  const INTRO_MODAL_KEY = "dopeornope_intro_v1";
+  const INTRO_MODAL_KEY = "dopeornope_intro_v2";
   const introModal = $("intro-modal");
   const btnIntroContinue = $("btn-intro-continue");
 
