@@ -2,20 +2,34 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
     match /votes/{voteId} {
       allow read: if true;
 
       // New vote rooms only (no overwrites)
       allow create: if
+        request.auth != null &&
         request.resource.data.code is string &&
         request.resource.data.name is string &&
-        request.resource.data.createdBy is string;
+        request.resource.data.createdBy is string &&
+        request.resource.data.createdBy == request.auth.uid;
 
       // OGTVote updates: lock/shuffle anytime; finish requires admin (creator)
       allow update: if
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'shuffle']) ||
         (
+          request.auth != null &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'shuffle'])
+        ) ||
+        (
+          request.auth != null &&
           resource.data.createdBy is string &&
+          request.auth.uid == resource.data.createdBy &&
           request.resource.data.createdBy == resource.data.createdBy &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['locked', 'finished', 'finishedAt'])
         );
@@ -26,12 +40,15 @@ service cloud.firestore {
         allow read: if true;
 
         allow create: if
+          request.auth != null &&
           get(/databases/$(database)/documents/votes/$(voteId)).data.finished != true &&
           request.resource.data.tweetId is string &&
           request.resource.data.tweetUrl is string &&
           request.resource.data.image is string;
 
-        allow delete: if true;
+        allow delete: if
+          request.auth != null &&
+          request.auth.uid == get(/databases/$(database)/documents/votes/$(voteId)).data.createdBy;
         allow update: if false;
       }
 
@@ -41,10 +58,14 @@ service cloud.firestore {
 
         // First save = create; change vote = update (set merge: true in app)
         allow create: if
+          request.auth != null &&
+          request.auth.uid == ballotId &&
           get(/databases/$(database)/documents/votes/$(voteId)).data.finished != true &&
           request.resource.data.selections is list;
 
         allow update: if
+          request.auth != null &&
+          request.auth.uid == ballotId &&
           get(/databases/$(database)/documents/votes/$(voteId)).data.finished != true &&
           request.resource.data.selections is list;
 

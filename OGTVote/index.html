@@ -140,6 +140,7 @@
     <template id="tpl-landing">
       <div class="ogtvote-hub">
         <div class="ogtvote-hub__divider ogtvote-hub__divider--top" aria-hidden="true"></div>
+        <p id="ogtvote-welcome" class="ogtvote-hub__welcome" hidden></p>
         <p class="ogtvote-hub__tagline">Choose what you want to do.</p>
         <div class="ogtvote-hub__actions">
           <button type="button" class="btn-primary ogtvote-hub__btn" data-flow="create">🗳️ Create new vote</button>
@@ -147,6 +148,9 @@
           <button type="button" class="btn-primary ogtvote-hub__btn" data-flow="join">🔑 Join existing</button>
           <div class="ogtvote-hub__divider" aria-hidden="true"></div>
           <button type="button" class="btn-primary ogtvote-hub__btn" data-flow="history">📚 See previous votes</button>
+        </div>
+        <div class="input-row ogtvote-input-row--tight-top ogtvote-hub__authrow">
+          <button id="btn-signout" type="button" class="btn-secondary" hidden>🚪 Sign out</button>
         </div>
       </div>
     </template>
@@ -224,32 +228,23 @@
 
     <template id="tpl-flow-login">
       <div class="ogtvote-flow ogtvote-login">
-        <button type="button" class="ogtvote-flow__back back-to-menu">🏠 Home</button>
-        <div class="brand-bar ogtvote-login__brand">
-          <div class="brand-bar__logos">
-            <img
-              class="brand-bar__img brand-bar__img--lo"
-              src="/flexgrid/site/src/assets/images/LO.png"
-              width="200"
-              height="64"
-              alt="Little Ollie"
-            />
-            <span class="brand-bar__x" aria-hidden="true">×</span>
-            <img
-              class="brand-bar__img brand-bar__img--og"
-              src="/ogtriplelogo.png"
-              width="96"
-              height="96"
-              alt="ogtriple media"
-            />
-          </div>
-        </div>
         <section class="panel mode-panel ogtvote-flow__panel">
-          <h2 class="mode-title">Sign in</h2>
-          <p class="mode-desc">Log in to keep your votes and rooms saved under your account.</p>
+          <h2 class="mode-title">Login</h2>
+          <p class="mode-desc">Use a username + password so your votes stay yours on any device.</p>
+
+          <label class="field-label" for="auth-username">Username</label>
           <div class="input-row">
-            <button id="btn-auth-google" class="btn-primary" type="button">🔐 Sign in with Google</button>
-            <button id="btn-auth-guest" class="btn-secondary" type="button">👤 Continue as guest</button>
+            <input id="auth-username" type="text" placeholder="e.g. ollie" autocomplete="username" />
+          </div>
+
+          <label class="field-label" for="auth-password">Password</label>
+          <div class="input-row">
+            <input id="auth-password" type="password" placeholder="6+ characters" autocomplete="current-password" />
+          </div>
+
+          <div class="input-row ogtvote-input-row--tight-top">
+            <button id="btn-auth-login" class="btn-primary" type="button">🔐 Log in</button>
+            <button id="btn-auth-signup" class="btn-secondary" type="button">✨ Sign up</button>
           </div>
           <div id="auth-status" class="status" role="status" aria-live="polite"></div>
         </section>

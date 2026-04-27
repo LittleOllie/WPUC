@@ -18,6 +18,47 @@ const VOTER_ID_KEY = "ogt_vote_voter_id_v1";
 /** @type {(() => void) | null} */
 let currentRoomCleanup = null;
 
+/** @type {import("firebase/compat").default.User | null} */
+let authUser = null;
+/** @type {string} */
+let authUsername = "";
+/** @type {Promise<void>} */
+let authReady = Promise.resolve();
+
+function ensureFirebaseApp() {
+  if (!isFirebaseConfigured()) return false;
+  const g = globalThis;
+  if (!g.firebase?.initializeApp) return false;
+  if (!g.firebase.apps?.length) {
+    g.firebase.initializeApp(firebaseConfig);
+  }
+  return true;
+}
+
+function getAuth() {
+  const g = globalThis;
+  try {
+    if (!ensureFirebaseApp()) return null;
+    return g.firebase?.auth ? g.firebase.auth() : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeUsername(raw) {
+  const u = String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+  if (!/^[a-z0-9_]{3,20}$/.test(u)) return "";
+  return u;
+}
+
+function usernameToEmail(username) {
+  // Firebase email/password requires an email. We map usernames to a stable synthetic email.
+  return `${username}@ogtvote.local`;
+}
+
 function getVoterId() {
   try {
     const existing = localStorage.getItem(VOTER_ID_KEY);
@@ -44,11 +85,22 @@ function getDb() {
     console.error("OGTVote: load Firebase compat scripts before app.js");
     return null;
   }
-  if (!g.firebase.apps?.length) {
-    g.firebase.initializeApp(firebaseConfig);
-  }
+  ensureFirebaseApp();
   if (!dbInstance) dbInstance = g.firebase.firestore();
   return dbInstance;
+}
+
+async function loadUsernameForUid(uid) {
+  const db = getDb();
+  if (!db || !uid) return "";
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    const data = snap.data() || {};
+    const u = String(data.username || "").trim();
+    return u;
+  } catch {
+    return "";
+  }
 }
 
 function makeCode() {
@@ -421,6 +473,30 @@ function renderLanding(app) {
     );
     return;
   }
+
+  const welcome = $("ogtvote-welcome");
+  if (welcome) {
+    if (authUser && authUsername) {
+      welcome.hidden = false;
+      welcome.textContent = `Welcome ${authUsername}!`;
+    } else {
+      welcome.hidden = true;
+      welcome.textContent = "";
+    }
+  }
+
+  const btnSignout = $("btn-signout");
+  if (btnSignout) {
+    btnSignout.hidden = !authUser;
+    btnSignout.addEventListener("click", async () => {
+      try {
+        await getAuth()?.signOut();
+      } catch {
+        /* ignore */
+      }
+    });
+  }
+
   app.querySelectorAll("[data-flow]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const f = String(btn.getAttribute("data-flow") || "");
@@ -445,9 +521,13 @@ function renderFlowCreate(app) {
   const descEl = $("flow-create-desc");
   const btn = $("flow-btn-create");
   const status = $("flow-create-status");
-  const creatorId = getVoterId();
+  const creatorId = String(authUser?.uid || "");
 
   btn?.addEventListener("click", async () => {
+    if (!creatorId) {
+      setRoute({ flow: "login" });
+      return;
+    }
     const name = nameEl?.value.trim() || "";
     if (!name) {
       nameEl?.focus();
@@ -652,6 +732,112 @@ function renderFlowLogin(app) {
   if (!tpl) return;
   app.replaceChildren(tpl.content.cloneNode(true));
   app.querySelector(".ogtvote-flow__back")?.addEventListener("click", goHome);
+
+  const userEl = $("auth-username");
+  const passEl = $("auth-password");
+  const btnLogin = $("btn-auth-login");
+  const btnSignup = $("btn-auth-signup");
+  const status = $("auth-status");
+
+  const auth = getAuth();
+  const db = getDb();
+  if (!auth || !db) {
+    if (status) status.textContent = "Auth not available. Check Firebase scripts.";
+    return;
+  }
+
+  const setStatus = (msg, isErr = false) => {
+    if (!status) return;
+    status.textContent = msg;
+    status.classList.toggle("error", Boolean(isErr));
+  };
+
+  const authErrorToMessage = (e, fallback) => {
+    const code = String(e?.code || "");
+    if (code === "auth/operation-not-allowed") return "Email/Password login is disabled in Firebase. Enable it in Authentication → Sign-in method.";
+    if (code === "auth/email-already-in-use") return "That username is already taken.";
+    if (code === "auth/invalid-email") return "Invalid username.";
+    if (code === "auth/weak-password") return "Password is too weak. Use 6+ characters.";
+    if (code === "auth/wrong-password" || code === "auth/invalid-credential") return "Wrong username or password.";
+    if (code === "auth/user-not-found") return "No account found for that username.";
+    if (code) return `${fallback} (${code})`;
+    const msg = String(e?.message || "");
+    return msg || fallback;
+  };
+
+  const getCreds = () => {
+    const username = normalizeUsername(userEl?.value || "");
+    const password = String(passEl?.value || "");
+    return { username, password };
+  };
+
+  btnLogin?.addEventListener("click", async () => {
+    const { username, password } = getCreds();
+    if (!username) {
+      setStatus("Username must be 3–20 chars: a-z, 0-9, _", true);
+      userEl?.focus();
+      return;
+    }
+    if (!password) {
+      setStatus("Enter your password.", true);
+      passEl?.focus();
+      return;
+    }
+    setStatus("");
+    btnLogin.disabled = true;
+    btnSignup && (btnSignup.disabled = true);
+    try {
+      await auth.signInWithEmailAndPassword(usernameToEmail(username), password);
+      setRoute({});
+    } catch (e) {
+      console.error(e);
+      setStatus(authErrorToMessage(e, "Could not log in."), true);
+    } finally {
+      btnLogin.disabled = false;
+      btnSignup && (btnSignup.disabled = false);
+    }
+  });
+
+  btnSignup?.addEventListener("click", async () => {
+    const { username, password } = getCreds();
+    if (!username) {
+      setStatus("Username must be 3–20 chars: a-z, 0-9, _", true);
+      userEl?.focus();
+      return;
+    }
+    if (!password || password.length < 6) {
+      setStatus("Password must be at least 6 characters.", true);
+      passEl?.focus();
+      return;
+    }
+    setStatus("");
+    btnSignup.disabled = true;
+    btnLogin && (btnLogin.disabled = true);
+    showLoading("Creating account…");
+    try {
+      // If this username already exists, Firebase will reject because the synthetic email matches.
+      const cred = await auth.createUserWithEmailAndPassword(usernameToEmail(username), password);
+      const uid = String(cred?.user?.uid || "");
+      const fv = globalThis.firebase.firestore.FieldValue;
+      if (uid) {
+        try {
+          await db.collection("users").doc(uid).set({ username, createdAt: fv.serverTimestamp() }, { merge: true });
+        } catch (err) {
+          // Auth succeeded; profile write can be fixed by deploying rules.
+          console.error(err);
+        }
+      }
+      hideLoading();
+      setRoute({});
+    } catch (e) {
+      hideLoading();
+      console.error(e);
+      setStatus(authErrorToMessage(e, "Could not create account."), true);
+    } finally {
+      btnSignup.disabled = false;
+      btnLogin && (btnLogin.disabled = false);
+    }
+  });
 }
 
 /**
@@ -724,7 +910,11 @@ async function mountRoom(app, code, tabFromRoute) {
   const root = app.querySelector(".room");
   if (!root) return null;
 
-  const voterId = getVoterId();
+  const voterId = String(authUser?.uid || "");
+  if (!voterId) {
+    setRoute({ flow: "login" });
+    return () => {};
+  }
   const lightbox = createImageLightbox();
 
   const elCode = $("room-code");
@@ -1383,6 +1573,16 @@ function main() {
   if (!app) return;
 
   setupThemeToggle();
+  const auth = getAuth();
+  authReady = new Promise((resolve) => {
+    if (!auth) return resolve();
+    auth.onAuthStateChanged(async (u) => {
+      authUser = u || null;
+      authUsername = u ? await loadUsernameForUid(String(u.uid || "")) : "";
+      resolve();
+      window.dispatchEvent(new Event("ogtvote-authchange"));
+    });
+  });
   $("btn-nav-home")?.addEventListener("click", () => {
     const { code, flow } = parseRoute();
     // If we're already on the landing screen, go back to site links.
@@ -1395,6 +1595,7 @@ function main() {
   });
 
   const render = async () => {
+    await authReady;
     if (currentRoomCleanup) {
       currentRoomCleanup();
       currentRoomCleanup = null;
@@ -1403,6 +1604,12 @@ function main() {
     const navHome = $("btn-nav-home");
     if (navHome) {
       navHome.textContent = !code && !flow ? "← Back to links" : "← Back to home";
+    }
+
+    // Require login for any voting actions.
+    if (!authUser && flow !== "login") {
+      setRoute({ flow: "login" });
+      return;
     }
 
     if (!isFirebaseConfigured() || !getDb()) {
@@ -1429,6 +1636,7 @@ function main() {
   };
 
   window.addEventListener("hashchange", render);
+  window.addEventListener("ogtvote-authchange", render);
   void render();
 }
 

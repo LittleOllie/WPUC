@@ -156,6 +156,7 @@
 }
 
 .ogtvote-app input[type="text"],
+.ogtvote-app input[type="password"],
 .ogtvote-app textarea.wallet-input-multiline,
 .ogtvote-app .ogtvote-file {
   font-size: 1.6rem;
@@ -247,6 +248,19 @@
   max-width: 22rem;
 }
 
+.ogtvote-hub__welcome {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--og-lime);
+  letter-spacing: -0.01em;
+}
+
+.ogtvote-hub__authrow {
+  width: 100%;
+  max-width: min(22rem, 100%);
+}
+
 .ogtvote-hub__divider--top {
   margin: 0 auto 0.35rem;
 }
@@ -287,12 +301,28 @@
   padding: 0 0 1rem;
 }
 
-.ogtvote-login__brand {
-  margin: 0.25rem 0 1rem;
+.ogtvote-login {
+  padding-top: 0.25rem;
 }
 
 .ogtvote-login .input-row {
   display: grid;
+}
+
+.ogtvote-login input[type="text"],
+.ogtvote-login input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-panel-2);
+  color: var(--text);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  min-height: 4rem;
+  line-height: 1.2;
+  font: inherit;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .ogtvote-flow__back {
