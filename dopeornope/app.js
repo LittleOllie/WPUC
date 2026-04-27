@@ -24,6 +24,7 @@ let nftMap = {};
 let sessionQueue = [];
 const sessionSeen = new Set();
 let sessionRated = 0;
+let activeCollectionFilter = null;
 let progressBumpT = 0;
 let progressGlowT = 0;
 let nftsRealtimeListenerStarted = false;
@@ -66,10 +67,16 @@ function shuffleArray(arr) {
   return copy;
 }
 
+function getFilteredNFTs() {
+  if (!activeCollectionFilter) return allNFTs;
+  return allNFTs.filter((nft) => String(nft?.collection || "").trim() === activeCollectionFilter);
+}
+
 function initSessionQueue() {
   const seen = new Set();
   const unique = [];
-  for (const n of allNFTs) {
+  const source = getFilteredNFTs();
+  for (const n of source) {
     if (!n?.id || seen.has(n.id)) continue;
     seen.add(n.id);
     unique.push(n);
@@ -184,6 +191,12 @@ async function appMain() {
   const btnRoundDone = $("btn-round-done");
   const btnRoundReplay = $("btn-round-replay");
   const roundCompleteLine = $("round-complete-line");
+  const collectionsBtn = $("collections-btn");
+  const collectionsModal = $("collections-modal");
+  const collectionsList = $("collections-list");
+  const collectionsBack = $("collections-back");
+  const collectionsSearch = $("collections-search");
+  const clearFilterBtn = $("clear-filter-btn");
 
   const overlay = $("score-overlay");
   const overlayTitle = $("score-title");
@@ -1108,6 +1121,123 @@ async function appMain() {
     toast._t = window.setTimeout(() => addSuccess.classList.remove("is-visible"), 1400);
   }
 
+  function getCollectionCounts() {
+    /** @type {Record<string, number>} */
+    const map = {};
+    for (const nft of allNFTs) {
+      const name = String(nft?.collection || "").trim() || "Unknown";
+      map[name] = (map[name] || 0) + 1;
+    }
+    return map;
+  }
+
+  function showActiveCollectionBanner(name) {
+    if (!clearFilterBtn) return;
+    clearFilterBtn.classList.remove("hidden");
+    clearFilterBtn.textContent = `✕ ${name}`;
+  }
+
+  function hideActiveCollectionBanner() {
+    if (!clearFilterBtn) return;
+    clearFilterBtn.classList.add("hidden");
+    clearFilterBtn.textContent = "✕ Clear Filter";
+  }
+
+  async function refreshFeedForCurrentFilter() {
+    feedQueue = [];
+    initSessionQueue();
+
+    await ensureQueue(4);
+    if (feedQueue[0]) {
+      await renderNFT(feedQueue[0]);
+      for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+      setButtonsEnabled(true);
+      if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+      return true;
+    }
+
+    // Empty state for this mode
+    currentNFT = null;
+    nftImg.removeAttribute("src");
+    nftImg.alt = "";
+    nftImg.classList.remove("is-ready", "vote-hot", "vote-cold");
+    nftImg.classList.add("is-reset");
+    nftSkeleton.classList.add("is-hidden");
+    nftCollection.textContent = activeCollectionFilter ? activeCollectionFilter : "—";
+    updateNftScoreBadge(null);
+    if (microtext) microtext.textContent = "No NFTs in this collection yet.";
+    updateProgressBadge();
+    btnHot.disabled = true;
+    btnCold.disabled = true;
+    btnAdd.disabled = false;
+    return false;
+  }
+
+  async function applyCollectionFilter(collectionName) {
+    activeCollectionFilter = collectionName || null;
+    if (activeCollectionFilter) showActiveCollectionBanner(activeCollectionFilter);
+    else hideActiveCollectionBanner();
+
+    closeCollectionsModal();
+    if (collectionsSearch) collectionsSearch.value = "";
+    await refreshFeedForCurrentFilter();
+  }
+
+  function renderCollections() {
+    if (!collectionsList) return;
+    const data = getCollectionCounts();
+    const q = (collectionsSearch?.value || "").trim().toLowerCase();
+    const entries = Object.entries(data)
+      .filter(([name]) => (q ? String(name).toLowerCase().includes(q) : true))
+      .sort((a, b) => b[1] - a[1]);
+
+    collectionsList.innerHTML = "";
+
+    if (!entries.length) {
+      const empty = document.createElement("div");
+      empty.className = "collection-item";
+      empty.innerHTML = q
+        ? `<span>No matches</span><span class="collection-item__count">0</span>`
+        : `<span>No collections yet</span><span class="collection-item__count">0</span>`;
+      collectionsList.appendChild(empty);
+      return;
+    }
+
+    for (const [name, count] of entries) {
+      const item = document.createElement("div");
+      item.className = "collection-item";
+      if (activeCollectionFilter && name === activeCollectionFilter) item.classList.add("is-active");
+
+      const left = document.createElement("span");
+      left.textContent = name;
+
+      const right = document.createElement("span");
+      right.className = "collection-item__count";
+      right.textContent = String(count);
+
+      item.appendChild(left);
+      item.appendChild(right);
+      item.addEventListener("click", () => void applyCollectionFilter(name));
+      collectionsList.appendChild(item);
+    }
+  }
+
+  function openCollectionsModal() {
+    if (!collectionsModal) return;
+    renderCollections();
+    collectionsModal.classList.remove("hidden");
+    collectionsModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => collectionsSearch?.focus(), 50);
+  }
+
+  function closeCollectionsModal() {
+    if (!collectionsModal) return;
+    collectionsModal.classList.add("hidden");
+    collectionsModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
   // --- Navigation ---
   btnAdd.addEventListener("click", () => {
     selectedNFTs = {};
@@ -1209,6 +1339,15 @@ async function appMain() {
   btnRoundReplay?.addEventListener("click", () => void startNewVotingRound());
   btnRoundDone?.addEventListener("click", () => closeRoundCompleteModal(true));
 
+  collectionsBtn?.addEventListener("click", openCollectionsModal);
+  collectionsBack?.addEventListener("click", closeCollectionsModal);
+  collectionsSearch?.addEventListener("input", renderCollections);
+  clearFilterBtn?.addEventListener("click", () => void applyCollectionFilter(null));
+  collectionsModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-collections-close") === "overlay") closeCollectionsModal();
+  });
+
   roundCompleteModal?.addEventListener("click", (e) => {
     const t = e.target;
     if (t && t.getAttribute && t.getAttribute("data-round-complete-close") === "backdrop") {
@@ -1253,7 +1392,10 @@ async function appMain() {
               const nft = { ...data, _docId: change.doc.id };
               allNFTs.push(nft);
               nftMap[id] = nft;
-              if (!sessionSeen.has(id)) {
+              if (
+                !sessionSeen.has(id) &&
+                (!activeCollectionFilter || String(nft?.collection || "").trim() === activeCollectionFilter)
+              ) {
                 sessionQueue.push(nft);
                 addedForPrefetch = true;
               }
@@ -1263,7 +1405,10 @@ async function appMain() {
             const nft = { ...data, _docId: change.doc.id };
             allNFTs.push(nft);
             nftMap[id] = nft;
-            if (!sessionSeen.has(id)) {
+            if (
+              !sessionSeen.has(id) &&
+              (!activeCollectionFilter || String(nft?.collection || "").trim() === activeCollectionFilter)
+            ) {
               sessionQueue.push(nft);
               addedForPrefetch = true;
             }
@@ -1332,6 +1477,10 @@ async function appMain() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (!collectionsModal?.classList.contains("hidden")) {
+      closeCollectionsModal();
+      return;
+    }
     if (roundCompleteModal?.classList.contains("is-open")) {
       closeRoundCompleteModal(true);
       return;

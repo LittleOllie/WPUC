@@ -137,6 +137,34 @@ a.icon-btn {
   z-index: 2;
 }
 
+.clear-filter-btn {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 1000;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clear-filter-btn.hidden {
+  display: none;
+}
+
+.clear-filter-btn:active {
+  transform: scale(var(--tap));
+}
+
+.collections-btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.collections-btn:active {
+  transform: scale(var(--tap));
+}
+
 .lo-hero--add .title {
   margin-top: 6px;
   font-size: 22px;
@@ -923,6 +951,132 @@ a.icon-btn {
   color: #3d5a80;
   text-align: center;
   font-size: 12px;
+}
+
+/* ——— Collections modal (bottom sheet) ——— */
+.collections-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.collections-modal.hidden {
+  display: none;
+}
+
+.collections-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 16, 32, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.collections-content {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 96vw);
+  max-height: min(90dvh, 760px);
+  overflow: auto;
+
+  border-radius: 28px;
+  padding: 26px 22px 22px;
+  background: linear-gradient(180deg, var(--lo-blue-mid) 0%, var(--lo-blue-deep) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(15, 47, 110, 0.2);
+  text-align: center;
+}
+
+.collections-back {
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  z-index: 2;
+}
+
+.collections-title {
+  font-weight: 1000;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  color: var(--text-on-lo);
+  text-shadow: 0 2px 0 rgba(15, 47, 110, 0.35);
+  text-align: center;
+  margin: 6px 0 14px;
+}
+
+.collections-subtitle {
+  margin: -8px 0 14px;
+  font-weight: 900;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: var(--muted-on-lo);
+  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
+  text-align: center;
+}
+
+.collections-search {
+  margin: 0 auto 14px;
+  width: min(420px, 100%);
+}
+
+.collections-search .input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 47, 110, 0.16);
+}
+
+.collections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.collection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(255, 255, 255, 0.92);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 47, 110, 0.12);
+  box-shadow: 0 6px 16px rgba(15, 47, 110, 0.12);
+
+  font-weight: 1000;
+  letter-spacing: 0.01em;
+  color: #0f2f6e;
+}
+
+.collection-item__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--lo-blue-primary);
+  font-weight: 1000;
+}
+
+/* Ensure Collections modal rows match the LO header typography even if
+   other `.collection-item` rules exist elsewhere in the stylesheet. */
+.collections-modal .collection-item {
+  font-weight: 1000;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.collections-modal .collection-item__count {
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+}
+
+.collection-item.is-active {
+  border-color: rgba(255, 216, 77, 0.95);
+  box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.28), 0 6px 16px rgba(15, 47, 110, 0.12);
 }
 
 /* ——— Add screen topbar ——— */

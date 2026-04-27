@@ -65,6 +65,14 @@
           </button>
         </div>
 
+        <button id="collections-btn" class="btn btn--accent collections-btn" type="button" aria-label="Filter your NFTs by collection">
+          🧰 Filter Your NFTs
+        </button>
+
+        <button id="clear-filter-btn" class="btn btn--ghost clear-filter-btn hidden" type="button" aria-label="Clear filter">
+          ✕ Clear Filter
+        </button>
+
         <button id="btn-round-replay" class="btn btn--ghost btn-round-replay" type="button" hidden>
           🔁 Shuffle & vote again
         </button>
@@ -97,6 +105,35 @@
             <button id="btn-share-download" class="btn btn--primary" type="button">Download</button>
           </div>
           <div class="share-hint">Rate yours → <span id="share-url">https://your-site-url</span></div>
+        </div>
+      </div>
+
+      <div id="collections-modal" class="collections-modal hidden" aria-hidden="true" role="dialog" aria-label="Collections">
+        <div class="collections-overlay" data-collections-close="overlay"></div>
+
+        <div class="collections-content" role="document">
+          <button id="collections-back" class="collections-back icon-btn" type="button" aria-label="Back">←</button>
+          <div class="intro-modal__logos" aria-hidden="true">
+            <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+            <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+            <img class="intro-modal__brand" src="./assets/dopeornope.png" alt="" width="320" height="120" />
+          </div>
+
+          <div class="collections-title">Collections</div>
+          <div class="collections-subtitle">Choose to Filter Collection</div>
+          <div class="collections-search">
+            <input
+              id="collections-search"
+              class="input"
+              type="text"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="Search collections"
+              aria-label="Search collections"
+            />
+          </div>
+
+          <div id="collections-list" class="collections-list" aria-live="polite"></div>
         </div>
       </div>
     </section>
