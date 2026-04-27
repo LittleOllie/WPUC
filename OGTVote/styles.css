@@ -660,6 +660,24 @@
   cursor: pointer;
 }
 
+@media (max-width: 420px) {
+  #rank-pills.flex-modal__collection-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  #rank-pills .flex-collection-pill {
+    width: 100%;
+  }
+
+  #rank-pills .flex-collection-pill__label {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
 .ogtvote-rank-pill[aria-current="true"] {
   outline: 3px solid rgba(223, 255, 0, 0.85);
   outline-offset: 2px;
