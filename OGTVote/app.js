@@ -2,6 +2,15 @@ import { firebaseConfig, isFirebaseConfigured } from "./firebase-config.js";
 
 const $ = (id) => document.getElementById(id);
 
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 const THEME_STORAGE_KEY = "lo-labs-theme";
 const LAST_CODE_KEY = "ogt_vote_last_code_v1";
 const VOTER_ID_KEY = "ogt_vote_voter_id_v1";
@@ -74,6 +83,82 @@ function pointsForRank(rank) {
 function byScoreDesc(a, b) {
   if (b.score !== a.score) return b.score - a.score;
   return (a.name || "").localeCompare(b.name || "");
+}
+
+function createImageLightbox() {
+  const existing = document.getElementById("ogtvote-lightbox");
+  if (existing) {
+    const img = existing.querySelector("img");
+    const closeIt = () => {
+      existing.classList.remove("is-open");
+      existing.setAttribute("aria-hidden", "true");
+      if (img) img.src = "";
+    };
+    return {
+      open: (src, alt) => {
+        if (img) {
+          img.src = src || "";
+          img.alt = alt || "";
+        }
+        existing.classList.add("is-open");
+        existing.setAttribute("aria-hidden", "false");
+      },
+      close: closeIt,
+      destroy: () => existing.remove(),
+    };
+  }
+
+  const el = document.createElement("div");
+  el.id = "ogtvote-lightbox";
+  el.className = "welcome-modal";
+  el.setAttribute("aria-hidden", "true");
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "welcome-modal__backdrop";
+  backdrop.setAttribute("aria-hidden", "true");
+
+  const panel = document.createElement("div");
+  panel.className = "welcome-modal__panel";
+  panel.style.maxWidth = "min(1100px, calc(100vw - 2rem))";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "welcome-modal__close";
+  close.setAttribute("aria-label", "Close");
+  close.textContent = "×";
+
+  const img = document.createElement("img");
+  img.style.width = "100%";
+  img.style.height = "auto";
+  img.style.display = "block";
+  img.style.borderRadius = "14px";
+
+  panel.appendChild(close);
+  panel.appendChild(img);
+  el.appendChild(backdrop);
+  el.appendChild(panel);
+  document.body.appendChild(el);
+
+  const closeIt = () => {
+    el.classList.remove("is-open");
+    el.setAttribute("aria-hidden", "true");
+    img.src = "";
+  };
+  backdrop.addEventListener("click", closeIt);
+  close.addEventListener("click", closeIt);
+
+  return {
+    open: (src, alt) => {
+      img.src = src || "";
+      img.alt = alt || "";
+      el.classList.add("is-open");
+      el.setAttribute("aria-hidden", "false");
+    },
+    close: closeIt,
+    destroy: () => el.remove(),
+  };
 }
 
 function fileToDataUrl(file) {
@@ -303,7 +388,7 @@ function parseRoute() {
   const allowedTabs = new Set(["entries", "vote", "results"]);
   const tab = allowedTabs.has(rawTab) ? rawTab : "entries";
   const flowRaw = String(params.get("flow") || "").toLowerCase();
-  const allowedFlows = new Set(["create", "join", "history"]);
+  const allowedFlows = new Set(["create", "join", "history", "login"]);
   const flow = allowedFlows.has(flowRaw) ? flowRaw : "";
   return { code, tab, flow };
 }
@@ -317,7 +402,7 @@ function setRoute(opts) {
   if (code) {
     p.set("code", code);
     p.set("tab", tab && new Set(["entries", "vote", "results"]).has(tab) ? tab : "entries");
-  } else if (flow && new Set(["create", "join", "history"]).has(flow)) {
+  } else if (flow && new Set(["create", "join", "history", "login"]).has(flow)) {
     p.set("flow", flow);
   }
   const next = p.toString() ? `#${p.toString()}` : "";
@@ -562,6 +647,13 @@ function computeLeaderboard(entries, ballots) {
   return rows;
 }
 
+function renderFlowLogin(app) {
+  const tpl = $("tpl-flow-login");
+  if (!tpl) return;
+  app.replaceChildren(tpl.content.cloneNode(true));
+  app.querySelector(".ogtvote-flow__back")?.addEventListener("click", goHome);
+}
+
 /**
  * @param {HTMLElement} app
  * @param {string} code
@@ -633,6 +725,7 @@ async function mountRoom(app, code, tabFromRoute) {
   if (!root) return null;
 
   const voterId = getVoterId();
+  const lightbox = createImageLightbox();
 
   const elCode = $("room-code");
   const elCodeMeta = $("room-code-meta");
@@ -640,6 +733,8 @@ async function mountRoom(app, code, tabFromRoute) {
   const elDesc = $("room-desc");
   const btnCopy = $("btn-copy-code");
   const btnFinish = $("btn-finish");
+  const btnRoomHome = $("btn-room-home");
+  const btnRoomNewVote = $("btn-room-new-vote");
 
   const entriesStatus = $("entries-status");
   const entriesCount = $("entries-count");
@@ -670,6 +765,8 @@ async function mountRoom(app, code, tabFromRoute) {
 
   /** @type {Map<number, string>} */
   const selectionByRank = new Map();
+  /** @type {number | null} */
+  let activeRank = null;
 
   function maxRanks() {
     return state.votingType === "top1" ? 1 : 3;
@@ -796,44 +893,23 @@ async function mountRoom(app, code, tabFromRoute) {
       const img = document.createElement("img");
       img.src = entry.image;
       img.alt = entry.username ? `${entry.username} entry image` : "Entry image";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        lightbox.open(entry.image, img.alt || "Entry image");
+      });
       media.appendChild(img);
     }
 
-    const body = document.createElement("div");
-    body.className = "entry-card__body";
-
-    const top = document.createElement("div");
-    top.className = "entry-card__top";
-
-    const user = document.createElement("div");
-    user.className = "entry-card__user";
-    user.textContent = entry.username || "Unknown";
-
-    const rank = document.createElement("div");
-    rank.className = "entry-card__rank";
-    rank.textContent = "—";
-
-    top.appendChild(user);
-    top.appendChild(rank);
-
-    const meta = document.createElement("div");
-    meta.className = "entry-card__meta";
-
-    const a = document.createElement("a");
-    a.className = "entry-card__link";
-    a.href = entry.tweetUrl;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.textContent = "🔗 View on X";
-
-    meta.appendChild(a);
-
     if (mode === "entries") {
       const del = document.createElement("button");
-      del.className = "entry-card__delete";
+      del.className = "entry-card__delete entry-card__delete--overlay";
       del.type = "button";
-      del.textContent = "🗑️ Delete";
+      del.textContent = "🗑️";
       del.disabled = state.locked;
+      del.setAttribute("aria-label", "Delete entry");
       del.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (state.locked) return;
@@ -846,7 +922,46 @@ async function mountRoom(app, code, tabFromRoute) {
           window.alert("Could not delete entry.");
         }
       });
-      meta.appendChild(del);
+      media.appendChild(del);
+    }
+
+    const body = document.createElement("div");
+    body.className = "entry-card__body";
+
+    const top = document.createElement("div");
+    top.className = "entry-card__top";
+
+    const user = document.createElement("div");
+    user.className = "entry-card__user";
+    user.textContent = entry.username || "Entry";
+
+    top.appendChild(user);
+    let rank = null;
+    if (mode === "vote") {
+      rank = document.createElement("div");
+      rank.className = "entry-card__rank";
+      rank.textContent = "—";
+      top.appendChild(rank);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "entry-card__meta";
+
+    const a = document.createElement("a");
+    a.className = "entry-card__link";
+    if (entry.tweetUrl) {
+      a.href = entry.tweetUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "🔗 View on X";
+      meta.appendChild(a);
+    } else {
+      a.href = "#";
+      a.textContent = "🔗 View on X";
+      a.setAttribute("aria-disabled", "true");
+      a.style.opacity = "0.55";
+      a.addEventListener("click", (e) => e.preventDefault());
+      meta.appendChild(a);
     }
 
     body.appendChild(top);
@@ -867,39 +982,40 @@ async function mountRoom(app, code, tabFromRoute) {
 
         if (currentRank != null) {
           selectionByRank.delete(currentRank);
+          if (activeRank === currentRank) activeRank = null;
           renderVoteUI();
           return;
         }
 
-        for (let r = 1; r <= mr; r++) {
-          if (!selectionByRank.get(r)) {
-            selectionByRank.set(r, entry.id);
-            renderVoteUI();
-            return;
-          }
-        }
+        const target = activeRank != null ? activeRank : (() => {
+          for (let r = 1; r <= mr; r++) if (!selectionByRank.get(r)) return r;
+          return null;
+        })();
+        if (target == null) return;
+        selectionByRank.set(target, entry.id);
+        activeRank = null;
+        renderVoteUI();
       });
     }
 
     if (mode === "vote") {
       for (let r = 1; r <= mr; r++) {
         if (selectionByRank.get(r) === entry.id) {
-          rank.textContent = `${rankIcons[r]} #${r}`;
+          if (rank) rank.textContent = `${rankIcons[r]} #${r}`;
           card.classList.add(`is-ranked-${r}`);
         }
       }
-    } else {
-      rank.textContent = `#${entry.tweetId || "—"}`;
     }
 
     return card;
   }
 
   function renderEntriesUI() {
-    elCode.textContent = state.code;
+    if (elCode) elCode.textContent = state.code;
     if (elCodeMeta) elCodeMeta.textContent = state.code;
     elTitle.textContent = state.name;
     elDesc.textContent = state.description || "";
+    if (btnCopy) btnCopy.textContent = `📋 Copy code ${state.code}`;
 
     entriesStatus.textContent = state.finished ? "Finished" : state.locked ? "Locked" : "";
     entriesCount.textContent =
@@ -928,18 +1044,26 @@ async function mountRoom(app, code, tabFromRoute) {
       const filled = Boolean(entry);
       const lab = document.createElement("label");
       lab.className = "flex-collection-pill";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.className = "flex-collection-pill__input";
-      input.disabled = true;
-      input.checked = filled;
-      input.setAttribute("aria-hidden", "true");
-      input.tabIndex = -1;
-      const span = document.createElement("span");
-      span.className = "flex-collection-pill__label";
-      span.textContent = `${rankIcons[r]} ${label}`;
-      lab.appendChild(input);
-      lab.appendChild(span);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "flex-collection-pill__label ogtvote-rank-pill";
+      btn.setAttribute("aria-pressed", filled ? "true" : "false");
+      btn.setAttribute("aria-current", activeRank === r ? "true" : "false");
+      btn.innerHTML = `<span class="ogtvote-rank-emoji" aria-hidden="true">${rankIcons[r]}</span> ${escapeHtml(label)}`;
+      btn.addEventListener("click", () => {
+        if (state.finished) return;
+        // Tap to target a rank; tap again to clear targeting.
+        if (activeRank === r) activeRank = null;
+        else activeRank = r;
+
+        // If this rank is filled and is currently targeted, allow clearing by tapping again.
+        // (This makes it easy to replace a single rank.)
+        if (filled && activeRank === null) {
+          selectionByRank.delete(r);
+        }
+        renderVoteUI();
+      });
+      lab.appendChild(btn);
       picks.push(lab);
     }
     rankPills.replaceChildren(...picks);
@@ -1027,7 +1151,7 @@ async function mountRoom(app, code, tabFromRoute) {
   }
 
   function renderAll(tabOverride) {
-    elCode.textContent = state.code;
+    if (elCode) elCode.textContent = state.code;
     if (elCodeMeta) elCodeMeta.textContent = state.code;
     elTitle.textContent = state.name;
     elDesc.textContent = state.description || "";
@@ -1095,6 +1219,8 @@ async function mountRoom(app, code, tabFromRoute) {
 
   btnCopy.addEventListener("click", () => copyToClipboard(state.code));
   btnFinish?.addEventListener("click", () => finishVoting());
+  btnRoomHome?.addEventListener("click", goHome);
+  btnRoomNewVote?.addEventListener("click", () => setRoute({ flow: "create" }));
 
   btnOpenAdd?.addEventListener("click", () => {
     if (state.locked || state.finished) return;
@@ -1129,6 +1255,7 @@ async function mountRoom(app, code, tabFromRoute) {
   });
   mDrop?.addEventListener("dragover", (e) => {
     e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     dragEnterLeave(true);
   });
   mDrop?.addEventListener("dragleave", (e) => {
@@ -1138,9 +1265,16 @@ async function mountRoom(app, code, tabFromRoute) {
   mDrop?.addEventListener("drop", (e) => {
     e.preventDefault();
     dragEnterLeave(false);
-    const f = e.dataTransfer?.files?.[0];
-    if (!f || !f.type.startsWith("image/")) return;
-    void setModalImageFromFile(f);
+    const dt = e.dataTransfer;
+    const f = dt?.files?.[0] || null;
+    if (f && f.type?.startsWith?.("image/")) {
+      void setModalImageFromFile(f);
+      return;
+    }
+    const itemFile = dt?.items?.[0]?.getAsFile?.() || null;
+    if (itemFile && itemFile.type?.startsWith?.("image/")) {
+      void setModalImageFromFile(itemFile);
+    }
   });
 
   mImg?.addEventListener("change", async () => {
@@ -1152,10 +1286,10 @@ async function mountRoom(app, code, tabFromRoute) {
   mSave?.addEventListener("click", async () => {
     if (state.locked || state.finished) return;
     const tweetUrl = mUrl?.value.trim() || "";
-    const tweetId = extractTweetId(tweetUrl);
-    if (!tweetUrl || tweetId == null) {
+    const tweetId = tweetUrl ? extractTweetId(tweetUrl) : null;
+    if (tweetUrl && tweetId == null) {
       mUrl?.focus();
-      if (mStatus) mStatus.textContent = "Enter a valid tweet URL.";
+      if (mStatus) mStatus.textContent = "That doesn’t look like a tweet URL (must include /status/123...).";
       return;
     }
     const image =
@@ -1165,17 +1299,19 @@ async function mountRoom(app, code, tabFromRoute) {
       if (mStatus) mStatus.textContent = "Image is required. Paste, drop, or upload one.";
       return;
     }
-    if (state.entries.some((e) => e.tweetId === tweetId)) {
-      mUrl?.focus();
-      mUrl?.select?.();
-      if (mStatus) mStatus.textContent = "That tweet is already in this vote.";
-      return;
-    }
-    const deeperDup = await voteRef.collection("entries").where("tweetId", "==", tweetId).limit(1).get();
-    if (!deeperDup.empty) {
-      mUrl?.focus();
-      if (mStatus) mStatus.textContent = "That tweet is already in this vote.";
-      return;
+    if (tweetId) {
+      if (state.entries.some((e) => e.tweetId === tweetId)) {
+        mUrl?.focus();
+        mUrl?.select?.();
+        if (mStatus) mStatus.textContent = "That tweet is already in this vote.";
+        return;
+      }
+      const deeperDup = await voteRef.collection("entries").where("tweetId", "==", tweetId).limit(1).get();
+      if (!deeperDup.empty) {
+        mUrl?.focus();
+        if (mStatus) mStatus.textContent = "That tweet is already in this vote.";
+        return;
+      }
     }
     const username = mUser?.value.trim() || "";
     const fv = globalThis.firebase.firestore.FieldValue;
@@ -1184,7 +1320,7 @@ async function mountRoom(app, code, tabFromRoute) {
     try {
       await voteRef.collection("entries").add({
         tweetUrl,
-        tweetId,
+        tweetId: tweetId || "",
         image,
         username,
         createdAt: fv.serverTimestamp(),
@@ -1231,6 +1367,7 @@ async function mountRoom(app, code, tabFromRoute) {
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("paste", onPaste);
     document.body.classList.remove("welcome-modal-active");
+    lightbox.destroy();
     for (const u of unsubs) {
       try {
         u();
@@ -1246,6 +1383,16 @@ function main() {
   if (!app) return;
 
   setupThemeToggle();
+  $("btn-nav-home")?.addEventListener("click", () => {
+    const { code, flow } = parseRoute();
+    // If we're already on the landing screen, go back to site links.
+    if (!code && !flow) {
+      window.location.href = "/links/";
+      return;
+    }
+    // Otherwise, return to OGTVote landing (create/join/history hub).
+    goHome();
+  });
 
   const render = async () => {
     if (currentRoomCleanup) {
@@ -1253,6 +1400,10 @@ function main() {
       currentRoomCleanup = null;
     }
     const { code, tab, flow } = parseRoute();
+    const navHome = $("btn-nav-home");
+    if (navHome) {
+      navHome.textContent = !code && !flow ? "← Back to links" : "← Back to home";
+    }
 
     if (!isFirebaseConfigured() || !getDb()) {
       if (code) {
@@ -1265,6 +1416,7 @@ function main() {
       if (flow === "create") renderFlowCreate(app);
       else if (flow === "join") renderFlowJoin(app);
       else if (flow === "history") await renderFlowHistory(app);
+      else if (flow === "login") renderFlowLogin(app);
       else renderLanding(app);
       return;
     }
