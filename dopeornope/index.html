@@ -92,10 +92,6 @@
           </button>
         </div>
 
-        <button id="collections-btn" class="btn btn--accent collections-btn" type="button" aria-label="Filter your NFTs by collection">
-          🧰 Filter Your NFTs
-        </button>
-
         <button id="clear-filter-btn" class="btn btn--ghost clear-filter-btn hidden" type="button" aria-label="Clear filter">
           ✕ Clear Filter
         </button>
@@ -147,7 +143,7 @@
           </div>
 
           <div class="collections-title">Collections</div>
-          <div class="collections-subtitle">Choose to Filter Collection</div>
+          <div class="collections-subtitle">Choose to Filter Collection (scores won’t count)</div>
           <div class="collections-search">
             <input
               id="collections-search"
@@ -184,10 +180,22 @@
         <div class="card">
           <div id="pick3-grid" class="pick3-grid" aria-label="Pick 3 NFTs"></div>
         </div>
+        <button
+          id="clear-filter-btn-pick3"
+          class="btn btn--ghost clear-filter-btn hidden"
+          type="button"
+          aria-label="Clear filter"
+        >
+          ✕ Clear Filter
+        </button>
       </main>
     </section>
 
     <div id="pick3-overlay" class="pick3-overlay" aria-hidden="true"></div>
+
+    <div id="collection-mode-banner" class="collection-mode-banner" aria-live="polite">
+      Scores don’t count in collection mode 👀
+    </div>
 
     <!-- GAME PICKER (first launch) -->
     <div
@@ -214,7 +222,11 @@
         </div>
         <button id="btn-game-dope" class="btn btn--accent intro-modal__continue" type="button">🔥 DOPE or 🧊 NOPE</button>
         <button id="btn-game-pick3" class="btn btn--accent intro-modal__cta-secondary" type="button">💪 FLEX / ✋ HOLD / 👉 SEND</button>
-        <button id="btn-game-add" class="btn btn--ghost intro-modal__cta-secondary" type="button">➕ Add Your NFTs</button>
+        <div class="intro-modal__divider" aria-hidden="true"></div>
+        <button id="btn-game-add" class="btn btn--primary intro-modal__cta-secondary" type="button">➕ Add Your NFTs</button>
+        <button id="collections-btn" class="btn btn--primary collections-btn" type="button" aria-label="Filter your NFTs by collection">
+          🧰 Filter Your NFTs
+        </button>
       </div>
     </div>
 

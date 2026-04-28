@@ -44,15 +44,28 @@ let progressBumpT = 0;
 let progressGlowT = 0;
 let nftsRealtimeListenerStarted = false;
 
+function isCollectionMode() {
+  return !!activeCollectionFilter;
+}
+
+function showCollectionModeMessage() {
+  const el = document.getElementById("collection-mode-banner");
+  if (!el) return;
+  el.classList.add("visible");
+  window.setTimeout(() => el.classList.remove("visible"), 1500);
+}
+
 // -------------------------
 // Pick 3 mode (separate)
 // -------------------------
 let pick3NFTs = [];
+let nextPick3NFTs = [];
 let pickStep = 0;
 let pick3Timer = null;
 let timeLeft = 10;
 let pick3LargeIndex = 0;
 let pick3Submitting = false;
+let pick3SubmitInFlight = false;
 /** @type {Map<string, { root: HTMLElement, stamp: HTMLElement }>} */
 const pick3ElById = new Map();
 
@@ -182,12 +195,37 @@ function stopPick3Timer() {
   pick3Timer = null;
 }
 
+function preloadPick3Images(nfts) {
+  if (!Array.isArray(nfts)) return;
+  for (const nft of nfts) {
+    const url = nft?.image;
+    if (!url) continue;
+    const img = new Image();
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = url;
+  }
+}
+
+function generatePick3Set() {
+  const source = getFilteredNFTs();
+  return shuffleArray(source)
+    .slice(0, 3)
+    .map((n) => ({
+      ...n,
+      assigned: null,
+      assignedLabel: null,
+      assignedKey: null,
+    }));
+}
+
 function updateTimerUI() {
   const el = $("pick3-timer");
   if (el) el.textContent = `⏱️ ${timeLeft}`;
 }
 
 function handleTimeUp() {
+  if (pick3SubmitInFlight) return;
   const remaining = pick3NFTs.filter((n) => !n.assigned);
   for (const nft of remaining) {
     const step = PICK_STEPS[pickStep];
@@ -215,27 +253,33 @@ function startPick3Timer() {
   }, 1000);
 }
 
-function loadPick3NFTs() {
-  const source = getFilteredNFTs();
-  pick3NFTs = shuffleArray(source)
-    .slice(0, 3)
-    .map((n) => ({
-      ...n,
-      assigned: null,
-      assignedLabel: null,
-      assignedKey: null,
-    }));
+function loadPick3NFTs({ startTimer = true } = {}) {
+  // Always clear any previous round locks.
+  pick3Submitting = false;
+  pick3SubmitInFlight = false;
+
+  if (nextPick3NFTs.length === 3) {
+    pick3NFTs = nextPick3NFTs;
+  } else {
+    pick3NFTs = generatePick3Set();
+  }
+
+  // Prepare the next round immediately so round transitions feel instant.
+  nextPick3NFTs = generatePick3Set();
+  preloadPick3Images(nextPick3NFTs);
+  preloadPick3Images(pick3NFTs);
+
   pickStep = 0;
   pick3LargeIndex = Math.floor(Math.random() * 3);
   renderPick3();
-  startPick3Timer();
+  if (startTimer) startPick3Timer();
 }
 
 function showPick3Results(message = null) {
   const el = $("pick3-overlay");
   if (!el) {
     // fallback to next round
-    window.setTimeout(() => loadPick3NFTs(), 800);
+    window.setTimeout(() => loadPick3NFTs(), 450);
     return;
   }
 
@@ -250,29 +294,45 @@ function showPick3Results(message = null) {
   window.setTimeout(() => {
     el.classList.remove("visible");
     el.setAttribute("aria-hidden", "true");
-    loadPick3NFTs();
-  }, 1200);
+    requestAnimationFrame(() => loadPick3NFTs());
+  }, 850);
 }
 
 async function submitPick3Round(message = null) {
-  if (pick3Submitting) return;
+  if (!pick3Submitting) pick3Submitting = true;
+  if (pick3SubmitInFlight) return;
+  pick3SubmitInFlight = true;
 
   const assigned = pick3NFTs.filter((nft) => nft.assignedKey);
   if (assigned.length !== 3) {
     console.warn("Pick 3 submit skipped: not all NFTs assigned");
+    pick3SubmitInFlight = false;
+    pick3Submitting = false;
     return;
   }
 
-  pick3Submitting = true;
+  if (isCollectionMode()) {
+    showCollectionModeMessage();
+    showPick3Results("Collection mode — scores not counted 👀");
+    window.setTimeout(() => {
+      pick3SubmitInFlight = false;
+      pick3Submitting = false;
+    }, 900);
+    return;
+  }
 
   try {
     await Promise.all(assigned.map((nft) => updatePick3ResultInDB(nft, nft.assignedKey)));
     showPick3Results(message || getRandomPick3Message());
   } catch (error) {
     console.error("Failed to submit Pick 3 round:", error);
-    showPick3Results("Couldn’t save choices 😅");
+    showPick3Results("Something went wrong 😅");
   } finally {
-    pick3Submitting = false;
+    // Do not unlock immediately; prevents double submits during the result overlay + transition.
+    window.setTimeout(() => {
+      pick3SubmitInFlight = false;
+      pick3Submitting = false;
+    }, 1500);
   }
 }
 
@@ -301,11 +361,12 @@ function handlePick3Click(nft) {
   setPick3Stamp(nft);
   updatePick3Header();
 
-  if (pickStep === 3) {
+  if (pickStep === 3 && !pick3Submitting) {
+    pick3Submitting = true;
     stopPick3Timer();
     window.setTimeout(() => {
       void submitPick3Round();
-    }, 300);
+    }, 200);
   }
 }
 
@@ -526,6 +587,7 @@ async function appMain() {
   const collectionsBack = $("collections-back");
   const collectionsSearch = $("collections-search");
   const clearFilterBtn = $("clear-filter-btn");
+  const clearFilterBtnPick3 = $("clear-filter-btn-pick3");
 
   const overlay = $("score-overlay");
   const overlayTitle = $("score-title");
@@ -1034,8 +1096,14 @@ async function appMain() {
     const prevCold = Number(currentNFT.votesCold) || 0;
     let voteSaved = false;
     try {
-      await voteNFT(currentNFT, isHot);
-      voteSaved = true;
+      if (isCollectionMode()) {
+        // Local-only feedback: don't write to Firestore while filtering by collection.
+        showCollectionModeMessage();
+        voteSaved = true;
+      } else {
+        await voteNFT(currentNFT, isHot);
+        voteSaved = true;
+      }
     } catch {
       currentNFT.votesHot = prevHot;
       currentNFT.votesCold = prevCold;
@@ -1504,13 +1572,25 @@ async function appMain() {
   function showActiveCollectionBanner(name) {
     if (!clearFilterBtn) return;
     clearFilterBtn.classList.remove("hidden");
-    clearFilterBtn.textContent = `✕ ${name}`;
+    clearFilterBtn.textContent = `✕ ${name} (scores don’t count)`;
+    clearFilterBtn.classList.add("clear-filter-btn--glow");
+    if (clearFilterBtnPick3) {
+      clearFilterBtnPick3.classList.remove("hidden");
+      clearFilterBtnPick3.textContent = `✕ ${name} (scores don’t count)`;
+      clearFilterBtnPick3.classList.add("clear-filter-btn--glow");
+    }
   }
 
   function hideActiveCollectionBanner() {
     if (!clearFilterBtn) return;
     clearFilterBtn.classList.add("hidden");
     clearFilterBtn.textContent = "✕ Clear Filter";
+    clearFilterBtn.classList.remove("clear-filter-btn--glow");
+    if (clearFilterBtnPick3) {
+      clearFilterBtnPick3.classList.add("hidden");
+      clearFilterBtnPick3.textContent = "✕ Clear Filter";
+      clearFilterBtnPick3.classList.remove("clear-filter-btn--glow");
+    }
   }
 
   async function refreshFeedForCurrentFilter() {
@@ -1640,7 +1720,6 @@ async function appMain() {
   btnGameDope?.addEventListener("click", () => {
     closeGameModal();
     showScreen("main");
-    maybeShowIntroModal();
   });
 
   btnGamePick3?.addEventListener("click", () => {
@@ -1776,6 +1855,7 @@ async function appMain() {
   collectionsBack?.addEventListener("click", closeCollectionsModal);
   collectionsSearch?.addEventListener("input", renderCollections);
   clearFilterBtn?.addEventListener("click", () => void applyCollectionFilter(null));
+  clearFilterBtnPick3?.addEventListener("click", () => void applyCollectionFilter(null));
   collectionsModal?.addEventListener("click", (e) => {
     const t = e.target;
     if (t && t.getAttribute && t.getAttribute("data-collections-close") === "overlay") closeCollectionsModal();

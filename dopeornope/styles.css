@@ -267,6 +267,32 @@ input {
   display: flex;
 }
 
+.collection-mode-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 17, 17, 0.92);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 9999;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  width: fit-content;
+  max-width: min(92vw, 520px);
+}
+
+.collection-mode-banner.visible {
+  opacity: 1;
+}
+
 .pick3-result {
   background: rgba(255, 216, 77, 0.96);
   border: 1px solid rgba(255, 216, 77, 0.95);
@@ -357,6 +383,28 @@ a.icon-btn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.clear-filter-btn--glow {
+  border-color: rgba(255, 216, 77, 0.95) !important;
+  box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.26), 0 14px 34px rgba(255, 216, 77, 0.18) !important;
+  background: rgba(255, 216, 77, 0.12) !important;
+  animation: clearGlowPulse 1.15s ease-in-out infinite;
+}
+
+@keyframes clearGlowPulse {
+  0% {
+    box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.18), 0 10px 26px rgba(255, 216, 77, 0.1);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.32), 0 18px 44px rgba(255, 216, 77, 0.22);
+    transform: translateY(-1px);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(255, 216, 77, 0.18), 0 10px 26px rgba(255, 216, 77, 0.1);
+    transform: translateY(0);
+  }
 }
 
 .clear-filter-btn.hidden {
@@ -955,6 +1003,80 @@ a.icon-btn {
   border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: var(--shadow), 0 0 0 1px rgba(15, 47, 110, 0.2);
   text-align: center;
+}
+
+.intro-modal--game .intro-modal__card {
+  /* Keep the chooser feeling like a fixed card (no internal scroll) */
+  overflow: hidden;
+  max-height: min(92dvh, 680px);
+  padding: 30px 26px 22px;
+}
+
+.intro-modal--game .intro-modal__logos {
+  margin-bottom: 8px;
+}
+
+.intro-modal--game .intro-modal__logos .intro-modal__brand {
+  margin-top: -4px;
+}
+
+/* Make the game chooser fit without scrolling (phones) */
+.intro-modal--game .intro-modal__lo-png {
+  width: min(108px, 30vw);
+  max-height: 120px;
+}
+
+.intro-modal--game .intro-modal__logo {
+  width: min(150px, 40vw);
+  max-height: 160px;
+}
+
+.intro-modal--game .intro-modal__brand {
+  max-height: 88px;
+}
+
+.intro-modal--game .intro-modal__title {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+}
+
+.intro-modal--game .intro-modal__info {
+  gap: 8px;
+}
+
+.intro-modal--game .intro-modal__body-line {
+  font-size: 1.02rem;
+  line-height: 1.35;
+}
+
+.intro-modal--game .intro-modal__continue {
+  margin-top: 14px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.intro-modal--game .intro-modal__cta-secondary {
+  margin-top: 8px;
+}
+
+.intro-modal--game .intro-modal__divider {
+  margin: 12px 0 10px;
+}
+
+.intro-modal__divider {
+  height: 1px;
+  width: 100%;
+  margin: 14px 0 12px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 216, 77, 0.85) 20%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 216, 77, 0.85) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 10px 22px rgba(255, 216, 77, 0.12);
+  border-radius: 999px;
 }
 
 .intro-modal__info-btn,
