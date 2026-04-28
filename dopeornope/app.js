@@ -7,6 +7,8 @@ import {
   doc,
   query,
   limit,
+  orderBy,
+  startAfter,
   onSnapshot,
   increment,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -14,6 +16,14 @@ import { seedNFTs } from "./data.js";
 import { loadNFTsFromWalletOnChain, groupNFTsByCollection, isValidEvmAddress } from "./nftLoader.js";
 
 const $ = (id) => document.getElementById(id);
+
+// Let the loading screen know the module actually started executing.
+globalThis.__LO_DON_BOOTED__ = true;
+try {
+  globalThis.__loSetLoadingStatus?.("Loading game…");
+} catch {
+  /* ignore */
+}
 
 function getNumber(value) {
   return typeof value === "number" ? value : 0;
@@ -47,10 +57,16 @@ let pick3Submitting = false;
 const pick3ElById = new Map();
 
 const PICK_STEPS = [
-  { key: "pick", label: "YOUR PICK", color: "green" },
-  { key: "hold", label: "SAFE HOLD", color: "yellow" },
-  { key: "cut", label: "THE CUT", color: "red" },
+  { key: "pick", label: "FLEX IT", color: "green" },
+  { key: "hold", label: "HOLD IT", color: "yellow" },
+  { key: "cut", label: "SEND IT", color: "red" },
 ];
+
+const STAMP_LABELS = {
+  pick: "FLEX IT",
+  hold: "HOLD IT",
+  cut: "SEND IT",
+};
 
 const PICK3_SUCCESS_MESSAGES = ["Choices locked 🔥", "Bold calls 😅", "Interesting picks 👀", "The Cut has spoken 🔥"];
 
@@ -110,13 +126,13 @@ function updatePick3Header() {
   if (pickStep >= 3) {
     el.textContent = "Done 👀";
     el.classList.add("is-done");
-    if (timerEl) timerEl.textContent = "—";
+    if (timerEl) timerEl.textContent = "⏱️ —";
     return;
   }
   const step = PICK_STEPS[pickStep];
   el.textContent = `Next: ${step.label}`;
   el.classList.add(step.color === "green" ? "is-green" : step.color === "yellow" ? "is-yellow" : "is-red");
-  if (timerEl) timerEl.textContent = String(timeLeft);
+  if (timerEl) timerEl.textContent = `⏱️ ${timeLeft}`;
 }
 
 function renderPick3() {
@@ -126,16 +142,18 @@ function renderPick3() {
   container.innerHTML = "";
   pick3ElById.clear();
 
-  pick3NFTs.forEach((nft, i) => {
+  // Always layout as: two on top, then the "large" one underneath.
+  const order = [0, 1, 2].filter((i) => i !== pick3LargeIndex).concat([pick3LargeIndex]);
+  order.forEach((i) => {
+    const nft = pick3NFTs[i];
+    if (!nft) return;
     const el = document.createElement("div");
     el.className = "pick3-item";
     if (i === pick3LargeIndex) el.classList.add("large");
 
     el.innerHTML = `
       <img src="${nft.image}" alt="NFT" loading="lazy" decoding="async" />
-      <div class="stamp ${nft.assigned || ""}">
-        ${nft.assignedLabel || ""}
-      </div>
+      <div class="stamp ${nft.assigned || ""}"></div>
     `;
 
     el.addEventListener("click", () => handlePick3Click(nft));
@@ -166,7 +184,7 @@ function stopPick3Timer() {
 
 function updateTimerUI() {
   const el = $("pick3-timer");
-  if (el) el.textContent = String(timeLeft);
+  if (el) el.textContent = `⏱️ ${timeLeft}`;
 }
 
 function handleTimeUp() {
@@ -276,7 +294,7 @@ function handlePick3Click(nft) {
 
   const step = PICK_STEPS[pickStep];
   nft.assigned = step.color;
-  nft.assignedLabel = step.label;
+  nft.assignedLabel = STAMP_LABELS[step.key] || step.label;
   nft.assignedKey = step.key;
   pickStep++;
 
@@ -329,29 +347,57 @@ function getNextNFT(avoidCollectionKey) {
 }
 
 async function loadNFTsFromDB() {
-  const q = query(collection(db, "nfts"), limit(200));
-  const snapshot = await getDocs(q);
-
   allNFTs = [];
   nftMap = {};
 
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const nft = { ...data, _docId: docSnap.id };
+  // Load *all* NFTs in pages (no artificial 200 cap).
+  // We order by document id to enable stable pagination.
+  const pageSize = 500;
+  let lastDoc = null;
 
-    allNFTs.push(nft);
-    nftMap[nft.id] = nft;
-  });
+  while (true) {
+    const base = collection(db, "nfts");
+    const q = lastDoc
+      ? query(base, orderBy("__name__"), startAfter(lastDoc), limit(pageSize))
+      : query(base, orderBy("__name__"), limit(pageSize));
+
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) break;
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const nft = { ...data, _docId: docSnap.id };
+      allNFTs.push(nft);
+      if (nft?.id != null) nftMap[nft.id] = nft;
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1] || lastDoc;
+    if (snapshot.size < pageSize) break;
+  }
 }
 
 async function addNFTsToDB(nfts) {
-  const snapshot = await getDocs(collection(db, "nfts"));
-
   const existingIds = new Set();
-  snapshot.forEach((d) => {
-    const id = d.data()?.id;
-    if (id) existingIds.add(id);
-  });
+
+  // Scan existing ids in pages so we can scale beyond 200.
+  const pageSize = 500;
+  let lastDoc = null;
+  while (true) {
+    const base = collection(db, "nfts");
+    const q = lastDoc
+      ? query(base, orderBy("__name__"), startAfter(lastDoc), limit(pageSize))
+      : query(base, orderBy("__name__"), limit(pageSize));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) break;
+
+    for (const d of snapshot.docs) {
+      const id = d.data()?.id;
+      if (id) existingIds.add(id);
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1] || lastDoc;
+    if (snapshot.size < pageSize) break;
+  }
 
   for (const nft of nfts) {
     if (!nft?.id || existingIds.has(nft.id)) continue;
@@ -459,11 +505,16 @@ async function appMain() {
   const btnCold = $("btn-cold");
   const btnAdd = $("btn-add");
   const btnBack = $("btn-back");
-  const btnPick3 = $("btn-pick3");
   const btnPick3Back = $("btn-pick3-back");
+  const btnGameMenu = $("btn-game-menu");
   const gameModal = $("game-modal");
   const btnGameDope = $("btn-game-dope");
   const btnGamePick3 = $("btn-game-pick3");
+  const btnGameAdd = $("btn-game-add");
+  const btnGameInfo = $("btn-game-info");
+  const howModal = $("how-modal");
+  const btnHowClose = $("btn-how-close");
+  const btnHowGotIt = $("btn-how-gotit");
   const roundCompleteModal = $("round-complete-modal");
   const btnRoundAgain = $("btn-round-again");
   const btnRoundDone = $("btn-round-done");
@@ -574,7 +625,6 @@ async function appMain() {
     if (name !== "pick3") stopPick3Timer();
   }
 
-  const GAME_MODAL_KEY = "don_game_choice_v1";
   function openGameModal() {
     if (!gameModal) return;
     gameModal.classList.add("is-open");
@@ -589,13 +639,24 @@ async function appMain() {
     document.body.style.overflow = "";
   }
 
+  function openHowModal() {
+    if (!howModal) return;
+    howModal.classList.add("is-open");
+    howModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnHowGotIt?.focus(), 50);
+  }
+
+  function closeHowModal() {
+    if (!howModal) return;
+    howModal.classList.remove("is-open");
+    howModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnGameInfo?.focus(), 50);
+  }
+
   function maybeShowGameModal() {
-    try {
-      if (sessionStorage.getItem(GAME_MODAL_KEY) === "1") return;
-      sessionStorage.setItem(GAME_MODAL_KEY, "1");
-    } catch {
-      /* ignore */
-    }
+    // Always show on entry (per requirements).
     openGameModal();
   }
 
@@ -677,7 +738,7 @@ async function appMain() {
   function setButtonsEnabled(enabled) {
     btnHot.disabled = !enabled;
     btnCold.disabled = !enabled;
-    btnAdd.disabled = !enabled;
+    if (btnAdd) btnAdd.disabled = !enabled;
   }
 
   async function renderNFT(nft) {
@@ -906,7 +967,7 @@ async function appMain() {
     updateProgressBadge();
     btnHot.disabled = false;
     btnCold.disabled = false;
-    btnAdd.disabled = false;
+    if (btnAdd) btnAdd.disabled = false;
   }
 
   async function advanceFeed() {
@@ -1005,12 +1066,13 @@ async function appMain() {
     } else {
       btnHot.disabled = true;
       btnCold.disabled = true;
-      btnAdd.disabled = false;
+      if (btnAdd) btnAdd.disabled = false;
     }
     isTransitioning = false;
   }
 
   function wireTapScale(button) {
+    if (!button) return;
     const press = () => button.classList.add("is-pressed");
     const release = () => {
       button.classList.remove("is-pressed");
@@ -1477,7 +1539,7 @@ async function appMain() {
     updateProgressBadge();
     btnHot.disabled = true;
     btnCold.disabled = true;
-    btnAdd.disabled = false;
+    if (btnAdd) btnAdd.disabled = false;
     return false;
   }
 
@@ -1547,7 +1609,7 @@ async function appMain() {
   }
 
   // --- Navigation ---
-  btnAdd.addEventListener("click", () => {
+  btnAdd?.addEventListener("click", () => {
     selectedNFTs = {};
     walletLoadedNFTs = [];
     collectionGroups = {};
@@ -1563,26 +1625,54 @@ async function appMain() {
 
   btnBack.addEventListener("click", () => {
     showScreen("main");
-  });
-
-  btnPick3?.addEventListener("click", () => {
-    loadPick3NFTs();
-    showScreen("pick3");
+    openGameModal();
   });
 
   btnPick3Back?.addEventListener("click", () => {
     showScreen("main");
+    openGameModal();
+  });
+
+  btnGameMenu?.addEventListener("click", () => {
+    openGameModal();
   });
 
   btnGameDope?.addEventListener("click", () => {
     closeGameModal();
     showScreen("main");
+    maybeShowIntroModal();
   });
 
   btnGamePick3?.addEventListener("click", () => {
     closeGameModal();
     loadPick3NFTs();
     showScreen("pick3");
+  });
+
+  btnGameAdd?.addEventListener("click", () => {
+    closeGameModal();
+    selectedNFTs = {};
+    walletLoadedNFTs = [];
+    collectionGroups = {};
+    activeCollectionName = null;
+    walletGrid.innerHTML = "";
+    setCollectionSearchVisible(false);
+    showAddNFTMessage("");
+    updateSelectedCount();
+    addSuccess.textContent = "";
+    showScreen("add");
+    walletInput.focus();
+  });
+
+  btnGameInfo?.addEventListener("click", () => openHowModal());
+  btnHowClose?.addEventListener("click", () => closeHowModal());
+  btnHowGotIt?.addEventListener("click", () => closeHowModal());
+
+  howModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-how-close") === "backdrop") {
+      closeHowModal();
+    }
   });
 
   gameModal?.addEventListener("click", (e) => {
@@ -1857,7 +1947,6 @@ async function appMain() {
     }
     showScreen("main");
     maybeShowGameModal();
-    maybeShowIntroModal();
     startNftsRealtimeSync();
   }
 

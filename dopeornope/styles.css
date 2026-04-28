@@ -85,10 +85,10 @@ input {
 }
 
 .pick3-header-pill {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 18px;
   letter-spacing: 0.02em;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -120,12 +120,12 @@ input {
 }
 
 .pick3-timer {
-  min-width: 52px;
+  min-width: 78px;
   text-align: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 18px;
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.95);
@@ -139,20 +139,12 @@ input {
   margin: 0 auto;
 }
 
-/* Mobile: 2 + 1 (random large card) */
+/* 2 (top row) + 1 (big underneath) on all screens */
 .pick3-item.large {
   grid-column: span 2;
 }
 
-/* Desktop: 3 across */
-@media (min-width: 768px) {
-  .pick3-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  .pick3-item.large {
-    grid-column: span 1;
-  }
-}
+/* (intentionally no 3-up desktop layout for Pick 3) */
 
 .pick3-item {
   position: relative;
@@ -174,33 +166,57 @@ input {
 
 .stamp {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  padding: 8px 12px;
-  border-radius: 999px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  width: 140%;
+  text-align: center;
+  font-size: 1.9rem;
   font-weight: 900;
-  font-size: 0.82rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 2.5px;
+  padding: 14px 0;
+  border: 6px solid;
+  border-radius: 12px;
+  opacity: 0.85;
   display: none;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+  animation: stampIn 0.25s ease-out;
 }
 
 .stamp.green {
-  display: inline-flex;
-  background: #4caf50;
-  color: #ffffff;
+  display: block;
+  color: #2ecc71;
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.28);
 }
 
 .stamp.yellow {
-  display: inline-flex;
-  background: #ffd84d;
-  color: #111111;
+  display: block;
+  color: #f1c40f;
+  border-color: #f1c40f;
+  background: rgba(241, 196, 15, 0.28);
 }
 
 .stamp.red {
-  display: inline-flex;
-  background: #ff4d4d;
-  color: #ffffff;
+  display: block;
+  color: #e74c3c;
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.28);
+}
+
+@keyframes stampIn {
+  0% {
+    transform: translate(-50%, -50%) scale(1.5) rotate(-15deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(0.9) rotate(-15deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(-15deg);
+  }
 }
 
 @media (max-width: 420px) {
@@ -240,11 +256,11 @@ input {
 }
 
 .pick3-result {
-  background: rgba(15, 47, 110, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 216, 77, 0.96);
+  border: 1px solid rgba(255, 216, 77, 0.95);
   border-radius: 18px;
   padding: 18px 20px;
-  color: #fff;
+  color: #111;
   font-weight: 900;
   font-size: 1.1rem;
   text-align: center;
@@ -929,6 +945,94 @@ a.icon-btn {
   text-align: center;
 }
 
+.intro-modal__info-btn,
+.intro-modal__close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-on-lo);
+  font-weight: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(7, 12, 24, 0.28);
+  cursor: pointer;
+}
+
+.intro-modal--game .intro-modal__info-btn {
+  border-color: rgba(255, 216, 77, 0.9);
+  background: rgba(255, 216, 77, 0.95);
+  color: #0f2f6e;
+  box-shadow: 0 12px 26px rgba(7, 12, 24, 0.32), 0 0 0 3px rgba(255, 216, 77, 0.22);
+  font-size: 1.05rem;
+}
+
+.intro-modal--how .intro-modal__close-btn {
+  border-color: rgba(255, 216, 77, 0.9);
+  background: rgba(255, 216, 77, 0.95);
+  color: #0f2f6e;
+  box-shadow: 0 12px 26px rgba(7, 12, 24, 0.32), 0 0 0 3px rgba(255, 216, 77, 0.22);
+}
+
+.intro-modal__info-btn:active,
+.intro-modal__close-btn:active {
+  transform: translateY(1px);
+}
+
+.intro-modal__card--how {
+  /* Match the Choose Game popup sizing */
+  width: min(480px, 96vw);
+  text-align: left;
+  /* Allow the info modal to be taller so nothing is clipped */
+  max-height: min(96dvh, 900px);
+  overflow: auto;
+  padding: 44px 30px 34px;
+}
+
+.intro-modal__info--how {
+  margin-top: 6px;
+}
+
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.how-block {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 12px 12px 10px;
+  box-shadow: 0 10px 22px rgba(7, 12, 24, 0.18);
+}
+
+.how-logo {
+  display: block;
+  width: min(300px, 100%);
+  height: auto;
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 10px 18px rgba(7, 12, 24, 0.22));
+}
+
+.how-line {
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.35;
+  margin: 5px 0;
+  font-size: 1.06rem;
+}
+
+.how-line strong {
+  color: rgba(255, 216, 77, 0.98);
+  text-shadow: 0 2px 0 rgba(15, 47, 110, 0.25);
+}
+
 .intro-modal__logos {
   display: flex;
   flex-direction: column;
@@ -949,6 +1053,30 @@ a.icon-btn {
 
 .intro-modal__logos .intro-modal__brand {
   margin-top: -6px;
+}
+
+.intro-modal__logos--how {
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.intro-modal__logos--how .intro-modal__logo {
+  margin-top: 0;
+}
+
+/* Info modal header: prevent top clipping */
+.intro-modal--how .intro-modal__logos .intro-modal__lo-png {
+  transform: none;
+  margin-bottom: 8px;
+}
+
+.intro-modal--how .intro-modal__logos .intro-modal__logo {
+  width: min(170px, 46vw);
+}
+
+.intro-modal--how .intro-modal__logos .intro-modal__lo-png {
+  width: min(140px, 38vw);
+  height: auto;
 }
 
 /* Same size relationship as main hero `.logo--hero` + `.logo--brand` */

@@ -20,14 +20,41 @@
             height="120"
           />
         </div>
-        <p class="muted">Loading the vibes...</p>
+        <p id="loading-status" class="muted">Loading the vibes...</p>
       </div>
     </section>
+
+    <script>
+      // If module scripts fail to load (bad MIME, blocked imports, etc), users otherwise get stuck here forever.
+      window.__LO_DON_BOOTED__ = false;
+      function __loSetLoadingStatus(msg) {
+        const el = document.getElementById("loading-status");
+        if (!el) return;
+        el.textContent = msg;
+      }
+
+      window.addEventListener("error", (e) => {
+        const message = e?.message || "Unknown script error";
+        const filename = e?.filename ? ` (${e.filename}:${e.lineno || 0}:${e.colno || 0})` : "";
+        __loSetLoadingStatus(`Error: ${message}${filename}`);
+      });
+
+      window.addEventListener("unhandledrejection", (e) => {
+        const reason = e?.reason;
+        const msg = typeof reason === "string" ? reason : reason?.message || JSON.stringify(reason);
+        __loSetLoadingStatus(`Error: ${msg || "Unhandled promise rejection"}`);
+      });
+
+      window.setTimeout(() => {
+        if (window.__LO_DON_BOOTED__) return;
+        __loSetLoadingStatus("Still loading… If this doesn’t go away, refresh (or check your connection).");
+      }, 2500);
+    </script>
 
     <!-- SCREEN 2: Main rating -->
     <section id="screen-main" class="screen" aria-label="Rate NFTs">
       <header class="lo-hero lo-hero--main" aria-label="Dope or Nope by Little Ollie Labs">
-        <a href="../links/" class="icon-btn icon-btn--overlay" aria-label="Back to Links">←</a>
+        <button id="btn-game-menu" class="icon-btn icon-btn--overlay" type="button" aria-label="Choose game">←</button>
         <div class="lo-logo-pair">
           <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
           <img
@@ -77,9 +104,7 @@
           🔁 Shuffle & vote again
         </button>
 
-        <button id="btn-add" class="btn btn--ghost" type="button">➕ Add Your NFTs</button>
-
-        <button id="btn-pick3" class="btn btn--ghost" type="button">🎯 Pick 3</button>
+        <!-- Add NFTs entry moved to Choose game screen -->
       </main>
 
       <button id="btn-share" class="share-btn" type="button" aria-label="Share this result">
@@ -146,12 +171,12 @@
         <button id="btn-pick3-back" class="icon-btn icon-btn--overlay" type="button" aria-label="Back">←</button>
         <div class="lo-logo-pair">
           <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
-          <img class="logo logo--brand" src="./assets/dopeornope.png" alt="Dope or Nope" width="320" height="120" />
+          <img class="logo logo--brand" src="./assets/fhs.png" alt="Pick 3" width="320" height="120" />
         </div>
         <div class="lo-subtitle">Pick 3 mode</div>
         <div class="pick3-headrow" aria-live="polite">
           <div id="pick3-header" class="pick3-header-pill">Next: YOUR PICK</div>
-          <div id="pick3-timer" class="pick3-timer" aria-label="Timer">10s</div>
+          <div id="pick3-timer" class="pick3-timer" aria-label="Timer">⏱️ 10</div>
         </div>
       </header>
 
@@ -175,6 +200,9 @@
     >
       <div class="intro-modal__backdrop" data-game-close="backdrop"></div>
       <div class="intro-modal__card">
+        <button id="btn-game-info" class="intro-modal__info-btn" type="button" aria-label="How it works">
+          ℹ️
+        </button>
         <div class="intro-modal__logos">
           <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
           <img class="intro-modal__logo" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
@@ -184,8 +212,40 @@
         <div class="intro-modal__info">
           <p class="intro-modal__body-line">Pick your mode:</p>
         </div>
-        <button id="btn-game-dope" class="btn btn--accent intro-modal__continue" type="button">🔥 Dope or Nope</button>
-        <button id="btn-game-pick3" class="btn btn--ghost intro-modal__cta-secondary" type="button">🎯 Pick 3</button>
+        <button id="btn-game-dope" class="btn btn--accent intro-modal__continue" type="button">🔥 DOPE or 🧊 NOPE</button>
+        <button id="btn-game-pick3" class="btn btn--accent intro-modal__cta-secondary" type="button">💪 FLEX / ✋ HOLD / 👉 SEND</button>
+        <button id="btn-game-add" class="btn btn--ghost intro-modal__cta-secondary" type="button">➕ Add Your NFTs</button>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div id="how-modal" class="intro-modal intro-modal--how" aria-hidden="true" role="dialog" aria-modal="true" aria-label="How it works">
+      <div class="intro-modal__backdrop" data-how-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--how">
+        <button id="btn-how-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <div class="intro-modal__logos intro-modal__logos--how" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+        <h2 class="intro-modal__title">How it works</h2>
+        <div class="intro-modal__info intro-modal__info--how">
+          <div class="how-grid">
+            <div class="how-block">
+              <img class="how-logo how-logo--don" src="./assets/dopeornope.png" alt="Dope or Nope" width="320" height="120" />
+              <div class="how-line">Tap 🔥 Dope to add <strong>+1 Hot</strong>.</div>
+              <div class="how-line">Tap 🧊 Nope to add <strong>+1 Cold</strong>.</div>
+              <div class="how-line">The score is a 0–10 “vibe score” based on Hot vs Cold votes.</div>
+            </div>
+            <div class="how-block">
+              <img class="how-logo how-logo--pick3" src="./assets/fhs.png" alt="Flex Hold Send" width="320" height="120" />
+              <div class="how-line"><strong>FLEX IT</strong> adds <strong>+2 Hot</strong>.</div>
+              <div class="how-line"><strong>HOLD IT</strong> adds <strong>+1 Hot</strong>.</div>
+              <div class="how-line"><strong>SEND IT</strong> adds <strong>+1 Cold</strong>.</div>
+              <div class="how-line">You have <strong>10 seconds</strong> — if time runs out, the rest auto-assign.</div>
+            </div>
+          </div>
+        </div>
+        <button id="btn-how-gotit" class="btn btn--accent intro-modal__continue" type="button">Got it</button>
       </div>
     </div>
 
