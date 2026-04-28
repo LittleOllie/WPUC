@@ -71,6 +71,187 @@ input {
   display: block;
 }
 
+/* -------------------------
+   Pick 3 mode
+   ------------------------- */
+.pick3-headrow {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.pick3-header-pill {
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(15, 47, 110, 0.35);
+}
+
+.pick3-header-pill.is-green {
+  background: rgba(76, 175, 80, 0.92);
+  border-color: rgba(76, 175, 80, 0.9);
+}
+
+.pick3-header-pill.is-yellow {
+  background: rgba(255, 216, 77, 0.96);
+  border-color: rgba(255, 216, 77, 0.95);
+  color: #111;
+  text-shadow: none;
+}
+
+.pick3-header-pill.is-red {
+  background: rgba(255, 77, 77, 0.92);
+  border-color: rgba(255, 77, 77, 0.9);
+}
+
+.pick3-header-pill.is-done {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pick3-timer {
+  min-width: 52px;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 15px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.pick3-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Mobile: 2 + 1 (random large card) */
+.pick3-item.large {
+  grid-column: span 2;
+}
+
+/* Desktop: 3 across */
+@media (min-width: 768px) {
+  .pick3-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .pick3-item.large {
+    grid-column: span 1;
+  }
+}
+
+.pick3-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pick3-item img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+
+.stamp {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  display: none;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.stamp.green {
+  display: inline-flex;
+  background: #4caf50;
+  color: #ffffff;
+}
+
+.stamp.yellow {
+  display: inline-flex;
+  background: #ffd84d;
+  color: #111111;
+}
+
+.stamp.red {
+  display: inline-flex;
+  background: #ff4d4d;
+  color: #ffffff;
+}
+
+@media (max-width: 420px) {
+  .pick3-grid {
+    gap: 12px;
+  }
+  .stamp {
+    font-size: 0.78rem;
+  }
+}
+
+/* Slightly bigger cards on phones by reducing card padding */
+@media (max-width: 420px) {
+  #screen-pick3 .card {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  #screen-pick3 .content {
+    padding-top: 8px;
+  }
+}
+
+.pick3-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.pick3-overlay.visible {
+  display: flex;
+}
+
+.pick3-result {
+  background: rgba(15, 47, 110, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 18px;
+  padding: 18px 20px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-align: center;
+  width: min(92vw, 420px);
+  box-shadow: var(--shadow);
+}
+
 /* ——— Loading ——— */
 .center-stack {
   min-height: 100dvh;

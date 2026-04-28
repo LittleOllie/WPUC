@@ -78,6 +78,8 @@
         </button>
 
         <button id="btn-add" class="btn btn--ghost" type="button">➕ Add Your NFTs</button>
+
+        <button id="btn-pick3" class="btn btn--ghost" type="button">🎯 Pick 3</button>
       </main>
 
       <button id="btn-share" class="share-btn" type="button" aria-label="Share this result">
@@ -137,6 +139,55 @@
         </div>
       </div>
     </section>
+
+    <!-- SCREEN 4: Pick 3 -->
+    <section id="screen-pick3" class="screen" aria-label="Pick 3">
+      <header class="lo-hero lo-hero--main" aria-label="Pick 3 by Little Ollie Labs">
+        <button id="btn-pick3-back" class="icon-btn icon-btn--overlay" type="button" aria-label="Back">←</button>
+        <div class="lo-logo-pair">
+          <img class="logo logo--hero" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img class="logo logo--brand" src="./assets/dopeornope.png" alt="Dope or Nope" width="320" height="120" />
+        </div>
+        <div class="lo-subtitle">Pick 3 mode</div>
+        <div class="pick3-headrow" aria-live="polite">
+          <div id="pick3-header" class="pick3-header-pill">Next: YOUR PICK</div>
+          <div id="pick3-timer" class="pick3-timer" aria-label="Timer">10s</div>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="card">
+          <div id="pick3-grid" class="pick3-grid" aria-label="Pick 3 NFTs"></div>
+        </div>
+      </main>
+    </section>
+
+    <div id="pick3-overlay" class="pick3-overlay" aria-hidden="true"></div>
+
+    <!-- GAME PICKER (first launch) -->
+    <div
+      id="game-modal"
+      class="intro-modal intro-modal--game"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Choose mode"
+    >
+      <div class="intro-modal__backdrop" data-game-close="backdrop"></div>
+      <div class="intro-modal__card">
+        <div class="intro-modal__logos">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="Little Ollie" width="160" height="160" />
+          <img class="intro-modal__brand" src="./assets/dopeornope.png" alt="" width="320" height="120" />
+        </div>
+        <h2 class="intro-modal__title">Choose your game</h2>
+        <div class="intro-modal__info">
+          <p class="intro-modal__body-line">Pick your mode:</p>
+        </div>
+        <button id="btn-game-dope" class="btn btn--accent intro-modal__continue" type="button">🔥 Dope or Nope</button>
+        <button id="btn-game-pick3" class="btn btn--ghost intro-modal__cta-secondary" type="button">🎯 Pick 3</button>
+      </div>
+    </div>
 
     <!-- SCREEN 3: Add your NFTs -->
     <section id="screen-add" class="screen" aria-label="Add NFTs">
