@@ -161,6 +161,50 @@
       </div>
     </section>
 
+    <!-- COLLECTION ANALYTICS -->
+    <div
+      id="collection-analytics-modal"
+      class="intro-modal intro-modal--analytics"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Collection analytics"
+    >
+      <div class="intro-modal__backdrop" data-analytics-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--analytics" role="document">
+        <button id="btn-analytics-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-analytics-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
+        <div class="intro-modal__logos intro-modal__logos--fixed" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+
+        <div id="analytics-collection-name" class="analytics-title">Collection</div>
+
+        <div class="analytics-hero">
+          <div class="analytics-hero__label">Average Collection Score</div>
+          <div id="analytics-avg-score" class="analytics-hero__score">—</div>
+          <div id="analytics-avg-sub" class="analytics-hero__sub">Loading collection stats…</div>
+        </div>
+
+        <div class="analytics-top">
+          <div class="analytics-top__label">Top Rated NFTs</div>
+          <div id="analytics-top3" class="analytics-top__grid" aria-live="polite"></div>
+          <button id="btn-analytics-filter" class="btn btn--primary hidden" type="button">Filter NFTs</button>
+          <button id="btn-analytics-browse" class="btn btn--accent hidden" type="button">Browse Full Collection</button>
+          <div id="analytics-empty" class="analytics-empty hidden">
+            <div class="analytics-empty__title">No ratings yet for this collection.</div>
+            <div class="analytics-empty__sub">Be the first to rate one.</div>
+            <button id="btn-analytics-rate" class="btn btn--accent" type="button">Rate NFTs</button>
+          </div>
+          <div id="analytics-error" class="analytics-empty hidden">
+            <div class="analytics-empty__title">Couldn’t load collection stats right now.</div>
+            <div class="analytics-empty__sub">Try again in a moment.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SCREEN 4: Pick 3 -->
     <section id="screen-pick3" class="screen" aria-label="Pick 3">
       <header class="lo-hero lo-hero--main" aria-label="Pick 3 by Little Ollie Labs">
@@ -223,10 +267,117 @@
         <button id="btn-game-dope" class="btn btn--accent intro-modal__continue" type="button">🔥 DOPE or 🧊 NOPE</button>
         <button id="btn-game-pick3" class="btn btn--accent intro-modal__cta-secondary" type="button">💪 FLEX / ✋ HOLD / 👉 SEND</button>
         <div class="intro-modal__divider" aria-hidden="true"></div>
-        <button id="btn-game-add" class="btn btn--primary intro-modal__cta-secondary" type="button">➕ Add Your NFTs</button>
-        <button id="collections-btn" class="btn btn--primary collections-btn" type="button" aria-label="Filter your NFTs by collection">
+        <button id="btn-game-add" class="btn btn--primary intro-modal__cta-secondary" type="button">➕ ADD YOUR NFTS</button>
+        <button id="collections-btn" class="btn btn--primary collections-btn" type="button" aria-label="Filter your NFTs by collection" hidden>
           🧰 Filter Your NFTs
         </button>
+        <button id="btn-game-insights" class="btn btn--primary intro-modal__cta-secondary" type="button">📊 VIEW COLLECTION INSIGHTS</button>
+      </div>
+    </div>
+
+    <!-- INSIGHTS: OVERVIEW -->
+    <div id="insights-modal" class="intro-modal intro-modal--analytics" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Insights">
+      <div class="intro-modal__backdrop" data-insights-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--analytics" role="document">
+        <button id="btn-insights-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-insights-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
+        <div class="intro-modal__logos intro-modal__logos--fixed" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+        <div class="analytics-title">Insights</div>
+        <div class="analytics-hero">
+          <div class="analytics-hero__label">Average Score (all NFTs)</div>
+          <div id="insights-avg-score" class="analytics-hero__score">—</div>
+          <div id="insights-sub" class="analytics-hero__sub">—</div>
+        </div>
+        <button id="btn-insights-collections" class="btn btn--accent" type="button">View Collection Insights</button>
+      </div>
+    </div>
+
+    <!-- INSIGHTS: COLLECTION LIST -->
+    <div
+      id="collections-insights-modal"
+      class="intro-modal intro-modal--analytics"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Collection insights"
+    >
+      <div class="intro-modal__backdrop" data-collections-insights-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--analytics" role="document">
+        <button id="btn-collections-insights-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-collections-insights-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
+        <div class="intro-modal__logos" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+        <div class="analytics-title">Collections</div>
+        <div class="analytics-top">
+          <div class="analytics-search">
+            <input
+              id="collections-insights-search"
+              class="input"
+              type="text"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="Search collections"
+              aria-label="Search collections"
+            />
+          </div>
+          <div class="analytics-top__label">Tap a collection</div>
+          <div id="collections-insights-list" class="analytics-top__grid" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLLECTION BROWSE (Gallery) -->
+    <div
+      id="collection-browse-modal"
+      class="intro-modal intro-modal--analytics"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Browse collection"
+    >
+      <div class="intro-modal__backdrop" data-browse-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--analytics" role="document">
+        <button id="btn-browse-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-browse-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
+        <div class="intro-modal__logos intro-modal__logos--fixed" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+        <div id="browse-collection-name" class="analytics-title">Collection</div>
+        <div id="browse-grid" class="browse-grid" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- NFT QUICK STATS -->
+    <div
+      id="nft-stats-modal"
+      class="intro-modal intro-modal--analytics"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="NFT stats"
+    >
+      <div class="intro-modal__backdrop" data-nft-stats-close="backdrop"></div>
+      <div class="intro-modal__card intro-modal__card--analytics" role="document">
+        <button id="btn-nft-stats-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-nft-stats-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
+        <div class="intro-modal__logos intro-modal__logos--fixed" aria-hidden="true">
+          <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
+          <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />
+        </div>
+        <div id="nft-stats-title" class="analytics-title">NFT</div>
+        <div class="nft-stats-hero">
+          <img id="nft-stats-img" class="nft-stats-img" alt="NFT" />
+          <div class="nft-stats-badges">
+            <div id="nft-stats-score" class="nft-stats-badge">⭐ —</div>
+            <div id="nft-stats-votes" class="nft-stats-badge">— votes</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -235,6 +386,7 @@
       <div class="intro-modal__backdrop" data-how-close="backdrop"></div>
       <div class="intro-modal__card intro-modal__card--how">
         <button id="btn-how-close" class="intro-modal__close-btn" type="button" aria-label="Close">✕</button>
+        <button id="btn-how-back" class="intro-modal__back-btn" type="button" aria-label="Back">←</button>
         <div class="intro-modal__logos intro-modal__logos--how" aria-hidden="true">
           <img class="intro-modal__lo-png" src="./assets/LO.png" alt="" width="140" height="140" />
           <img class="intro-modal__logo" src="./assets/lo1.png" alt="" width="160" height="160" />

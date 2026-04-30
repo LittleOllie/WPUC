@@ -25,8 +25,89 @@ try {
   /* ignore */
 }
 
+const collectionAnalyticsCache = new Map();
+
+function normalizeCollectionKey(name) {
+  return String(name || "").trim();
+}
+
+function invalidateCollectionAnalyticsCache(collectionName) {
+  const key = normalizeCollectionKey(collectionName);
+  if (!key) {
+    collectionAnalyticsCache.clear();
+    return;
+  }
+  collectionAnalyticsCache.delete(key);
+}
+
 function getNumber(value) {
   return typeof value === "number" ? value : 0;
+}
+
+function getHotPoints(nft) {
+  const hp = nft?.hotPoints;
+  if (typeof hp === "number") return hp;
+  return getNumber(nft?.votesHot);
+}
+
+function getColdPoints(nft) {
+  const cp = nft?.coldPoints;
+  if (typeof cp === "number") return cp;
+  return getNumber(nft?.votesCold);
+}
+
+const MIN_VOTES_THRESHOLD = 3;
+
+function getNFTScore(nft) {
+  const hotVotes = getNumber(nft?.votesHot);
+  const coldVotes = getNumber(nft?.votesCold);
+  const totalVotes = hotVotes + coldVotes;
+
+  const hotPoints = Math.max(0, getHotPoints(nft));
+  const coldPoints = Math.max(0, getColdPoints(nft));
+  const totalPoints = hotPoints + coldPoints;
+
+  const raw = ((hotPoints + 3) / (totalPoints + 6)) * 10;
+  const clamped = Math.min(10, Math.max(0, Number.isFinite(raw) ? raw : 5));
+  const rounded = Math.round(clamped * 10) / 10;
+
+  return {
+    score: rounded,
+    totalVotes,
+    hotVotes,
+    coldVotes,
+  };
+}
+
+function isEligibleForRanking(nft) {
+  return getNFTScore(nft).totalVotes >= MIN_VOTES_THRESHOLD;
+}
+
+function getScoreConfidence(nft) {
+  const v = getNFTScore(nft).totalVotes;
+  if (v >= 10) return "high";
+  if (v >= MIN_VOTES_THRESHOLD) return "medium";
+  return "low";
+}
+
+function getTopRankedNFTs(nfts, limitN = 3) {
+  const eligible = [];
+  const fallback = [];
+
+  for (const nft of nfts) {
+    const s = getNFTScore(nft);
+    const row = { nft, s };
+    if (s.totalVotes >= MIN_VOTES_THRESHOLD) eligible.push(row);
+    else fallback.push(row);
+  }
+
+  const sorter = (a, b) => (b.s.score !== a.s.score ? b.s.score - a.s.score : b.s.totalVotes - a.s.totalVotes);
+  eligible.sort(sorter);
+  fallback.sort(sorter);
+
+  const out = eligible.slice(0, limitN);
+  if (out.length < limitN) out.push(...fallback.slice(0, limitN - out.length));
+  return out;
 }
 
 /** Global in-memory cache (filled from Firestore once per load). */
@@ -471,29 +552,36 @@ async function addNFTsToDB(nfts) {
 }
 
 async function voteNFT(nft, isHot) {
-  const hot0 = Number(nft.votesHot) || 0;
-  const cold0 = Number(nft.votesCold) || 0;
+  const votesHot0 = Number(nft.votesHot) || 0;
+  const votesCold0 = Number(nft.votesCold) || 0;
+  const hotPoints0 = typeof nft.hotPoints === "number" ? nft.hotPoints : votesHot0;
+  const coldPoints0 = typeof nft.coldPoints === "number" ? nft.coldPoints : votesCold0;
 
   if (!nft?._docId) {
-    nft.votesHot = hot0 + (isHot ? 1 : 0);
-    nft.votesCold = cold0 + (isHot ? 0 : 1);
+    nft.votesHot = votesHot0 + (isHot ? 1 : 0);
+    nft.votesCold = votesCold0 + (isHot ? 0 : 1);
+    nft.hotPoints = hotPoints0 + (isHot ? 1 : 0);
+    nft.coldPoints = coldPoints0 + (isHot ? 0 : 1);
     nftMap[nft.id] = nft;
     return;
   }
 
   const ref = doc(db, "nfts", nft._docId);
 
-  const newHot = hot0 + (isHot ? 1 : 0);
-  const newCold = cold0 + (isHot ? 0 : 1);
-
+  // Separate vote count (people) from weighting (points).
   await updateDoc(ref, {
-    votesHot: newHot,
-    votesCold: newCold,
+    votesHot: increment(isHot ? 1 : 0),
+    votesCold: increment(isHot ? 0 : 1),
+    hotPoints: increment(isHot ? 1 : 0),
+    coldPoints: increment(isHot ? 0 : 1),
   });
 
-  nft.votesHot = newHot;
-  nft.votesCold = newCold;
+  nft.votesHot = votesHot0 + (isHot ? 1 : 0);
+  nft.votesCold = votesCold0 + (isHot ? 0 : 1);
+  nft.hotPoints = hotPoints0 + (isHot ? 1 : 0);
+  nft.coldPoints = coldPoints0 + (isHot ? 0 : 1);
   nftMap[nft.id] = nft;
+  invalidateCollectionAnalyticsCache(nft.collection);
 }
 
 async function updatePick3ResultInDB(nft, choiceKey) {
@@ -503,46 +591,59 @@ async function updatePick3ResultInDB(nft, choiceKey) {
   }
 
   const ref = doc(db, "nfts", nft._docId);
+  const votesHot0 = getNumber(nft.votesHot);
+  const votesCold0 = getNumber(nft.votesCold);
+  const hotPoints0 = typeof nft.hotPoints === "number" ? nft.hotPoints : votesHot0;
+  const coldPoints0 = typeof nft.coldPoints === "number" ? nft.coldPoints : votesCold0;
 
   if (choiceKey === "pick") {
     await updateDoc(ref, {
-      votesHot: increment(2),
+      votesHot: increment(1),
+      hotPoints: increment(2),
       pick3PickCount: increment(1),
       pick3Rounds: increment(1),
     });
 
-    nft.votesHot = getNumber(nft.votesHot) + 2;
+    nft.votesHot = votesHot0 + 1;
+    nft.hotPoints = hotPoints0 + 2;
     nft.pick3PickCount = getNumber(nft.pick3PickCount) + 1;
     nft.pick3Rounds = getNumber(nft.pick3Rounds) + 1;
     nftMap[nft.id] = nft;
+    invalidateCollectionAnalyticsCache(nft.collection);
     return;
   }
 
   if (choiceKey === "hold") {
     await updateDoc(ref, {
       votesHot: increment(1),
+      hotPoints: increment(1),
       pick3HoldCount: increment(1),
       pick3Rounds: increment(1),
     });
 
-    nft.votesHot = getNumber(nft.votesHot) + 1;
+    nft.votesHot = votesHot0 + 1;
+    nft.hotPoints = hotPoints0 + 1;
     nft.pick3HoldCount = getNumber(nft.pick3HoldCount) + 1;
     nft.pick3Rounds = getNumber(nft.pick3Rounds) + 1;
     nftMap[nft.id] = nft;
+    invalidateCollectionAnalyticsCache(nft.collection);
     return;
   }
 
   if (choiceKey === "cut") {
     await updateDoc(ref, {
       votesCold: increment(1),
+      coldPoints: increment(1),
       pick3CutCount: increment(1),
       pick3Rounds: increment(1),
     });
 
-    nft.votesCold = getNumber(nft.votesCold) + 1;
+    nft.votesCold = votesCold0 + 1;
+    nft.coldPoints = coldPoints0 + 1;
     nft.pick3CutCount = getNumber(nft.pick3CutCount) + 1;
     nft.pick3Rounds = getNumber(nft.pick3Rounds) + 1;
     nftMap[nft.id] = nft;
+    invalidateCollectionAnalyticsCache(nft.collection);
     return;
   }
 
@@ -575,6 +676,7 @@ async function appMain() {
   const btnGameInfo = $("btn-game-info");
   const howModal = $("how-modal");
   const btnHowClose = $("btn-how-close");
+  const btnHowBack = $("btn-how-back");
   const btnHowGotIt = $("btn-how-gotit");
   const roundCompleteModal = $("round-complete-modal");
   const btnRoundAgain = $("btn-round-again");
@@ -601,6 +703,51 @@ async function appMain() {
   const btnShareClose = $("btn-share-close");
   const btnShareNative = $("btn-share-native");
   const btnShareDownload = $("btn-share-download");
+
+  const analyticsModal = $("collection-analytics-modal");
+  const btnAnalyticsClose = $("btn-analytics-close");
+  const analyticsName = $("analytics-collection-name");
+  const analyticsAvgScore = $("analytics-avg-score");
+  const analyticsAvgSub = $("analytics-avg-sub");
+  const analyticsTop3 = $("analytics-top3");
+  const btnAnalyticsFilter = $("btn-analytics-filter");
+  const btnAnalyticsBrowse = $("btn-analytics-browse");
+  const analyticsEmpty = $("analytics-empty");
+  const analyticsError = $("analytics-error");
+  const btnAnalyticsRate = $("btn-analytics-rate");
+
+  let pendingAnalyticsFilterName = null;
+  let analyticsActiveCollectionName = null;
+
+  const insightsModal = $("insights-modal");
+  const btnInsightsClose = $("btn-insights-close");
+  const btnInsightsBack = $("btn-insights-back");
+  const insightsAvgScore = $("insights-avg-score");
+  const insightsSub = $("insights-sub");
+  const btnInsightsCollections = $("btn-insights-collections");
+  const collectionsInsightsModal = $("collections-insights-modal");
+  const btnCollectionsInsightsClose = $("btn-collections-insights-close");
+  const btnCollectionsInsightsBack = $("btn-collections-insights-back");
+  const collectionsInsightsList = $("collections-insights-list");
+  const collectionsInsightsSearch = $("collections-insights-search");
+  const btnGameInsights = $("btn-game-insights");
+
+  const btnAnalyticsBack = $("btn-analytics-back");
+  const browseModal = $("collection-browse-modal");
+  const btnBrowseClose = $("btn-browse-close");
+  const btnBrowseBack = $("btn-browse-back");
+  const browseName = $("browse-collection-name");
+  const browseGrid = $("browse-grid");
+
+  const nftStatsModal = $("nft-stats-modal");
+  const btnNftStatsClose = $("btn-nft-stats-close");
+  const btnNftStatsBack = $("btn-nft-stats-back");
+  const nftStatsTitle = $("nft-stats-title");
+  const nftStatsImg = $("nft-stats-img");
+  const nftStatsScore = $("nft-stats-score");
+  const nftStatsVotes = $("nft-stats-votes");
+
+  let analyticsBackTarget = null; // "collections-insights" | "collections-picker" | "insights" | null
 
   const walletInput = $("wallet-input");
   const btnLoadWallet = $("btn-load-wallet");
@@ -717,6 +864,157 @@ async function appMain() {
     window.setTimeout(() => btnGameInfo?.focus(), 50);
   }
 
+  function openCollectionAnalyticsModal() {
+    if (!analyticsModal) return;
+    analyticsModal.classList.add("is-open");
+    analyticsModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnAnalyticsClose?.focus(), 50);
+  }
+
+  function closeCollectionAnalyticsModal() {
+    if (!analyticsModal) return;
+    analyticsModal.classList.remove("is-open");
+    analyticsModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    pendingAnalyticsFilterName = null;
+    analyticsActiveCollectionName = null;
+    analyticsBackTarget = null;
+    btnAnalyticsFilter?.classList.add("hidden");
+    btnAnalyticsBrowse?.classList.add("hidden");
+  }
+
+  function openBrowseModal() {
+    if (!browseModal) return;
+    browseModal.classList.add("is-open");
+    browseModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnBrowseClose?.focus(), 50);
+  }
+
+  function closeBrowseModal() {
+    if (!browseModal) return;
+    browseModal.classList.remove("is-open");
+    browseModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  function openNftStatsModal() {
+    if (!nftStatsModal) return;
+    nftStatsModal.classList.add("is-open");
+    nftStatsModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnNftStatsClose?.focus(), 50);
+  }
+
+  function closeNftStatsModal() {
+    if (!nftStatsModal) return;
+    nftStatsModal.classList.remove("is-open");
+    nftStatsModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "hidden";
+  }
+
+  function openNftStats(nft) {
+    if (!nft) return;
+    const title = cleanLabel(nft?.name) || (tokenIdFromNft(nft) ? `#${tokenIdFromNft(nft)}` : "NFT");
+    if (nftStatsTitle) nftStatsTitle.textContent = title;
+    if (nftStatsImg) {
+      nftStatsImg.src = nft?.image || "./assets/tile.png";
+      nftStatsImg.alt = title;
+      nftStatsImg.onerror = () => {
+        nftStatsImg.src = "./assets/tile.png";
+      };
+    }
+    const s = getNFTScore(nft);
+    if (nftStatsScore) nftStatsScore.textContent = `⭐ ${s.totalVotes ? s.score.toFixed(1) : "—"} / 10`;
+    if (nftStatsVotes) nftStatsVotes.textContent = s.totalVotes === 1 ? "1 vote" : `${s.totalVotes} votes`;
+    openNftStatsModal();
+  }
+
+  function cleanLabel(text) {
+    const s = String(text || "").trim();
+    // Strip chain_contract patterns like "ethereum_0xabc..." if they sneak in.
+    return s.replace(/\b(?:ethereum|base|apechain)_0x[a-f0-9]{40}\b/gi, "").trim();
+  }
+
+  function tokenIdFromNft(nft) {
+    const tokenId = String(nft?.tokenId || "").trim();
+    if (tokenId) return tokenId;
+    const id = String(nft?.id || "");
+    const parts = id.split("_");
+    const last = parts[parts.length - 1];
+    return last && /^\d+$/.test(last) ? last : "";
+  }
+
+  function renderBrowseGridForCollection(collectionName) {
+    const key = normalizeCollectionKey(collectionName);
+    if (browseName) browseName.textContent = key || "Collection";
+    if (!browseGrid) return;
+    browseGrid.innerHTML = "";
+
+    const items = allNFTs
+      .filter((n) => normalizeCollectionKey(n?.collection) === key)
+      .map((n) => {
+        const s = getNFTScore(n);
+        // Sort unrated last.
+        const scoreKey = s.totalVotes ? s.score : -1;
+        return { nft: n, votes: s.totalVotes, score: scoreKey };
+      })
+      .sort((a, b) => (b.score !== a.score ? b.score - a.score : b.votes - a.votes))
+      .map((row) => row.nft);
+    for (const nft of items) {
+      const tile = document.createElement("div");
+      tile.className = "browse-tile";
+
+      const img = document.createElement("img");
+      img.alt = cleanLabel(nft?.name) || "NFT";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = nft?.image || "./assets/tile.png";
+      img.addEventListener("error", () => (img.src = "./assets/tile.png"));
+
+      const score = document.createElement("div");
+      score.className = "browse-score";
+      const s = getNFTScore(nft);
+      score.textContent = s.totalVotes ? s.score.toFixed(1) : "—";
+
+      tile.appendChild(img);
+      tile.appendChild(score);
+      tile.addEventListener("click", () => openNftStats(nft));
+      browseGrid.appendChild(tile);
+    }
+  }
+
+  function openInsightsModal() {
+    if (!insightsModal) return;
+    insightsModal.classList.add("is-open");
+    insightsModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnInsightsClose?.focus(), 50);
+  }
+
+  function closeInsightsModal() {
+    if (!insightsModal) return;
+    insightsModal.classList.remove("is-open");
+    insightsModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  function openCollectionsInsightsModal() {
+    if (!collectionsInsightsModal) return;
+    collectionsInsightsModal.classList.add("is-open");
+    collectionsInsightsModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => btnCollectionsInsightsClose?.focus(), 50);
+  }
+
+  function closeCollectionsInsightsModal() {
+    if (!collectionsInsightsModal) return;
+    collectionsInsightsModal.classList.remove("is-open");
+    collectionsInsightsModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
   function maybeShowGameModal() {
     // Always show on entry (per requirements).
     openGameModal();
@@ -733,14 +1031,274 @@ async function appMain() {
   }
 
   function totalVotes(nft) {
-    return getNumber(nft.votesHot) + getNumber(nft.votesCold);
+    // Canonical vote count (people), never points.
+    return getNFTScore(nft).totalVotes;
   }
 
   function vibeScore(nft) {
-    const hot = getNumber(nft.votesHot);
-    const cold = getNumber(nft.votesCold);
-    const total = hot + cold;
-    return ((hot + 3) / (total + 6)) * 10;
+    // Canonical score (points-based with fallback), rounded to 1 decimal.
+    return getNFTScore(nft).score;
+  }
+
+  function getRatedNFTsForCollection(collectionName) {
+    const key = normalizeCollectionKey(collectionName);
+    if (!key) return [];
+    const source = allNFTs;
+    return source.filter((n) => normalizeCollectionKey(n?.collection) === key && totalVotes(n) > 0);
+  }
+
+  function calculateCollectionAverage(ratedNfts) {
+    if (!ratedNfts.length) return null;
+    let sum = 0;
+    for (const n of ratedNfts) sum += getNFTScore(n).score;
+    return sum / ratedNfts.length;
+  }
+
+  function calculateTopRatedNFTs(ratedNfts, limitN = 3) {
+    return getTopRankedNFTs(ratedNfts, limitN).map((row) => ({
+      nft: row.nft,
+      score: row.s.score,
+      votes: row.s.totalVotes,
+    }));
+  }
+
+  function getGlobalRatedNFTs() {
+    return allNFTs.filter((n) => totalVotes(n) > 0);
+  }
+
+  function renderInsightsOverview() {
+    const rated = getGlobalRatedNFTs();
+    const ratedCount = rated.length;
+    const totalV = rated.reduce((acc, n) => acc + totalVotes(n), 0);
+    if (!ratedCount) {
+      if (insightsAvgScore) insightsAvgScore.textContent = "—";
+      if (insightsSub) insightsSub.textContent = "No ratings yet. Rate a few NFTs to unlock insights.";
+      return;
+    }
+    const avg = calculateCollectionAverage(rated) ?? 0;
+    if (insightsAvgScore) insightsAvgScore.textContent = `${avg.toFixed(1)} / 10`;
+    if (insightsSub) {
+      insightsSub.textContent = `Based on ${ratedCount} rated NFTs • ${totalV === 1 ? "1 vote" : `${totalV} votes`}`;
+    }
+  }
+
+  function renderCollectionsInsightsList() {
+    if (!collectionsInsightsList) return;
+    collectionsInsightsList.innerHTML = "";
+    const counts = getCollectionCounts();
+    const q = (collectionsInsightsSearch?.value || "").trim().toLowerCase();
+    const entries = Object.entries(counts)
+      .filter(([name]) => (q ? String(name).toLowerCase().includes(q) : true))
+      .sort((a, b) => b[1] - a[1]);
+    if (!entries.length) {
+      const empty = document.createElement("div");
+      empty.className = "analytics-empty";
+      empty.innerHTML = q
+        ? `<div class="analytics-empty__title">No matches.</div><div class="analytics-empty__sub">Try a different search.</div>`
+        : `<div class="analytics-empty__title">No collections yet.</div><div class="analytics-empty__sub">Add your NFTs to start.</div>`;
+      collectionsInsightsList.appendChild(empty);
+      return;
+    }
+
+    for (const [name] of entries) {
+      const rated = getRatedNFTsForCollection(name);
+      const ratedCount = rated.length;
+      const avg = ratedCount ? (calculateCollectionAverage(rated) ?? 0) : null;
+      const votes = rated.reduce((acc, n) => acc + totalVotes(n), 0);
+
+      const item = document.createElement("div");
+      item.className = "analytics-item";
+
+      const rank = document.createElement("div");
+      rank.className = "analytics-rank";
+      rank.textContent = "📁";
+
+      const img = document.createElement("img");
+      img.className = "analytics-img";
+      img.alt = "Collection";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = rated[0]?.image || "./assets/tile.png";
+      img.addEventListener("error", () => (img.src = "./assets/tile.png"));
+
+      const meta = document.createElement("div");
+      meta.className = "analytics-meta";
+
+      const title = document.createElement("div");
+      title.className = "analytics-name";
+      title.textContent = name;
+
+      const stats = document.createElement("div");
+      stats.className = "analytics-stats";
+
+      const pillScore = document.createElement("div");
+      pillScore.className = "analytics-pill";
+      pillScore.textContent = avg == null ? "No ratings yet" : `⭐ ${avg.toFixed(1)} / 10`;
+
+      const pillVotes = document.createElement("div");
+      pillVotes.className = "analytics-pill";
+      pillVotes.textContent = ratedCount ? `${ratedCount} rated • ${votes === 1 ? "1 vote" : `${votes} votes`}` : "0 rated";
+
+      stats.appendChild(pillScore);
+      stats.appendChild(pillVotes);
+      meta.appendChild(title);
+      meta.appendChild(stats);
+
+      item.appendChild(rank);
+      item.appendChild(img);
+      item.appendChild(meta);
+
+      item.addEventListener("click", () => {
+        // Open detail view; allow browse button in this path.
+        pendingAnalyticsFilterName = normalizeCollectionKey(name);
+        analyticsActiveCollectionName = normalizeCollectionKey(name);
+        analyticsBackTarget = "collections-insights";
+        btnAnalyticsBrowse?.classList.remove("hidden");
+        closeCollectionsInsightsModal();
+        void openCollectionAnalytics(name);
+      });
+
+      collectionsInsightsList.appendChild(item);
+    }
+  }
+
+  function renderAnalyticsLoading(collectionName) {
+    if (analyticsName) analyticsName.textContent = collectionName || "Collection";
+    if (analyticsAvgScore) analyticsAvgScore.textContent = "—";
+    if (analyticsAvgSub) analyticsAvgSub.textContent = "Loading collection stats…";
+    if (analyticsTop3) analyticsTop3.innerHTML = "";
+    analyticsEmpty?.classList.add("hidden");
+    analyticsError?.classList.add("hidden");
+  }
+
+  function renderAnalyticsError() {
+    if (analyticsAvgSub) analyticsAvgSub.textContent = "";
+    if (analyticsTop3) analyticsTop3.innerHTML = "";
+    analyticsEmpty?.classList.add("hidden");
+    analyticsError?.classList.remove("hidden");
+  }
+
+  function renderAnalyticsEmpty(collectionName) {
+    if (analyticsName) analyticsName.textContent = collectionName || "Collection";
+    if (analyticsAvgScore) analyticsAvgScore.textContent = "—";
+    if (analyticsAvgSub) analyticsAvgSub.textContent = "Based on 0 rated NFTs";
+    if (analyticsTop3) analyticsTop3.innerHTML = "";
+    analyticsError?.classList.add("hidden");
+    analyticsEmpty?.classList.remove("hidden");
+  }
+
+  function renderAnalyticsResult(collectionName, result) {
+    if (analyticsName) analyticsName.textContent = collectionName || "Collection";
+    if (analyticsAvgScore) analyticsAvgScore.textContent = `${result.average.toFixed(1)} / 10`;
+    if (analyticsAvgSub) {
+      analyticsAvgSub.textContent =
+        result.ratedCount === 1 ? "Based on 1 rated NFT" : `Based on ${result.ratedCount} rated NFTs`;
+    }
+
+    analyticsEmpty?.classList.add("hidden");
+    analyticsError?.classList.add("hidden");
+
+    if (!analyticsTop3) return;
+    analyticsTop3.innerHTML = "";
+    const medals = ["🥇", "🥈", "🥉"];
+
+    result.top.forEach((row, idx) => {
+      const { nft, score, votes } = row;
+      const item = document.createElement("div");
+      item.className = "analytics-item";
+
+      const rank = document.createElement("div");
+      rank.className = "analytics-rank";
+      rank.textContent = medals[idx] || "⭐";
+
+      const img = document.createElement("img");
+      img.className = "analytics-img";
+      img.alt = "NFT";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = nft?.image || "./assets/tile.png";
+      img.addEventListener("error", () => {
+        img.src = "./assets/tile.png";
+      });
+
+      const meta = document.createElement("div");
+      meta.className = "analytics-meta";
+
+      const name = document.createElement("div");
+      name.className = "analytics-name";
+      const cleaned = cleanLabel(nft?.name);
+      const tid = tokenIdFromNft(nft);
+      name.textContent = cleaned || (tid ? `#${tid}` : cleanLabel(nft?.id) || "NFT");
+
+      const stats = document.createElement("div");
+      stats.className = "analytics-stats";
+
+      const pillScore = document.createElement("div");
+      pillScore.className = "analytics-pill";
+      pillScore.textContent = `⭐ ${score.toFixed(1)} / 10`;
+
+      const pillVotes = document.createElement("div");
+      pillVotes.className = "analytics-pill";
+      pillVotes.textContent = votes === 1 ? "1 vote" : `${votes} votes`;
+
+      stats.appendChild(pillScore);
+      stats.appendChild(pillVotes);
+
+      meta.appendChild(name);
+      meta.appendChild(stats);
+
+      item.appendChild(rank);
+      item.appendChild(img);
+      item.appendChild(meta);
+
+      analyticsTop3.appendChild(item);
+    });
+  }
+
+  async function openCollectionAnalytics(collectionName) {
+    const key = normalizeCollectionKey(collectionName);
+    if (!key) return;
+    btnAnalyticsFilter?.classList.add("hidden");
+    analyticsActiveCollectionName = key;
+    openCollectionAnalyticsModal();
+    renderAnalyticsLoading(key);
+
+    try {
+      const cached = collectionAnalyticsCache.get(key);
+      if (cached) {
+        if (cached.ratedCount === 0) renderAnalyticsEmpty(key);
+        else renderAnalyticsResult(key, cached);
+        return;
+      }
+
+      // Compute from in-memory state (fast, no extra Firestore reads).
+      const rated = getRatedNFTsForCollection(key);
+      if (!rated.length) {
+        const empty = { average: 0, ratedCount: 0, top: [] };
+        collectionAnalyticsCache.set(key, empty);
+        renderAnalyticsEmpty(key);
+        return;
+      }
+
+      const avg = calculateCollectionAverage(rated);
+      const top = calculateTopRatedNFTs(rated, 3);
+      const result = { average: avg ?? 0, ratedCount: rated.length, top };
+      collectionAnalyticsCache.set(key, result);
+      renderAnalyticsResult(key, result);
+    } catch (e) {
+      console.error("Collection analytics error:", e);
+      renderAnalyticsError();
+    }
+  }
+
+  async function openCollectionAnalyticsFromPicker(collectionName) {
+    const key = normalizeCollectionKey(collectionName);
+    if (!key) return;
+    pendingAnalyticsFilterName = key;
+    analyticsActiveCollectionName = key;
+    btnAnalyticsFilter?.classList.remove("hidden");
+    analyticsBackTarget = "collections-picker";
+    await openCollectionAnalytics(key);
   }
 
   function updateNftScoreBadge(nft) {
@@ -808,6 +1366,11 @@ async function appMain() {
     if (!nft) return;
 
     nftCollection.textContent = nft.collection || "—";
+    if (nftCollection) {
+      const name = normalizeCollectionKey(nft.collection);
+      nftCollection.classList.toggle("is-clickable", !!name && name !== "—");
+      nftCollection.onclick = name ? () => void openCollectionAnalytics(name) : null;
+    }
     updateNftScoreBadge(nft);
     nftSkeleton.classList.remove("is-hidden");
     nftImg.classList.add("is-reset");
@@ -1065,25 +1628,32 @@ async function appMain() {
   async function reloadFromFirestore(options = {}) {
     const { resetRecent } = options;
     await loadNFTsFromDB();
-    if (!allNFTs.length) {
-      await addNFTsToDB(seedNFTs);
-    }
-    if (!allNFTs.length) {
-      allNFTs = seedNFTs.map((n) => ({ ...n }));
-      nftMap = {};
-      for (const n of allNFTs) nftMap[n.id] = n;
-    }
     for (const row of allNFTs) {
       row.votesHot = Number(row.votesHot) || 0;
       row.votesCold = Number(row.votesCold) || 0;
+      if (row.hotPoints != null) row.hotPoints = Number(row.hotPoints) || 0;
+      if (row.coldPoints != null) row.coldPoints = Number(row.coldPoints) || 0;
     }
     updateRecentLimit();
     if (resetRecent) recentlySeen.length = 0;
     feedQueue = [];
     initSessionQueue();
     await ensureQueue(4);
-    if (feedQueue[0]) await renderNFT(feedQueue[0]);
-    for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+    if (feedQueue[0]) {
+      await renderNFT(feedQueue[0]);
+      for (const n of feedQueue.slice(1, 4)) void preloadImage(n.image);
+    } else {
+      // Empty app state (no Firestore NFTs yet)
+      currentNFT = null;
+      nftImg?.removeAttribute("src");
+      if (nftSkeleton) nftSkeleton.classList.add("is-hidden");
+      if (nftCollection) nftCollection.textContent = "—";
+      updateNftScoreBadge(null);
+      if (microtext) microtext.textContent = "Add your NFTs to start 🔥";
+      btnHot.disabled = true;
+      btnCold.disabled = true;
+      if (btnRoundReplay) btnRoundReplay.setAttribute("hidden", "");
+    }
   }
 
   async function handleVote(kind) {
@@ -1667,7 +2237,7 @@ async function appMain() {
 
       item.appendChild(left);
       item.appendChild(right);
-      item.addEventListener("click", () => void applyCollectionFilter(name));
+      item.addEventListener("click", () => void openCollectionAnalyticsFromPicker(name));
       collectionsList.appendChild(item);
     }
   }
@@ -1743,8 +2313,42 @@ async function appMain() {
     walletInput.focus();
   });
 
+  btnGameInsights?.addEventListener("click", () => {
+    renderInsightsOverview();
+    openInsightsModal();
+  });
+
+  btnInsightsClose?.addEventListener("click", closeInsightsModal);
+  btnInsightsBack?.addEventListener("click", () => {
+    closeInsightsModal();
+    openGameModal();
+  });
+  insightsModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-insights-close") === "backdrop") closeInsightsModal();
+  });
+
+  btnInsightsCollections?.addEventListener("click", () => {
+    closeInsightsModal();
+    renderCollectionsInsightsList();
+    openCollectionsInsightsModal();
+  });
+
+  collectionsInsightsSearch?.addEventListener("input", () => renderCollectionsInsightsList());
+
+  btnCollectionsInsightsClose?.addEventListener("click", closeCollectionsInsightsModal);
+  btnCollectionsInsightsBack?.addEventListener("click", () => {
+    closeCollectionsInsightsModal();
+    openInsightsModal();
+  });
+  collectionsInsightsModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-collections-insights-close") === "backdrop") closeCollectionsInsightsModal();
+  });
+
   btnGameInfo?.addEventListener("click", () => openHowModal());
   btnHowClose?.addEventListener("click", () => closeHowModal());
+  btnHowBack?.addEventListener("click", () => closeHowModal());
   btnHowGotIt?.addEventListener("click", () => closeHowModal());
 
   howModal?.addEventListener("click", (e) => {
@@ -1752,6 +2356,65 @@ async function appMain() {
     if (t && t.getAttribute && t.getAttribute("data-how-close") === "backdrop") {
       closeHowModal();
     }
+  });
+
+  btnAnalyticsClose?.addEventListener("click", () => closeCollectionAnalyticsModal());
+  btnAnalyticsBack?.addEventListener("click", () => {
+    const target = analyticsBackTarget;
+    closeCollectionAnalyticsModal();
+    if (target === "collections-insights") {
+      openCollectionsInsightsModal();
+      return;
+    }
+    if (target === "collections-picker") {
+      openCollectionsModal();
+      return;
+    }
+  });
+  btnAnalyticsRate?.addEventListener("click", () => {
+    closeCollectionAnalyticsModal();
+    showScreen("main");
+  });
+
+  btnAnalyticsFilter?.addEventListener("click", () => {
+    const name = pendingAnalyticsFilterName;
+    if (!name) return;
+    closeCollectionAnalyticsModal();
+    void applyCollectionFilter(name);
+  });
+
+  btnAnalyticsBrowse?.addEventListener("click", () => {
+    const name = analyticsActiveCollectionName || pendingAnalyticsFilterName;
+    if (!name) return;
+    // Open a gallery grid view (no jumping screens).
+    renderBrowseGridForCollection(name);
+    openBrowseModal();
+  });
+
+  analyticsModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-analytics-close") === "backdrop") {
+      closeCollectionAnalyticsModal();
+    }
+  });
+
+  btnBrowseClose?.addEventListener("click", closeBrowseModal);
+  btnBrowseBack?.addEventListener("click", () => {
+    closeBrowseModal();
+    openCollectionAnalyticsModal();
+  });
+  browseModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-browse-close") === "backdrop") closeBrowseModal();
+  });
+
+  btnNftStatsClose?.addEventListener("click", closeNftStatsModal);
+  btnNftStatsBack?.addEventListener("click", () => {
+    closeNftStatsModal();
+  });
+  nftStatsModal?.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.getAttribute && t.getAttribute("data-nft-stats-close") === "backdrop") closeNftStatsModal();
   });
 
   gameModal?.addEventListener("click", (e) => {
@@ -1990,6 +2653,26 @@ async function appMain() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (nftStatsModal?.classList.contains("is-open")) {
+      closeNftStatsModal();
+      return;
+    }
+    if (browseModal?.classList.contains("is-open")) {
+      closeBrowseModal();
+      return;
+    }
+    if (collectionsInsightsModal?.classList.contains("is-open")) {
+      closeCollectionsInsightsModal();
+      return;
+    }
+    if (insightsModal?.classList.contains("is-open")) {
+      closeInsightsModal();
+      return;
+    }
+    if (analyticsModal?.classList.contains("is-open")) {
+      closeCollectionAnalyticsModal();
+      return;
+    }
     if (!collectionsModal?.classList.contains("hidden")) {
       closeCollectionsModal();
       return;

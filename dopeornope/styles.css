@@ -773,6 +773,13 @@ a.icon-btn {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+#screen-main #nft-collection.collection.is-clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+}
+
 .buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -983,6 +990,11 @@ a.icon-btn {
   z-index: 2100;
 }
 
+/* Ensure analytics modal always stacks above Collections picker */
+.intro-modal--analytics {
+  z-index: 12000;
+}
+
 .intro-modal__backdrop {
   position: absolute;
   inset: 0;
@@ -1098,6 +1110,28 @@ a.icon-btn {
   cursor: pointer;
 }
 
+.intro-modal__back-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-on-lo);
+  font-weight: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(7, 12, 24, 0.28);
+  cursor: pointer;
+}
+
+.intro-modal__back-btn:active {
+  transform: translateY(1px);
+}
+
 .intro-modal--game .intro-modal__info-btn {
   border-color: rgba(255, 216, 77, 0.9);
   background: rgba(255, 216, 77, 0.95);
@@ -1107,6 +1141,13 @@ a.icon-btn {
 }
 
 .intro-modal--how .intro-modal__close-btn {
+  border-color: rgba(255, 216, 77, 0.9);
+  background: rgba(255, 216, 77, 0.95);
+  color: #0f2f6e;
+  box-shadow: 0 12px 26px rgba(7, 12, 24, 0.32), 0 0 0 3px rgba(255, 216, 77, 0.22);
+}
+
+.intro-modal--analytics .intro-modal__close-btn {
   border-color: rgba(255, 216, 77, 0.9);
   background: rgba(255, 216, 77, 0.95);
   color: #0f2f6e;
@@ -1126,6 +1167,267 @@ a.icon-btn {
   max-height: min(96dvh, 900px);
   overflow: auto;
   padding: 44px 30px 34px;
+}
+
+.intro-modal__card--analytics {
+  width: min(520px, 96vw);
+  max-height: min(92dvh, 760px);
+  overflow: auto;
+  padding: 26px 22px 22px;
+  text-align: left;
+}
+
+.intro-modal__logos--fixed {
+  /* Keep logo stack position consistent across all analytics popups */
+  min-height: 250px;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.intro-modal__logos--fixed .intro-modal__lo-png {
+  transform: none;
+  margin-bottom: 10px;
+}
+
+.analytics-title {
+  font-weight: 1000;
+  font-size: 1.45rem;
+  letter-spacing: 0.02em;
+  color: var(--text-on-lo);
+  text-shadow: 0 2px 0 rgba(15, 47, 110, 0.35);
+  margin: 2px 8px 14px;
+  padding-right: 54px; /* space for close button */
+}
+
+.analytics-hero {
+  background: rgba(255, 216, 77, 0.92);
+  border: 1px solid rgba(255, 216, 77, 0.9);
+  border-radius: 20px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 18px 40px rgba(15, 47, 110, 0.18);
+  margin: 0 6px 14px;
+}
+
+.analytics-hero__label {
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+  color: #0f2f6e;
+  opacity: 0.95;
+}
+
+.analytics-hero__score {
+  margin-top: 6px;
+  font-weight: 1000;
+  font-size: 2.6rem;
+  letter-spacing: 0.02em;
+  color: #0f2f6e;
+  line-height: 1;
+}
+
+.analytics-hero__sub {
+  margin-top: 6px;
+  font-weight: 900;
+  color: rgba(15, 47, 110, 0.92);
+  opacity: 0.95;
+}
+
+.analytics-top {
+  margin: 0 6px 4px;
+}
+
+.analytics-top__label {
+  font-weight: 1000;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 0 rgba(15, 47, 110, 0.25);
+  margin: 6px 8px 10px;
+}
+
+.analytics-search {
+  margin: 0 8px 10px;
+}
+
+.analytics-search .input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(15, 47, 110, 0.16);
+}
+
+.analytics-top__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.analytics-item {
+  display: grid;
+  grid-template-columns: 42px 84px 1fr;
+  gap: 10px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 10px 22px rgba(7, 12, 24, 0.14);
+}
+
+.analytics-rank {
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.analytics-img {
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.analytics-meta {
+  min-width: 0;
+}
+
+.analytics-name {
+  font-weight: 1000;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analytics-stats {
+  margin-top: 4px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.analytics-pill {
+  background: rgba(15, 47, 110, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.analytics-empty.hidden {
+  display: none;
+}
+
+.analytics-empty {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 14px;
+  text-align: center;
+}
+
+.analytics-empty__title {
+  font-weight: 1000;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.analytics-empty__sub {
+  margin-top: 6px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.intro-modal__card--analytics .btn {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.intro-modal__card--analytics .btn.hidden {
+  display: none;
+}
+
+.browse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 10px 6px 6px;
+}
+
+@media (min-width: 760px) {
+  .browse-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.browse-tile {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 22px rgba(7, 12, 24, 0.14);
+}
+
+.browse-tile img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.browse-score {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 216, 77, 0.95);
+  color: #0f2f6e;
+  border: 1px solid rgba(255, 216, 77, 0.9);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 1000;
+  font-size: 0.92rem;
+  box-shadow: 0 12px 26px rgba(7, 12, 24, 0.24);
+}
+
+.nft-stats-hero {
+  margin: 10px 6px 4px;
+  display: grid;
+  gap: 12px;
+}
+
+.nft-stats-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 18px 45px rgba(7, 12, 24, 0.18);
+}
+
+.nft-stats-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nft-stats-badge {
+  background: rgba(255, 216, 77, 0.92);
+  border: 1px solid rgba(255, 216, 77, 0.9);
+  color: #0f2f6e;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 1000;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 26px rgba(7, 12, 24, 0.18);
+}
+
+@media (min-width: 520px) {
+  .analytics-top__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .intro-modal__info--how {
