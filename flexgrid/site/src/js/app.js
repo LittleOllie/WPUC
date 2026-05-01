@@ -1433,17 +1433,73 @@ function syncWatermarkDOMToOneTile() {
 // ---------- Wallet list ----------
 const MAX_WALLET_ADDRESSES = 12;
 
-/** Split pasted / typed text into unique valid 0x addresses (capped at MAX_WALLET_ADDRESSES). */
+function getWalletParseChain() {
+  const sel = $("chainSelect");
+  const fromDom = sel ? String(sel.value || "").trim().toLowerCase() : "";
+  if (fromDom) return fromDom;
+  return String(state.chain || "eth").trim().toLowerCase();
+}
+
+function isValidEvmWalletAddress(addr) {
+  const a = String(addr || "").trim().toLowerCase();
+  return /^0x[a-f0-9]{40}$/.test(a);
+}
+
+// Solana public keys are base58-encoded (typically 32–44 chars). Case matters.
+function isValidSolanaWalletAddress(addr) {
+  const a = String(addr || "").trim();
+  if (!a) return false;
+  if (a.length < 32 || a.length > 44) return false;
+  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(a)) return false;
+  return true;
+}
+
+function syncWalletEntryUiForSelectedChain() {
+  const input = $("walletInput");
+  const hintP = document.querySelector("#walletSection .walletFlowSubHint");
+  const chain = getWalletParseChain();
+
+  if (input) {
+    input.placeholder =
+      chain === "solana"
+        ? "Solana wallet (base58)…\nMultiple: comma, space, or new line (max 12)"
+        : "0xabc…\nMultiple: comma, space, or new line (max 12)";
+  }
+
+  if (hintP) {
+    hintP.textContent =
+      chain === "solana"
+        ? "Add multiple Solana wallets with a comma, space, or new line (max 12)."
+        : "Add multiple wallets with a comma, space, or new line (max 12).";
+  }
+
+  // Re-parse + refresh hints/overlays when switching chains mid-input.
+  syncWalletsFromInput();
+}
+
+/** Split pasted / typed text into unique valid wallet addresses (capped at MAX_WALLET_ADDRESSES). */
 function parseWalletAddressesFromInput(raw) {
   const s = String(raw || "").trim();
   if (!s) return [];
+  const chain = getWalletParseChain();
   const parts = s.split(/[\s,;]+/g);
   const out = [];
   const seen = {};
   for (let i = 0; i < parts.length; i++) {
-    const p = parts[i].trim().toLowerCase();
-    if (!p) continue;
-    if (!/^0x[a-f0-9]{40}$/.test(p)) continue;
+    const pRaw = parts[i].trim();
+    if (!pRaw) continue;
+
+    if (chain === "solana") {
+      if (!isValidSolanaWalletAddress(pRaw)) continue;
+      if (seen[pRaw]) continue;
+      seen[pRaw] = true;
+      out.push(pRaw);
+      if (out.length >= MAX_WALLET_ADDRESSES) break;
+      continue;
+    }
+
+    const p = pRaw.toLowerCase();
+    if (!isValidEvmWalletAddress(p)) continue;
     if (seen[p]) continue;
     seen[p] = true;
     out.push(p);
@@ -1468,6 +1524,7 @@ function updateWalletInputHint() {
   if (!hint || !input) return;
   const raw = String(input.value || "").trim();
   const n = state.wallets.length;
+  const chain = getWalletParseChain();
   if (!raw) {
     clearWalletValidationHint();
     renderWalletInputOverlay();
@@ -1477,7 +1534,10 @@ function updateWalletInputHint() {
     hint.textContent = `✓ ${n} wallet${n === 1 ? "" : "s"} ready`;
     hint.style.color = "#4CAF50";
   } else {
-    hint.textContent = "Enter valid 0x addresses (comma, space, or new line)";
+    hint.textContent =
+      chain === "solana"
+        ? "Enter valid Solana addresses (base58, comma / space / new line)"
+        : "Enter valid 0x addresses (comma, space, or new line)";
     hint.style.color = "#ff9800";
   }
   renderWalletInputOverlay();
@@ -1495,8 +1555,12 @@ function renderWalletInputOverlay() {
 
   // Render tokens while preserving user newlines/spaces via `white-space: pre-wrap`.
   // We transform valid addresses into green + add a ✓ at the end of that address.
-  const re = /0x[a-fA-F0-9]{40}/g;
-  const lower = raw.toLowerCase();
+  const chain = getWalletParseChain();
+  const re =
+    chain === "solana"
+      ? /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g
+      : /0x[a-fA-F0-9]{40}/g;
+  const lower = chain === "solana" ? "" : raw.toLowerCase();
   let lastIndex = 0;
   const seen = new Set();
   const parts = [];
@@ -1510,15 +1574,20 @@ function renderWalletInputOverlay() {
     const before = raw.slice(lastIndex, start);
     if (before) parts.push(escapeHtml(before));
 
-    const addr = lower.slice(start, end);
-    const isValid = /^0x[a-f0-9]{40}$/.test(addr) && !seen.has(addr) && seen.size < MAX_WALLET_ADDRESSES;
+    const token = raw.slice(start, end);
+    const addr = chain === "solana" ? token : lower.slice(start, end);
+    const display = chain === "solana" ? token : addr;
+    const isValid =
+      chain === "solana"
+        ? isValidSolanaWalletAddress(addr) && !seen.has(addr) && seen.size < MAX_WALLET_ADDRESSES
+        : isValidEvmWalletAddress(addr) && !seen.has(addr) && seen.size < MAX_WALLET_ADDRESSES;
     if (isValid) {
       seen.add(addr);
       parts.push(
-        `<span class="walletTokenValid">${escapeHtml(addr)}<span class="walletTokenTick" aria-hidden="true">✓</span></span>`
+        `<span class="walletTokenValid">${escapeHtml(display)}<span class="walletTokenTick" aria-hidden="true">✓</span></span>`
       );
     } else {
-      parts.push(`<span class="walletTokenInvalid">${escapeHtml(addr)}</span>`);
+      parts.push(`<span class="walletTokenInvalid">${escapeHtml(display)}</span>`);
     }
 
     lastIndex = end;
@@ -1549,8 +1618,10 @@ function maybeAutoNewlineWalletInput() {
 
   const lastToken = v.split(/[\s,;]+/g).filter(Boolean).slice(-1)[0];
   if (!lastToken) return;
-  const w = String(lastToken).trim().toLowerCase();
-  if (!/^0x[a-f0-9]{40}$/.test(w)) return;
+  const chain = getWalletParseChain();
+  const wRaw = String(lastToken).trim();
+  const ok = chain === "solana" ? isValidSolanaWalletAddress(wRaw) : isValidEvmWalletAddress(wRaw.toLowerCase());
+  if (!ok) return;
 
   _walletAutoNewlineLock = true;
   try {
@@ -1775,6 +1846,21 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
   const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
   if (!raw) return { ok: false };
 
+  // Solana: support explicit candidate list (encoded) so we can try in order without changing the loader.
+  // Format: "__CANDS__:<json>"
+  let explicitCandidates = null;
+  if (raw.startsWith("__CANDS__:")) {
+    try {
+      const json = raw.slice("__CANDS__:".length);
+      const arr = JSON.parse(json);
+      if (Array.isArray(arr)) {
+        explicitCandidates = arr.map((s) => String(s || "").trim()).filter(Boolean);
+      }
+    } catch (_) {
+      explicitCandidates = null;
+    }
+  }
+
   if (raw.startsWith("blob:")) {
     try {
       setImgCORS(img, false);
@@ -1788,7 +1874,9 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
     }
   }
 
-  const candidates = buildImageCandidates(raw);
+  const candidates = (explicitCandidates && explicitCandidates.length ? explicitCandidates : buildImageCandidates(raw))
+    .filter(Boolean)
+    .slice(0, 3); // cap to 2–3 tries (fast + mobile safe)
   if (candidates.length === 0) return { ok: false };
 
   for (const url of candidates) {
@@ -3956,6 +4044,52 @@ const INITIAL_TILE_COUNT = 96;
 const PROGRESSIVE_BATCH_SIZE = 64;
 const PROGRESSIVE_BATCH_DELAY_MS = 0;
 
+// ---------- Solana image load throttling ----------
+const SOLANA_EAGER_IMAGE_BUDGET = 60;
+let solanaTileSeq = 0;
+let solanaLazyObserver = null;
+
+function resetSolanaLazyStateForBuild() {
+  solanaTileSeq = 0;
+  if (solanaLazyObserver) {
+    try {
+      solanaLazyObserver.disconnect();
+    } catch (_) {}
+  }
+  solanaLazyObserver = null;
+}
+
+function ensureSolanaLazyObserver() {
+  if (solanaLazyObserver) return solanaLazyObserver;
+  solanaLazyObserver = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const tile = e.target;
+        try {
+          solanaLazyObserver.unobserve(tile);
+        } catch (_) {}
+        if (!tile || tile.dataset.kind !== "nft") continue;
+        const raw = String(tile.dataset.rawUrl || "").trim();
+        if (!raw) continue;
+        let img = tile.querySelector("img");
+        if (!img) continue;
+        if (img.dataset.didStartLoad === "1") continue;
+        img.dataset.didStartLoad = "1";
+        loadTileImage(tile, img, raw).catch(() => {});
+      }
+    },
+    { root: null, rootMargin: "500px", threshold: 0.01 }
+  );
+  return solanaLazyObserver;
+}
+
+function shouldLazyLoadTileImage() {
+  const ch = String(state.chain || "").trim().toLowerCase();
+  if (ch !== "solana") return false;
+  return solanaTileSeq >= SOLANA_EAGER_IMAGE_BUDGET;
+}
+
 /** Classic grid: padded slot list (NFTs + GRID_EMPTY_SENTINEL), length === totalSlots — no trailing filler pass. */
 function scheduleProgressiveClassicPaddedGrid(grid, padded, buildId, orderIndexOffset = 0) {
   let visibleCount = Math.min(INITIAL_TILE_COUNT, padded.length);
@@ -4343,6 +4477,10 @@ function buildGrid() {
     return;
   }
 
+  if (String(state.chain || "").trim().toLowerCase() === "solana") {
+    resetSolanaLazyStateForBuild();
+  }
+
   renderFullLayoutFromItems(items, layoutId, buildId);
   syncLayoutPickerActiveStates();
 
@@ -4646,6 +4784,9 @@ function makeNFTTile(it) {
   tile.classList.remove("isLoaded", "isMissing");
   tile.draggable = false;
 
+  // Used for Solana-only image throttling (keeps mobile smooth).
+  const localSeq = solanaTileSeq++;
+
   const contract = (it?.contract || it?.contractAddress || it?.sourceKey || "").toString().trim().toLowerCase();
   const tokenId = (it?.tokenId ?? "").toString().trim();
   tile.dataset.contract = contract;
@@ -4655,7 +4796,10 @@ function makeNFTTile(it) {
 
   let raw = "";
   try {
-    if (typeof it?._rawImageUrl === "string" && it._rawImageUrl.trim()) raw = it._rawImageUrl.trim();
+    if (Array.isArray(it?.imageCandidates) && it.imageCandidates.length) {
+      raw = "__CANDS__:" + JSON.stringify(it.imageCandidates.slice(0, 3));
+    }
+    if (!raw && typeof it?._rawImageUrl === "string" && it._rawImageUrl.trim()) raw = it._rawImageUrl.trim();
     if (!raw && typeof it?.image === "string" && it.image.trim()) raw = it.image.trim();
     if (!raw) raw = primaryRawArtUrlForNft(it).trim();
   } catch (_) {
@@ -4664,7 +4808,8 @@ function makeNFTTile(it) {
   tile.dataset.kind = raw ? "nft" : "empty";
 
   const img = document.createElement("img");
-  img.loading = "eager";
+  const lazy = shouldLazyLoadTileImage();
+  img.loading = lazy ? "lazy" : "eager";
   img.alt = ""; // ✅ prevents filename/name text showing
   img.referrerPolicy = "no-referrer";
   img.crossOrigin = "anonymous";
@@ -4680,7 +4825,20 @@ function makeNFTTile(it) {
     tile.dataset.rawUrl = raw;
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
-    loadTileImage(tile, img, raw).catch(() => {});
+    if (lazy) {
+      // Defer to viewport (plus generous rootMargin) to avoid a huge burst of fetch/decode on mobile.
+      img.dataset.didStartLoad = "0";
+      try {
+        ensureSolanaLazyObserver().observe(tile);
+      } catch (_) {
+        // If observer fails, fall back to immediate load.
+        img.dataset.didStartLoad = "1";
+        loadTileImage(tile, img, raw).catch(() => {});
+      }
+    } else {
+      img.dataset.didStartLoad = "1";
+      loadTileImage(tile, img, raw).catch(() => {});
+    }
   } else {
     tile.dataset.src = "";
     tile.dataset.kind = "empty";
@@ -4910,12 +5068,12 @@ function loadWallet({ wallet, chain } = {}) {
   const c = cRaw === "ape" ? "apechain" : cRaw; // wrapper uses "ape", app uses "apechain"
   if (!input || !sel) return;
   if (!w) {
-    setStatus("👋 Enter at least one valid wallet — 0x + 40 hex chars.");
+    setStatus("👋 Enter at least one valid wallet address.");
     return;
   }
   // Ensure we're on the Wallets step.
   goToStep(1);
-  if (c === "eth" || c === "base" || c === "apechain") {
+  if (c === "eth" || c === "base" || c === "apechain" || c === "solana") {
     sel.value = c;
     try {
       sel.dispatchEvent(new Event("change", { bubbles: true }));
@@ -4963,8 +5121,10 @@ async function loadWallets() {
   applyChainSelectionFromDom();
   const chain = String($("chainSelect")?.value || state.chain || "eth").trim().toLowerCase();
 
-  if (chain === "solana") return setStatus("Solana coming soon. For now use ETH or Base.");
   if (!state.wallets.length) {
+    if (chain === "solana") {
+      return setStatus("👋 Enter at least one valid Solana wallet (base58). Separate several with a comma, space, or new line.");
+    }
     return setStatus("👋 Enter at least one valid wallet — 0x + 40 hex chars. Separate several with a comma, space, or new line.");
   }
 
@@ -4976,7 +5136,7 @@ async function loadWallets() {
   }
 
   const host = ALCHEMY_HOST[chain];
-  if (chain !== "apechain" && !host) return setStatus("Chain not configured.");
+  if (chain !== "apechain" && chain !== "solana" && !host) return setStatus("Chain not configured.");
 
   if (loadWalletsInFlight) {
     console.warn("[FlexGrid] Prevented overlapping loadWallets (already in progress)");
@@ -4986,13 +5146,17 @@ async function loadWallets() {
 
   try {
     try {
-      console.log("[FlexGrid] Chain selected:", chain, "→", getAlchemyNetworkId(chain));
+      if (chain === "solana") {
+        console.log("[FlexGrid] Chain selected:", chain, "→ Helius via Worker");
+      } else {
+        console.log("[FlexGrid] Chain selected:", chain, "→", getAlchemyNetworkId(chain));
+      }
     } catch {
       console.log("[FlexGrid] Chain selected:", chain);
     }
 
     state.chain = chain;
-    state.host = chain === "apechain" ? null : host;
+    state.host = chain === "apechain" || chain === "solana" ? null : host;
 
     state.contractLogoCache = Object.create(null);
     state.contractLogoInflight.clear();
@@ -5131,6 +5295,7 @@ function shortenForDisplay(name) {
   if (typeof name !== "string" || !name) return name || "";
   const s = name.trim();
   if (/^0x[a-fA-F0-9]{40}$/.test(s)) return s.slice(0, 6) + "..." + s.slice(-4);
+  if (isValidSolanaWalletAddress(s)) return s.slice(0, 4) + "..." + s.slice(-4);
   return s;
 }
 
@@ -5397,7 +5562,17 @@ function groupByCollection(nfts) {
   }
 
   Object.keys(collections).forEach((k) => {
-    collections[k].count = collections[k].nfts.length;
+    const derived = collections[k].nfts.length;
+    // Solana can provide the true collection size even when we slice items for performance.
+    // Keep ETH/Base/Ape behavior unchanged.
+    let declared = 0;
+    if (k && k.startsWith("sol:")) {
+      for (const n of collections[k].nfts) {
+        const v = Number(n?._collectionTotalCount || 0);
+        if (Number.isFinite(v) && v > declared) declared = v;
+      }
+    }
+    collections[k].count = Math.max(derived, declared);
     if (!collections[k].logo) {
       collections[k].logo = getCollectionLogoUrlForRow(collections[k]);
     }
@@ -6571,6 +6746,7 @@ function toggleStageLayoutSection() {
       applyChainSelectionFromDom();
       const ch = String(chainSelect.value || "eth").trim().toLowerCase();
       console.log("[FlexGrid] Chain selected:", ch);
+      syncWalletEntryUiForSelectedChain();
     });
   }
 
@@ -6701,7 +6877,7 @@ function toggleStageLayoutSection() {
     });
     if (chainNext) chainNext.disabled = !selectedChain;
     uiState.chain = selectedChain || null;
-    if (chainSelectEl && (selectedChain === "eth" || selectedChain === "base" || selectedChain === "apechain")) {
+    if (chainSelectEl && (selectedChain === "eth" || selectedChain === "base" || selectedChain === "apechain" || selectedChain === "solana")) {
       chainSelectEl.value = selectedChain;
       try {
         chainSelectEl.dispatchEvent(new Event("change", { bubbles: true }));
@@ -6773,6 +6949,7 @@ function toggleStageLayoutSection() {
   // Entry point
   uiState.step = 1;
   renderUI();
+  syncWalletEntryUiForSelectedChain();
 
   const settingsBtn = $("settingsBtn");
   if (settingsBtn) {

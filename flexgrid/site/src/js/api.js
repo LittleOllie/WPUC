@@ -334,6 +334,10 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
  */
 export async function fetchNFTsFromWorker(opts = {}) {
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
+  if (chainParam === "solana") {
+    const mod = await import("./solanaService.js");
+    return mod.fetchSolanaNFTsFromWorker({ wallet: opts.wallet });
+  }
   if (chainParam === "apechain") {
     return fetchNFTsInBatches(opts);
   }
