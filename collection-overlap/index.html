@@ -55,8 +55,8 @@
                 class="co-hero-char"
                 src="assets/lo-mascot.png"
                 alt=""
-                width="80"
-                height="80"
+                width="96"
+                height="96"
                 decoding="async"
               />
             </div>
@@ -79,7 +79,7 @@
         <main class="co-main">
           <section id="co-form-section" class="co-card">
             <h2 class="co-section-title">Compare holders</h2>
-            <p class="body-text co-body-tight">Paste each collection’s OpenSea URL or its contract address. We scan holders via Alchemy (server-side) and show overlap.</p>
+            <p class="body-text co-body-tight">Paste Collection URL or Contract Address below.</p>
 
             <div class="co-grid2">
               <div class="co-field">
@@ -95,6 +95,19 @@
             <button id="co-compare-btn" type="button" class="link-btn link-btn-yellow co-cta">
               <span>COMPARE HOLDERS</span>
             </button>
+            <div id="co-global-loader" class="co-global-loader" hidden aria-hidden="true">
+              <div class="co-global-loader__orbit" aria-hidden="true">
+                <div class="co-global-loader__ring"></div>
+                <img
+                  class="co-global-loader__mascot"
+                  src="assets/lo-mascot.png"
+                  alt=""
+                  width="80"
+                  height="80"
+                  decoding="async"
+                />
+              </div>
+            </div>
             <p id="co-status" class="co-status" role="status" aria-live="polite"></p>
           </section>
 
@@ -112,8 +125,19 @@
                 </div>
               </div>
               <div class="co-blob co-blob-overlap">
+                <div id="co-blob-bg-shared" class="co-blob-bg co-blob-bg--shared-mascot co-blob-bg--on" aria-hidden="true"></div>
                 <div class="co-blob-inner co-blob-inner--overlap">
-                  <div class="co-blob-title">Shared</div>
+                  <div class="co-blob-brand">
+                    <img
+                      class="co-blob-logo co-blob-logo--mascot"
+                      src="assets/lo-mascot.png"
+                      alt="Little Ollie mascot"
+                      width="88"
+                      height="88"
+                      decoding="async"
+                    />
+                    <div class="co-blob-name">Shared</div>
+                  </div>
                   <div id="co-count-shared" class="co-big">—</div>
                   <div class="co-blob-sub">wallets</div>
                 </div>
@@ -132,33 +156,45 @@
             </div>
 
             <div class="co-card co-match-card">
-              <div class="co-match-row">
-                <div class="co-match-side co-match-side--a">
-                  <div class="co-match-face-wrap">
-                    <img id="co-match-logo-a" class="co-match-face co-match-face--hidden" alt="" width="76" height="76" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
-                  </div>
-                  <div id="co-match-name-a" class="co-match-side-name">—</div>
+              <div class="co-hold-split">
+                <div class="co-hold-col co-hold-col--a">
+                  <div id="co-hold-pct-a" class="co-hold-pct">—</div>
+                  <span class="co-hold-arrow" aria-hidden="true">↓</span>
+                  <p id="co-hold-desc-a" class="co-hold-desc">—</p>
                 </div>
-                <div class="co-match-center">
-                  <div class="co-match-label">Match</div>
-                  <div id="co-match" class="co-match-num">—</div>
-                  <div id="co-match-sub" class="co-match-sub">—</div>
+                <div class="co-hold-center">
+                  <div class="co-hold-match-label">Match</div>
+                  <div id="co-match" class="co-hold-match-num">—</div>
+                  <div id="co-match-shared" class="co-hold-shared">—</div>
                 </div>
-                <div class="co-match-side co-match-side--b">
-                  <div class="co-match-face-wrap">
-                    <img id="co-match-logo-b" class="co-match-face co-match-face--hidden" alt="" width="76" height="76" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
-                  </div>
-                  <div id="co-match-name-b" class="co-match-side-name">—</div>
+                <div class="co-hold-col co-hold-col--b">
+                  <div id="co-hold-pct-b" class="co-hold-pct">—</div>
+                  <span class="co-hold-arrow" aria-hidden="true">↓</span>
+                  <p id="co-hold-desc-b" class="co-hold-desc">—</p>
                 </div>
               </div>
-              <p id="co-match-foot" class="co-match-foot"></p>
               <div id="co-quality" class="co-quality" role="status"></div>
-              <div id="co-times" class="co-times"></div>
-              <div class="co-match-actions">
-                <button id="co-copy-tweet" type="button" class="link-btn link-btn-blue co-copy-tweet-btn">
-                  <span>COPY RESULTS SUMMARY</span>
-                </button>
-              </div>
+              <p class="co-more-data">
+                Need holder-level exports or more detail?<br />
+                <span class="co-more-data-cta-row">
+                  <strong>Contact Little Ollie Labs</strong>
+                  <button
+                    type="button"
+                    id="co-contact-info-btn"
+                    class="co-info-btn"
+                    aria-haspopup="dialog"
+                    aria-controls="co-contact-dialog"
+                    aria-label="Little Ollie Labs contact and social links"
+                    title="Contact &amp; social"
+                  >
+                    <svg class="co-info-btn__icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
+                      <path fill="currentColor" d="M11 10h2v7h-2zm0-3h2v2h-2z" />
+                    </svg>
+                  </button>
+                  <span>and we’ll help.</span>
+                </span>
+              </p>
             </div>
           </section>
         </main>
@@ -170,6 +206,96 @@
       </div>
     </div>
   </div>
+
+  <div id="co-logo-battle" class="co-logo-battle" hidden aria-hidden="true">
+    <div class="logo-battle-container">
+      <img id="logoA" alt="" decoding="async" />
+      <img id="logoB" alt="" decoding="async" />
+      <div class="co-logo-battle__flash" aria-hidden="true"></div>
+      <div id="lightning" aria-hidden="true"></div>
+      <div id="mergedLogo" hidden>
+        <div class="co-logo-battle__merged-half co-logo-battle__merged-half--a" aria-hidden="true"></div>
+        <div class="co-logo-battle__merged-half co-logo-battle__merged-half--b" aria-hidden="true"></div>
+      </div>
+      <div class="co-logo-battle__bolts" hidden aria-hidden="true">
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+        <span class="co-logo-battle__spark"></span>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="co-contact-dialog" class="co-contact-dialog" aria-labelledby="co-contact-dialog-title">
+    <div class="co-contact-dialog__panel">
+      <button type="button" class="co-contact-dialog__close" id="co-contact-dialog-close" aria-label="Close">
+        ×
+      </button>
+      <div class="co-contact-dialog__brand">
+        <img
+          class="co-contact-dialog__mascot"
+          src="assets/lo-mascot.png"
+          alt=""
+          width="56"
+          height="56"
+          decoding="async"
+        />
+        <img
+          class="co-contact-dialog__wordmark"
+          src="assets/lo-wordmark.png"
+          alt="Little Ollie"
+          width="280"
+          height="80"
+          decoding="async"
+        />
+      </div>
+      <h2 id="co-contact-dialog-title" class="co-contact-dialog__title">Little Ollie Labs</h2>
+      <p class="co-contact-dialog__lead">Games, stories &amp; collectibles — say hi anytime.</p>
+      <ul class="co-contact-dialog__list">
+        <li>
+          <a href="mailto:littleollienft@gmail.com" class="link-btn link-btn-yellow co-contact-dialog__btn"><span>littleollienft@gmail.com</span></a>
+        </li>
+        <li>
+          <a href="https://littleollielabs.com/" class="link-btn link-btn-blue co-contact-dialog__btn" target="_blank" rel="noopener noreferrer"
+            ><span>Website</span></a
+          >
+        </li>
+        <li>
+          <a href="https://x.com/LittleOllieNFT" class="link-btn link-btn-yellow co-contact-dialog__btn" target="_blank" rel="noopener noreferrer"
+            ><span>Twitter / X</span></a
+          >
+        </li>
+        <li>
+          <a
+            href="https://www.instagram.com/littleolliedaily"
+            class="link-btn link-btn-blue co-contact-dialog__btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            ><span>Instagram — @littleolliedaily</span></a
+          >
+        </li>
+        <li>
+          <a
+            href="https://www.instagram.com/littleollienft"
+            class="link-btn link-btn-yellow co-contact-dialog__btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            ><span>Instagram — @littleollienft</span></a
+          >
+        </li>
+        <li>
+          <a href="../about.html" class="link-btn link-btn-blue co-contact-dialog__btn"><span>About Little Ollie Labs</span></a>
+        </li>
+        <li>
+          <a href="../links/index.html" class="link-btn link-btn-yellow co-contact-dialog__btn"><span>All links &amp; apps</span></a>
+        </li>
+      </ul>
+    </div>
+  </dialog>
 
   <script src="collection-input.js" defer></script>
   <script src="app.js" defer></script>

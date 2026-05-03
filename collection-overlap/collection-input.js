@@ -3,14 +3,14 @@
  * Resolves URLs via GET /api/search-collections?q={slug} (Worker).
  */
 (function () {
-  const PLACEHOLDER = "OpenSea collection URL or contract address (0x...)";
+  const PLACEHOLDER = "Paste collection URL or contract address";
   const DEBOUNCE_MS = 300;
   const CUSTOM_CONTRACT_NAME = "Custom Contract";
   const MSG_NOT_FOUND = "Collection not found";
   const MSG_SEARCH_FAILED = "Search failed, try again";
   const MSG_INVALID_CONTRACT = "Invalid contract address";
   const MSG_ENTER_NEED_SELECTION = "Please select a valid collection";
-  const MSG_UNSUPPORTED = "Paste an OpenSea collection URL or a contract address (0x…).";
+  const MSG_UNSUPPORTED = "Paste a collection URL or contract address (0x…).";
 
   const slugCache = new Map();
   const SLUG_CACHE_MAX = 48;
@@ -64,36 +64,70 @@
     return t;
   }
 
-  /** @param {string} raw */
-  function openSeaCollectionSlug(raw) {
-    const s = String(raw || "").trim();
-    if (!/opensea\.io/i.test(s)) return null;
-    let href = s;
-    if (!/^https?:\/\//i.test(href)) href = `https://${href.replace(/^\/+/, "")}`;
+  function stripZeroWidth(s) {
+    return String(s || "").replace(/[\u200B-\u200D\uFEFF]/g, "");
+  }
+
+  /** Pull the first OpenSea URL out of pasted text (e.g. "Check out https://opensea.io/..."). */
+  function extractOpenSeaHrefFromPaste(t) {
+    let s = stripZeroWidth(t).trim();
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      s = s.slice(1, -1).trim();
+    }
+    const urlRe = /https?:\/\/[^\s<>"')\]}]+/gi;
+    let m;
+    while ((m = urlRe.exec(s)) !== null) {
+      let piece = m[0].replace(/[),.;]+$/g, "");
+      if (/opensea\.io/i.test(piece)) return piece;
+    }
+    if (/opensea\.io/i.test(s)) {
+      let href = s.replace(/[),.;]+$/g, "");
+      if (!/^https?:\/\//i.test(href)) href = `https://${href.replace(/^\/+/, "")}`;
+      return href;
+    }
+    return null;
+  }
+
+  /** ETH mainnet contract from /assets/ethereum/0x…/… or /item/ethereum/0x…/… */
+  function openSeaEthereumContractFromPathname(pathname) {
+    const p = String(pathname || "").replace(/\/+$/, "");
+    const re = /\/(?:assets|item)\/(?:ethereum|eth)\/(0x[a-fA-F0-9]{40})(?:\/|$|\?)/i;
+    const m = p.match(re);
+    if (!m) return null;
+    return validateContract42(m[1]);
+  }
+
+  /** Collection slug from opensea.io/.../collection/{slug}/… */
+  function openSeaCollectionSlugFromHref(hrefStr) {
     let u;
     try {
-      u = new URL(href);
+      let h = String(hrefStr || "").trim();
+      if (!/^https?:\/\//i.test(h)) h = `https://${h.replace(/^\/+/, "")}`;
+      u = new URL(h);
     } catch {
       return null;
     }
-    const parts = u.pathname.split("/").filter(Boolean);
-    const low = parts.map((p) => p.toLowerCase());
-    const i = low.indexOf("collection");
-    if (i >= 0 && parts[i + 1]) {
-      try {
-        return decodeURIComponent(parts[i + 1]);
-      } catch {
-        return parts[i + 1];
-      }
+    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+    if (!host.endsWith("opensea.io")) return null;
+    const col = u.pathname.match(/\/collection\/([^/?#]+)/i);
+    if (!col) return null;
+    try {
+      return decodeURIComponent(col[1]);
+    } catch {
+      return col[1];
     }
-    if (parts.length) {
-      try {
-        return decodeURIComponent(parts[parts.length - 1]);
-      } catch {
-        return parts[parts.length - 1];
-      }
-    }
-    return null;
+  }
+
+  /** Plain collection slug / symbol (matches Worker `looksLikeOpenseaCollectionSlug`) — searchable without full URL. */
+  function looksLikeCollectionSlugQuery(s) {
+    const t = String(s || "")
+      .trim()
+      .toLowerCase();
+    if (!t || t.length > 120) return false;
+    if (t.startsWith("0x")) return false;
+    if (/^https?:\/\//.test(t)) return false;
+    if (/[^a-z0-9._-]/.test(t)) return false;
+    return true;
   }
 
   /**
@@ -103,10 +137,21 @@
   function classifyTrimmedInput(trimmed) {
     if (!trimmed) return { kind: "idle" };
 
-    if (/opensea\.io/i.test(trimmed)) {
-      const slug = openSeaCollectionSlug(trimmed);
-      if (!slug) return { kind: "bad-url" };
-      return { kind: "opensea-slug", slug };
+    const osHref = extractOpenSeaHrefFromPaste(trimmed);
+    if (osHref) {
+      let u;
+      try {
+        let h = osHref.trim();
+        if (!/^https?:\/\//i.test(h)) h = `https://${h.replace(/^\/+/, "")}`;
+        u = new URL(h);
+      } catch {
+        return { kind: "bad-url" };
+      }
+      const contract = openSeaEthereumContractFromPathname(u.pathname);
+      if (contract) return { kind: "contract-valid", address: contract };
+      const slug = openSeaCollectionSlugFromHref(osHref);
+      if (slug) return { kind: "opensea-slug", slug };
+      return { kind: "bad-url" };
     }
 
     if (/^0x/i.test(trimmed)) {
@@ -120,6 +165,11 @@
       return { kind: "partial-contract" };
     }
 
+    const slugCandidate = stripZeroWidth(trimmed).trim().toLowerCase();
+    if (looksLikeCollectionSlugQuery(slugCandidate)) {
+      return { kind: "slug-query", slug: slugCandidate };
+    }
+
     return { kind: "unsupported" };
   }
 
@@ -128,19 +178,21 @@
       this._container = container;
       this.state = {
         inputValue: "",
+        preservedInput: "",
         selectedCollection: null,
         results: [],
       };
       this._debounceTimer = null;
       this._searchAbort = null;
       this._inlineError = "";
+      this._slugResolveGen = 0;
       this._onDocDown = this._onDocumentPointerDown.bind(this);
       this._render();
       document.addEventListener("pointerdown", this._onDocDown, true);
     }
 
     _syncInputValue() {
-      this.state.inputValue = this.state.selectedCollection ? "" : this._input.value;
+      this.state.inputValue = this._input.value;
     }
 
     _render() {
@@ -151,11 +203,12 @@
           <div class="co-ci-row co-ci-row--input">
             <input type="text" class="co-ci-input co-input" autocomplete="off" spellcheck="false"
               placeholder="${PLACEHOLDER}" aria-autocomplete="list" aria-expanded="false" />
+            <button type="button" class="co-ci-clear" aria-label="Clear">×</button>
           </div>
-          <div class="co-ci-row co-ci-row--selected" hidden>
-            <img class="co-ci-thumb" alt="" width="32" height="32" decoding="async" hidden />
-            <span class="co-ci-name"></span>
-            <button type="button" class="co-ci-clear" aria-label="Clear selection">×</button>
+          <div class="co-ci-banner">
+            <div class="co-ci-banner__mascot" aria-hidden="true"></div>
+            <div class="co-ci-banner__ring" aria-hidden="true"></div>
+            <img class="co-ci-banner__logo" alt="" width="96" height="96" hidden decoding="async" />
           </div>
         </div>
         <div class="co-ci-dropdown" role="listbox" hidden></div>
@@ -163,11 +216,10 @@
       `;
       this._container.appendChild(root);
       this._root = root;
+      this._shellEl = root.querySelector(".co-ci-shell");
+      this._bannerEl = root.querySelector(".co-ci-banner");
+      this._bannerLogoEl = root.querySelector(".co-ci-banner__logo");
       this._input = root.querySelector(".co-ci-input");
-      this._rowInput = root.querySelector(".co-ci-row--input");
-      this._rowSelected = root.querySelector(".co-ci-row--selected");
-      this._thumb = root.querySelector(".co-ci-thumb");
-      this._nameEl = root.querySelector(".co-ci-name");
       this._clearBtn = root.querySelector(".co-ci-clear");
       this._dropdown = root.querySelector(".co-ci-dropdown");
       this._errEl = root.querySelector(".co-ci-error");
@@ -179,6 +231,65 @@
 
     _setAriaExpanded(open) {
       this._input.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    _syncVerifiedShell() {
+      const sel = this.state.selectedCollection;
+      const shell = this._shellEl;
+      if (!shell) return;
+      if (sel && sel.contractAddress) shell.classList.add("co-ci-shell--verified");
+      else shell.classList.remove("co-ci-shell--verified");
+      this._syncBanner();
+    }
+
+    _setBannerLoading(on) {
+      const banner = this._bannerEl;
+      if (!banner) return;
+      banner.classList.toggle("co-ci-banner--loading", Boolean(on));
+    }
+
+    /** Square under the field: faint LO mascot; spinner while searching; collection logo when resolved. */
+    _syncBanner() {
+      const sel = this.state.selectedCollection;
+      const banner = this._bannerEl;
+      const img = this._bannerLogoEl;
+      if (!banner || !img) return;
+
+      this._setBannerLoading(false);
+
+      if (sel && sel.contractAddress) {
+        const url = sel.image && String(sel.image).trim();
+        if (url) {
+          banner.classList.add("co-ci-banner--has-logo");
+          img.alt = sel.name ? `${sel.name} logo` : "Collection logo";
+          img.hidden = false;
+          const fail = () => {
+            banner.classList.remove("co-ci-banner--has-logo");
+            img.hidden = true;
+            img.removeAttribute("src");
+            img.alt = "";
+          };
+          img.onerror = fail;
+          img.onload = () => {
+            img.hidden = false;
+          };
+          img.src = url;
+        } else {
+          banner.classList.remove("co-ci-banner--has-logo");
+          img.onload = null;
+          img.onerror = null;
+          img.removeAttribute("src");
+          img.hidden = true;
+          img.alt = "";
+        }
+      } else {
+        banner.classList.remove("co-ci-banner--has-logo");
+        img.onload = null;
+        img.onerror = null;
+        img.removeAttribute("src");
+        img.hidden = true;
+        img.alt = "";
+      }
     }
 
     _showInlineError(msg) {
@@ -211,7 +322,7 @@
 
     revalidateDraft() {
       if (this.state.selectedCollection) return;
-      const trimmed = this._input.value.trim();
+      const trimmed = stripZeroWidth(this._input.value).trim();
       if (!trimmed) return;
       const classified = classifyTrimmedInput(trimmed);
       if (classified.kind === "contract-invalid") {
@@ -231,10 +342,23 @@
       return { contractAddress: s.contractAddress, name: s.name };
     }
 
+    /** Image URL from selection (OpenSea-style), or null — used for compare intro animation. */
+    getLogoUrl() {
+      const s = this.state.selectedCollection;
+      if (!s?.image) return null;
+      const u = String(s.image).trim();
+      return u || null;
+    }
+
+    focus() {
+      this._input.focus();
+    }
+
     destroy() {
       document.removeEventListener("pointerdown", this._onDocDown, true);
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
       if (this._searchAbort) this._searchAbort.abort();
+      this._setBannerLoading(false);
       this._container.textContent = "";
     }
 
@@ -247,16 +371,8 @@
       this._setAriaExpanded(false);
     }
 
-    _showResolving() {
-      this._dropdown.hidden = false;
-      this._setAriaExpanded(true);
-      this._dropdown.innerHTML = `<div class="co-ci-dd-msg co-ci-dd-loading">Resolving collection…</div>`;
-    }
-
     _showNoResults() {
-      this._dropdown.hidden = false;
-      this._setAriaExpanded(true);
-      this._dropdown.innerHTML = `<div class="co-ci-dd-msg">${MSG_NOT_FOUND}</div>`;
+      this._closeDropdown();
     }
 
     _showDropdownError(msg) {
@@ -274,56 +390,53 @@
       return `${a.slice(0, 6)}...${a.slice(-4)}`;
     }
 
-    _applySelection(item) {
+    /**
+     * @param {{ name: string, contractAddress: string, image: string|null }} item
+     * @param {string} [displayText] text to keep visible in the field (URL or 0x…)
+     */
+    _applySelection(item, displayText) {
+      const addr = String(item.contractAddress).trim().toLowerCase();
+      const show =
+        displayText != null && String(displayText).trim() !== ""
+          ? String(displayText).trim()
+          : addr;
+      this.state.preservedInput = show;
       this.state.selectedCollection = {
         name: item.name,
-        contractAddress: String(item.contractAddress).trim().toLowerCase(),
+        contractAddress: addr,
         image: item.image || null,
       };
       this.state.results = [];
       this._clearInlineError();
-      this._input.value = "";
-      this.state.inputValue = "";
-      this._rowInput.hidden = true;
-      this._rowSelected.hidden = false;
-      this._nameEl.textContent = this.state.selectedCollection.name;
-      if (this.state.selectedCollection.image) {
-        this._thumb.src = this.state.selectedCollection.image;
-        this._thumb.hidden = false;
-        this._thumb.alt = this.state.selectedCollection.name;
-        this._thumb.onerror = () => {
-          this._thumb.hidden = true;
-          this._thumb.removeAttribute("src");
-        };
-      } else {
-        this._thumb.removeAttribute("src");
-        this._thumb.hidden = true;
-        this._thumb.alt = "";
-      }
-      this._closeDropdown();
+      this._input.value = show;
+      this.state.inputValue = show;
       if (this._searchAbort) this._searchAbort.abort();
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
+      this._syncVerifiedShell();
     }
 
-    _applyCustomContract(address) {
-      this._applySelection({
-        name: CUSTOM_CONTRACT_NAME,
-        contractAddress: address,
-        image: null,
-      });
+    _applyCustomContract(address, displayText) {
+      this._applySelection(
+        {
+          name: CUSTOM_CONTRACT_NAME,
+          contractAddress: address,
+          image: null,
+        },
+        displayText != null && String(displayText).trim() ? String(displayText).trim() : address
+      );
     }
 
     _clearSelection() {
       this.state.selectedCollection = null;
+      this.state.preservedInput = "";
       this.state.results = [];
       this._clearInlineError();
-      this._rowInput.hidden = false;
-      this._rowSelected.hidden = true;
-      this._thumb.removeAttribute("src");
-      this._thumb.hidden = true;
+      this._input.value = "";
       this._closeDropdown();
       this._input.focus();
       this._syncInputValue();
+      this._setBannerLoading(false);
+      this._syncVerifiedShell();
     }
 
     _onKeydown(e) {
@@ -334,7 +447,7 @@
       if (e.key !== "Enter") return;
       if (this.state.selectedCollection) return;
 
-      const trimmed = this._input.value.trim();
+      const trimmed = stripZeroWidth(this._input.value).trim();
       if (!trimmed) {
         this._showInlineError(MSG_ENTER_NEED_SELECTION);
         e.preventDefault();
@@ -343,7 +456,7 @@
 
       const ok = validateContract42(trimmed);
       if (ok) {
-        this._applyCustomContract(ok);
+        this._applyCustomContract(ok, trimmed);
         e.preventDefault();
         return;
       }
@@ -355,7 +468,7 @@
         return;
       }
 
-      if (classified.kind === "opensea-slug") {
+      if (classified.kind === "opensea-slug" || classified.kind === "slug-query") {
         e.preventDefault();
         void this._resolveSlug(classified.slug);
         return;
@@ -366,18 +479,33 @@
     }
 
     _onInput() {
-      if (this.state.selectedCollection) return;
-
-      const raw = this._input.value;
+      const raw = stripZeroWidth(this._input.value);
       const trimmed = raw.trim();
+
+      if (this.state.selectedCollection) {
+        if (trimmed !== String(this.state.preservedInput || "").trim()) {
+          this.state.selectedCollection = null;
+          this.state.preservedInput = "";
+          this._syncVerifiedShell();
+        } else {
+          this._syncInputValue();
+          return;
+        }
+      }
+
       this._syncInputValue();
       this._clearInlineError();
 
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
-      if (this._searchAbort) this._searchAbort.abort();
+      if (this._searchAbort) {
+        this._searchAbort.abort();
+        this._slugResolveGen += 1;
+        this._setBannerLoading(false);
+      }
 
       if (!trimmed) {
         this.state.results = [];
+        this._setBannerLoading(false);
         this._closeDropdown();
         return;
       }
@@ -385,7 +513,7 @@
       const classified = classifyTrimmedInput(trimmed);
 
       if (classified.kind === "contract-valid") {
-        this._applyCustomContract(classified.address);
+        this._applyCustomContract(classified.address, trimmed);
         return;
       }
 
@@ -414,7 +542,7 @@
         return;
       }
 
-      if (classified.kind === "opensea-slug") {
+      if (classified.kind === "opensea-slug" || classified.kind === "slug-query") {
         const slug = classified.slug;
         this._debounceTimer = setTimeout(() => void this._resolveSlug(slug), DEBOUNCE_MS);
       }
@@ -423,19 +551,26 @@
     /** @param {string} slug */
     async _resolveSlug(slug) {
       if (this.state.selectedCollection) return;
-      const query = String(slug || "").trim();
+      this._slugResolveGen += 1;
+      const myGen = this._slugResolveGen;
+      const query = String(slug || "")
+        .trim()
+        .toLowerCase();
       if (!query) {
         this._closeDropdown();
         return;
       }
 
+      const displaySnapshot = stripZeroWidth(this._input.value).trim();
+
       const cached = slugCacheGet(query);
       if (cached) {
-        this._finishSlugResults(cached);
+        this._finishSlugResults(cached, displaySnapshot, myGen);
         return;
       }
 
-      this._showResolving();
+      this._setBannerLoading(true);
+      this._closeDropdown();
       const ac = new AbortController();
       this._searchAbort = ac;
 
@@ -444,6 +579,7 @@
         const res = await fetch(url, { method: "GET", signal: ac.signal });
         const data = await res.json().catch(() => ({}));
         if (ac.signal.aborted) return;
+        if (myGen !== this._slugResolveGen) return;
         if (!res.ok) {
           this._showDropdownError(MSG_SEARCH_FAILED);
           return;
@@ -454,10 +590,12 @@
         }
         const list = data.results.slice(0, 10);
         slugCacheSet(query, list);
-        this._finishSlugResults(list);
+        if (myGen !== this._slugResolveGen) return;
+        this._finishSlugResults(list, displaySnapshot, myGen);
       } catch (e) {
         if (e?.name === "AbortError") return;
         if (ac.signal.aborted) return;
+        if (myGen !== this._slugResolveGen) return;
         if (isLikelyNetworkFailure(e)) {
           this._showDropdownError(
             "Cannot reach the API. Start the Worker: cd collection-overlap-api && npm run dev"
@@ -465,13 +603,18 @@
           return;
         }
         this._showDropdownError(MSG_SEARCH_FAILED);
+      } finally {
+        if (myGen === this._slugResolveGen) this._setBannerLoading(false);
       }
     }
 
     /**
      * @param {Array<{ name: string, contractAddress: string, image: string|null }>} list
+     * @param {string} displaySnapshot
+     * @param {number} [requestGen] drop stale responses when the user changed input
      */
-    _finishSlugResults(list) {
+    _finishSlugResults(list, displaySnapshot, requestGen) {
+      if (requestGen != null && requestGen !== this._slugResolveGen) return;
       this.state.results = list.slice(0, 10);
       if (this.state.results.length === 0) {
         this._showInlineError(MSG_NOT_FOUND);
@@ -479,7 +622,7 @@
         return;
       }
       if (this.state.results.length === 1) {
-        this._applySelection(this.state.results[0]);
+        this._applySelection(this.state.results[0], displaySnapshot);
         return;
       }
       this._renderPickList(this.state.results);
@@ -524,7 +667,7 @@
         row.append(thumb, text);
         row.addEventListener("mousedown", (e) => {
           e.preventDefault();
-          this._applySelection(item);
+          this._applySelection(item, stripZeroWidth(this._input.value).trim());
         });
         this._dropdown.appendChild(row);
       }

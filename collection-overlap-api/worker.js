@@ -361,12 +361,13 @@ function mapAlchemySearchContractRow(item) {
   return { name, contractAddress: addr, image };
 }
 
-/** OpenSea collection slugs: lowercase letters, digits, hyphens (no spaces). */
+/** OpenSea-style collection slug (query param), not a URL or raw contract. */
 function looksLikeOpenseaCollectionSlug(q) {
   const s = String(q || "").trim().toLowerCase();
-  if (s.length < 2 || s.length > 120) return false;
+  if (s.length < 1 || s.length > 120) return false;
   if (s.startsWith("0x")) return false;
-  if (/[^a-z0-9-]/.test(s)) return false;
+  if (/^https?:\/\//.test(s)) return false;
+  if (/[^a-z0-9._-]/.test(s)) return false;
   return true;
 }
 
@@ -394,8 +395,12 @@ async function tryOpenSeaSlugToCollection(slug, env) {
     if (Array.isArray(data.errors) && data.errors.length) return null;
 
     const contracts = Array.isArray(data.contracts) ? data.contracts : [];
+    const chainNorm = (c) => String(c?.chain || "").toLowerCase();
     const eth =
-      contracts.find((c) => String(c?.chain || "").toLowerCase() === "ethereum") || contracts[0];
+      contracts.find((c) => {
+        const ch = chainNorm(c);
+        return ch === "ethereum" || ch === "eth" || ch === "mainnet";
+      }) || contracts[0];
     const addr = validateEthContract42(eth?.address);
     if (!addr) return null;
 
@@ -436,6 +441,24 @@ async function handleApiSearchCollections(request, env) {
     return corsResponse(JSON.stringify({ error: "Search query is too long." }), 400);
   }
 
+  const out = [];
+  const seenAddr = new Set();
+
+  const pushUnique = (item) => {
+    if (!item?.contractAddress) return;
+    const a = validateEthContract42(item.contractAddress);
+    if (!a || seenAddr.has(a)) return;
+    seenAddr.add(a);
+    out.push({ ...item, contractAddress: a });
+  };
+
+  /** Slug-shaped queries: OpenSea first (matches copy-paste from opensea.io/collection/…). */
+  const slugShaped = looksLikeOpenseaCollectionSlug(q);
+  if (slugShaped) {
+    const osHit = await tryOpenSeaSlugToCollection(q, env);
+    if (osHit) pushUnique(osHit);
+  }
+
   const alchemyUrl = new URL(`https://${ALCHEMY_ETH_HOST}/nft/v3/${apiKey}/searchContractMetadata`);
   alchemyUrl.searchParams.set("query", q);
 
@@ -468,16 +491,15 @@ async function handleApiSearchCollections(request, env) {
   }
 
   const rows = Array.isArray(data) ? data : Array.isArray(data?.contracts) ? data.contracts : [];
-  const out = [];
   for (const row of rows) {
     const mapped = mapAlchemySearchContractRow(row);
-    if (mapped) out.push(mapped);
+    if (mapped) pushUnique(mapped);
     if (out.length >= SEARCH_MAX_RESULTS) break;
   }
 
-  if (out.length === 0) {
+  if (out.length === 0 && !slugShaped) {
     const osHit = await tryOpenSeaSlugToCollection(q, env);
-    if (osHit) out.push(osHit);
+    if (osHit) pushUnique(osHit);
   }
 
   const deduped = dedupeSearchResults(out);

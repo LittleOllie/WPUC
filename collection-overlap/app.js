@@ -12,6 +12,8 @@ function $(id) {
 
 let coInputA = null;
 let coInputB = null;
+/** @type {string|null} saved `document.body.style.overflow` while logo-battle overlay is open */
+let coLogoBattleSavedOverflow = null;
 
 function apiBase() {
   const b = typeof window.COLLECTION_OVERLAP_API_BASE === "string" ? window.COLLECTION_OVERLAP_API_BASE.trim() : "";
@@ -66,8 +68,13 @@ function messageForOverlapHttpError(res, data) {
 function setLoading(isLoading, msg) {
   const btn = $("co-compare-btn");
   const st = $("co-status");
+  const loader = $("co-global-loader");
   if (btn) btn.disabled = isLoading;
   if (st) st.textContent = msg || "";
+  if (loader) {
+    loader.hidden = !isLoading;
+    loader.setAttribute("aria-hidden", isLoading ? "false" : "true");
+  }
 }
 
 function fmtPct(n) {
@@ -91,6 +98,16 @@ function collectionDisplayLabel(data, which) {
   if (name) return String(name);
   if (sym) return String(sym);
   return fallback;
+}
+
+/** Short name for overlap lines (symbol if compact, else truncated name). */
+function collectionShortTag(data, which) {
+  const sym = which === "A" ? data.collectionSymbolA : data.collectionSymbolB;
+  const name = which === "A" ? data.collectionNameA : data.collectionNameB;
+  const s = sym && String(sym).trim() ? String(sym).trim() : "";
+  if (s && s.length <= 10) return s;
+  if (name && String(name).trim()) return truncLabel(String(name).trim(), 18);
+  return which === "A" ? "A" : "B";
 }
 
 const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -126,21 +143,218 @@ function setCollectionLogo(which, url, altText) {
   setBlobBackground(which, u || "");
 }
 
-function setMatchFace(which, url, altText) {
-  const img = $(`co-match-logo-${which}`);
-  if (!img) return;
-  const u = url && String(url).trim();
-  if (u) {
-    img.src = u;
-    img.alt = altText || "";
-    img.hidden = false;
-    img.classList.remove("co-match-face--hidden");
-  } else {
-    img.src = BLANK_PIXEL;
-    img.alt = "";
-    img.hidden = true;
-    img.classList.add("co-match-face--hidden");
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
   }
+}
+
+function resetLogoBattleUI() {
+  const root = $("co-logo-battle");
+  document.body.classList.remove("co-logo-battle-active");
+  if (coLogoBattleSavedOverflow !== null) {
+    document.body.style.overflow = coLogoBattleSavedOverflow;
+    coLogoBattleSavedOverflow = null;
+  }
+  if (!root) return;
+  ["co-lb--impact", "co-lb--flash", "co-lb--merge", "co-lb--merge-hold"].forEach((c) => root.classList.remove(c));
+  root.classList.remove("is-open");
+  root.hidden = true;
+  root.setAttribute("aria-hidden", "true");
+  root.querySelector(".co-logo-battle__bolts")?.setAttribute("hidden", "");
+  const imgA = $("logoA");
+  const imgB = $("logoB");
+  const merged = $("mergedLogo");
+  if (imgA) {
+    imgA.removeAttribute("src");
+    imgA.alt = "";
+    imgA.style.cssText = "";
+  }
+  if (imgB) {
+    imgB.removeAttribute("src");
+    imgB.alt = "";
+    imgB.style.cssText = "";
+  }
+  if (merged) {
+    merged.hidden = true;
+    merged.style.opacity = "";
+  }
+  merged?.querySelectorAll(".co-logo-battle__merged-half").forEach((el) => {
+    el.style.backgroundImage = "";
+  });
+}
+
+/** @returns {{ left: number, top: number, width: number, height: number } | null} */
+function getSlotLogoRect(slotId) {
+  const slot = $(slotId);
+  if (!slot) return null;
+  const img = slot.querySelector(".co-ci-banner__logo");
+  if (img && !img.hidden && img.getAttribute("src")) {
+    const r = img.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) {
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+  }
+  const banner = slot.querySelector(".co-ci-banner");
+  if (banner) {
+    const r = banner.getBoundingClientRect();
+    if (r.width > 2 && r.height > 2) {
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+  }
+  return null;
+}
+
+/** Fallback start positions when banner logo rect is unavailable */
+function fallbackLogoRect(side) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const cx = w / 2;
+  const cy = h / 2;
+  const s = Math.min(130, w * 0.2);
+  if (side === "a") {
+    return { left: cx - s * 2.15, top: cy - s / 2, width: s, height: s };
+  }
+  return { left: cx + s * 1.05, top: cy - s / 2, width: s, height: s };
+}
+
+/**
+ * Logo “crash” intro: fly from on-page squares → impact → flash → merged + ~2s lightning ring.
+ * Caller runs overlap fetch in parallel; await this with fetch before showing UI (~3s).
+ * @param {string} urlA
+ * @param {string} urlB
+ * @param {string|null} [nameA]
+ * @param {string|null} [nameB]
+ */
+function runLogoBattleAnimation(urlA, urlB, nameA, nameB) {
+  return new Promise((resolve) => {
+    const root = $("co-logo-battle");
+    const container = root?.querySelector(".logo-battle-container");
+    const bolts = root?.querySelector(".co-logo-battle__bolts");
+    const imgA = $("logoA");
+    const imgB = $("logoB");
+    const merged = $("mergedLogo");
+    const halfA = merged?.querySelector(".co-logo-battle__merged-half--a");
+    const halfB = merged?.querySelector(".co-logo-battle__merged-half--b");
+
+    if (!root || !container || !imgA || !imgB || !merged || !halfA || !halfB) {
+      resolve();
+      return;
+    }
+
+    const ua = urlA && String(urlA).trim();
+    const ub = urlB && String(urlB).trim();
+    if (!ua || !ub) {
+      resolve();
+      return;
+    }
+
+    const toBgUrl = (u) => `url(${JSON.stringify(u)})`;
+    halfA.style.backgroundImage = toBgUrl(ua);
+    halfB.style.backgroundImage = toBgUrl(ub);
+
+    imgA.alt = nameA ? `${nameA} logo` : "Collection A logo";
+    imgB.alt = nameB ? `${nameB} logo` : "Collection B logo";
+    imgA.src = ua;
+    imgB.src = ub;
+
+    merged.hidden = true;
+    bolts?.setAttribute("hidden", "");
+    imgA.style.cssText = "";
+    imgB.style.cssText = "";
+
+    const LB_FINAL = Math.min(320, Math.max(200, Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.46)));
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const lastLeft = Math.round(cx - LB_FINAL / 2);
+    const lastTop = Math.round(cy - LB_FINAL / 2);
+
+    let rectA = getSlotLogoRect("co-slot-a");
+    let rectB = getSlotLogoRect("co-slot-b");
+    if (!rectA) rectA = fallbackLogoRect("a");
+    if (!rectB) rectB = fallbackLogoRect("b");
+
+    function prepFly(img, first) {
+      img.style.position = "fixed";
+      img.style.left = `${Math.round(first.left)}px`;
+      img.style.top = `${Math.round(first.top)}px`;
+      img.style.width = `${Math.round(first.width)}px`;
+      img.style.height = `${Math.round(first.height)}px`;
+      img.style.zIndex = "802";
+      img.style.objectFit = "contain";
+      img.style.margin = "0";
+      img.style.padding = "0";
+      img.style.border = "none";
+      img.style.transition = "none";
+      img.style.transform = "none";
+      img.style.opacity = "1";
+    }
+
+    prepFly(imgA, rectA);
+    prepFly(imgB, rectB);
+
+    root.hidden = false;
+    root.setAttribute("aria-hidden", "false");
+    root.classList.add("is-open");
+    document.body.classList.add("co-logo-battle-active");
+    if (coLogoBattleSavedOverflow === null) {
+      coLogoBattleSavedOverflow = document.body.style.overflow;
+    }
+    document.body.style.overflow = "hidden";
+
+    const flyMs = 560;
+    const ease = "cubic-bezier(0.34, 1.28, 0.52, 1)";
+    const tr = `left ${flyMs}ms ${ease}, top ${flyMs}ms ${ease}, width ${flyMs}ms ${ease}, height ${flyMs}ms ${ease}`;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        imgA.style.transition = tr;
+        imgB.style.transition = tr;
+        imgA.style.left = `${lastLeft}px`;
+        imgA.style.top = `${lastTop}px`;
+        imgA.style.width = `${LB_FINAL}px`;
+        imgA.style.height = `${LB_FINAL}px`;
+        imgB.style.left = `${lastLeft}px`;
+        imgB.style.top = `${lastTop}px`;
+        imgB.style.width = `${LB_FINAL}px`;
+        imgB.style.height = `${LB_FINAL}px`;
+      });
+    });
+
+    const T_IMPACT = flyMs;
+    const T_FLASH = T_IMPACT + 200;
+    const T_MERGE = T_FLASH + 280;
+    const holdMs = 2000;
+    const T_DONE = T_MERGE + holdMs;
+
+    window.setTimeout(() => {
+      imgA.style.transition = "";
+      imgB.style.transition = "";
+      root.classList.add("co-lb--impact");
+    }, T_IMPACT);
+
+    window.setTimeout(() => {
+      root.classList.remove("co-lb--impact");
+      root.classList.add("co-lb--flash");
+    }, T_FLASH);
+
+    window.setTimeout(() => {
+      root.classList.remove("co-lb--flash");
+      imgA.style.opacity = "0";
+      imgB.style.opacity = "0";
+      root.classList.add("co-lb--merge");
+      root.classList.add("co-lb--merge-hold");
+      merged.hidden = false;
+      bolts?.removeAttribute("hidden");
+    }, T_MERGE);
+
+    window.setTimeout(() => {
+      resetLogoBattleUI();
+      resolve();
+    }, T_DONE);
+  });
 }
 
 function renderResults(data) {
@@ -160,29 +374,28 @@ function renderResults(data) {
   setCollectionLogo("a", data.collectionLogoUrlA, labelA);
   setCollectionLogo("b", data.collectionLogoUrlB, labelB);
 
+  const tagA = collectionShortTag(data, "A");
+  const tagB = collectionShortTag(data, "B");
+  const pa = Number(data.percentOfAHoldingB);
+  const pb = Number(data.percentOfBHoldingA);
+
+  const pctA = $("co-hold-pct-a");
+  const pctB = $("co-hold-pct-b");
+  if (pctA) pctA.textContent = `${fmtPct(pa)}%`;
+  if (pctB) pctB.textContent = `${fmtPct(pb)}%`;
+
+  const descA = $("co-hold-desc-a");
+  const descB = $("co-hold-desc-b");
+  if (descA) descA.textContent = `${tagA} holders also hold ${tagB}`;
+  if (descB) descB.textContent = `${tagB} holders also hold ${tagA}`;
+
   const match = Number(data.matchScore);
   $("co-match").textContent = `${fmtPct(match)}%`;
 
   const shared = Number(data.sharedHolderCount);
-  const sub = $("co-match-sub");
-  if (sub) {
-    sub.textContent = Number.isFinite(shared)
-      ? `${shared.toLocaleString()} shared wallets`
-      : "—";
-  }
-
-  $("co-match-name-a").textContent = truncLabel(labelA, 32);
-  $("co-match-name-b").textContent = truncLabel(labelB, 32);
-  setMatchFace("a", data.collectionLogoUrlA, labelA);
-  setMatchFace("b", data.collectionLogoUrlB, labelB);
-
-  const pa = Number(data.percentOfAHoldingB);
-  const pb = Number(data.percentOfBHoldingA);
-  const shortA = truncLabel(labelA, 28);
-  const shortB = truncLabel(labelB, 28);
-  const foot = $("co-match-foot");
-  if (foot) {
-    foot.textContent = `${fmtPct(pa)}% of ${shortA} holders also hold ${shortB} · ${fmtPct(pb)}% of ${shortB} holders also hold ${shortA}`;
+  const sharedEl = $("co-match-shared");
+  if (sharedEl) {
+    sharedEl.textContent = Number.isFinite(shared) ? `${shared.toLocaleString()} shared wallets` : "—";
   }
 
   const q = $("co-quality");
@@ -194,13 +407,6 @@ function renderResults(data) {
     q.classList.add("co-quality--full");
     q.textContent = "Full holder scan";
   }
-
-  const times = $("co-times");
-  if (times) {
-    times.textContent = `Last scanned — A: ${data.fetchedAtA || "—"} · B: ${data.fetchedAtB || "—"}`;
-  }
-
-  window.__CO_LAST__ = data;
 }
 
 async function onCompare() {
@@ -243,60 +449,38 @@ async function onCompare() {
   setLoading(true, "Scanning holder overlap…");
   $("co-results")?.classList.add("hidden");
 
-  const url = buildOverlapUrl(a, b);
-  try {
-    const res = await fetch(url, { method: "GET" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(messageForOverlapHttpError(res, data));
-    }
-    if (!data?.success) {
-      throw new Error(data?.error || "Unexpected response");
-    }
-    setLoading(false, "");
-    renderResults(data);
-  } catch (e) {
-    console.error("[CollectionOverlap]", e);
-    const net = messageForNetworkFailure(e, url);
-    setLoading(false, net || e?.message || "Something went wrong. Try again.");
-  }
-}
+  const apiUrl = buildOverlapUrl(a, b);
+  const logoA = typeof coInputA.getLogoUrl === "function" ? coInputA.getLogoUrl() : null;
+  const logoB = typeof coInputB.getLogoUrl === "function" ? coInputB.getLogoUrl() : null;
+  const useBattleAnim = Boolean(logoA && logoB) && !prefersReducedMotion();
 
-function copyText(text) {
-  const t = String(text || "");
-  if (!t) return;
-  if (navigator.clipboard?.writeText) {
-    void navigator.clipboard.writeText(t);
+  const fetchResultP = fetch(apiUrl, { method: "GET" })
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, err: new Error(messageForOverlapHttpError(res, data)) };
+      }
+      if (!data?.success) {
+        return { ok: false, err: new Error(data?.error || "Unexpected response") };
+      }
+      return { ok: true, data };
+    })
+    .catch((e) => {
+      const net = messageForNetworkFailure(e, apiUrl);
+      return { ok: false, err: net ? new Error(net) : e };
+    });
+
+  const animPromise = useBattleAnim ? runLogoBattleAnimation(logoA, logoB, va.name, vb.name) : Promise.resolve();
+
+  const [, fr] = await Promise.all([animPromise, fetchResultP]);
+
+  if (!fr.ok) {
+    console.error("[CollectionOverlap]", fr.err);
+    setLoading(false, fr.err?.message || "Something went wrong. Try again.");
     return;
   }
-  const ta = document.createElement("textarea");
-  ta.value = t;
-  ta.style.position = "fixed";
-  ta.style.left = "-9999px";
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand("copy");
-  } finally {
-    ta.remove();
-  }
-}
-
-function onCopyTweet() {
-  const d = window.__CO_LAST__;
-  if (!d) return;
-  const pageUrl = window.location.href.split("#")[0];
-  const la = collectionDisplayLabel(d, "A");
-  const lb = collectionDisplayLabel(d, "B");
-  const msg =
-    `I just compared two NFT communities on Little Ollie Labs 🧬\n` +
-    `${la}: ${d.holderCountA} holders\n` +
-    `${lb}: ${d.holderCountB} holders\n` +
-    `Shared holders: ${d.sharedHolderCount}\n` +
-    `Match score: ${fmtPct(d.matchScore)}%\n` +
-    `Try it here: ${pageUrl}`;
-  copyText(msg);
-  setLoading(false, "Copied summary to clipboard.");
+  setLoading(false, "");
+  renderResults(fr.data);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -307,5 +491,13 @@ document.addEventListener("DOMContentLoaded", () => {
     coInputB = new window.CollectionInput(slotB);
   }
   $("co-compare-btn")?.addEventListener("click", () => void onCompare());
-  $("co-copy-tweet")?.addEventListener("click", onCopyTweet);
+
+  const contactDlg = $("co-contact-dialog");
+  const contactBtn = $("co-contact-info-btn");
+  const contactClose = $("co-contact-dialog-close");
+  contactBtn?.addEventListener("click", () => contactDlg?.showModal());
+  contactClose?.addEventListener("click", () => contactDlg?.close());
+  contactDlg?.addEventListener("click", (e) => {
+    if (e.target === contactDlg) contactDlg.close();
+  });
 });
