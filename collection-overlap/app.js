@@ -12,7 +12,11 @@ function $(id) {
 
 let coInputA = null;
 let coInputB = null;
-/** While GET /api/collection-overlap is in flight — compare button stays disabled. */
+let coSolInputA = null;
+let coSolInputB = null;
+/** `"evm"` — existing flow; `"solana"` — Helius-only overlap (isolated). */
+let coMode = "evm";
+/** While GET /api/collection-overlap or /api/collection-overlap-solana is in flight — compare button stays disabled. */
 let overlapFetchInFlight = false;
 /** @type {string|null} saved `document.body.style.overflow` while logo-battle overlay is open */
 let coLogoBattleSavedOverflow = null;
@@ -26,6 +30,22 @@ function buildOverlapUrl(contractA, contractB) {
   const root = apiBase();
   const path = `/api/collection-overlap?contractA=${encodeURIComponent(contractA)}&contractB=${encodeURIComponent(contractB)}`;
   return root ? `${root}${path}` : path;
+}
+
+function buildSolanaOverlapUrl(mintA, mintB) {
+  const root = apiBase();
+  const path = `/api/collection-overlap-solana?mintA=${encodeURIComponent(mintA)}&mintB=${encodeURIComponent(mintB)}`;
+  return root ? `${root}${path}` : path;
+}
+
+/** Mirrors Worker `validateSolanaCollectionMint` — client-side gating only. */
+function isValidSolanaCollectionMint(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return false;
+  const lower = s.toLowerCase();
+  if (/^0x[a-f0-9]{40}$/.test(lower)) return false;
+  if (/^0x/.test(lower)) return false;
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
 }
 
 /** Wrangler / Worker not running, blocked port, or offline — fetch() throws (Safari: "Load failed"). */
@@ -55,12 +75,23 @@ function messageForNetworkFailure(err, apiUrl) {
 }
 
 /** Live Server / static hosts have no /api — explain 404 instead of a bare status. */
-function messageForOverlapHttpError(res, data) {
+function messageForOverlapHttpError(res, data, requestUrl) {
   const base = apiBase();
   let msg = data?.error || `Request failed (${res.status})`;
   if (res.status === 404 && !base) {
+    const path = (() => {
+      try {
+        return new URL(requestUrl || "").pathname || "";
+      } catch {
+        return "";
+      }
+    })();
+    const hint =
+      path.includes("collection-overlap-solana") || path.includes("solana")
+        ? "/api/collection-overlap-solana"
+        : "/api/collection-overlap";
     msg =
-      "No /api/collection-overlap on this host (404). Static preview (e.g. Live Server) only serves HTML — the Worker must be called by URL.\n\n" +
+      `No ${hint} on this host (404). Static preview (e.g. Live Server) only serves HTML — the Worker must be called by URL.\n\n` +
       'In index.html, before app.js, set e.g.:\nwindow.COLLECTION_OVERLAP_API_BASE = "http://127.0.0.1:8787";\n' +
       "(Port 8787 is the default for wrangler dev — use your deployed workers.dev URL in production.)";
   }
@@ -68,6 +99,12 @@ function messageForOverlapHttpError(res, data) {
 }
 
 function collectionsReadyForCompare() {
+  if (coMode === "solana") {
+    if (!coSolInputA || !coSolInputB) return false;
+    const va = coSolInputA.getValue();
+    const vb = coSolInputB.getValue();
+    return Boolean(va.contractAddress && vb.contractAddress);
+  }
   if (!coInputA || !coInputB) return false;
   const va = coInputA.getValue();
   const vb = coInputB.getValue();
@@ -80,15 +117,22 @@ function updateCompareButtonDisabled() {
   btn.disabled = overlapFetchInFlight || !collectionsReadyForCompare();
 }
 
-function setLoading(isLoading, msg) {
+function setLoading(isLoading, msg, opts) {
   overlapFetchInFlight = isLoading;
   const st = $("co-status");
   const loader = $("co-global-loader");
+  const loaderNote = $("co-global-loader-note");
   updateCompareButtonDisabled();
   if (st) st.textContent = msg || "";
   if (loader) {
     loader.hidden = !isLoading;
     loader.setAttribute("aria-hidden", isLoading ? "false" : "true");
+  }
+  if (loaderNote) {
+    const showPatience = Boolean(isLoading && opts && opts.solanaPatience);
+    loaderNote.hidden = !showPatience;
+    loaderNote.setAttribute("aria-hidden", showPatience ? "false" : "true");
+    loaderNote.textContent = showPatience ? "This may take a moment…" : "";
   }
 }
 
@@ -132,7 +176,14 @@ const CO_COMPARE_MASCOT = "assets/lo-mascot.png";
 
 /** Prefer the logo already shown in the input (search / OpenSea); overlap API metadata may use a different asset (e.g. contract vs collection art). */
 function logoUrlForResultSlot(which, apiUrl) {
-  const input = which === "a" ? coInputA : coInputB;
+  const input =
+    coMode === "solana"
+      ? which === "a"
+        ? coSolInputA
+        : coSolInputB
+      : which === "a"
+        ? coInputA
+        : coInputB;
   const fromInput =
     input && typeof input.getLogoUrl === "function" ? String(input.getLogoUrl() || "").trim() : "";
   const fromApi = apiUrl && String(apiUrl).trim();
@@ -325,8 +376,10 @@ function runLogoBattleAnimation(urlA, urlB, nameA, nameB, hadRealImageA = true, 
     const lastLeft = Math.round(cx - LB_FINAL / 2);
     const lastTop = Math.round(cy - LB_FINAL / 2);
 
-    let rectA = getSlotLogoRect("co-slot-a");
-    let rectB = getSlotLogoRect("co-slot-b");
+    const slotAId = coMode === "solana" ? "co-slot-sol-a" : "co-slot-a";
+    const slotBId = coMode === "solana" ? "co-slot-sol-b" : "co-slot-b";
+    let rectA = getSlotLogoRect(slotAId);
+    let rectB = getSlotLogoRect(slotBId);
     if (!rectA) rectA = fallbackLogoRect("a");
     if (!rectB) rectB = fallbackLogoRect("b");
 
@@ -446,19 +499,6 @@ function renderResults(data) {
   if (descA) descA.textContent = `${tagA} holders also hold ${tagB}`;
   if (descB) descB.textContent = `${tagB} holders also hold ${tagA}`;
 
-  const chainEl = $("co-chain-detect");
-  if (chainEl) {
-    const a = data.detectedChainA === "base" ? "BASE" : "ETH";
-    const b = data.detectedChainB === "base" ? "BASE" : "ETH";
-    if (data.detectedChainA != null && data.detectedChainB != null) {
-      chainEl.hidden = false;
-      chainEl.textContent = a === b ? `Detected: ${a}` : `Detected: ${a} · ${b}`;
-    } else {
-      chainEl.hidden = true;
-      chainEl.textContent = "";
-    }
-  }
-
   const q = $("co-quality");
   q.classList.remove("co-quality--full", "co-quality--capped");
   if (data.dataQuality === "capped") {
@@ -470,7 +510,104 @@ function renderResults(data) {
   }
 }
 
+async function onCompareSolana() {
+  if (!coSolInputA || !coSolInputB) {
+    setLoading(false, "Inputs are not ready. Refresh the page.");
+    return;
+  }
+
+  coSolInputA.clearInlineError();
+  coSolInputB.clearInlineError();
+
+  const va = coSolInputA.getValue();
+  const vb = coSolInputB.getValue();
+  const mintA = va.contractAddress;
+  const mintB = vb.contractAddress;
+
+  let blocked = false;
+  if (!mintA) {
+    coSolInputA.setCompareEmptyError("Please select a valid collection");
+    blocked = true;
+  }
+  if (!mintB) {
+    coSolInputB.setCompareEmptyError("Please select a valid collection");
+    blocked = true;
+  }
+  if (blocked) {
+    coSolInputA.revalidateDraft();
+    coSolInputB.revalidateDraft();
+    setLoading(false, "");
+    return;
+  }
+
+  if (!isValidSolanaCollectionMint(mintA) || !isValidSolanaCollectionMint(mintB)) {
+    coSolInputA.setCompareEmptyError("Solana comparisons must be between Solana collections only");
+    coSolInputB.setCompareEmptyError("Solana comparisons must be between Solana collections only");
+    setLoading(false, "");
+    return;
+  }
+
+  if (mintA === mintB) {
+    coSolInputA.setCompareEmptyError("Choose two different collections.");
+    coSolInputB.setCompareEmptyError("Choose two different collections.");
+    setLoading(false, "");
+    return;
+  }
+
+  setLoading(true, "Scanning holder overlap…", { solanaPatience: true });
+  $("co-results")?.classList.add("hidden");
+
+  const apiUrl = buildSolanaOverlapUrl(mintA, mintB);
+  const logoA = typeof coSolInputA.getLogoUrl === "function" ? coSolInputA.getLogoUrl() : null;
+  const logoB = typeof coSolInputB.getLogoUrl === "function" ? coSolInputB.getLogoUrl() : null;
+  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
+  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
+  const useBattleAnim = !prefersReducedMotion();
+
+  const fetchResultP = fetch(apiUrl, { method: "GET" })
+    .then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
+      }
+      if (!data?.success) {
+        return { ok: false, err: new Error(data?.error || "Unexpected response") };
+      }
+      return { ok: true, data };
+    })
+    .catch((e) => {
+      const net = messageForNetworkFailure(e, apiUrl);
+      return { ok: false, err: net ? new Error(net) : e };
+    });
+
+  const animPromise = useBattleAnim
+    ? runLogoBattleAnimation(
+        battleA,
+        battleB,
+        va.name,
+        vb.name,
+        Boolean(logoA && String(logoA).trim()),
+        Boolean(logoB && String(logoB).trim())
+      )
+    : Promise.resolve();
+
+  const [, fr] = await Promise.all([animPromise, fetchResultP]);
+
+  if (!fr.ok) {
+    console.error("[CollectionOverlap Solana]", fr.err);
+    setLoading(false, fr.err?.message || "Something went wrong. Try again.");
+    return;
+  }
+  setLoading(false, "");
+  renderResults(fr.data);
+}
+
 async function onCompare() {
+  if (coMode === "solana") {
+    await onCompareSolana();
+    return;
+  }
+
   if (!coInputA || !coInputB) {
     setLoading(false, "Inputs are not ready. Refresh the page.");
     return;
@@ -521,7 +658,7 @@ async function onCompare() {
     .then(async (res) => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        return { ok: false, err: new Error(messageForOverlapHttpError(res, data)) };
+        return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
       }
       if (!data?.success) {
         return { ok: false, err: new Error(data?.error || "Unexpected response") };
@@ -555,6 +692,48 @@ async function onCompare() {
   renderResults(fr.data);
 }
 
+function setCoMode(next) {
+  const mode = next === "solana" ? "solana" : "evm";
+  coMode = mode;
+
+  const pageWrap = document.querySelector(".co-page-wrap");
+  if (pageWrap) {
+    pageWrap.classList.toggle("co-mode--solana", mode === "solana");
+    pageWrap.classList.toggle("co-mode--evm", mode === "evm");
+  }
+
+  const btnEvm = $("co-mode-evm");
+  const btnSol = $("co-mode-sol");
+  const panelEvm = $("co-evm-panel");
+  const panelSol = $("co-sol-panel");
+  const help = $("co-mode-help");
+
+  if (btnEvm) {
+    btnEvm.classList.toggle("co-mode-btn--active", mode === "evm");
+    btnEvm.setAttribute("aria-pressed", mode === "evm" ? "true" : "false");
+  }
+  if (btnSol) {
+    btnSol.classList.toggle("co-mode-btn--active", mode === "solana");
+    btnSol.setAttribute("aria-pressed", mode === "solana" ? "true" : "false");
+  }
+  if (panelEvm) panelEvm.hidden = mode !== "evm";
+  if (panelSol) panelSol.hidden = mode !== "solana";
+
+  if (help) {
+    help.textContent = "Paste Collection URL or Contract Address below.";
+  }
+
+  coInputA?.clearInlineError?.();
+  coInputB?.clearInlineError?.();
+  coSolInputA?.clearInlineError?.();
+  coSolInputB?.clearInlineError?.();
+  const st = $("co-status");
+  if (st) st.textContent = "";
+  $("co-results")?.classList.add("hidden");
+
+  updateCompareButtonDisabled();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const slotA = $("co-slot-a");
   const slotB = $("co-slot-b");
@@ -562,7 +741,15 @@ document.addEventListener("DOMContentLoaded", () => {
     coInputA = new window.CollectionInput(slotA);
     coInputB = new window.CollectionInput(slotB);
   }
+  const slotSolA = $("co-slot-sol-a");
+  const slotSolB = $("co-slot-sol-b");
+  if (slotSolA && slotSolB && typeof window.SolanaCollectionInput === "function") {
+    coSolInputA = new window.SolanaCollectionInput(slotSolA);
+    coSolInputB = new window.SolanaCollectionInput(slotSolB);
+  }
   $("co-form-section")?.addEventListener("co-selection-change", () => updateCompareButtonDisabled());
+  $("co-mode-evm")?.addEventListener("click", () => setCoMode("evm"));
+  $("co-mode-sol")?.addEventListener("click", () => setCoMode("solana"));
   updateCompareButtonDisabled();
   $("co-compare-btn")?.addEventListener("click", () => void onCompare());
 

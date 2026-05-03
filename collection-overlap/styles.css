@@ -181,6 +181,45 @@
   max-width: 100%;
 }
 
+.co-mode-toggle {
+  display: inline-flex;
+  margin: 0 auto 14px;
+  padding: 4px;
+  border-radius: var(--lo-radius-md);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  gap: 4px;
+}
+
+.co-mode-btn {
+  font-family: var(--lo-font, "Fredoka", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: calc(var(--lo-radius-md) - 2px);
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.co-mode-btn:hover {
+  color: #fff;
+}
+
+.co-mode-btn--active {
+  color: var(--lo-ink);
+  background: var(--lo-gradient-yellow);
+  box-shadow: var(--lo-shadow-btn-yellow-sm);
+}
+
+.co-sol-panel {
+  width: 100%;
+}
+
 .co-body-tight {
   margin-top: 0 !important;
   margin-bottom: 16px !important;
@@ -283,6 +322,30 @@
 
 .co-ci-banner--loading .co-ci-banner__ring {
   opacity: 1;
+}
+
+.co-ci-banner__loading-note {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  transform: translateX(-50%);
+  z-index: 3;
+  margin: 0;
+  max-width: 92%;
+  padding: 0 6px;
+  box-sizing: border-box;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: rgba(15, 23, 42, 0.72);
+  pointer-events: none;
+}
+
+.co-ci-banner--loading .co-ci-banner__loading-note {
+  display: block;
 }
 
 .co-ci-banner--has-logo.co-ci-banner--loading .co-ci-banner__ring {
@@ -577,6 +640,21 @@
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.4));
 }
 
+.co-global-loader__note {
+  margin: 10px 0 0;
+  max-width: 22rem;
+  padding: 0 12px;
+  font-size: var(--lo-text-sm);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  color: rgba(254, 249, 231, 0.88);
+}
+
+.co-global-loader__note[hidden] {
+  display: none !important;
+}
+
 .co-status {
   min-height: 1.25em;
   margin: 10px 0 0;
@@ -595,21 +673,6 @@
 
 .co-results.hidden {
   display: none;
-}
-
-/* Shown only after a successful compare — which chain each collection resolved on */
-.co-chain-detect {
-  margin: 0 0 4px;
-  font-size: var(--lo-text-xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--lo-text-subtle);
-  text-align: center;
-}
-
-.co-chain-detect[hidden] {
-  display: none !important;
 }
 
 /* Three blobs in one row on all viewports (same as desktop on iPhone). */
@@ -1399,4 +1462,116 @@ body.co-logo-battle-active .co-global-loader:not([hidden]) {
     transform: translate(-50%, -50%) rotate(42deg);
     opacity: 0.82;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Solana mode — `setCoMode` toggles `.co-mode--solana` on `.co-page-wrap`     */
+/* Full compare path still switches in JS (Helius / Solana APIs vs Alchemy). */
+/* -------------------------------------------------------------------------- */
+
+.co-page-wrap.co-mode--solana .links-bg {
+  background: linear-gradient(
+    165deg,
+    #0c1222 0%,
+    #1a1744 34%,
+    #312e81 58%,
+    #0f766e 100%
+  );
+}
+
+.co-page-wrap.co-mode--solana .links-bg-overlay {
+  background: linear-gradient(180deg, rgba(94, 234, 212, 0.09) 0%, rgba(15, 23, 42, 0.5) 100%);
+}
+
+.co-page-wrap.co-mode--solana .hero-title {
+  color: #5eead4;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.38),
+    0 0 26px rgba(94, 234, 212, 0.38);
+}
+
+.co-page-wrap.co-mode--solana .co-section-title {
+  border-bottom-color: #2dd4bf;
+  box-shadow: 0 3px 0 rgba(167, 139, 250, 0.45);
+}
+
+.co-page-wrap.co-mode--solana .co-mode-toggle {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(94, 234, 212, 0.22);
+}
+
+.co-page-wrap.co-mode--solana .co-mode-btn--active {
+  color: #0f172a;
+  background: linear-gradient(145deg, #5eead4 0%, #a78bfa 100%);
+  box-shadow: 0 4px 16px rgba(94, 234, 212, 0.35);
+}
+
+.co-page-wrap.co-mode--solana .co-ci-shell {
+  background: linear-gradient(145deg, #ccfbf1 0%, #e9d5ff 48%, #ddd6fe 100%);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+.co-page-wrap.co-mode--solana .co-ci-shell--verified {
+  border-color: rgba(13, 148, 136, 0.55);
+}
+
+.co-page-wrap.co-mode--solana .co-ci-banner__ring {
+  border-top-color: #0d9488;
+  border-right-color: #a78bfa;
+}
+
+.co-page-wrap.co-mode--solana .co-ci-shell:focus-within {
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.28), 0 6px 20px rgba(99, 102, 241, 0.18);
+}
+
+.co-page-wrap.co-mode--solana .co-cta.link-btn-yellow {
+  background: linear-gradient(145deg, #2dd4bf 0%, #6366f1 100%);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 18px rgba(45, 212, 191, 0.35);
+}
+
+.co-page-wrap.co-mode--solana .co-cta.link-btn-yellow:hover {
+  filter: brightness(1.05);
+}
+
+.co-page-wrap.co-mode--solana .co-global-loader__ring {
+  border-top-color: #5eead4;
+  border-right-color: rgba(167, 139, 250, 0.85);
+}
+
+.co-page-wrap.co-mode--solana .co-global-loader__note {
+  color: rgba(204, 251, 241, 0.92);
+}
+
+.co-page-wrap.co-mode--solana .co-ci-banner__loading-note {
+  color: rgba(13, 148, 136, 0.92);
+}
+
+.co-page-wrap.co-mode--solana .co-hold-pct {
+  color: #99f6e4;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 0 22px rgba(94, 234, 212, 0.35);
+}
+
+.co-page-wrap.co-mode--solana .co-hold-col--b .co-hold-pct {
+  color: #ddd6fe;
+}
+
+.co-page-wrap.co-mode--solana .co-more-data strong {
+  color: #a5f3fc;
+}
+
+.co-page-wrap.co-mode--solana .co-info-btn {
+  color: #a5f3fc;
+}
+
+.co-page-wrap.co-mode--solana .co-info-btn:hover {
+  background: rgba(94, 234, 212, 0.2);
+  border-color: #5eead4;
+}
+
+.co-page-wrap.co-mode--solana .co-info-btn:focus-visible {
+  outline-color: #5eead4;
 }

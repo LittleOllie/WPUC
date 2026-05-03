@@ -44,7 +44,7 @@
   </script>
 </head>
 <body>
-  <div class="links-page co-page-wrap">
+  <div class="links-page co-page-wrap co-mode--evm">
     <div class="links-bg" aria-hidden="true"></div>
     <div class="links-bg-overlay" aria-hidden="true"></div>
 
@@ -82,16 +82,41 @@
         <main class="co-main">
           <section id="co-form-section" class="co-card">
             <h2 class="co-section-title">Compare holders</h2>
-            <p class="body-text co-body-tight">Paste Collection URL or Contract Address below.</p>
 
-            <div class="co-grid2">
-              <div class="co-field">
-                <span class="co-label">Collection A</span>
-                <div id="co-slot-a" class="co-collection-slot"></div>
+            <div class="co-mode-toggle" role="group" aria-label="Compare on EVM or Solana">
+              <button type="button" id="co-mode-evm" class="co-mode-btn co-mode-btn--active" aria-pressed="true">
+                EVM
+              </button>
+              <button type="button" id="co-mode-sol" class="co-mode-btn" aria-pressed="false">
+                SOLANA
+              </button>
+            </div>
+
+            <p id="co-mode-help" class="body-text co-body-tight">Paste Collection URL or Contract Address below.</p>
+
+            <div id="co-evm-panel">
+              <div class="co-grid2">
+                <div class="co-field">
+                  <span class="co-label">Collection A</span>
+                  <div id="co-slot-a" class="co-collection-slot"></div>
+                </div>
+                <div class="co-field">
+                  <span class="co-label">Collection B</span>
+                  <div id="co-slot-b" class="co-collection-slot"></div>
+                </div>
               </div>
-              <div class="co-field">
-                <span class="co-label">Collection B</span>
-                <div id="co-slot-b" class="co-collection-slot"></div>
+            </div>
+
+            <div id="co-sol-panel" class="co-sol-panel" hidden>
+              <div class="co-grid2">
+                <div class="co-field">
+                  <span class="co-label">Collection A</span>
+                  <div id="co-slot-sol-a" class="co-collection-slot"></div>
+                </div>
+                <div class="co-field">
+                  <span class="co-label">Collection B</span>
+                  <div id="co-slot-sol-b" class="co-collection-slot"></div>
+                </div>
               </div>
             </div>
 
@@ -110,6 +135,7 @@
                   decoding="async"
                 />
               </div>
+              <p id="co-global-loader-note" class="co-global-loader__note" hidden aria-hidden="true"></p>
             </div>
             <p id="co-status" class="co-status" role="status" aria-live="polite"></p>
           </section>
@@ -153,8 +179,6 @@
                 </div>
               </div>
             </div>
-
-            <p id="co-chain-detect" class="co-chain-detect" hidden aria-live="polite"></p>
 
             <div class="co-card co-match-card">
               <div class="co-hold-split">
@@ -294,6 +318,7 @@
   </dialog>
 
   <script src="collection-input.js" defer></script>
+  <script src="solana-collection-input.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

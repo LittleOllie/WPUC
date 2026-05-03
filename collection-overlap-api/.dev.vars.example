@@ -12,3 +12,9 @@
 ALCHEMY_API_KEY_COLLECTION_OVERLAP=your_alchemy_key_here
 # Optional fallback if the dedicated secret is unset:
 # ALCHEMY_API_KEY=
+
+# Solana mode (required for SOL toggle: search, collection banner, overlap). Key: https://dashboard.helius.dev/api-keys
+# Without this, /api/solana-collection-display and mint search return 503 locally.
+HELIUS_API_KEY=your_helius_key_here
+# Optional dedicated secret name (Worker checks this first):
+# HELIUS_API_KEY_COLLECTION_OVERLAP=
