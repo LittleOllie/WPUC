@@ -15,9 +15,9 @@
   <link rel="stylesheet" href="styles.css" />
   <!--
     API base (optional script BEFORE this block):
-    - Production on same host as Worker: set window.COLLECTION_OVERLAP_API_BASE = "" for same-origin /api.
-    - Production static host: set to your Collection Overlap Worker origin (see collection-overlap-api/wrangler.toml name).
-    - Localhost / 127.0.0.1: if you do NOT set the property, we default to http://YOUR-HOST:8787 (same hostname as this page).
+    - Omit the property: localhost → wrangler dev on :8787; production (e.g. iPhone on your domain) → deployed Worker below.
+    - Same-origin /api only: set window.COLLECTION_OVERLAP_API_BASE = "" before this block.
+    - Other Worker host: set window.COLLECTION_OVERLAP_API_BASE = "https://your-worker.workers.dev"
   -->
   <script>
     (function () {
@@ -25,6 +25,8 @@
       var prev = had ? String(window.COLLECTION_OVERLAP_API_BASE).trim() : "";
       var h = location.hostname;
       var local = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+      /** Must match collection-overlap-api/wrangler.toml `name` + account workers.dev subdomain */
+      var DEFAULT_PROD_WORKER = "https://locollectionoverlap.littleollienft.workers.dev";
       if (had && prev) {
         window.COLLECTION_OVERLAP_API_BASE = prev;
         return;
@@ -33,11 +35,11 @@
         window.COLLECTION_OVERLAP_API_BASE = "";
         return;
       }
-      var apiOrigin = "";
       if (local) {
-        apiOrigin = h === "[::1]" ? "http://[::1]:8787" : "http://" + h + ":8787";
+        window.COLLECTION_OVERLAP_API_BASE = h === "[::1]" ? "http://[::1]:8787" : "http://" + h + ":8787";
+        return;
       }
-      window.COLLECTION_OVERLAP_API_BASE = apiOrigin;
+      window.COLLECTION_OVERLAP_API_BASE = DEFAULT_PROD_WORKER;
     })();
   </script>
 </head>

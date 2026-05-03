@@ -576,16 +576,23 @@
 
       const url = buildSearchUrl(query);
       try {
-        const res = await fetch(url, { method: "GET", signal: ac.signal });
+        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
         const data = await res.json().catch(() => ({}));
         if (ac.signal.aborted) return;
         if (myGen !== this._slugResolveGen) return;
         if (!res.ok) {
-          this._showDropdownError(MSG_SEARCH_FAILED);
+          const apiErr =
+            typeof data?.error === "string" && data.error.trim()
+              ? data.error.trim()
+              : res.status === 404
+                ? "Search API not found on this host. Deploy the Worker or set COLLECTION_OVERLAP_API_BASE."
+                : "";
+          this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
           return;
         }
         if (!data?.success || !Array.isArray(data.results)) {
-          this._showDropdownError(MSG_SEARCH_FAILED);
+          const apiErr = typeof data?.error === "string" && data.error.trim() ? data.error.trim() : "";
+          this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
           return;
         }
         const list = data.results.slice(0, 10);

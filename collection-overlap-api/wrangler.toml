@@ -7,6 +7,7 @@ workers_dev = true
 preview_urls = true
 
 # Deploy: npx wrangler deploy
+# Browser default (collection-overlap/index.html): https://locollectionoverlap.littleollienft.workers.dev
 # URL shape: https://locollectionoverlap.<your-subdomain>.workers.dev/api/collection-overlap?...
 #
 # Secrets:
