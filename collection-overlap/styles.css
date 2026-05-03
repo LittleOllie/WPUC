@@ -155,16 +155,11 @@
   margin-right: auto;
 }
 
+/* Same two-column Collection A / B layout on all viewports (matches desktop on phone). */
 .co-grid2 {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-@media (min-width: 640px) {
-  .co-grid2 {
-    grid-template-columns: 1fr 1fr;
-  }
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(8px, 2.5vw, 14px);
 }
 
 .co-field {
@@ -187,12 +182,14 @@
   width: 100%;
 }
 
+/* Same yellow treatment as hub `.link-btn-yellow` */
 .co-ci-shell {
   border-radius: var(--lo-radius-md);
-  border: 2px solid var(--lo-border-ink-strong);
-  background: var(--lo-surface-light);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  background: var(--lo-gradient-yellow);
+  color: var(--lo-ink);
+  box-shadow: var(--lo-shadow-btn-yellow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   overflow: hidden;
 }
 
@@ -206,7 +203,7 @@
   justify-content: center;
   padding: 8%;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.35);
+  background: #ffffff;
 }
 
 /* Logo uses the full square (no inset padding). */
@@ -214,15 +211,11 @@
   padding: 0;
 }
 
-.co-ci-shell--verified .co-ci-banner {
-  background: rgba(255, 255, 255, 0.45);
-}
-
 .co-ci-banner__mascot {
   position: absolute;
   inset: 0;
   background: url("assets/lo-mascot.png") center 44% / min(68%, 180px) no-repeat;
-  opacity: 0.2;
+  opacity: 0.22;
   pointer-events: none;
   filter: saturate(1.05);
 }
@@ -276,24 +269,9 @@
   display: none !important;
 }
 
-.co-ci-shell:focus-within:not(.co-ci-shell--verified) {
-  border-color: var(--lo-yellow);
-  box-shadow: var(--lo-shadow-input-focus);
-}
-
-.co-ci-shell--verified {
-  border-color: #22c55e;
-  background: rgba(240, 253, 244, 0.97);
-  box-shadow:
-    0 0 0 1px rgba(34, 197, 94, 0.28),
-    0 2px 14px rgba(34, 197, 94, 0.12);
-}
-
-.co-ci-shell--verified:focus-within {
-  border-color: #16a34a;
-  box-shadow:
-    0 0 0 2px rgba(22, 163, 74, 0.28),
-    0 2px 14px rgba(34, 197, 94, 0.14);
+.co-ci-shell:focus-within {
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: var(--lo-shadow-input-focus), var(--lo-shadow-btn-yellow-sm-hover);
 }
 
 .co-ci-row {
@@ -304,14 +282,17 @@
   gap: 8px;
 }
 
+/* URL row — light scrim on hub yellow so the field reads clearly */
 .co-ci-row--input {
   gap: 6px;
   padding-right: 8px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(26, 26, 46, 0.12);
 }
 
 .co-ci-shell--verified .co-ci-row--input {
-  border-bottom-color: rgba(34, 197, 94, 0.22);
+  background: rgba(255, 255, 255, 0.2);
+  border-bottom-color: rgba(26, 26, 46, 0.12);
 }
 
 .co-ci-input {
@@ -577,17 +558,12 @@
   display: none;
 }
 
+/* Three blobs in one row on all viewports (same as desktop on iPhone). */
 .co-visual {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-@media (min-width: 700px) {
-  .co-visual {
-    grid-template-columns: 1fr 1fr 1fr;
-    align-items: stretch;
-  }
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: clamp(8px, 2.5vw, 16px);
 }
 
 .co-blob {
@@ -654,6 +630,54 @@
 .co-blob-overlap {
   background: linear-gradient(145deg, rgba(109, 224, 255, 0.18), rgba(255, 221, 85, 0.22));
   border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Diagonal merged logos — large watermark behind Shared copy (not a second “chip” in the brand row) */
+.co-blob-merged--bg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(118%, 320px);
+  height: min(118%, 320px);
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  background: rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.26;
+  filter: saturate(1.08) brightness(1.05);
+}
+
+.co-blob-merged[hidden] {
+  display: none !important;
+}
+
+.co-blob-overlap--has-merge .co-blob-bg--shared-mascot {
+  opacity: 0.06;
+}
+
+.co-blob-merged__half {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.co-blob-merged--bg .co-blob-merged__half--a {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  background-position: 28% center;
+}
+
+.co-blob-merged--bg .co-blob-merged__half--b {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background-position: 72% center;
 }
 
 .co-blob-brand {
@@ -1015,22 +1039,6 @@
   font-size: var(--lo-text-md);
   line-height: 1.25;
   white-space: normal;
-}
-
-@media (max-width: 560px) {
-  .co-hold-split {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .co-hold-center {
-    order: -1;
-    padding-bottom: 8px;
-  }
-
-  .co-hold-desc {
-    max-width: 100%;
-  }
 }
 
 .co-quality {

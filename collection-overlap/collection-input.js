@@ -31,6 +31,13 @@
     slugCachePrune();
   }
 
+  function slugCacheDelete(q) {
+    const k = String(q || "")
+      .trim()
+      .toLowerCase();
+    if (k) slugCache.delete(k);
+  }
+
   function apiBase() {
     const b = typeof window.COLLECTION_OVERLAP_API_BASE === "string" ? window.COLLECTION_OVERLAP_API_BASE.trim() : "";
     return b.replace(/\/+$/, "");
@@ -39,6 +46,12 @@
   function buildSearchUrl(q) {
     const root = apiBase();
     const path = `/api/search-collections?q=${encodeURIComponent(q)}`;
+    return root ? `${root}${path}` : path;
+  }
+
+  function buildContractDisplayUrl(address) {
+    const root = apiBase();
+    const path = `/api/contract-display?address=${encodeURIComponent(address)}`;
     return root ? `${root}${path}` : path;
   }
 
@@ -187,8 +200,67 @@
       this._inlineError = "";
       this._slugResolveGen = 0;
       this._onDocDown = this._onDocumentPointerDown.bind(this);
+      this._onPageShow = this._onPageShow.bind(this);
+      this._onVisibilityChange = this._onVisibilityChange.bind(this);
+      /** After a real background/hide, next visible → retry draft slug once (iOS Safari / bfcache). */
+      this._resumeAfterHide = false;
+      this._resumeTimer = null;
+      this._hydrateAbort = null;
       this._render();
       document.addEventListener("pointerdown", this._onDocDown, true);
+      window.addEventListener("pageshow", this._onPageShow);
+      document.addEventListener("visibilitychange", this._onVisibilityChange);
+    }
+
+    _onPageShow(e) {
+      if (e && e.persisted) this._scheduleDraftResumeRetry();
+    }
+
+    _onVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        this._resumeAfterHide = true;
+        return;
+      }
+      if (document.visibilityState === "visible" && this._resumeAfterHide) {
+        this._resumeAfterHide = false;
+        this._scheduleDraftResumeRetry();
+      }
+    }
+
+    /** Debounced so pageshow + visibilitychange do not double-fetch. */
+    _scheduleDraftResumeRetry() {
+      if (this.state.selectedCollection) return;
+      if (this._resumeTimer) clearTimeout(this._resumeTimer);
+      this._resumeTimer = setTimeout(() => {
+        this._resumeTimer = null;
+        this._retryDraftAfterResume();
+      }, 280);
+    }
+
+    /**
+     * User often switches to OpenSea before the first search finishes; on return the field still
+     * shows the URL/slug but iOS can leave a stale error or empty cache — run one fresh resolve.
+     */
+    _retryDraftAfterResume() {
+      if (this.state.selectedCollection) return;
+      const trimmed = stripZeroWidth(this._input?.value || "").trim();
+      if (!trimmed) return;
+      const classified = classifyTrimmedInput(trimmed);
+      const slug =
+        classified.kind === "slug-query" || classified.kind === "opensea-slug"
+          ? classified.slug
+          : null;
+      if (!slug) return;
+      const q = String(slug).trim().toLowerCase();
+      if (this._debounceTimer) {
+        clearTimeout(this._debounceTimer);
+        this._debounceTimer = null;
+      }
+      slugCacheDelete(q);
+      this._closeDropdown();
+      this._clearInlineError();
+      this._setBannerLoading(false);
+      void this._resolveSlug(q);
     }
 
     _syncInputValue() {
@@ -240,6 +312,18 @@
       if (sel && sel.contractAddress) shell.classList.add("co-ci-shell--verified");
       else shell.classList.remove("co-ci-shell--verified");
       this._syncBanner();
+      this._container.dispatchEvent(new CustomEvent("co-selection-change", { bubbles: true }));
+    }
+
+    _abortHydrate() {
+      if (this._hydrateAbort) {
+        try {
+          this._hydrateAbort.abort();
+        } catch (_) {
+          /* ignore */
+        }
+        this._hydrateAbort = null;
+      }
     }
 
     _setBannerLoading(on) {
@@ -356,8 +440,12 @@
 
     destroy() {
       document.removeEventListener("pointerdown", this._onDocDown, true);
+      window.removeEventListener("pageshow", this._onPageShow);
+      document.removeEventListener("visibilitychange", this._onVisibilityChange);
+      if (this._resumeTimer) clearTimeout(this._resumeTimer);
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
       if (this._searchAbort) this._searchAbort.abort();
+      this._abortHydrate();
       this._setBannerLoading(false);
       this._container.textContent = "";
     }
@@ -412,7 +500,49 @@
       this.state.inputValue = show;
       if (this._searchAbort) this._searchAbort.abort();
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
+      this._abortHydrate();
       this._syncVerifiedShell();
+      void this._hydrateContractMetadataIfNeeded();
+    }
+
+    /**
+     * Fill name/logo from Worker (Alchemy) when paste-by-address or search returned no image.
+     */
+    async _hydrateContractMetadataIfNeeded() {
+      const sel = this.state.selectedCollection;
+      if (!sel?.contractAddress) return;
+      const needsLogo = !sel.image || !String(sel.image).trim();
+      const needsName = !sel.name || sel.name === CUSTOM_CONTRACT_NAME;
+      if (!needsLogo && !needsName) return;
+
+      const addrSnap = sel.contractAddress;
+      const ac = new AbortController();
+      this._abortHydrate();
+      this._hydrateAbort = ac;
+      this._setBannerLoading(true);
+      const url = buildContractDisplayUrl(addrSnap);
+      try {
+        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
+        const data = await res.json().catch(() => ({}));
+        if (ac.signal.aborted) return;
+        if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
+        if (!res.ok || !data?.success) return;
+        const n = data.name && String(data.name).trim();
+        if (n && (needsName || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
+          this.state.selectedCollection.name = n;
+        }
+        const img = data.image && String(data.image).trim();
+        if (img && needsLogo) this.state.selectedCollection.image = img;
+        this._syncVerifiedShell();
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+      } finally {
+        if (this._hydrateAbort === ac) {
+          this._hydrateAbort = null;
+          this._setBannerLoading(false);
+          this._syncBanner();
+        }
+      }
     }
 
     _applyCustomContract(address, displayText) {
@@ -427,6 +557,7 @@
     }
 
     _clearSelection() {
+      this._abortHydrate();
       this.state.selectedCollection = null;
       this.state.preservedInput = "";
       this.state.results = [];
@@ -484,6 +615,7 @@
 
       if (this.state.selectedCollection) {
         if (trimmed !== String(this.state.preservedInput || "").trim()) {
+          this._abortHydrate();
           this.state.selectedCollection = null;
           this.state.preservedInput = "";
           this._syncVerifiedShell();
@@ -564,13 +696,20 @@
       const displaySnapshot = stripZeroWidth(this._input.value).trim();
 
       const cached = slugCacheGet(query);
-      if (cached) {
+      if (cached && cached.length > 0) {
         this._finishSlugResults(cached, displaySnapshot, myGen);
         return;
       }
 
       this._setBannerLoading(true);
       this._closeDropdown();
+      if (this._searchAbort) {
+        try {
+          this._searchAbort.abort();
+        } catch (_) {
+          /* ignore */
+        }
+      }
       const ac = new AbortController();
       this._searchAbort = ac;
 
@@ -596,8 +735,8 @@
           return;
         }
         const list = data.results.slice(0, 10);
-        slugCacheSet(query, list);
         if (myGen !== this._slugResolveGen) return;
+        if (list.length > 0) slugCacheSet(query, list);
         this._finishSlugResults(list, displaySnapshot, myGen);
       } catch (e) {
         if (e?.name === "AbortError") return;

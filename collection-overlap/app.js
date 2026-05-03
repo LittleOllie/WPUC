@@ -12,6 +12,8 @@ function $(id) {
 
 let coInputA = null;
 let coInputB = null;
+/** While GET /api/collection-overlap is in flight — compare button stays disabled. */
+let overlapFetchInFlight = false;
 /** @type {string|null} saved `document.body.style.overflow` while logo-battle overlay is open */
 let coLogoBattleSavedOverflow = null;
 
@@ -65,11 +67,24 @@ function messageForOverlapHttpError(res, data) {
   return msg;
 }
 
-function setLoading(isLoading, msg) {
+function collectionsReadyForCompare() {
+  if (!coInputA || !coInputB) return false;
+  const va = coInputA.getValue();
+  const vb = coInputB.getValue();
+  return Boolean(va.contractAddress && vb.contractAddress);
+}
+
+function updateCompareButtonDisabled() {
   const btn = $("co-compare-btn");
+  if (!btn) return;
+  btn.disabled = overlapFetchInFlight || !collectionsReadyForCompare();
+}
+
+function setLoading(isLoading, msg) {
+  overlapFetchInFlight = isLoading;
   const st = $("co-status");
   const loader = $("co-global-loader");
-  if (btn) btn.disabled = isLoading;
+  updateCompareButtonDisabled();
   if (st) st.textContent = msg || "";
   if (loader) {
     loader.hidden = !isLoading;
@@ -112,6 +127,9 @@ function collectionShortTag(data, which) {
 
 const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
+/** Shown in compare clash when a collection has no image URL (same asset as banner watermark). */
+const CO_COMPARE_MASCOT = "assets/lo-mascot.png";
+
 function setBlobBackground(which, url) {
   const el = $(`co-blob-bg-${which}`);
   if (!el) return;
@@ -141,6 +159,42 @@ function setCollectionLogo(which, url, altText) {
     img.classList.add("co-blob-logo--hidden");
   }
   setBlobBackground(which, u || "");
+}
+
+/** Shared results tile: diagonal merge of both collection logos (compare-intro style), else mascot. */
+function setSharedMergedLogos(urlA, urlB, labelA, labelB) {
+  const overlap = $("co-blob-overlap");
+  const wrap = $("co-shared-merge");
+  const mascot = $("co-logo-shared-mascot");
+  const halfA = wrap?.querySelector(".co-blob-merged__half--a");
+  const halfB = wrap?.querySelector(".co-blob-merged__half--b");
+  if (!wrap || !halfA || !halfB) return;
+
+  const ua = urlA && String(urlA).trim();
+  const ub = urlB && String(urlB).trim();
+  const toBg = (u) => `url(${JSON.stringify(u)})`;
+
+  if (ua && ub) {
+    halfA.style.backgroundImage = toBg(ua);
+    halfB.style.backgroundImage = toBg(ub);
+    wrap.hidden = false;
+    wrap.setAttribute("aria-hidden", "false");
+    if (mascot) {
+      mascot.hidden = true;
+      mascot.setAttribute("aria-hidden", "true");
+    }
+    overlap?.classList.add("co-blob-overlap--has-merge");
+  } else {
+    halfA.style.backgroundImage = "";
+    halfB.style.backgroundImage = "";
+    wrap.hidden = true;
+    wrap.setAttribute("aria-hidden", "true");
+    if (mascot) {
+      mascot.hidden = false;
+      mascot.setAttribute("aria-hidden", "false");
+    }
+    overlap?.classList.remove("co-blob-overlap--has-merge");
+  }
 }
 
 function prefersReducedMotion() {
@@ -227,8 +281,10 @@ function fallbackLogoRect(side) {
  * @param {string} urlB
  * @param {string|null} [nameA]
  * @param {string|null} [nameB]
+ * @param {boolean} [hadRealImageA] false → left slot uses mascot placeholder in the clash
+ * @param {boolean} [hadRealImageB]
  */
-function runLogoBattleAnimation(urlA, urlB, nameA, nameB) {
+function runLogoBattleAnimation(urlA, urlB, nameA, nameB, hadRealImageA = true, hadRealImageB = true) {
   return new Promise((resolve) => {
     const root = $("co-logo-battle");
     const container = root?.querySelector(".logo-battle-container");
@@ -244,19 +300,17 @@ function runLogoBattleAnimation(urlA, urlB, nameA, nameB) {
       return;
     }
 
-    const ua = urlA && String(urlA).trim();
-    const ub = urlB && String(urlB).trim();
-    if (!ua || !ub) {
-      resolve();
-      return;
-    }
+    const rawA = hadRealImageA && urlA && String(urlA).trim();
+    const rawB = hadRealImageB && urlB && String(urlB).trim();
+    const ua = rawA || CO_COMPARE_MASCOT;
+    const ub = rawB || CO_COMPARE_MASCOT;
 
     const toBgUrl = (u) => `url(${JSON.stringify(u)})`;
     halfA.style.backgroundImage = toBgUrl(ua);
     halfB.style.backgroundImage = toBgUrl(ub);
 
-    imgA.alt = nameA ? `${nameA} logo` : "Collection A logo";
-    imgB.alt = nameB ? `${nameB} logo` : "Collection B logo";
+    imgA.alt = hadRealImageA ? (nameA ? `${nameA} logo` : "Collection A logo") : "Little Ollie mascot";
+    imgB.alt = hadRealImageB ? (nameB ? `${nameB} logo` : "Collection B logo") : "Little Ollie mascot";
     imgA.src = ua;
     imgB.src = ub;
 
@@ -373,6 +427,7 @@ function renderResults(data) {
   $("co-name-b").textContent = labelB;
   setCollectionLogo("a", data.collectionLogoUrlA, labelA);
   setCollectionLogo("b", data.collectionLogoUrlB, labelB);
+  setSharedMergedLogos(data.collectionLogoUrlA, data.collectionLogoUrlB, labelA, labelB);
 
   const tagA = collectionShortTag(data, "A");
   const tagB = collectionShortTag(data, "B");
@@ -452,7 +507,9 @@ async function onCompare() {
   const apiUrl = buildOverlapUrl(a, b);
   const logoA = typeof coInputA.getLogoUrl === "function" ? coInputA.getLogoUrl() : null;
   const logoB = typeof coInputB.getLogoUrl === "function" ? coInputB.getLogoUrl() : null;
-  const useBattleAnim = Boolean(logoA && logoB) && !prefersReducedMotion();
+  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
+  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
+  const useBattleAnim = !prefersReducedMotion();
 
   const fetchResultP = fetch(apiUrl, { method: "GET" })
     .then(async (res) => {
@@ -470,7 +527,16 @@ async function onCompare() {
       return { ok: false, err: net ? new Error(net) : e };
     });
 
-  const animPromise = useBattleAnim ? runLogoBattleAnimation(logoA, logoB, va.name, vb.name) : Promise.resolve();
+  const animPromise = useBattleAnim
+    ? runLogoBattleAnimation(
+        battleA,
+        battleB,
+        va.name,
+        vb.name,
+        Boolean(logoA && String(logoA).trim()),
+        Boolean(logoB && String(logoB).trim())
+      )
+    : Promise.resolve();
 
   const [, fr] = await Promise.all([animPromise, fetchResultP]);
 
@@ -490,6 +556,8 @@ document.addEventListener("DOMContentLoaded", () => {
     coInputA = new window.CollectionInput(slotA);
     coInputB = new window.CollectionInput(slotB);
   }
+  $("co-form-section")?.addEventListener("co-selection-change", () => updateCompareButtonDisabled());
+  updateCompareButtonDisabled();
   $("co-compare-btn")?.addEventListener("click", () => void onCompare());
 
   const contactDlg = $("co-contact-dialog");

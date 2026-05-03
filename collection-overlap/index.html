@@ -94,7 +94,7 @@
               </div>
             </div>
 
-            <button id="co-compare-btn" type="button" class="link-btn link-btn-yellow co-cta">
+            <button id="co-compare-btn" type="button" class="link-btn link-btn-yellow co-cta" disabled>
               <span>COMPARE HOLDERS</span>
             </button>
             <div id="co-global-loader" class="co-global-loader" hidden aria-hidden="true">
@@ -126,11 +126,16 @@
                   <div class="co-blob-sub">holders</div>
                 </div>
               </div>
-              <div class="co-blob co-blob-overlap">
+              <div id="co-blob-overlap" class="co-blob co-blob-overlap">
                 <div id="co-blob-bg-shared" class="co-blob-bg co-blob-bg--shared-mascot co-blob-bg--on" aria-hidden="true"></div>
+                <div id="co-shared-merge" class="co-blob-merged co-blob-merged--bg" hidden aria-hidden="true">
+                  <div class="co-blob-merged__half co-blob-merged__half--a" aria-hidden="true"></div>
+                  <div class="co-blob-merged__half co-blob-merged__half--b" aria-hidden="true"></div>
+                </div>
                 <div class="co-blob-inner co-blob-inner--overlap">
-                  <div class="co-blob-brand">
+                  <div class="co-blob-brand co-blob-brand--shared">
                     <img
+                      id="co-logo-shared-mascot"
                       class="co-blob-logo co-blob-logo--mascot"
                       src="assets/lo-mascot.png"
                       alt="Little Ollie mascot"

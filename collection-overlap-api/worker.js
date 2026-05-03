@@ -541,7 +541,7 @@ export default {
           JSON.stringify({
             service: "collection-overlap",
             docs:
-              "GET /api/collection-overlap?contractA=0x...&contractB=0x... · GET /api/search-collections?q=...",
+              "GET /api/collection-overlap?contractA=0x...&contractB=0x... · GET /api/search-collections?q=... · GET /api/contract-display?address=0x...",
           })
         );
       }
@@ -567,6 +567,33 @@ export default {
 
     if (url.pathname === "/api/search-collections" && request.method === "GET") {
       return handleApiSearchCollections(request, env);
+    }
+
+    if (url.pathname === "/api/contract-display" && request.method === "GET") {
+      const addr = validateEthContract42(url.searchParams.get("address"));
+      if (!addr) {
+        return corsResponse(JSON.stringify({ success: false, error: "Invalid contract address" }), 400);
+      }
+      if (!getAlchemyKey(env)) {
+        return corsResponse(
+          JSON.stringify({
+            success: false,
+            error:
+              "Set ALCHEMY_API_KEY_COLLECTION_OVERLAP (recommended) or ALCHEMY_API_KEY as a Worker secret.",
+          }),
+          503
+        );
+      }
+      const d = await fetchContractDisplay(env, addr);
+      return corsResponse(
+        JSON.stringify({
+          success: true,
+          contractAddress: addr,
+          name: d.name,
+          symbol: d.symbol,
+          image: d.logoUrl,
+        })
+      );
     }
 
     return new Response("Not found", { status: 404, headers: CORS });
