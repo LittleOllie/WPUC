@@ -1,6 +1,6 @@
 /**
  * CollectionInput — OpenSea collection URL or contract address (0x...) only.
- * Resolves URLs via GET /api/search-collections?q={slug} (Worker).
+ * Resolves URLs via GET /api/search-collections?q={slug} (Worker). Contract display uses ETH then Base on the server.
  */
 (function () {
   const PLACEHOLDER = "Paste collection URL or contract address";

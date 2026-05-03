@@ -1,6 +1,6 @@
 /**
  * Collection Overlap — frontend only.
- * Calls Worker GET /api/collection-overlap (Alchemy key stays on server).
+ * Calls Worker GET /api/collection-overlap (Alchemy key stays on server; holders auto-detect Ethereum vs Base).
  *
  * Config: set window.COLLECTION_OVERLAP_API_BASE to your Worker origin if this HTML
  * is hosted separately (empty string = same origin as this page).
@@ -130,6 +130,15 @@ const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAAL
 /** Shown in compare clash when a collection has no image URL (same asset as banner watermark). */
 const CO_COMPARE_MASCOT = "assets/lo-mascot.png";
 
+/** Prefer the logo already shown in the input (search / OpenSea); overlap API metadata may use a different asset (e.g. contract vs collection art). */
+function logoUrlForResultSlot(which, apiUrl) {
+  const input = which === "a" ? coInputA : coInputB;
+  const fromInput =
+    input && typeof input.getLogoUrl === "function" ? String(input.getLogoUrl() || "").trim() : "";
+  const fromApi = apiUrl && String(apiUrl).trim();
+  return fromInput || fromApi || null;
+}
+
 function setBlobBackground(which, url) {
   const el = $(`co-blob-bg-${which}`);
   if (!el) return;
@@ -161,11 +170,10 @@ function setCollectionLogo(which, url, altText) {
   setBlobBackground(which, u || "");
 }
 
-/** Shared results tile: diagonal merge of both collection logos (compare-intro style), else mascot. */
-function setSharedMergedLogos(urlA, urlB, labelA, labelB) {
+/** Shared results tile: diagonal merge of both collection logos when both URLs exist. */
+function setSharedMergedLogos(urlA, urlB) {
   const overlap = $("co-blob-overlap");
   const wrap = $("co-shared-merge");
-  const mascot = $("co-logo-shared-mascot");
   const halfA = wrap?.querySelector(".co-blob-merged__half--a");
   const halfB = wrap?.querySelector(".co-blob-merged__half--b");
   if (!wrap || !halfA || !halfB) return;
@@ -179,20 +187,12 @@ function setSharedMergedLogos(urlA, urlB, labelA, labelB) {
     halfB.style.backgroundImage = toBg(ub);
     wrap.hidden = false;
     wrap.setAttribute("aria-hidden", "false");
-    if (mascot) {
-      mascot.hidden = true;
-      mascot.setAttribute("aria-hidden", "true");
-    }
     overlap?.classList.add("co-blob-overlap--has-merge");
   } else {
     halfA.style.backgroundImage = "";
     halfB.style.backgroundImage = "";
     wrap.hidden = true;
     wrap.setAttribute("aria-hidden", "true");
-    if (mascot) {
-      mascot.hidden = false;
-      mascot.setAttribute("aria-hidden", "false");
-    }
     overlap?.classList.remove("co-blob-overlap--has-merge");
   }
 }
@@ -425,9 +425,11 @@ function renderResults(data) {
   const labelB = collectionDisplayLabel(data, "B");
   $("co-name-a").textContent = labelA;
   $("co-name-b").textContent = labelB;
-  setCollectionLogo("a", data.collectionLogoUrlA, labelA);
-  setCollectionLogo("b", data.collectionLogoUrlB, labelB);
-  setSharedMergedLogos(data.collectionLogoUrlA, data.collectionLogoUrlB, labelA, labelB);
+  const urlA = logoUrlForResultSlot("a", data.collectionLogoUrlA);
+  const urlB = logoUrlForResultSlot("b", data.collectionLogoUrlB);
+  setCollectionLogo("a", urlA, labelA);
+  setCollectionLogo("b", urlB, labelB);
+  setSharedMergedLogos(urlA, urlB);
 
   const tagA = collectionShortTag(data, "A");
   const tagB = collectionShortTag(data, "B");
@@ -451,6 +453,19 @@ function renderResults(data) {
   const sharedEl = $("co-match-shared");
   if (sharedEl) {
     sharedEl.textContent = Number.isFinite(shared) ? `${shared.toLocaleString()} shared wallets` : "—";
+  }
+
+  const chainEl = $("co-chain-detect");
+  if (chainEl) {
+    const a = data.detectedChainA === "base" ? "BASE" : "ETH";
+    const b = data.detectedChainB === "base" ? "BASE" : "ETH";
+    if (data.detectedChainA != null && data.detectedChainB != null) {
+      chainEl.hidden = false;
+      chainEl.textContent = a === b ? `Detected: ${a}` : `Detected: ${a} · ${b}`;
+    } else {
+      chainEl.hidden = true;
+      chainEl.textContent = "";
+    }
   }
 
   const q = $("co-quality");

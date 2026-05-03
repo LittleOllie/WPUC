@@ -558,6 +558,21 @@
   display: none;
 }
 
+/* Shown only after a successful compare — which chain each collection resolved on */
+.co-chain-detect {
+  margin: 0 0 4px;
+  font-size: var(--lo-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lo-text-subtle);
+  text-align: center;
+}
+
+.co-chain-detect[hidden] {
+  display: none !important;
+}
+
 /* Three blobs in one row on all viewports (same as desktop on iPhone). */
 .co-visual {
   display: grid;
@@ -589,14 +604,6 @@
 
 .co-blob-bg--on {
   opacity: 0.32;
-}
-
-/* Shared tile — faded LO mascot in the big square (same treatment as collection bg on A/B) */
-.co-blob-bg--shared-mascot {
-  background-image: url("assets/lo-mascot.png");
-  background-size: min(120%, 220px);
-  background-position: center 42%;
-  background-repeat: no-repeat;
 }
 
 .co-blob-inner {
@@ -659,10 +666,6 @@
   display: none !important;
 }
 
-.co-blob-overlap--has-merge .co-blob-bg--shared-mascot {
-  opacity: 0.06;
-}
-
 .co-blob-merged__half {
   position: absolute;
   inset: 0;
@@ -703,13 +706,6 @@
 
 .co-blob-logo--hidden {
   display: none !important;
-}
-
-/* Mascot in overlap tile — same frame as collection logos, contain for non-square art */
-.co-blob-logo--mascot {
-  object-fit: contain;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.2);
 }
 
 .co-blob-name {

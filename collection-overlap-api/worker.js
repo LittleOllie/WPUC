@@ -1,6 +1,6 @@
 /**
  * Little Ollie Labs — Collection Overlap API only.
- * GET /api/collection-overlap — Alchemy getOwnersForContract (ETH mainnet). No secrets in browser.
+ * GET /api/collection-overlap — Alchemy getOwnersForContract (ETH first, then Base auto-detect). No secrets in browser.
  */
 
 const CORS = {
@@ -11,6 +11,18 @@ const CORS = {
 };
 
 const ALCHEMY_ETH_HOST = "eth-mainnet.g.alchemy.com";
+const ALCHEMY_BASE_HOST = "base-mainnet.g.alchemy.com";
+
+/** Do not fall through to Base when Alchemy rate-limits (avoid doubling traffic). */
+function isRateLimitError(e) {
+  const m = String(e?.message || e || "").toLowerCase();
+  return m.includes("429") || m.includes("rate limit");
+}
+
+function alchemyNftHostForChain(chain) {
+  const c = String(chain || "").toLowerCase();
+  return c === "base" ? ALCHEMY_BASE_HOST : ALCHEMY_ETH_HOST;
+}
 
 function corsResponse(body, status = 200, contentType = "application/json; charset=utf-8") {
   return new Response(body, {
@@ -44,8 +56,9 @@ function getOptionalHolderCap(env) {
   return n;
 }
 
-function overlapEthContractKey(addr) {
-  return `overlap:eth:${String(addr || "").trim().toLowerCase()}`;
+/** Cached holder pack after ETH→Base auto-detect (one key per contract address). */
+function overlapAutoContractKey(addr) {
+  return `overlap:auto:v1:${String(addr || "").trim().toLowerCase()}`;
 }
 
 function overlapCacheEntryFresh(entry) {
@@ -127,14 +140,15 @@ function pickCollectionSymbolFromMetadata(data) {
 }
 
 /**
- * Best-effort display info (never throws — overlap still works if metadata fails).
+ * Best-effort display info on one chain (never throws — overlap still works if metadata fails).
  * @returns {{ name: string|null, symbol: string|null, logoUrl: string|null }}
  */
-async function fetchContractDisplay(env, contract) {
+async function fetchContractDisplayOnChain(env, contract, chain) {
   const empty = { name: null, symbol: null, logoUrl: null };
   const apiKey = getAlchemyKey(env);
   if (!apiKey) return empty;
-  const metaUrl = `https://${ALCHEMY_ETH_HOST}/nft/v3/${apiKey}/getContractMetadata?contractAddress=${encodeURIComponent(contract)}`;
+  const host = alchemyNftHostForChain(chain);
+  const metaUrl = `https://${host}/nft/v3/${apiKey}/getContractMetadata?contractAddress=${encodeURIComponent(contract)}`;
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), 12000);
   try {
@@ -154,7 +168,24 @@ async function fetchContractDisplay(env, contract) {
   }
 }
 
-async function fetchEthOwnersForContract(contract, env) {
+/** ETH metadata first; if empty, Base (for /api/contract-display and logos without holder fetch). */
+async function fetchContractDisplayAuto(env, contract) {
+  const eth = await fetchContractDisplayOnChain(env, contract, "eth");
+  if ((eth.name && String(eth.name).trim()) || (eth.logoUrl && String(eth.logoUrl).trim())) {
+    return { ...eth, detectedChain: "eth" };
+  }
+  const base = await fetchContractDisplayOnChain(env, contract, "base");
+  if ((base.name && String(base.name).trim()) || (base.logoUrl && String(base.logoUrl).trim())) {
+    return { ...base, detectedChain: "base" };
+  }
+  return { ...eth, detectedChain: "eth" };
+}
+
+/**
+ * Paginated owners on a single chain.
+ * @param {"eth"|"base"} chain
+ */
+async function fetchOwnersForContract(contract, env, chain) {
   const apiKey = getAlchemyKey(env);
   if (!apiKey) {
     throw new Error(
@@ -162,13 +193,14 @@ async function fetchEthOwnersForContract(contract, env) {
     );
   }
 
+  const host = alchemyNftHostForChain(chain);
   const owners = new Set();
   let pageKey = null;
   let capped = false;
   const holderCap = getOptionalHolderCap(env);
 
   while (true) {
-    const u = new URL(`https://${ALCHEMY_ETH_HOST}/nft/v3/${apiKey}/getOwnersForContract`);
+    const u = new URL(`https://${host}/nft/v3/${apiKey}/getOwnersForContract`);
     u.searchParams.set("contractAddress", contract);
     u.searchParams.set("withTokenBalances", "false");
     if (pageKey) u.searchParams.set("pageKey", pageKey);
@@ -223,17 +255,48 @@ async function fetchEthOwnersForContract(contract, env) {
     holderCount: holders.length,
     fetchedAt,
     source: "alchemy",
-    chain: "eth",
+    chain,
     capped,
   };
 }
 
-async function getOverlapHoldersCached(contract, env) {
-  const key = overlapEthContractKey(contract);
+const NOT_FOUND_CHAINS = "Collection not found on supported chains";
+
+/**
+ * ETH first; if error or zero holders, Base. Stops as soon as ETH returns holders.
+ * @returns {Promise<{ contractAddress: string, holders: string[], holderCount: number, fetchedAt: string, source: string, chain: "eth"|"base", capped: boolean }>}
+ */
+async function resolveOwnersAutoChain(contract, env) {
+  let ethPack = null;
+  try {
+    ethPack = await fetchOwnersForContract(contract, env, "eth");
+  } catch (e) {
+    if (isRateLimitError(e)) throw e;
+  }
+  if (ethPack && ethPack.holderCount > 0) {
+    return ethPack;
+  }
+
+  let basePack = null;
+  try {
+    basePack = await fetchOwnersForContract(contract, env, "base");
+  } catch (e) {
+    if (isRateLimitError(e)) throw e;
+    throw new Error(NOT_FOUND_CHAINS);
+  }
+  if (basePack && basePack.holderCount > 0) {
+    return basePack;
+  }
+
+  throw new Error(NOT_FOUND_CHAINS);
+}
+
+async function getOverlapHoldersCachedAuto(contract, env) {
+  const key = overlapAutoContractKey(contract);
   const hit = OVERLAP_HOLDERS_CACHE.get(key);
   if (hit && overlapCacheEntryFresh(hit)) return hit;
 
-  const fresh = await fetchEthOwnersForContract(contract, env);
+  const fresh = await resolveOwnersAutoChain(contract, env);
   OVERLAP_HOLDERS_CACHE.set(key, fresh);
   return fresh;
 }
@@ -257,19 +320,20 @@ async function handleApiCollectionOverlap(request, env) {
 
   let packA;
   let packB;
-  let metaA;
-  let metaB;
   try {
-    [packA, packB, metaA, metaB] = await Promise.all([
-      getOverlapHoldersCached(contractA, env),
-      getOverlapHoldersCached(contractB, env),
-      fetchContractDisplay(env, contractA),
-      fetchContractDisplay(env, contractB),
+    [packA, packB] = await Promise.all([
+      getOverlapHoldersCachedAuto(contractA, env),
+      getOverlapHoldersCachedAuto(contractB, env),
     ]);
   } catch (e) {
     const msg = e?.name === "AbortError" ? "Request timed out. Try again." : e?.message || "Failed to fetch owners.";
     return corsResponse(JSON.stringify({ error: msg }), 502);
   }
+
+  const [metaA, metaB] = await Promise.all([
+    fetchContractDisplayOnChain(env, contractA, packA.chain),
+    fetchContractDisplayOnChain(env, contractB, packB.chain),
+  ]);
 
   const setA = new Set(packA.holders || []);
   const setB = new Set(packB.holders || []);
@@ -304,7 +368,8 @@ async function handleApiCollectionOverlap(request, env) {
 
   const body = {
     success: true,
-    chain: "eth",
+    detectedChainA: packA.chain,
+    detectedChainB: packB.chain,
     contractA,
     contractB,
     collectionNameA: metaA?.name || null,
@@ -396,12 +461,13 @@ async function tryOpenSeaSlugToCollection(slug, env) {
 
     const contracts = Array.isArray(data.contracts) ? data.contracts : [];
     const chainNorm = (c) => String(c?.chain || "").toLowerCase();
-    const eth =
-      contracts.find((c) => {
-        const ch = chainNorm(c);
-        return ch === "ethereum" || ch === "eth" || ch === "mainnet";
-      }) || contracts[0];
-    const addr = validateEthContract42(eth?.address);
+    const eth = contracts.find((c) => {
+      const ch = chainNorm(c);
+      return ch === "ethereum" || ch === "eth" || ch === "mainnet";
+    });
+    const base = contracts.find((c) => chainNorm(c) === "base");
+    const pick = eth || base || contracts[0];
+    const addr = validateEthContract42(pick?.address);
     if (!addr) return null;
 
     const name =
@@ -584,7 +650,7 @@ export default {
           503
         );
       }
-      const d = await fetchContractDisplay(env, addr);
+      const d = await fetchContractDisplayAuto(env, addr);
       return corsResponse(
         JSON.stringify({
           success: true,
@@ -592,6 +658,7 @@ export default {
           name: d.name,
           symbol: d.symbol,
           image: d.logoUrl,
+          detectedChain: d.detectedChain || "eth",
         })
       );
     }
