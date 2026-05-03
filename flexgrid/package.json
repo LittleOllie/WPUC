@@ -1,0 +1,12 @@
+{
+  "name": "flexgrid-worker",
+  "private": true,
+  "description": "Cloudflare Worker for FlexGrid + Collection Overlap API",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.54.0"
+  }
+}

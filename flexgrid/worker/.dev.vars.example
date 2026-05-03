@@ -1,0 +1,7 @@
+# Use this folder if you run: cd flexgrid/worker && npx wrangler dev
+# Copy to `.dev.vars` here:
+#   cp .dev.vars.example .dev.vars
+#
+# If you use `npm run dev` from `flexgrid/` (wrangler.jsonc), put `.dev.vars` in `flexgrid/` instead.
+
+ALCHEMY_API_KEY=your_alchemy_key

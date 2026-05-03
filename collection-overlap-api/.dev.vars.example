@@ -1,0 +1,14 @@
+# Copy to .dev.vars (same folder). Wrangler does not read this filename.
+#   cp .dev.vars.example .dev.vars
+#
+# Optional: OVERLAP_MAX_HOLDERS=50000  (omit for no cap — full Alchemy pagination per contract)
+#
+# Optional: OPENSEA_API_KEY=...  — OpenSea v2 collection-by-slug fallback when Alchemy name search is empty.
+#   Some slugs return 401 without a key; create a key at https://docs.opensea.io/reference/api-keys
+#
+# If the UI shows "401" / "Must be authenticated": the key is missing, still "your_alchemy_key_here",
+# or wrong. Use the API key from Alchemy Dashboard (App → API Key), not the HTTPS URL.
+
+ALCHEMY_API_KEY_COLLECTION_OVERLAP=your_alchemy_key_here
+# Optional fallback if the dedicated secret is unset:
+# ALCHEMY_API_KEY=

@@ -1,0 +1,10 @@
+# Wrangler does NOT load this filename. Copy to `.dev.vars` in this folder:
+#   cp .dev.vars.example .dev.vars
+# Then run: npm run dev
+#
+# FlexGrid / image proxy / NFT routes:
+ALCHEMY_API_KEY=your_alchemy_key
+# MORALIS_API_KEY=
+# HELIUS_API_KEY=
+#
+# Collection Overlap API lives in a separate Worker: ../collection-overlap-api/

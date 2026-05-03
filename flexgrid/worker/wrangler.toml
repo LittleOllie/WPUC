@@ -6,6 +6,11 @@ compatibility_date = "2024-01-01"
 # Deploy to workers.dev subdomain: loflexgrid.littleollienft.workers.dev
 # Run: npx wrangler deploy
 #
+# Local dev (pick one):
+#   cd .. && npm install && npm run dev
+#     → flexgrid/wrangler.jsonc; put secrets in flexgrid/.dev.vars
+#   OR: npx wrangler dev from THIS folder → use flexgrid/worker/.dev.vars
+#
 # Secrets (values are NOT stored in this file):
 #   npx wrangler secret put ALCHEMY_API_KEY
 #     → Alchemy key for ETH, Base, and Polygon (`getNFTsForOwner`, metadata, contract logos).

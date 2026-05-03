@@ -1,0 +1,22 @@
+name = "locollectionoverlap"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Explicit (avoids Wrangler “not in your config file” warnings). Defaults match what you already had.
+workers_dev = true
+preview_urls = true
+
+# Deploy: npx wrangler deploy
+# URL shape: https://locollectionoverlap.<your-subdomain>.workers.dev/api/collection-overlap?...
+#
+# Secrets:
+#   npx wrangler secret put ALCHEMY_API_KEY_COLLECTION_OVERLAP   (recommended — dedicated Alchemy app)
+#   npx wrangler secret put ALCHEMY_API_KEY                      (optional fallback)
+#   npx wrangler secret put OPENSEA_API_KEY                      (optional — OpenSea slug fallback for /api/search-collections)
+#
+# Optional plain var (not a secret): OVERLAP_MAX_HOLDERS=50000
+#   Hard stop on unique owners per contract (rare). Omit for full Alchemy pagination (no default cap).
+#
+# Local: copy .dev.vars.example → .dev.vars, then npm run dev
+# `npm run dev` uses --local (Miniflare). Use `npm run dev:remote` only if you need Cloudflare-only bindings;
+# remote + http upstream can trigger Wrangler upstream-protocol warnings.

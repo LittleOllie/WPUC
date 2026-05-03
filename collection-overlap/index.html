@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Collection Overlap — Little Ollie Labs</title>
+  <link rel="icon" href="assets/lo-mascot.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="assets/lo-mascot.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/lo-mascot.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/site-brand.css" />
+  <link rel="stylesheet" href="../styles/site-hub.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <!--
+    API base (optional script BEFORE this block):
+    - Production on same host as Worker: set window.COLLECTION_OVERLAP_API_BASE = "" for same-origin /api.
+    - Production static host: set to your Collection Overlap Worker origin (see collection-overlap-api/wrangler.toml name).
+    - Localhost / 127.0.0.1: if you do NOT set the property, we default to http://YOUR-HOST:8787 (same hostname as this page).
+  -->
+  <script>
+    (function () {
+      var had = Object.prototype.hasOwnProperty.call(window, "COLLECTION_OVERLAP_API_BASE");
+      var prev = had ? String(window.COLLECTION_OVERLAP_API_BASE).trim() : "";
+      var h = location.hostname;
+      var local = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+      if (had && prev) {
+        window.COLLECTION_OVERLAP_API_BASE = prev;
+        return;
+      }
+      if (had && !prev) {
+        window.COLLECTION_OVERLAP_API_BASE = "";
+        return;
+      }
+      var apiOrigin = "";
+      if (local) {
+        apiOrigin = h === "[::1]" ? "http://[::1]:8787" : "http://" + h + ":8787";
+      }
+      window.COLLECTION_OVERLAP_API_BASE = apiOrigin;
+    })();
+  </script>
+</head>
+<body>
+  <div class="links-page co-page-wrap">
+    <div class="links-bg" aria-hidden="true"></div>
+    <div class="links-bg-overlay" aria-hidden="true"></div>
+
+    <div class="links-content co-scroll">
+      <div class="co-inner">
+        <header class="co-header">
+          <div class="co-hero" aria-label="Little Ollie Labs — Collection Overlap">
+            <div class="co-hero-char-frame">
+              <img
+                class="co-hero-char"
+                src="assets/lo-mascot.png"
+                alt=""
+                width="80"
+                height="80"
+                decoding="async"
+              />
+            </div>
+            <img
+              class="co-hero-logo"
+              src="assets/lo-wordmark.png"
+              alt="Little Ollie — wordmark"
+              width="480"
+              height="140"
+              decoding="async"
+            />
+            <div class="co-hero-copy">
+              <p class="tagline co-tagline-tight">Find where two NFT communities cross over.</p>
+              <h1 class="co-app-title">Collection Overlap</h1>
+              <p class="co-meta">ETH mainnet · v1 · OpenSea URL or contract</p>
+            </div>
+          </div>
+        </header>
+
+        <main class="co-main">
+          <section id="co-form-section" class="co-card">
+            <h2 class="co-section-title">Compare holders</h2>
+            <p class="body-text co-body-tight">Paste each collection’s OpenSea URL or its contract address. We scan holders via Alchemy (server-side) and show overlap.</p>
+
+            <div class="co-grid2">
+              <div class="co-field">
+                <span class="co-label">Collection A</span>
+                <div id="co-slot-a" class="co-collection-slot"></div>
+              </div>
+              <div class="co-field">
+                <span class="co-label">Collection B</span>
+                <div id="co-slot-b" class="co-collection-slot"></div>
+              </div>
+            </div>
+
+            <button id="co-compare-btn" type="button" class="link-btn link-btn-yellow co-cta">
+              <span>COMPARE HOLDERS</span>
+            </button>
+            <p id="co-status" class="co-status" role="status" aria-live="polite"></p>
+          </section>
+
+          <section id="co-results" class="co-results hidden" aria-hidden="true">
+            <div class="co-visual">
+              <div class="co-blob co-blob-a">
+                <div id="co-blob-bg-a" class="co-blob-bg" aria-hidden="true"></div>
+                <div class="co-blob-inner">
+                  <div class="co-blob-brand">
+                    <img id="co-logo-a" class="co-blob-logo co-blob-logo--hidden" alt="" width="88" height="88" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
+                    <div id="co-name-a" class="co-blob-name">Collection A</div>
+                  </div>
+                  <div id="co-count-a" class="co-big">—</div>
+                  <div class="co-blob-sub">holders</div>
+                </div>
+              </div>
+              <div class="co-blob co-blob-overlap">
+                <div class="co-blob-inner co-blob-inner--overlap">
+                  <div class="co-blob-title">Shared</div>
+                  <div id="co-count-shared" class="co-big">—</div>
+                  <div class="co-blob-sub">wallets</div>
+                </div>
+              </div>
+              <div class="co-blob co-blob-b">
+                <div id="co-blob-bg-b" class="co-blob-bg" aria-hidden="true"></div>
+                <div class="co-blob-inner">
+                  <div class="co-blob-brand">
+                    <img id="co-logo-b" class="co-blob-logo co-blob-logo--hidden" alt="" width="88" height="88" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
+                    <div id="co-name-b" class="co-blob-name">Collection B</div>
+                  </div>
+                  <div id="co-count-b" class="co-big">—</div>
+                  <div class="co-blob-sub">holders</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="co-card co-match-card">
+              <div class="co-match-row">
+                <div class="co-match-side co-match-side--a">
+                  <div class="co-match-face-wrap">
+                    <img id="co-match-logo-a" class="co-match-face co-match-face--hidden" alt="" width="76" height="76" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
+                  </div>
+                  <div id="co-match-name-a" class="co-match-side-name">—</div>
+                </div>
+                <div class="co-match-center">
+                  <div class="co-match-label">Match</div>
+                  <div id="co-match" class="co-match-num">—</div>
+                  <div id="co-match-sub" class="co-match-sub">—</div>
+                </div>
+                <div class="co-match-side co-match-side--b">
+                  <div class="co-match-face-wrap">
+                    <img id="co-match-logo-b" class="co-match-face co-match-face--hidden" alt="" width="76" height="76" hidden loading="lazy" decoding="async" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" />
+                  </div>
+                  <div id="co-match-name-b" class="co-match-side-name">—</div>
+                </div>
+              </div>
+              <p id="co-match-foot" class="co-match-foot"></p>
+              <div id="co-quality" class="co-quality" role="status"></div>
+              <div id="co-times" class="co-times"></div>
+              <div class="co-match-actions">
+                <button id="co-copy-tweet" type="button" class="link-btn link-btn-blue co-copy-tweet-btn">
+                  <span>COPY RESULTS SUMMARY</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </main>
+
+        <footer class="co-footer">
+          <a href="../links/index.html" class="btn-back">← Back to Links</a>
+          <div class="footnote">Little Ollie Labs</div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script src="collection-input.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
