@@ -446,15 +446,6 @@ function renderResults(data) {
   if (descA) descA.textContent = `${tagA} holders also hold ${tagB}`;
   if (descB) descB.textContent = `${tagB} holders also hold ${tagA}`;
 
-  const match = Number(data.matchScore);
-  $("co-match").textContent = `${fmtPct(match)}%`;
-
-  const shared = Number(data.sharedHolderCount);
-  const sharedEl = $("co-match-shared");
-  if (sharedEl) {
-    sharedEl.textContent = Number.isFinite(shared) ? `${shared.toLocaleString()} shared wallets` : "—";
-  }
-
   const chainEl = $("co-chain-detect");
   if (chainEl) {
     const a = data.detectedChainA === "base" ? "BASE" : "ETH";
