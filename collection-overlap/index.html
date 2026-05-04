@@ -57,8 +57,8 @@
                 class="co-hero-char"
                 src="assets/lo-mascot.png"
                 alt=""
-                width="96"
-                height="96"
+                width="140"
+                height="140"
                 decoding="async"
               />
             </div>
@@ -97,11 +97,11 @@
             <div id="co-evm-panel">
               <div class="co-grid2">
                 <div class="co-field">
-                  <span class="co-label">Collection A</span>
+                  <span id="co-label-evm-a" class="co-label">Collection A</span>
                   <div id="co-slot-a" class="co-collection-slot"></div>
                 </div>
                 <div class="co-field">
-                  <span class="co-label">Collection B</span>
+                  <span id="co-label-evm-b" class="co-label">Collection B</span>
                   <div id="co-slot-b" class="co-collection-slot"></div>
                 </div>
               </div>
@@ -110,11 +110,11 @@
             <div id="co-sol-panel" class="co-sol-panel" hidden>
               <div class="co-grid2">
                 <div class="co-field">
-                  <span class="co-label">Collection A</span>
+                  <span id="co-label-sol-a" class="co-label">Collection A</span>
                   <div id="co-slot-sol-a" class="co-collection-slot"></div>
                 </div>
                 <div class="co-field">
-                  <span class="co-label">Collection B</span>
+                  <span id="co-label-sol-b" class="co-label">Collection B</span>
                   <div id="co-slot-sol-b" class="co-collection-slot"></div>
                 </div>
               </div>
@@ -193,7 +193,47 @@
                   <p id="co-hold-desc-b" class="co-hold-desc">—</p>
                 </div>
               </div>
-              <div id="co-quality" class="co-quality" role="status"></div>
+              <button
+                type="button"
+                id="co-full-scan-toggle"
+                class="co-quality"
+                aria-expanded="false"
+                aria-controls="co-insights-expand"
+              >
+                <span class="co-quality__title">FULL HOLDER SCAN</span>
+              </button>
+              <div id="co-insights-expand" class="co-insights-expand" aria-hidden="true">
+                <div class="co-insights-expand__shell">
+                  <div class="co-insights-inner">
+                    <p id="co-insight-partial" class="co-insight-partial" hidden></p>
+
+                    <div class="co-insight-hero">
+                      <p class="co-insight-hero__label">🧬 WHAT THIS MEANS</p>
+                      <p id="co-insight-mean-1" class="co-insight-hero__lead"></p>
+                      <p id="co-insight-mean-2" class="co-insight-hero__detail"></p>
+                    </div>
+
+                    <div class="co-insight-section">
+                      <p class="co-insight-section__label">🔗 SHARED HOLDERS</p>
+                      <div id="co-insight-shared" class="co-insight-lines"></div>
+                      <p id="co-insight-shared-foot" class="co-insight-foot" hidden></p>
+                      <p class="co-insight-defs" role="note">
+                        <span class="co-insight-defs__lead">How we label wallets —</span>
+                        <span class="co-insight-defs__body">
+                          <strong>Strong believers:</strong> 2+ NFTs in each collection.
+                          <strong>Balanced:</strong> counts differ by at most 1.
+                          <strong>Lean:</strong> one side is over 2× the other (each wallet counts once).
+                        </span>
+                      </p>
+                    </div>
+
+                    <div class="co-insight-section">
+                      <p class="co-insight-section__label">🐋 OVERLAP STRENGTH</p>
+                      <div id="co-insight-strength" class="co-insight-lines"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <p class="co-more-data">
                 Need holder-level exports or more detail?<br />
                 <span class="co-more-data-cta-row">

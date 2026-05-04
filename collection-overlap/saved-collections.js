@@ -85,11 +85,41 @@
       .slice(0, MAX_ITEMS);
   }
 
+  /**
+   * Filter saved rows by name or contract (local only, no network).
+   * @param {'evm'|'solana'} chain
+   * @param {string} needle
+   * @param {{ addressPrefixOnly?: boolean }} [opts]
+   */
+  function filterForChain(chain, needle, opts) {
+    const rows = listForChain(chain);
+    const raw = String(needle || "").trim();
+    if (!raw) return rows;
+    if (chain === "evm") {
+      const n = raw.toLowerCase();
+      if (opts && opts.addressPrefixOnly) {
+        return rows.filter((r) => String(r.contractAddress || "").toLowerCase().startsWith(n));
+      }
+      return rows.filter((r) => {
+        const name = String(r.name || "").toLowerCase();
+        const addr = String(r.contractAddress || "").toLowerCase();
+        return name.includes(n) || addr.includes(n);
+      });
+    }
+    const n = raw.toLowerCase();
+    return rows.filter((r) => {
+      const name = String(r.name || "").toLowerCase();
+      const addr = String(r.contractAddress || "").toLowerCase();
+      return name.includes(n) || addr.includes(n);
+    });
+  }
+
   window.LOSavedCollections = {
     STORAGE_KEY,
     MAX_ITEMS,
     upsert,
     listForChain,
+    filterForChain,
     coNormalizeEvmAddress,
     coNormalizeSolanaMint,
   };

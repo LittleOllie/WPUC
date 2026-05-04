@@ -5,6 +5,8 @@
 (function () {
   const PLACEHOLDER = "Paste collection URL or contract address";
   const DEBOUNCE_MS = 300;
+  /** Up to this many slug characters: show saved collections only (no search API). */
+  const LOCAL_SAVED_PREFIX_MAX = 20;
   const CUSTOM_CONTRACT_NAME = "Custom Contract";
   const MSG_RETRYING = "Having trouble loading collection… retrying";
   const MSG_LOAD_FINAL = "Couldn't load this collection. Try again or reselect it.";
@@ -111,10 +113,10 @@
     return null;
   }
 
-  /** ETH mainnet contract from /assets/ethereum/0x…/… or /item/ethereum/0x…/… */
+  /** ETH or Base contract from `/assets/{chain}/0x…` or `/item/{chain}/0x…` (matches Worker). */
   function openSeaEthereumContractFromPathname(pathname) {
     const p = String(pathname || "").replace(/\/+$/, "");
-    const re = /\/(?:assets|item)\/(?:ethereum|eth)\/(0x[a-fA-F0-9]{40})(?:\/|$|\?)/i;
+    const re = /\/(?:assets|item)\/(?:ethereum|eth|base)\/(0x[a-fA-F0-9]{40})(?:\/|$|\?)/i;
     const m = p.match(re);
     if (!m) return null;
     return validateContract42(m[1]);
@@ -287,15 +289,16 @@
           <div class="co-ci-row co-ci-row--input">
             <input type="text" class="co-ci-input co-input" autocomplete="off" spellcheck="false"
               placeholder="${PLACEHOLDER}" aria-autocomplete="list" aria-expanded="false" />
+            <button type="button" class="co-ci-arrow" aria-label="Saved collections" aria-expanded="false" aria-haspopup="listbox"></button>
             <button type="button" class="co-ci-clear" aria-label="Clear">×</button>
+            <div class="co-ci-dropdown" role="listbox" hidden></div>
           </div>
           <div class="co-ci-banner">
-            <div class="co-ci-banner__mascot" aria-hidden="true"></div>
+            <img class="co-ci-banner__mascot" src="assets/lo-mascot.png" alt="" width="1024" height="1024" decoding="async" draggable="false" aria-hidden="true" />
             <div class="co-ci-banner__ring" aria-hidden="true"></div>
             <img class="co-ci-banner__logo" alt="" width="96" height="96" hidden decoding="async" />
           </div>
         </div>
-        <div class="co-ci-dropdown" role="listbox" hidden></div>
         <p class="co-ci-error" role="status" aria-live="polite" hidden></p>
       `;
       this._container.appendChild(root);
@@ -304,6 +307,7 @@
       this._bannerEl = root.querySelector(".co-ci-banner");
       this._bannerLogoEl = root.querySelector(".co-ci-banner__logo");
       this._input = root.querySelector(".co-ci-input");
+      this._arrowBtn = root.querySelector(".co-ci-arrow");
       this._clearBtn = root.querySelector(".co-ci-clear");
       this._dropdown = root.querySelector(".co-ci-dropdown");
       this._errEl = root.querySelector(".co-ci-error");
@@ -311,11 +315,43 @@
       this._input.addEventListener("input", () => this._onInput());
       this._input.addEventListener("keydown", (e) => this._onKeydown(e));
       this._input.addEventListener("focus", () => this._onInputFocus());
+      if (this._arrowBtn) {
+        this._arrowBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          this._onArrowClick();
+        });
+      }
       this._clearBtn.addEventListener("click", () => this._clearSelection());
     }
 
     _setAriaExpanded(open) {
       this._input.setAttribute("aria-expanded", open ? "true" : "false");
+      if (this._arrowBtn) this._arrowBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    _syncDropdownLifted(open) {
+      if (!this._root || !this._container) return;
+      this._root.classList.toggle("co-ci--dropdown-open", Boolean(open));
+      this._container.classList.toggle("co-collection-slot--dropdown-open", Boolean(open));
+      if (this._arrowBtn) this._arrowBtn.classList.toggle("co-ci-arrow--open", Boolean(open));
+    }
+
+    _onArrowClick() {
+      if (!this._dropdown.hidden) {
+        this._closeDropdown();
+        return;
+      }
+      const t = stripZeroWidth(this._input.value).trim();
+      if (t.startsWith("0x") && t.length < 42) {
+        this._showSavedDropdown(sanitizeEvmContractInput(t), { addressPrefixOnly: true });
+        return;
+      }
+      if (t.length > 0 && t.length <= LOCAL_SAVED_PREFIX_MAX && !/^https?:\/\//i.test(t) && !t.startsWith("0x")) {
+        this._showSavedDropdown(t.toLowerCase());
+        return;
+      }
+      this._showSavedDropdown("");
     }
 
     _syncVerifiedShell() {
@@ -503,7 +539,7 @@
       if (this.state.selectedCollection) return;
       const trimmed = stripZeroWidth(this._input?.value || "").trim();
       if (trimmed) return;
-      this._renderSavedCollectionsDropdown();
+      this._showSavedDropdown("");
     }
 
     /** @param {{ name?: string, contractAddress: string, image?: string|null }} saved */
@@ -519,57 +555,70 @@
       this._applySelection(item, item.contractAddress, { forceFresh: true });
     }
 
-    _renderSavedCollectionsDropdown() {
-      const list = window.LOSavedCollections ? window.LOSavedCollections.listForChain("evm") : [];
-      if (!list.length) {
+    /**
+     * Saved collections only (localStorage). No API.
+     * @param {string} [needle]
+     * @param {{ addressPrefixOnly?: boolean }} [opts]
+     */
+    _showSavedDropdown(needle, opts) {
+      if (!window.LOSavedCollections) {
         this._closeDropdown();
         return;
       }
+      const list = window.LOSavedCollections.filterForChain("evm", needle || "", opts);
       this._dropdown.innerHTML = "";
       const head = document.createElement("div");
       head.className = "co-ci-dd-heading";
       head.textContent = "Saved collections";
       this._dropdown.appendChild(head);
-      for (const it of list) {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.className = "co-ci-dd-item";
-        row.setAttribute("role", "option");
-        const short = this.shortenContract(it.contractAddress);
-        let thumb;
-        if (it.image) {
-          const img = document.createElement("img");
-          img.className = "co-ci-dd-img";
-          img.alt = "";
-          img.width = 36;
-          img.height = 36;
-          img.loading = "lazy";
-          img.decoding = "async";
-          img.src = it.image;
-          img.addEventListener("error", () => {
-            img.replaceWith(Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" }));
+      if (!list.length) {
+        const empty = document.createElement("div");
+        empty.className = "co-ci-dd-msg";
+        empty.textContent = needle ? "No saved matches for that text." : "No saved collections yet.";
+        this._dropdown.appendChild(empty);
+      } else {
+        for (const it of list) {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "co-ci-dd-item";
+          row.setAttribute("role", "option");
+          const short = this.shortenContract(it.contractAddress);
+          let thumb;
+          if (it.image) {
+            const img = document.createElement("img");
+            img.className = "co-ci-dd-img";
+            img.alt = "";
+            img.width = 36;
+            img.height = 36;
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.src = it.image;
+            img.addEventListener("error", () => {
+              img.replaceWith(Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" }));
+            });
+            thumb = img;
+          } else {
+            thumb = Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" });
+          }
+          const text = document.createElement("div");
+          text.className = "co-ci-dd-text";
+          const nameEl = document.createElement("span");
+          nameEl.className = "co-ci-dd-name";
+          nameEl.textContent = it.name || short;
+          const addrEl = document.createElement("span");
+          addrEl.className = "co-ci-dd-addr";
+          addrEl.textContent = short;
+          text.append(nameEl, addrEl);
+          row.append(thumb, text);
+          row.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            this._applyFromSaved(it);
           });
-          thumb = img;
-        } else {
-          thumb = Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" });
+          this._dropdown.appendChild(row);
         }
-        const text = document.createElement("div");
-        text.className = "co-ci-dd-text";
-        const nameEl = document.createElement("span");
-        nameEl.className = "co-ci-dd-name";
-        nameEl.textContent = it.name || short;
-        const addrEl = document.createElement("span");
-        addrEl.className = "co-ci-dd-addr";
-        addrEl.textContent = short;
-        text.append(nameEl, addrEl);
-        row.append(thumb, text);
-        row.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          this._applyFromSaved(it);
-        });
-        this._dropdown.appendChild(row);
       }
       this._dropdown.hidden = false;
+      this._syncDropdownLifted(true);
       this._setAriaExpanded(true);
     }
 
@@ -579,6 +628,7 @@
 
     _closeDropdown() {
       this._dropdown.hidden = true;
+      this._syncDropdownLifted(false);
       this._setAriaExpanded(false);
     }
 
@@ -588,6 +638,7 @@
 
     _showDropdownError(msg) {
       this._dropdown.hidden = false;
+      this._syncDropdownLifted(true);
       this._setAriaExpanded(true);
       const el = document.createElement("div");
       el.className = "co-ci-dd-msg co-ci-dd-err";
@@ -636,6 +687,7 @@
         });
       }
       void this._hydrateContractMetadataIfNeeded({ force: opts && opts.forceFresh === true });
+      this._closeDropdown();
     }
 
     /**
@@ -820,9 +872,19 @@
         return;
       }
 
-      if (classified.kind === "opensea-slug" || classified.kind === "slug-query") {
+      if (classified.kind === "opensea-slug") {
         e.preventDefault();
         void this._resolveSlug(classified.slug);
+        return;
+      }
+      if (classified.kind === "slug-query") {
+        e.preventDefault();
+        const slug = classified.slug;
+        if (slug.length <= LOCAL_SAVED_PREFIX_MAX) {
+          this._showSavedDropdown(slug);
+          return;
+        }
+        void this._resolveSlug(slug);
         return;
       }
 
@@ -891,12 +953,24 @@
 
       if (classified.kind === "partial-contract") {
         this.state.results = [];
-        this._closeDropdown();
+        const needle = sanitizeEvmContractInput(trimmed);
+        this._showSavedDropdown(needle, { addressPrefixOnly: true });
         return;
       }
 
-      if (classified.kind === "opensea-slug" || classified.kind === "slug-query") {
+      if (classified.kind === "opensea-slug") {
         const slug = classified.slug;
+        this._debounceTimer = setTimeout(() => void this._resolveSlug(slug), DEBOUNCE_MS);
+        return;
+      }
+
+      if (classified.kind === "slug-query") {
+        const slug = classified.slug;
+        if (slug.length <= LOCAL_SAVED_PREFIX_MAX) {
+          this._showSavedDropdown(slug);
+          return;
+        }
+        this._closeDropdown();
         this._debounceTimer = setTimeout(() => void this._resolveSlug(slug), DEBOUNCE_MS);
       }
     }
@@ -1078,6 +1152,7 @@
     _renderPickList(results) {
       this._dropdown.innerHTML = "";
       this._dropdown.hidden = false;
+      this._syncDropdownLifted(true);
       this._setAriaExpanded(true);
       for (const item of results) {
         const row = document.createElement("button");

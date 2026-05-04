@@ -62,7 +62,7 @@ function getOptionalHolderCap(env) {
 
 /** Cached holder pack after ETH→Base→Ape auto-detect (one key per contract address). */
 function overlapAutoContractKey(addr) {
-  return `overlap:auto:v2:${String(addr || "").trim().toLowerCase()}`;
+  return `overlap:auto:v3:${String(addr || "").trim().toLowerCase()}`;
 }
 
 function overlapCacheEntryFresh(entry) {
@@ -210,6 +210,96 @@ function walletFromOwnerRow(row) {
   return "";
 }
 
+/** Sum NFT count for this contract from Alchemy owner row (withTokenBalances=true). */
+function tokenCountFromOwnerRow(row) {
+  if (row == null || typeof row === "string") return 1;
+  if (typeof row !== "object") return 1;
+  const tb = row.tokenBalances;
+  if (!Array.isArray(tb) || tb.length === 0) return 1;
+  let n = 0;
+  for (const t of tb) {
+    const raw = t?.balance ?? t?.tokenBalance ?? t?.value;
+    const v = parseInt(String(raw ?? "1"), 10);
+    if (Number.isFinite(v) && v > 0) n += v;
+    else n += 1;
+  }
+  return n > 0 ? n : 1;
+}
+
+/** Human-readable overlap strength from match score + both directional percents. */
+function connectionTierFromStats(matchScore, pctA, pctB) {
+  const ms = Number(matchScore);
+  const a = Number(pctA);
+  const b = Number(pctB);
+  const m = Math.min(Number.isFinite(a) ? a : 0, Number.isFinite(b) ? b : 0);
+  const avg = Number.isFinite(ms) ? ms : 0;
+  if (avg >= 18 || m >= 12) return "Strong bridge";
+  if (avg >= 8 || m >= 5) return "Well connected";
+  if (avg >= 3 || m >= 1.5) return "Crossing paths";
+  if (avg >= 0.75 || m >= 0.5) return "Light overlap";
+  return "Niche link";
+}
+
+/**
+ * Per-wallet depth for overlapping addresses only (same overlap GET — no extra APIs).
+ * Uses max(nA, nB) per wallet: NFT count in the heavier of the two collections for that wallet.
+ */
+function buildSharedDepthStats(sharedAddrs, countA, countB, matchScore, pctA, pctB, partial) {
+  let whale3 = 0;
+  let whale5 = 0;
+  let d1 = 0;
+  let d23 = 0;
+  let d4p = 0;
+  for (const addr of sharedAddrs) {
+    const k = typeof addr === "string" && /^0x[a-f0-9]{40}$/i.test(addr) ? addr.toLowerCase() : String(addr || "");
+    const rawA = countA && typeof countA === "object" ? countA[k] : undefined;
+    const rawB = countB && typeof countB === "object" ? countB[k] : undefined;
+    const na = rawA != null ? Number(rawA) : 1;
+    const nb = rawB != null ? Number(rawB) : 1;
+    const naSafe = Number.isFinite(na) && na > 0 ? na : 1;
+    const nbSafe = Number.isFinite(nb) && nb > 0 ? nb : 1;
+    const mx = Math.max(naSafe, nbSafe);
+    if (mx >= 3) whale3 += 1;
+    if (mx >= 5) whale5 += 1;
+    if (mx <= 1) d1 += 1;
+    else if (mx <= 3) d23 += 1;
+    else d4p += 1;
+  }
+  return {
+    connectionTier: connectionTierFromStats(matchScore, pctA, pctB),
+    whaleHolds3Plus: whale3,
+    whaleHolds5Plus: whale5,
+    distHolding1: d1,
+    distHolding2to3: d23,
+    distHolding4Plus: d4p,
+    insightPartial: Boolean(partial),
+  };
+}
+
+/**
+ * Per shared address: NFT counts in A, in B, and total (same overlap response — no extra API).
+ * Aligned index-for-index with `sharedHoldersAll`.
+ */
+function sharedPerWalletHoldingsArrays(addrs, countA, countB) {
+  const sharedPerWalletTotalHeld = [];
+  const sharedPerWalletCountA = [];
+  const sharedPerWalletCountB = [];
+  for (const addr of addrs) {
+    const k =
+      typeof addr === "string" && /^0x[a-f0-9]{40}$/i.test(addr) ? addr.toLowerCase() : String(addr || "");
+    const rawA = countA && typeof countA === "object" ? countA[k] : undefined;
+    const rawB = countB && typeof countB === "object" ? countB[k] : undefined;
+    let na = rawA != null ? Number(rawA) : 1;
+    let nb = rawB != null ? Number(rawB) : 1;
+    if (!Number.isFinite(na) || na < 1) na = 1;
+    if (!Number.isFinite(nb) || nb < 1) nb = 1;
+    sharedPerWalletTotalHeld.push(na + nb);
+    sharedPerWalletCountA.push(na);
+    sharedPerWalletCountB.push(nb);
+  }
+  return { sharedPerWalletTotalHeld, sharedPerWalletCountA, sharedPerWalletCountB };
+}
+
 /**
  * Paginated owners on a single chain.
  * @param {"eth"|"base"|"ape"} chain
@@ -224,6 +314,8 @@ async function fetchOwnersForContract(contract, env, chain) {
 
   const host = alchemyNftHostForChain(chain);
   const owners = new Set();
+  /** @type {Record<string, number>} */
+  const countsByWallet = {};
   let pageKey = null;
   let capped = false;
   const holderCap = getOptionalHolderCap(env);
@@ -261,7 +353,10 @@ async function fetchOwnersForContract(contract, env, chain) {
 
     for (const row of rows) {
       const addr = walletFromOwnerRow(row);
-      if (/^0x[a-f0-9]{40}$/.test(addr)) owners.add(addr);
+      if (!/^0x[a-f0-9]{40}$/.test(addr)) continue;
+      const n = tokenCountFromOwnerRow(row);
+      countsByWallet[addr] = (countsByWallet[addr] || 0) + n;
+      owners.add(addr);
       if (holderCap != null && owners.size >= holderCap) {
         capped = true;
         break;
@@ -282,6 +377,7 @@ async function fetchOwnersForContract(contract, env, chain) {
     contractAddress: contract,
     holders,
     holderCount: holders.length,
+    countsByWallet,
     fetchedAt,
     source: "alchemy",
     chain,
@@ -404,6 +500,24 @@ async function handleApiCollectionOverlap(request, env) {
   const sharedHoldersAll = shared.slice(0, MAX_COPY);
   const sharedListTruncated = shared.length > MAX_COPY;
 
+  const countA = packA.countsByWallet && typeof packA.countsByWallet === "object" ? packA.countsByWallet : {};
+  const countB = packB.countsByWallet && typeof packB.countsByWallet === "object" ? packB.countsByWallet : {};
+  const sharedDepth = buildSharedDepthStats(
+    shared,
+    countA,
+    countB,
+    matchScore,
+    percentOfAHoldingB,
+    percentOfBHoldingA,
+    cappedA || cappedB
+  );
+
+  const { sharedPerWalletTotalHeld, sharedPerWalletCountA, sharedPerWalletCountB } = sharedPerWalletHoldingsArrays(
+    sharedHoldersAll,
+    countA,
+    countB
+  );
+
   const body = {
     success: true,
     detectedChainA: packA.chain,
@@ -430,9 +544,13 @@ async function handleApiCollectionOverlap(request, env) {
     fetchedAtA: packA.fetchedAt,
     fetchedAtB: packB.fetchedAt,
     dataQuality,
+    sharedDepth,
+    sharedPerWalletTotalHeld,
+    sharedPerWalletCountA,
+    sharedPerWalletCountB,
   };
 
-    return corsResponse(JSON.stringify(body));
+  return corsResponse(JSON.stringify(body));
 }
 
 // ---------------------------------------------------------------------------
@@ -463,7 +581,7 @@ function validateSolanaCollectionMint(raw) {
 }
 
 function solanaHoldersCacheKey(mint) {
-  return `overlap:sol:v1:${String(mint || "").trim()}`;
+  return `overlap:sol:v2:${String(mint || "").trim()}`;
 }
 
 async function heliusJsonRpc(env, body, timeoutMs = 25000) {
@@ -521,6 +639,8 @@ async function fetchSolanaHolders(collectionMint, env) {
   if (!mint) throw new Error("Invalid Solana collection mint.");
 
   const owners = new Set();
+  /** @type {Record<string, number>} */
+  const countsByWallet = {};
   const holderCap = getOptionalHolderCap(env);
   let page = 1;
   const limit = 1000;
@@ -546,7 +666,9 @@ async function fetchSolanaHolders(collectionMint, env) {
 
     for (const it of items) {
       const w = ownerWalletFromDasAsset(it);
-      if (w) owners.add(w);
+      if (!w) continue;
+      countsByWallet[w] = (countsByWallet[w] || 0) + 1;
+      owners.add(w);
       if (holderCap != null && owners.size >= holderCap) {
         capped = true;
         break;
@@ -565,6 +687,7 @@ async function fetchSolanaHolders(collectionMint, env) {
     collectionMint: mint,
     holders,
     holderCount: holders.length,
+    countsByWallet,
     fetchedAt: new Date().toISOString(),
     capped,
   };
@@ -687,6 +810,24 @@ async function handleApiCollectionOverlapSolana(request, env) {
   const sharedHoldersAll = shared.slice(0, MAX_COPY);
   const sharedListTruncated = shared.length > MAX_COPY;
 
+  const countSolA = packA.countsByWallet && typeof packA.countsByWallet === "object" ? packA.countsByWallet : {};
+  const countSolB = packB.countsByWallet && typeof packB.countsByWallet === "object" ? packB.countsByWallet : {};
+  const sharedDepth = buildSharedDepthStats(
+    shared,
+    countSolA,
+    countSolB,
+    matchScore,
+    percentOfAHoldingB,
+    percentOfBHoldingA,
+    cappedA || cappedB
+  );
+
+  const { sharedPerWalletTotalHeld, sharedPerWalletCountA, sharedPerWalletCountB } = sharedPerWalletHoldingsArrays(
+    sharedHoldersAll,
+    countSolA,
+    countSolB
+  );
+
   const body = {
     success: true,
     detectedChainA: "solana",
@@ -713,6 +854,10 @@ async function handleApiCollectionOverlapSolana(request, env) {
     fetchedAtA: packA.fetchedAt,
     fetchedAtB: packB.fetchedAt,
     dataQuality,
+    sharedDepth,
+    sharedPerWalletTotalHeld,
+    sharedPerWalletCountA,
+    sharedPerWalletCountB,
   };
 
   return corsResponse(JSON.stringify(body));
@@ -1049,6 +1194,22 @@ async function mapSolanaSearchRowFromMint(mint, env) {
   return { name, contractAddress: m, image: d.logoUrl || null };
 }
 
+function extractMagicEdenHrefFromPaste(t) {
+  let s = String(t || "").trim();
+  const urlRe = /https?:\/\/[^\s<>"')\]}]+/gi;
+  let m;
+  while ((m = urlRe.exec(s)) !== null) {
+    let piece = m[0].replace(/[),.;]+$/g, "");
+    if (/magiceden\.io/i.test(piece)) return piece;
+  }
+  if (/magiceden\.io/i.test(s)) {
+    let href = s.replace(/[),.;]+$/g, "");
+    if (!/^https?:\/\//i.test(href)) href = `https://${href.replace(/^\/+/, "")}`;
+    return href;
+  }
+  return null;
+}
+
 async function handleApiSearchCollectionsSolana(request, env) {
   const url = new URL(request.url);
   const rawQ = url.searchParams.get("q");
@@ -1089,7 +1250,7 @@ async function handleApiSearchCollectionsSolana(request, env) {
 
   let slug = null;
   try {
-    let h = String(q).trim();
+    let h = extractMagicEdenHrefFromPaste(q) || String(q).trim();
     if (/magiceden\.io/i.test(h)) {
       if (!/^https?:\/\//i.test(h)) h = `https://${h.replace(/^\/+/, "")}`;
       const u = new URL(h);
@@ -1194,6 +1355,78 @@ function mapAlchemySearchContractRow(item) {
   return { name, contractAddress: addr, image };
 }
 
+/** First `https://…opensea.io/…` (or bare opensea host) in pasted text — same idea as the static client. */
+function extractOpenSeaHrefFromPaste(t) {
+  let s = String(t || "").trim();
+  const urlRe = /https?:\/\/[^\s<>"')\]}]+/gi;
+  let m;
+  while ((m = urlRe.exec(s)) !== null) {
+    let piece = m[0].replace(/[),.;]+$/g, "");
+    if (/opensea\.io/i.test(piece)) return piece;
+  }
+  if (/opensea\.io/i.test(s)) {
+    let href = s.replace(/[),.;]+$/g, "");
+    if (!/^https?:\/\//i.test(href)) href = `https://${href.replace(/^\/+/, "")}`;
+    return href;
+  }
+  return null;
+}
+
+/** ETH or Base contract from `/assets/{chain}/0x…` or `/item/{chain}/0x…`. */
+function openSeaEvmContractFromPathname(pathname) {
+  const p = String(pathname || "").replace(/\/+$/, "");
+  const re = /\/(?:assets|item)\/(?:ethereum|eth|base)\/(0x[a-fA-F0-9]{40})(?:\/|$|\?)/i;
+  const mm = p.match(re);
+  if (!mm) return null;
+  return validateEthContract42(mm[1]);
+}
+
+function openSeaCollectionSlugFromPathname(pathname) {
+  const col = String(pathname || "").match(/\/collection\/([^/?#]+)/i);
+  if (!col) return null;
+  try {
+    return decodeURIComponent(col[1]);
+  } catch {
+    return col[1];
+  }
+}
+
+/**
+ * From a raw `q` (slug, full URL, or pasted sentence with URL).
+ * @returns {{ contract: string|null, slug: string|null }}
+ */
+function parseOpenSeaSearchDerivation(q) {
+  const href = extractOpenSeaHrefFromPaste(q);
+  if (!href) return { contract: null, slug: null };
+  try {
+    const h = /^https?:\/\//i.test(href) ? href : `https://${href.replace(/^\/+/, "")}`;
+    const u = new URL(h);
+    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+    if (!host.endsWith("opensea.io")) return { contract: null, slug: null };
+    const contract = openSeaEvmContractFromPathname(u.pathname);
+    if (contract) return { contract, slug: null };
+    const rawSlug = openSeaCollectionSlugFromPathname(u.pathname);
+    if (!rawSlug) return { contract: null, slug: null };
+    const slug = String(rawSlug).trim().toLowerCase();
+    if (looksLikeOpenseaCollectionSlug(slug)) return { contract: null, slug };
+    const sanitized = slug.replace(/[^a-z0-9._-]/g, "");
+    if (sanitized && looksLikeOpenseaCollectionSlug(sanitized)) return { contract: null, slug: sanitized };
+    return { contract: null, slug: null };
+  } catch {
+    return { contract: null, slug: null };
+  }
+}
+
+/** Prefer a short token for Alchemy text search (full OpenSea URLs return nothing). */
+function alchemySearchQueryForEvm(q, osDeriv) {
+  if (looksLikeOpenseaCollectionSlug(q)) return q;
+  if (osDeriv?.slug && looksLikeOpenseaCollectionSlug(osDeriv.slug)) return osDeriv.slug;
+  const direct = validateEthContract42(q);
+  if (direct) return direct;
+  if (osDeriv?.contract) return osDeriv.contract;
+  return q;
+}
+
 /** OpenSea-style collection slug (query param), not a URL or raw contract. */
 function looksLikeOpenseaCollectionSlug(q) {
   const s = String(q || "").trim().toLowerCase();
@@ -1286,15 +1519,28 @@ async function handleApiSearchCollections(request, env) {
     out.push({ ...item, contractAddress: a });
   };
 
-  /** Slug-shaped queries: OpenSea first (matches copy-paste from opensea.io/collection/…). */
-  const slugShaped = looksLikeOpenseaCollectionSlug(q);
-  if (slugShaped) {
-    const osHit = await tryOpenSeaSlugToCollection(q, env);
+  const osDeriv = parseOpenSeaSearchDerivation(q);
+
+  if (osDeriv.contract) {
+    const meta = await fetchContractDisplayAuto(env, osDeriv.contract);
+    pushUnique({
+      name: meta.name || shortenWallet(osDeriv.contract),
+      contractAddress: osDeriv.contract,
+      image: meta.logoUrl,
+    });
+  }
+
+  /** Slug-shaped `q` or collection slug parsed from a pasted OpenSea URL. */
+  const slugForOpenSea =
+    looksLikeOpenseaCollectionSlug(q) ? q : osDeriv.slug && looksLikeOpenseaCollectionSlug(osDeriv.slug) ? osDeriv.slug : null;
+  if (slugForOpenSea) {
+    const osHit = await tryOpenSeaSlugToCollection(slugForOpenSea, env);
     if (osHit) pushUnique(osHit);
   }
 
+  const alchemyQuery = alchemySearchQueryForEvm(q, osDeriv);
   const alchemyUrl = new URL(`https://${ALCHEMY_ETH_HOST}/nft/v3/${apiKey}/searchContractMetadata`);
-  alchemyUrl.searchParams.set("query", q);
+  alchemyUrl.searchParams.set("query", alchemyQuery);
 
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), 15000);
@@ -1331,9 +1577,17 @@ async function handleApiSearchCollections(request, env) {
     if (out.length >= SEARCH_MAX_RESULTS) break;
   }
 
-  if (out.length === 0 && !slugShaped) {
-    const osHit = await tryOpenSeaSlugToCollection(q, env);
-    if (osHit) pushUnique(osHit);
+  /** Valid 0x address as `q` but Alchemy search empty — resolve like /api/contract-display. */
+  if (out.length === 0) {
+    const addr = validateEthContract42(q);
+    if (addr) {
+      const meta = await fetchContractDisplayAuto(env, addr);
+      pushUnique({
+        name: meta.name || shortenWallet(addr),
+        contractAddress: addr,
+        image: meta.logoUrl,
+      });
+    }
   }
 
   const deduped = dedupeSearchResults(out);

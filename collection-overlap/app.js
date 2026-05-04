@@ -10,6 +10,27 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function collapseFullScanInsights() {
+  const wrap = $("co-insights-expand");
+  const btn = $("co-full-scan-toggle");
+  if (wrap) {
+    wrap.classList.remove("co-insights-expand--open");
+    wrap.setAttribute("aria-hidden", "true");
+  }
+  if (btn) btn.setAttribute("aria-expanded", "false");
+}
+
+function toggleFullScanInsights() {
+  if (!lastOverlapData) return;
+  const wrap = $("co-insights-expand");
+  const btn = $("co-full-scan-toggle");
+  if (!wrap || !btn) return;
+  const open = !wrap.classList.contains("co-insights-expand--open");
+  wrap.classList.toggle("co-insights-expand--open", open);
+  wrap.setAttribute("aria-hidden", open ? "false" : "true");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
 let coInputA = null;
 let coInputB = null;
 let coSolInputA = null;
@@ -18,6 +39,8 @@ let coSolInputB = null;
 let coMode = "evm";
 /** While GET /api/collection-overlap or /api/collection-overlap-solana is in flight — compare button stays disabled. */
 let overlapFetchInFlight = false;
+/** Last successful overlap JSON (full holder scan expand — synchronous, no extra API). */
+let lastOverlapData = null;
 /** @type {string|null} saved `document.body.style.overflow` while logo-battle overlay is open */
 let coLogoBattleSavedOverflow = null;
 
@@ -200,6 +223,216 @@ function fmtPct(n) {
   return x.toFixed(2);
 }
 
+const WHAT_THIS_MEANS = {
+  1: {
+    line1: "🔥 Strong crossover with real shared believers",
+    line2: "These communities have a meaningful connection with holders actively invested in both",
+  },
+  2: {
+    line1: "🟡 Growing connection, but mostly casual overlap",
+    line2: "Many shared holders exist, but few are deeply invested in both communities",
+  },
+  3: {
+    line1: "⚪ Very light crossover between communities",
+    line2: "Overlap exists, but it’s mostly surface-level with minimal shared conviction",
+  },
+  4: {
+    line1: "⚠️ Overlap is driven by a small number of large holders",
+    line2: "A few wallets dominate the connection between these communities",
+  },
+  5: {
+    line1: "⚖️ Balanced crossover between both communities",
+    line2: "Shared holders are evenly invested, showing strong alignment between projects",
+  },
+  6: {
+    line1: "➡️ Overlap leans heavily toward one community",
+    line2: "Most shared holders are primarily invested in one side, with limited balance",
+  },
+};
+
+function perWalletABArrays(data) {
+  const as = data?.sharedPerWalletCountA;
+  const bs = data?.sharedPerWalletCountB;
+  if (!Array.isArray(as) || !Array.isArray(bs) || as.length !== bs.length || as.length === 0) return null;
+  return { as, bs };
+}
+
+/**
+ * One bucket per wallet (strict, mutually exclusive).
+ * Priority: strong believers (2+ each side) → balanced (|A−B| ≤ 1) → lean A → lean B → casual.
+ */
+function holderAlignmentBucket(na, nb) {
+  const a = Number(na);
+  const b = Number(nb);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return "casual";
+  if (a >= 2 && b >= 2) return "strong";
+  if (Math.abs(a - b) <= 1) return "balanced";
+  if (a > b * 2) return "leanA";
+  if (b > a * 2) return "leanB";
+  return "casual";
+}
+
+function appendInsightLine(container, text) {
+  if (!container || !text) return;
+  const p = document.createElement("p");
+  p.className = "co-insight-line";
+  p.textContent = text;
+  container.appendChild(p);
+}
+
+/** Top-10 concentration as % of total NFT weight in overlap list (same slice as totals). */
+function topTenOverlapConcentrationPct(totals) {
+  if (!Array.isArray(totals) || totals.length === 0) return null;
+  const nums = totals.map((t) => (Number.isFinite(Number(t)) ? Number(t) : 0));
+  const indexed = nums.map((t, i) => ({ t, i }));
+  indexed.sort((a, b) => b.t - a.t);
+  const top = indexed.slice(0, 10);
+  const sumTop = top.reduce((s, x) => s + x.t, 0);
+  const sumAll = indexed.reduce((s, x) => s + x.t, 0);
+  if (sumAll <= 0) return null;
+  return Math.round((sumTop / sumAll) * 1000) / 10;
+}
+
+/**
+ * Pick “What this means” template (1–6):
+ * 4 whale-heavy → 1 strong believers → 5 balanced → 6 lean → 2 moderate → 3 weak.
+ */
+function pickWhatThisMeansTemplate({ sharedN, matchScore, top10Pct, strongDualBelievers, domBalanced, strongLean }) {
+  if (!Number.isFinite(sharedN) || sharedN < 1) return 3;
+  if (typeof top10Pct === "number" && Number.isFinite(top10Pct) && top10Pct > 60) return 4;
+  if (strongDualBelievers) return 1;
+  if (domBalanced && matchScore >= 1.25) return 5;
+  if (strongLean && matchScore >= 1.25) return 6;
+  if (matchScore >= 2) return 2;
+  return 3;
+}
+
+function fillInlineHolderInsights(data) {
+  const partialEl = $("co-insight-partial");
+  const mean1 = $("co-insight-mean-1");
+  const mean2 = $("co-insight-mean-2");
+  const sharedRoot = $("co-insight-shared");
+  const sharedFoot = $("co-insight-shared-foot");
+  const strengthRoot = $("co-insight-strength");
+
+  if (sharedRoot) sharedRoot.innerHTML = "";
+  if (strengthRoot) strengthRoot.innerHTML = "";
+
+  const capped = data?.dataQuality === "capped";
+  const depth = data?.sharedDepth;
+  const partialNote = capped || depth?.insightPartial ? "Partial scan: insights use listed wallets only (Worker cap may apply)." : "";
+  if (partialEl) {
+    if (partialNote) {
+      partialEl.hidden = false;
+      partialEl.textContent = partialNote;
+    } else {
+      partialEl.hidden = true;
+      partialEl.textContent = "";
+    }
+  }
+
+  const sharedN = Number(data?.sharedHolderCount ?? 0);
+  const matchScore = Number(data?.matchScore);
+  const ms = Number.isFinite(matchScore) ? matchScore : 0;
+  const totals = Array.isArray(data?.sharedPerWalletTotalHeld) ? data.sharedPerWalletTotalHeld.map(Number) : [];
+  const top10Pct = topTenOverlapConcentrationPct(totals);
+
+  const pairs = perWalletABArrays(data);
+  let counts = { strong: 0, balanced: 0, leanA: 0, leanB: 0, casual: 0 };
+  let strongRatio = 0;
+  let domBalanced = false;
+  let strongLean = false;
+
+  if (pairs && pairs.as.length > 0) {
+    for (let i = 0; i < pairs.as.length; i += 1) {
+      counts[holderAlignmentBucket(pairs.as[i], pairs.bs[i])] += 1;
+    }
+    strongRatio = counts.strong / pairs.as.length;
+    let sumA = 0;
+    let sumB = 0;
+    for (let i = 0; i < pairs.as.length; i += 1) {
+      sumA += Number(pairs.as[i]);
+      sumB += Number(pairs.bs[i]);
+    }
+    const n = pairs.as.length;
+    const avgA = n ? sumA / n : 0;
+    const avgB = n ? sumB / n : 0;
+    const mag = Math.max(avgA, avgB, 0.01);
+    const diff = Math.abs(avgA - avgB);
+    domBalanced = diff / mag < 0.12 && diff < 0.2;
+    strongLean = !domBalanced && (avgA > avgB * 1.2 || avgB > avgA * 1.2);
+  }
+
+  const strongDualBelievers =
+    pairs && pairs.as.length > 0 && (strongRatio >= 0.08 || (counts.strong >= 4 && strongRatio >= 0.05)) && ms >= 2;
+
+  const tmpl = pickWhatThisMeansTemplate({
+    sharedN,
+    matchScore: ms,
+    top10Pct,
+    strongDualBelievers,
+    domBalanced,
+    strongLean,
+  });
+  const copy = WHAT_THIS_MEANS[tmpl] || WHAT_THIS_MEANS[3];
+  if (mean1) mean1.textContent = copy.line1;
+  if (mean2) mean2.textContent = copy.line2;
+
+  if (sharedFoot) {
+    sharedFoot.hidden = true;
+    sharedFoot.textContent = "";
+  }
+
+  if (pairs && sharedN > 0) {
+    let sharedLines = 0;
+    if (counts.strong > 0) {
+      appendInsightLine(sharedRoot, `💎 ${counts.strong.toLocaleString()} strong believers (2+ in both)`);
+      sharedLines += 1;
+    }
+    if (counts.balanced > 0) {
+      appendInsightLine(sharedRoot, `⚖️ ${counts.balanced.toLocaleString()} balanced (similar amounts)`);
+      sharedLines += 1;
+    }
+    const nameA = truncLabel(collectionDisplayLabel(data, "A"), 32);
+    const nameB = truncLabel(collectionDisplayLabel(data, "B"), 32);
+    if (counts.leanA > counts.leanB) {
+      appendInsightLine(sharedRoot, `⬅️ Most lean toward ${nameA} (2×+ more on that side)`);
+      sharedLines += 1;
+    } else if (counts.leanB > counts.leanA) {
+      appendInsightLine(sharedRoot, `➡️ Most lean toward ${nameB} (2×+ more on that side)`);
+      sharedLines += 1;
+    } else if (counts.leanA > 0 && counts.leanB > 0) {
+      appendInsightLine(sharedRoot, "Mixed lean between both communities");
+      sharedLines += 1;
+    }
+    if (sharedLines === 0) appendInsightLine(sharedRoot, "Mostly casual overlap across shared wallets");
+    if (pairs.as.length < sharedN || data?.sharedListTruncated) {
+      if (sharedFoot) {
+        sharedFoot.hidden = false;
+        sharedFoot.textContent = `Based on first ${pairs.as.length.toLocaleString()} overlapping wallets.`;
+      }
+    }
+  } else if (sharedRoot) {
+    if (sharedN < 1) appendInsightLine(sharedRoot, "—");
+    else appendInsightLine(sharedRoot, "Shared holder split needs latest overlap data (compare again after deploy).");
+  }
+
+  if (strengthRoot && sharedN > 0) {
+    let hiPct = null;
+    if (depth && Number.isFinite(Number(depth.whaleHolds3Plus))) {
+      hiPct = Math.round((Number(depth.whaleHolds3Plus) / sharedN) * 1000) / 10;
+    }
+    if (hiPct != null) {
+      appendInsightLine(strengthRoot, `🐋 ${hiPct}% high conviction (3+ NFTs in either collection)`);
+    }
+    if (top10Pct != null) {
+      appendInsightLine(strengthRoot, `⚠️ Top wallets dominate (${top10Pct}%)`);
+    }
+  } else if (strengthRoot) {
+    appendInsightLine(strengthRoot, "—");
+  }
+}
+
 function truncLabel(s, max) {
   const t = String(s || "").trim();
   if (t.length <= max) return t;
@@ -225,6 +458,23 @@ function collectionShortTag(data, which) {
   if (s && s.length <= 10) return s;
   if (name && String(name).trim()) return truncLabel(String(name).trim(), 18);
   return which === "A" ? "A" : "B";
+}
+
+/** Form column headings: show selected collection name or default A/B. */
+function updateCollectionFieldLabels() {
+  const labelFrom = (input, fallback) => {
+    const v = input && typeof input.getValue === "function" ? input.getValue() : null;
+    const n = v?.name && String(v.name).trim();
+    return n || fallback;
+  };
+  const aEvm = $("co-label-evm-a");
+  const bEvm = $("co-label-evm-b");
+  const aSol = $("co-label-sol-a");
+  const bSol = $("co-label-sol-b");
+  if (aEvm) aEvm.textContent = labelFrom(coInputA, "Collection A");
+  if (bEvm) bEvm.textContent = labelFrom(coInputB, "Collection B");
+  if (aSol) aSol.textContent = labelFrom(coSolInputA, "Collection A");
+  if (bSol) bSol.textContent = labelFrom(coSolInputB, "Collection B");
 }
 
 const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
@@ -385,7 +635,7 @@ function fallbackLogoRect(side) {
 
 /**
  * Logo “crash” intro: fly from on-page squares → impact → flash → merged + ~2s lightning ring.
- * Caller runs overlap fetch in parallel; await this with fetch before showing UI (~3s).
+ * Caller runs overlap fetch in parallel; await this with fetch before showing UI (~4s with default hold).
  * @param {string} urlA
  * @param {string} urlB
  * @param {string|null} [nameA]
@@ -491,7 +741,8 @@ function runLogoBattleAnimation(urlA, urlB, nameA, nameB, hadRealImageA = true, 
     const T_IMPACT = flyMs;
     const T_FLASH = T_IMPACT + 200;
     const T_MERGE = T_FLASH + 280;
-    const holdMs = 2000;
+    /** Merged logo + lightning “hold” — keep clash visible a beat longer while overlap GET runs in parallel. */
+    const holdMs = 3000;
     const T_DONE = T_MERGE + holdMs;
 
     window.setTimeout(() => {
@@ -557,15 +808,19 @@ function renderResults(data) {
   if (descA) descA.textContent = `${tagA} holders also hold ${tagB}`;
   if (descB) descB.textContent = `${tagB} holders also hold ${tagA}`;
 
-  const q = $("co-quality");
-  q.classList.remove("co-quality--full", "co-quality--capped");
-  if (data.dataQuality === "capped") {
-    q.classList.add("co-quality--capped");
-    q.textContent = "Partial scan — holder cap hit (OVERLAP_MAX_HOLDERS on Worker)";
-  } else {
-    q.classList.add("co-quality--full");
-    q.textContent = "Full holder scan";
+  const q = $("co-full-scan-toggle");
+  if (q) {
+    q.classList.remove("co-quality--full", "co-quality--capped");
+    if (data.dataQuality === "capped") {
+      q.classList.add("co-quality--capped");
+    } else {
+      q.classList.add("co-quality--full");
+    }
   }
+
+  lastOverlapData = data;
+  collapseFullScanInsights();
+  fillInlineHolderInsights(data);
 }
 
 async function onCompareSolana() {
@@ -614,14 +869,10 @@ async function onCompareSolana() {
 
   setLoading(true, "Scanning holder overlap…", { solanaPatience: true });
   $("co-results")?.classList.add("hidden");
+  lastOverlapData = null;
+  collapseFullScanInsights();
 
   const apiUrl = buildSolanaOverlapUrl(mintA, mintB);
-  const logoA = typeof coSolInputA.getLogoUrl === "function" ? coSolInputA.getLogoUrl() : null;
-  const logoB = typeof coSolInputB.getLogoUrl === "function" ? coSolInputB.getLogoUrl() : null;
-  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
-  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
-  const useBattleAnim = !prefersReducedMotion();
-
   const fetchResultP = coFetchOverlapJson(apiUrl).then((fr) => {
     if (fr.ok) return { ok: true, data: fr.data };
     if (fr.err) return { ok: false, err: fr.err };
@@ -633,6 +884,12 @@ async function onCompareSolana() {
     }
     return { ok: false, err: new Error(data?.error || "Unexpected response") };
   });
+
+  const logoA = typeof coSolInputA.getLogoUrl === "function" ? coSolInputA.getLogoUrl() : null;
+  const logoB = typeof coSolInputB.getLogoUrl === "function" ? coSolInputB.getLogoUrl() : null;
+  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
+  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
+  const useBattleAnim = !prefersReducedMotion();
 
   const animPromise = useBattleAnim
     ? runLogoBattleAnimation(
@@ -700,14 +957,10 @@ async function onCompare() {
 
   setLoading(true, "Scanning holder overlap…");
   $("co-results")?.classList.add("hidden");
+  lastOverlapData = null;
+  collapseFullScanInsights();
 
   const apiUrl = buildOverlapUrl(a, b);
-  const logoA = typeof coInputA.getLogoUrl === "function" ? coInputA.getLogoUrl() : null;
-  const logoB = typeof coInputB.getLogoUrl === "function" ? coInputB.getLogoUrl() : null;
-  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
-  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
-  const useBattleAnim = !prefersReducedMotion();
-
   const fetchResultP = coFetchOverlapJson(apiUrl).then((fr) => {
     if (fr.ok) return { ok: true, data: fr.data };
     if (fr.err) return { ok: false, err: fr.err };
@@ -719,6 +972,12 @@ async function onCompare() {
     }
     return { ok: false, err: new Error(data?.error || "Unexpected response") };
   });
+
+  const logoA = typeof coInputA.getLogoUrl === "function" ? coInputA.getLogoUrl() : null;
+  const logoB = typeof coInputB.getLogoUrl === "function" ? coInputB.getLogoUrl() : null;
+  const battleA = logoA && String(logoA).trim() ? String(logoA).trim() : CO_COMPARE_MASCOT;
+  const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
+  const useBattleAnim = !prefersReducedMotion();
 
   const animPromise = useBattleAnim
     ? runLogoBattleAnimation(
@@ -780,8 +1039,11 @@ function setCoMode(next) {
   const st = $("co-status");
   if (st) st.textContent = "";
   $("co-results")?.classList.add("hidden");
+  lastOverlapData = null;
+  collapseFullScanInsights();
 
   updateCompareButtonDisabled();
+  updateCollectionFieldLabels();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -797,10 +1059,14 @@ document.addEventListener("DOMContentLoaded", () => {
     coSolInputA = new window.SolanaCollectionInput(slotSolA);
     coSolInputB = new window.SolanaCollectionInput(slotSolB);
   }
-  $("co-form-section")?.addEventListener("co-selection-change", () => updateCompareButtonDisabled());
+  $("co-form-section")?.addEventListener("co-selection-change", () => {
+    updateCompareButtonDisabled();
+    updateCollectionFieldLabels();
+  });
   $("co-mode-evm")?.addEventListener("click", () => setCoMode("evm"));
   $("co-mode-sol")?.addEventListener("click", () => setCoMode("solana"));
   updateCompareButtonDisabled();
+  updateCollectionFieldLabels();
   $("co-compare-btn")?.addEventListener("click", () => void onCompare());
 
   const contactDlg = $("co-contact-dialog");
@@ -811,4 +1077,6 @@ document.addEventListener("DOMContentLoaded", () => {
   contactDlg?.addEventListener("click", (e) => {
     if (e.target === contactDlg) contactDlg.close();
   });
+
+  $("co-full-scan-toggle")?.addEventListener("click", () => toggleFullScanInsights());
 });
