@@ -6,7 +6,8 @@
   const PLACEHOLDER = "Paste collection URL or contract address";
   const DEBOUNCE_MS = 300;
   const CUSTOM_CONTRACT_NAME = "Custom Contract";
-  const MSG_NOT_FOUND = "Collection not found";
+  const MSG_RETRYING = "Having trouble loading collection… retrying";
+  const MSG_LOAD_FINAL = "Couldn't load this collection. Try again or reselect it.";
   const MSG_SEARCH_FAILED = "Search failed, try again";
   const MSG_INVALID_CONTRACT = "Invalid contract address";
   const MSG_ENTER_NEED_SELECTION = "Please select a valid collection";
@@ -79,6 +80,15 @@
 
   function stripZeroWidth(s) {
     return String(s || "").replace(/[\u200B-\u200D\uFEFF]/g, "");
+  }
+
+  /** Trim + strip accidental whitespace/newlines; lowercase for EVM 0x. */
+  function sanitizeEvmContractInput(s) {
+    return String(s || "")
+      .trim()
+      .replace(/[\u200B-\u200D\uFEFF\r\n]+/g, "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
   }
 
   /** Pull the first OpenSea URL out of pasted text (e.g. "Check out https://opensea.io/..."). */
@@ -206,6 +216,8 @@
       this._resumeAfterHide = false;
       this._resumeTimer = null;
       this._hydrateAbort = null;
+      this._retryBtn = null;
+      this._lastSlugForRetry = null;
       this._render();
       document.addEventListener("pointerdown", this._onDocDown, true);
       window.addEventListener("pageshow", this._onPageShow);
@@ -298,6 +310,7 @@
 
       this._input.addEventListener("input", () => this._onInput());
       this._input.addEventListener("keydown", (e) => this._onKeydown(e));
+      this._input.addEventListener("focus", () => this._onInputFocus());
       this._clearBtn.addEventListener("click", () => this._clearSelection());
     }
 
@@ -376,16 +389,44 @@
       }
     }
 
-    _showInlineError(msg) {
+    _showInlineError(msg, retryOpts) {
       this._inlineError = msg;
       this._errEl.textContent = msg || "";
       this._errEl.hidden = !msg;
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
+      if (msg && retryOpts && typeof retryOpts.onRetry === "function") {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "co-ci-retry-btn";
+        b.textContent = "Retry";
+        b.addEventListener("click", (e) => {
+          e.preventDefault();
+          retryOpts.onRetry();
+        });
+        this._errEl.insertAdjacentElement("afterend", b);
+        this._retryBtn = b;
+      }
     }
 
     _clearInlineError() {
       this._inlineError = "";
       this._errEl.textContent = "";
       this._errEl.hidden = true;
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
     }
 
     clearContractError() {
@@ -447,7 +488,89 @@
       if (this._searchAbort) this._searchAbort.abort();
       this._abortHydrate();
       this._setBannerLoading(false);
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
       this._container.textContent = "";
+    }
+
+    _onInputFocus() {
+      if (this.state.selectedCollection) return;
+      const trimmed = stripZeroWidth(this._input?.value || "").trim();
+      if (trimmed) return;
+      this._renderSavedCollectionsDropdown();
+    }
+
+    /** @param {{ name?: string, contractAddress: string, image?: string|null }} saved */
+    _applyFromSaved(saved) {
+      if (!saved || !window.LOSavedCollections) return;
+      const addr = window.LOSavedCollections.coNormalizeEvmAddress(saved.contractAddress);
+      if (!addr || !/^0x[a-f0-9]{40}$/.test(addr)) return;
+      const item = {
+        name: (saved.name && String(saved.name).trim()) || "Saved collection",
+        contractAddress: addr,
+        image: saved.image || null,
+      };
+      this._applySelection(item, item.contractAddress, { forceFresh: true });
+    }
+
+    _renderSavedCollectionsDropdown() {
+      const list = window.LOSavedCollections ? window.LOSavedCollections.listForChain("evm") : [];
+      if (!list.length) {
+        this._closeDropdown();
+        return;
+      }
+      this._dropdown.innerHTML = "";
+      const head = document.createElement("div");
+      head.className = "co-ci-dd-heading";
+      head.textContent = "Saved collections";
+      this._dropdown.appendChild(head);
+      for (const it of list) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "co-ci-dd-item";
+        row.setAttribute("role", "option");
+        const short = this.shortenContract(it.contractAddress);
+        let thumb;
+        if (it.image) {
+          const img = document.createElement("img");
+          img.className = "co-ci-dd-img";
+          img.alt = "";
+          img.width = 36;
+          img.height = 36;
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.src = it.image;
+          img.addEventListener("error", () => {
+            img.replaceWith(Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" }));
+          });
+          thumb = img;
+        } else {
+          thumb = Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" });
+        }
+        const text = document.createElement("div");
+        text.className = "co-ci-dd-text";
+        const nameEl = document.createElement("span");
+        nameEl.className = "co-ci-dd-name";
+        nameEl.textContent = it.name || short;
+        const addrEl = document.createElement("span");
+        addrEl.className = "co-ci-dd-addr";
+        addrEl.textContent = short;
+        text.append(nameEl, addrEl);
+        row.append(thumb, text);
+        row.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          this._applyFromSaved(it);
+        });
+        this._dropdown.appendChild(row);
+      }
+      this._dropdown.hidden = false;
+      this._setAriaExpanded(true);
     }
 
     _onDocumentPointerDown(e) {
@@ -481,9 +604,11 @@
     /**
      * @param {{ name: string, contractAddress: string, image: string|null }} item
      * @param {string} [displayText] text to keep visible in the field (URL or 0x…)
+     * @param {{ forceFresh?: boolean }} [opts] saved picks: always re-fetch metadata
      */
-    _applySelection(item, displayText) {
-      const addr = String(item.contractAddress).trim().toLowerCase();
+    _applySelection(item, displayText, opts) {
+      const addr = sanitizeEvmContractInput(item.contractAddress);
+      if (!/^0x[a-f0-9]{40}$/.test(addr)) return;
       const show =
         displayText != null && String(displayText).trim() !== ""
           ? String(displayText).trim()
@@ -502,40 +627,133 @@
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
       this._abortHydrate();
       this._syncVerifiedShell();
-      void this._hydrateContractMetadataIfNeeded();
+      if (window.LOSavedCollections) {
+        window.LOSavedCollections.upsert({
+          name: this.state.selectedCollection.name,
+          contractAddress: addr,
+          image: this.state.selectedCollection.image,
+          chain: "evm",
+        });
+      }
+      void this._hydrateContractMetadataIfNeeded({ force: opts && opts.forceFresh === true });
     }
 
     /**
      * Fill name/logo from Worker (Alchemy) when paste-by-address or search returned no image.
+     * @param {{ force?: boolean }} [opts] force=true re-fetches even when name+image look complete (saved picks).
      */
-    async _hydrateContractMetadataIfNeeded() {
+    async _hydrateContractMetadataIfNeeded(opts) {
       const sel = this.state.selectedCollection;
       if (!sel?.contractAddress) return;
+      const force = opts && opts.force === true;
       const needsLogo = !sel.image || !String(sel.image).trim();
       const needsName = !sel.name || sel.name === CUSTOM_CONTRACT_NAME;
-      if (!needsLogo && !needsName) return;
+      if (!force && !needsLogo && !needsName) return;
 
-      const addrSnap = sel.contractAddress;
+      const addrSnap = sanitizeEvmContractInput(sel.contractAddress);
+      if (this.state.selectedCollection) this.state.selectedCollection.contractAddress = addrSnap;
+
       const ac = new AbortController();
       this._abortHydrate();
       this._hydrateAbort = ac;
       this._setBannerLoading(true);
       const url = buildContractDisplayUrl(addrSnap);
+      const rf = window.coFetchJson && window.coFetchJson.coResilientFetchJson;
       try {
-        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
-        const data = await res.json().catch(() => ({}));
+        if (!rf) {
+          const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
+          const data = await res.json().catch(() => ({}));
+          if (ac.signal.aborted) return;
+          if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
+          if (!res.ok || !data?.success) {
+            this._showInlineError(MSG_LOAD_FINAL, {
+              onRetry: () => {
+                this._clearInlineError();
+                void this._hydrateContractMetadataIfNeeded({ force: true });
+              },
+            });
+            return;
+          }
+          const n = data.name && String(data.name).trim();
+          if (n && (needsName || force || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
+            this.state.selectedCollection.name = n;
+          }
+          const img = data.image && String(data.image).trim();
+          if (img && (needsLogo || force)) this.state.selectedCollection.image = img;
+          if (window.LOSavedCollections) {
+            window.LOSavedCollections.upsert({
+              name: this.state.selectedCollection.name,
+              contractAddress: addrSnap,
+              image: this.state.selectedCollection.image,
+              chain: "evm",
+            });
+          }
+          this._syncVerifiedShell();
+          return;
+        }
+
+        const { res, data } = await rf(url, {
+          signal: ac.signal,
+          timeoutMs: 8000,
+          maxAdditionalRetries: 2,
+          retryDelaysMs: [300, 800],
+          onRetrying: () => {
+            if (ac.signal.aborted) return;
+            if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
+            this._showInlineError(MSG_RETRYING);
+          },
+          shouldRetry: ({ res: r, data: d, err, isLastAttempt }) => {
+            if (isLastAttempt) return false;
+            if (err) {
+              if (ac.signal.aborted) return false;
+              return true;
+            }
+            if (!r) return true;
+            if (r.status >= 500 || r.status === 429 || r.status === 408) return true;
+            if (r.status === 503) return true;
+            if (!r.ok) return false;
+            if (!d?.success) return true;
+            return false;
+          },
+        });
+
         if (ac.signal.aborted) return;
         if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
-        if (!res.ok || !data?.success) return;
+        if (!res.ok || !data?.success) {
+          const apiErr = typeof data?.error === "string" && data.error.trim() ? data.error.trim() : "";
+          this._showInlineError(apiErr || MSG_LOAD_FINAL, {
+            onRetry: () => {
+              this._clearInlineError();
+              void this._hydrateContractMetadataIfNeeded({ force: true });
+            },
+          });
+          return;
+        }
         const n = data.name && String(data.name).trim();
-        if (n && (needsName || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
+        if (n && (needsName || force || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
           this.state.selectedCollection.name = n;
         }
         const img = data.image && String(data.image).trim();
-        if (img && needsLogo) this.state.selectedCollection.image = img;
+        if (img && (needsLogo || force)) this.state.selectedCollection.image = img;
+        if (window.LOSavedCollections) {
+          window.LOSavedCollections.upsert({
+            name: this.state.selectedCollection.name,
+            contractAddress: addrSnap,
+            image: this.state.selectedCollection.image,
+            chain: "evm",
+          });
+        }
+        this._clearInlineError();
         this._syncVerifiedShell();
       } catch (e) {
         if (e?.name === "AbortError") return;
+        if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
+        this._showInlineError(MSG_LOAD_FINAL, {
+          onRetry: () => {
+            this._clearInlineError();
+            void this._hydrateContractMetadataIfNeeded({ force: true });
+          },
+        });
       } finally {
         if (this._hydrateAbort === ac) {
           this._hydrateAbort = null;
@@ -546,13 +764,16 @@
     }
 
     _applyCustomContract(address, displayText) {
+      const addr = sanitizeEvmContractInput(address);
+      const ok = validateContract42(addr);
+      if (!ok) return;
       this._applySelection(
         {
           name: CUSTOM_CONTRACT_NAME,
-          contractAddress: address,
+          contractAddress: ok,
           image: null,
         },
-        displayText != null && String(displayText).trim() ? String(displayText).trim() : address
+        displayText != null && String(displayText).trim() ? String(displayText).trim() : ok
       );
     }
 
@@ -578,7 +799,7 @@
       if (e.key !== "Enter") return;
       if (this.state.selectedCollection) return;
 
-      const trimmed = stripZeroWidth(this._input.value).trim();
+      const trimmed = sanitizeEvmContractInput(stripZeroWidth(this._input.value));
       if (!trimmed) {
         this._showInlineError(MSG_ENTER_NEED_SELECTION);
         e.preventDefault();
@@ -693,11 +914,12 @@
         return;
       }
 
+      this._lastSlugForRetry = query;
       const displaySnapshot = stripZeroWidth(this._input.value).trim();
 
       const cached = slugCacheGet(query);
       if (cached && cached.length > 0) {
-        this._finishSlugResults(cached, displaySnapshot, myGen);
+        this._finishSlugResults(cached, displaySnapshot, myGen, "");
         return;
       }
 
@@ -714,9 +936,65 @@
       this._searchAbort = ac;
 
       const url = buildSearchUrl(query);
+      const rf = window.coFetchJson && window.coFetchJson.coResilientFetchJson;
       try {
-        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
-        const data = await res.json().catch(() => ({}));
+        if (!rf) {
+          const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
+          const data = await res.json().catch(() => ({}));
+          if (ac.signal.aborted) return;
+          if (myGen !== this._slugResolveGen) return;
+          if (!res.ok) {
+            const apiErr =
+              typeof data?.error === "string" && data.error.trim()
+                ? data.error.trim()
+                : res.status === 404
+                  ? "Search API not found on this host. Deploy the Worker or set COLLECTION_OVERLAP_API_BASE."
+                  : "";
+            this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
+            return;
+          }
+          if (!data?.success || !Array.isArray(data.results)) {
+            const apiErr = typeof data?.error === "string" && data.error.trim() ? data.error.trim() : "";
+            this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
+            return;
+          }
+          const list = data.results.slice(0, 10);
+          if (myGen !== this._slugResolveGen) return;
+          if (list.length > 0) slugCacheSet(query, list);
+          this._finishSlugResults(list, displaySnapshot, myGen, "");
+          return;
+        }
+
+        const { res, data } = await rf(url, {
+          signal: ac.signal,
+          timeoutMs: 8000,
+          maxAdditionalRetries: 2,
+          retryDelaysMs: [300, 800],
+          onRetrying: () => {
+            if (ac.signal.aborted) return;
+            if (myGen !== this._slugResolveGen) return;
+            this._showInlineError(MSG_RETRYING);
+          },
+          shouldRetry: ({ res: r, data: d, err, isLastAttempt }) => {
+            if (isLastAttempt) return false;
+            if (err) {
+              if (ac.signal.aborted) return false;
+              return true;
+            }
+            if (!r) return true;
+            if (r.status === 404) return false;
+            if (r.status >= 500 || r.status === 429 || r.status === 408) return true;
+            if (!r.ok) return false;
+            if (!d?.success) {
+              if (r.status === 503) return true;
+              return false;
+            }
+            if (!Array.isArray(d.results)) return true;
+            if (d.results.length === 0) return true;
+            return false;
+          },
+        });
+
         if (ac.signal.aborted) return;
         if (myGen !== this._slugResolveGen) return;
         if (!res.ok) {
@@ -735,20 +1013,31 @@
           return;
         }
         const list = data.results.slice(0, 10);
+        const hint = typeof data.hint === "string" && data.hint.trim() ? data.hint.trim() : "";
         if (myGen !== this._slugResolveGen) return;
         if (list.length > 0) slugCacheSet(query, list);
-        this._finishSlugResults(list, displaySnapshot, myGen);
+        this._finishSlugResults(list, displaySnapshot, myGen, hint);
       } catch (e) {
         if (e?.name === "AbortError") return;
         if (ac.signal.aborted) return;
         if (myGen !== this._slugResolveGen) return;
         if (isLikelyNetworkFailure(e)) {
-          this._showDropdownError(
-            "Cannot reach the API. Start the Worker: cd collection-overlap-api && npm run dev"
-          );
+          this._showInlineError(MSG_LOAD_FINAL, {
+            onRetry: () => {
+              slugCacheDelete(query);
+              this._clearInlineError();
+              void this._resolveSlug(query);
+            },
+          });
           return;
         }
-        this._showDropdownError(MSG_SEARCH_FAILED);
+        this._showInlineError(MSG_LOAD_FINAL, {
+          onRetry: () => {
+            slugCacheDelete(query);
+            this._clearInlineError();
+            void this._resolveSlug(query);
+          },
+        });
       } finally {
         if (myGen === this._slugResolveGen) this._setBannerLoading(false);
       }
@@ -758,12 +1047,24 @@
      * @param {Array<{ name: string, contractAddress: string, image: string|null }>} list
      * @param {string} displaySnapshot
      * @param {number} [requestGen] drop stale responses when the user changed input
+     * @param {string} [hint]
      */
-    _finishSlugResults(list, displaySnapshot, requestGen) {
+    _finishSlugResults(list, displaySnapshot, requestGen, hint) {
       if (requestGen != null && requestGen !== this._slugResolveGen) return;
       this.state.results = list.slice(0, 10);
       if (this.state.results.length === 0) {
-        this._showInlineError(MSG_NOT_FOUND);
+        const q = this._lastSlugForRetry;
+        const msg = (hint && hint.trim()) || MSG_LOAD_FINAL;
+        this._showInlineError(msg, {
+          onRetry:
+            q != null && String(q).trim()
+              ? () => {
+                  slugCacheDelete(String(q).trim().toLowerCase());
+                  this._clearInlineError();
+                  void this._resolveSlug(String(q).trim().toLowerCase());
+                }
+              : undefined,
+        });
         this._showNoResults();
         return;
       }

@@ -6,7 +6,8 @@
   const PLACEHOLDER = "Paste collection URL or contract address";
   const DEBOUNCE_MS = 300;
   const CUSTOM_CONTRACT_NAME = "Custom Contract";
-  const MSG_NOT_FOUND = "Collection not found";
+  const MSG_RETRYING = "Having trouble loading collection… retrying";
+  const MSG_LOAD_FINAL = "Couldn't load this collection. Try again or reselect it.";
   const MSG_SEARCH_FAILED = "Search failed, try again";
   const MSG_INVALID_CONTRACT = "Invalid contract address";
   const MSG_ENTER_NEED_SELECTION = "Please select a valid collection";
@@ -71,6 +72,8 @@
   /** Solana collection mint (base58); rejects EVM 0x addresses. */
   function validateSolanaMint(s) {
     const t = String(s || "")
+      .replace(/[\u200B-\u200D\uFEFF\r\n]+/g, "")
+      .replace(/\s+/g, "")
       .trim()
       .replace(/[!.,;\s]+$/g, "");
     if (!t) return null;
@@ -193,6 +196,8 @@
       this._resumeAfterHide = false;
       this._resumeTimer = null;
       this._hydrateAbort = null;
+      this._retryBtn = null;
+      this._lastSlugForRetry = null;
       this._render();
       document.addEventListener("pointerdown", this._onDocDown, true);
       window.addEventListener("pageshow", this._onPageShow);
@@ -285,6 +290,7 @@
 
       this._input.addEventListener("input", () => this._onInput());
       this._input.addEventListener("keydown", (e) => this._onKeydown(e));
+      this._input.addEventListener("focus", () => this._onInputFocus());
       this._clearBtn.addEventListener("click", () => this._clearSelection());
     }
 
@@ -369,16 +375,44 @@
       }
     }
 
-    _showInlineError(msg) {
+    _showInlineError(msg, retryOpts) {
       this._inlineError = msg;
       this._errEl.textContent = msg || "";
       this._errEl.hidden = !msg;
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
+      if (msg && retryOpts && typeof retryOpts.onRetry === "function") {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "co-ci-retry-btn";
+        b.textContent = "Retry";
+        b.addEventListener("click", (e) => {
+          e.preventDefault();
+          retryOpts.onRetry();
+        });
+        this._errEl.insertAdjacentElement("afterend", b);
+        this._retryBtn = b;
+      }
     }
 
     _clearInlineError() {
       this._inlineError = "";
       this._errEl.textContent = "";
       this._errEl.hidden = true;
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
     }
 
     clearContractError() {
@@ -440,7 +474,89 @@
       if (this._searchAbort) this._searchAbort.abort();
       this._abortHydrate();
       this._setBannerLoading(false);
+      if (this._retryBtn) {
+        try {
+          this._retryBtn.remove();
+        } catch (_) {
+          /* ignore */
+        }
+        this._retryBtn = null;
+      }
       this._container.textContent = "";
+    }
+
+    _onInputFocus() {
+      if (this.state.selectedCollection) return;
+      const trimmed = stripZeroWidth(this._input?.value || "").trim();
+      if (trimmed) return;
+      this._renderSavedCollectionsDropdown();
+    }
+
+    /** @param {{ name?: string, contractAddress: string, image?: string|null }} saved */
+    _applyFromSaved(saved) {
+      if (!saved || !window.LOSavedCollections) return;
+      const mint = window.LOSavedCollections.coNormalizeSolanaMint(saved.contractAddress);
+      if (!mint || !validateSolanaMint(mint)) return;
+      const item = {
+        name: (saved.name && String(saved.name).trim()) || "Saved collection",
+        contractAddress: mint,
+        image: saved.image || null,
+      };
+      this._applySelection(item, item.contractAddress, { forceFresh: true });
+    }
+
+    _renderSavedCollectionsDropdown() {
+      const list = window.LOSavedCollections ? window.LOSavedCollections.listForChain("solana") : [];
+      if (!list.length) {
+        this._closeDropdown();
+        return;
+      }
+      this._dropdown.innerHTML = "";
+      const head = document.createElement("div");
+      head.className = "co-ci-dd-heading";
+      head.textContent = "Saved collections";
+      this._dropdown.appendChild(head);
+      for (const it of list) {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "co-ci-dd-item";
+        row.setAttribute("role", "option");
+        const short = this.shortenMint(it.contractAddress);
+        let thumb;
+        if (it.image) {
+          const img = document.createElement("img");
+          img.className = "co-ci-dd-img";
+          img.alt = "";
+          img.width = 36;
+          img.height = 36;
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.src = it.image;
+          img.addEventListener("error", () => {
+            img.replaceWith(Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" }));
+          });
+          thumb = img;
+        } else {
+          thumb = Object.assign(document.createElement("div"), { className: "co-ci-dd-img co-ci-dd-img--ph", ariaHidden: "true" });
+        }
+        const text = document.createElement("div");
+        text.className = "co-ci-dd-text";
+        const nameEl = document.createElement("span");
+        nameEl.className = "co-ci-dd-name";
+        nameEl.textContent = it.name || short;
+        const addrEl = document.createElement("span");
+        addrEl.className = "co-ci-dd-addr";
+        addrEl.textContent = short;
+        text.append(nameEl, addrEl);
+        row.append(thumb, text);
+        row.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          this._applyFromSaved(it);
+        });
+        this._dropdown.appendChild(row);
+      }
+      this._dropdown.hidden = false;
+      this._setAriaExpanded(true);
     }
 
     _onDocumentPointerDown(e) {
@@ -475,9 +591,14 @@
     /**
      * @param {{ name: string, contractAddress: string, image: string|null }} item
      * @param {string} [displayText] text to keep visible in the field (URL or 0x…)
+     * @param {{ forceFresh?: boolean }} [opts]
      */
-    _applySelection(item, displayText) {
-      const addr = String(item.contractAddress).trim();
+    _applySelection(item, displayText, opts) {
+      const raw = window.LOSavedCollections
+        ? window.LOSavedCollections.coNormalizeSolanaMint(item.contractAddress)
+        : String(item.contractAddress).replace(/[\u200B-\u200D\uFEFF\r\n]+/g, "").replace(/\s+/g, "").trim();
+      const addr = validateSolanaMint(raw);
+      if (!addr) return;
       const show =
         displayText != null && String(displayText).trim() !== ""
           ? String(displayText).trim()
@@ -496,48 +617,137 @@
       if (this._debounceTimer) clearTimeout(this._debounceTimer);
       this._abortHydrate();
       this._syncVerifiedShell();
-      void this._hydrateContractMetadataIfNeeded();
+      if (window.LOSavedCollections) {
+        window.LOSavedCollections.upsert({
+          name: this.state.selectedCollection.name,
+          contractAddress: addr,
+          image: this.state.selectedCollection.image,
+          chain: "solana",
+        });
+      }
+      void this._hydrateContractMetadataIfNeeded({ force: opts && opts.forceFresh === true });
     }
 
     /**
-     * Fill name/logo from Worker (Alchemy) when paste-by-address or search returned no image.
+     * Fill name/logo from Worker when paste-by-address or search returned no image.
+     * @param {{ force?: boolean }} [opts]
      */
-    async _hydrateContractMetadataIfNeeded() {
+    async _hydrateContractMetadataIfNeeded(opts) {
       const sel = this.state.selectedCollection;
       if (!sel?.contractAddress) return;
+      const force = opts && opts.force === true;
       const needsLogo = !sel.image || !String(sel.image).trim();
       const needsName = !sel.name || sel.name === CUSTOM_CONTRACT_NAME;
-      if (!needsLogo && !needsName) return;
+      if (!force && !needsLogo && !needsName) return;
 
-      const addrSnap = sel.contractAddress;
+      const addrSnap = window.LOSavedCollections
+        ? window.LOSavedCollections.coNormalizeSolanaMint(sel.contractAddress)
+        : String(sel.contractAddress).replace(/[\u200B-\u200D\uFEFF\r\n]+/g, "").replace(/\s+/g, "").trim();
+      const v = validateSolanaMint(addrSnap);
+      if (!v) return;
+      if (this.state.selectedCollection) this.state.selectedCollection.contractAddress = v;
+
       const ac = new AbortController();
       this._abortHydrate();
       this._hydrateAbort = ac;
       this._setBannerLoading(true);
-      const url = buildSolanaCollectionDisplayUrl(addrSnap);
+      const url = buildSolanaCollectionDisplayUrl(v);
+      const rf = window.coFetchJson && window.coFetchJson.coResilientFetchJson;
       try {
-        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
-        const data = await res.json().catch(() => ({}));
+        if (!rf) {
+          const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
+          const data = await res.json().catch(() => ({}));
+          if (ac.signal.aborted) return;
+          if (this.state.selectedCollection?.contractAddress !== v) return;
+          if (!res.ok || !data?.success) {
+            this._showInlineError(MSG_LOAD_FINAL, {
+              onRetry: () => {
+                this._clearInlineError();
+                void this._hydrateContractMetadataIfNeeded({ force: true });
+              },
+            });
+            return;
+          }
+          const n = data.name && String(data.name).trim();
+          if (n && (needsName || force || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
+            this.state.selectedCollection.name = n;
+          }
+          const img = data.image && String(data.image).trim();
+          if (img && (needsLogo || force)) this.state.selectedCollection.image = img;
+          if (window.LOSavedCollections) {
+            window.LOSavedCollections.upsert({
+              name: this.state.selectedCollection.name,
+              contractAddress: v,
+              image: this.state.selectedCollection.image,
+              chain: "solana",
+            });
+          }
+          this._syncVerifiedShell();
+          return;
+        }
+
+        const { res, data } = await rf(url, {
+          signal: ac.signal,
+          timeoutMs: 8000,
+          maxAdditionalRetries: 2,
+          retryDelaysMs: [300, 800],
+          onRetrying: () => {
+            if (ac.signal.aborted) return;
+            if (this.state.selectedCollection?.contractAddress !== v) return;
+            this._showInlineError(MSG_RETRYING);
+          },
+          shouldRetry: ({ res: r, data: d, err, isLastAttempt }) => {
+            if (isLastAttempt) return false;
+            if (err) {
+              if (ac.signal.aborted) return false;
+              return true;
+            }
+            if (!r) return true;
+            if (r.status >= 500 || r.status === 429 || r.status === 408) return true;
+            if (r.status === 503) return true;
+            if (!r.ok) return false;
+            if (!d?.success) return true;
+            return false;
+          },
+        });
+
         if (ac.signal.aborted) return;
-        if (this.state.selectedCollection?.contractAddress !== addrSnap) return;
+        if (this.state.selectedCollection?.contractAddress !== v) return;
         if (!res.ok || !data?.success) {
           const apiErr = typeof data?.error === "string" && data.error.trim() ? data.error.trim() : "";
-          if (apiErr) {
-            this._showInlineError(apiErr);
-          } else if (!res.ok) {
-            this._showInlineError(`Collection details failed (${res.status}). Check the Worker is running with Helius configured.`);
-          }
+          this._showInlineError(apiErr || MSG_LOAD_FINAL, {
+            onRetry: () => {
+              this._clearInlineError();
+              void this._hydrateContractMetadataIfNeeded({ force: true });
+            },
+          });
           return;
         }
         const n = data.name && String(data.name).trim();
-        if (n && (needsName || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
+        if (n && (needsName || force || this.state.selectedCollection.name === CUSTOM_CONTRACT_NAME)) {
           this.state.selectedCollection.name = n;
         }
         const img = data.image && String(data.image).trim();
-        if (img && needsLogo) this.state.selectedCollection.image = img;
+        if (img && (needsLogo || force)) this.state.selectedCollection.image = img;
+        if (window.LOSavedCollections) {
+          window.LOSavedCollections.upsert({
+            name: this.state.selectedCollection.name,
+            contractAddress: v,
+            image: this.state.selectedCollection.image,
+            chain: "solana",
+          });
+        }
+        this._clearInlineError();
         this._syncVerifiedShell();
       } catch (e) {
         if (e?.name === "AbortError") return;
+        if (this.state.selectedCollection?.contractAddress !== v) return;
+        this._showInlineError(MSG_LOAD_FINAL, {
+          onRetry: () => {
+            this._clearInlineError();
+            void this._hydrateContractMetadataIfNeeded({ force: true });
+          },
+        });
       } finally {
         if (this._hydrateAbort === ac) {
           this._hydrateAbort = null;
@@ -548,13 +758,15 @@
     }
 
     _applyCustomContract(address, displayText) {
+      const mint = validateSolanaMint(address);
+      if (!mint) return;
       this._applySelection(
         {
           name: CUSTOM_CONTRACT_NAME,
-          contractAddress: String(address).trim(),
+          contractAddress: mint,
           image: null,
         },
-        displayText != null && String(displayText).trim() ? String(displayText).trim() : address
+        displayText != null && String(displayText).trim() ? String(displayText).trim() : mint
       );
     }
 
@@ -580,7 +792,10 @@
       if (e.key !== "Enter") return;
       if (this.state.selectedCollection) return;
 
-      const trimmed = stripZeroWidth(this._input.value).trim();
+      const trimmed = stripZeroWidth(this._input.value)
+        .replace(/[\u200B-\u200D\uFEFF\r\n]+/g, "")
+        .replace(/\s+/g, "")
+        .trim();
       if (!trimmed) {
         this._showInlineError(MSG_ENTER_NEED_SELECTION);
         e.preventDefault();
@@ -695,6 +910,7 @@
         return;
       }
 
+      this._lastSlugForRetry = query;
       const displaySnapshot = stripZeroWidth(this._input.value).trim();
 
       const cached = slugCacheGet(query);
@@ -716,9 +932,66 @@
       this._searchAbort = ac;
 
       const url = buildSearchUrl(query);
+      const rf = window.coFetchJson && window.coFetchJson.coResilientFetchJson;
       try {
-        const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
-        const data = await res.json().catch(() => ({}));
+        if (!rf) {
+          const res = await fetch(url, { method: "GET", signal: ac.signal, mode: "cors" });
+          const data = await res.json().catch(() => ({}));
+          if (ac.signal.aborted) return;
+          if (myGen !== this._slugResolveGen) return;
+          if (!res.ok) {
+            const apiErr =
+              typeof data?.error === "string" && data.error.trim()
+                ? data.error.trim()
+                : res.status === 404
+                  ? "Search API not found on this host. Deploy the Worker or set COLLECTION_OVERLAP_API_BASE."
+                  : "";
+            this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
+            return;
+          }
+          if (!data?.success || !Array.isArray(data.results)) {
+            const apiErr = typeof data?.error === "string" && data.error.trim() ? data.error.trim() : "";
+            this._showDropdownError(apiErr || MSG_SEARCH_FAILED);
+            return;
+          }
+          const list = data.results.slice(0, 10);
+          const hint = typeof data.hint === "string" && data.hint.trim() ? data.hint.trim() : "";
+          if (myGen !== this._slugResolveGen) return;
+          if (list.length > 0) slugCacheSet(query, list);
+          this._finishSlugResults(list, displaySnapshot, myGen, hint);
+          return;
+        }
+
+        const { res, data } = await rf(url, {
+          signal: ac.signal,
+          timeoutMs: 8000,
+          maxAdditionalRetries: 2,
+          retryDelaysMs: [300, 800],
+          onRetrying: () => {
+            if (ac.signal.aborted) return;
+            if (myGen !== this._slugResolveGen) return;
+            this._showInlineError(MSG_RETRYING);
+          },
+          shouldRetry: ({ res: r, data: d, err, isLastAttempt }) => {
+            if (isLastAttempt) return false;
+            if (err) {
+              if (ac.signal.aborted) return false;
+              return true;
+            }
+            if (!r) return true;
+            if (r.status === 404) return false;
+            if (r.status >= 500 || r.status === 429 || r.status === 408) return true;
+            if (!r.ok) return false;
+            if (!d?.success) {
+              if (r.status === 503) return true;
+              return false;
+            }
+            if (!Array.isArray(d.results)) return true;
+            if (d.results.length === 0) return true;
+            return false;
+          },
+        });
+
         if (ac.signal.aborted) return;
         if (myGen !== this._slugResolveGen) return;
         if (!res.ok) {
@@ -745,13 +1018,13 @@
         if (e?.name === "AbortError") return;
         if (ac.signal.aborted) return;
         if (myGen !== this._slugResolveGen) return;
-        if (isLikelyNetworkFailure(e)) {
-          this._showDropdownError(
-            "Cannot reach the API. Start the Worker: cd collection-overlap-api && npm run dev"
-          );
-          return;
-        }
-        this._showDropdownError(MSG_SEARCH_FAILED);
+        this._showInlineError(MSG_LOAD_FINAL, {
+          onRetry: () => {
+            slugCacheDelete(query);
+            this._clearInlineError();
+            void this._resolveSlug(query);
+          },
+        });
       } finally {
         if (myGen === this._slugResolveGen) this._setBannerLoading(false);
       }
@@ -767,7 +1040,18 @@
       if (requestGen != null && requestGen !== this._slugResolveGen) return;
       this.state.results = list.slice(0, 10);
       if (this.state.results.length === 0) {
-        this._showInlineError(hint || MSG_NOT_FOUND);
+        const q = this._lastSlugForRetry;
+        const msg = (hint && hint.trim()) || MSG_LOAD_FINAL;
+        this._showInlineError(msg, {
+          onRetry:
+            q != null && String(q).trim()
+              ? () => {
+                  slugCacheDelete(String(q).trim().toLowerCase());
+                  this._clearInlineError();
+                  void this._resolveSlug(String(q).trim().toLowerCase());
+                }
+              : undefined,
+        });
         this._showNoResults();
         return;
       }

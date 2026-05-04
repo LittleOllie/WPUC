@@ -473,6 +473,45 @@
   font-weight: 700;
 }
 
+.co-ci-dd-heading {
+  padding: 8px 12px 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.55);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.co-ci-retry-btn {
+  display: block;
+  margin: 8px auto 0;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+}
+
+.co-ci-retry-btn:hover {
+  border-color: rgba(15, 23, 42, 0.35);
+}
+
+.co-page-wrap.co-mode--solana .co-ci-retry-btn {
+  background: rgba(15, 23, 42, 0.35);
+  border-color: rgba(94, 234, 212, 0.45);
+  color: #ecfeff;
+}
+
+.co-page-wrap.co-mode--solana .co-ci-dd-heading {
+  color: rgba(15, 23, 42, 0.5);
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+
 .co-ci-dd-item {
   display: flex;
   align-items: center;

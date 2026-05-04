@@ -98,6 +98,64 @@ function messageForOverlapHttpError(res, data, requestUrl) {
   return msg;
 }
 
+/**
+ * Overlap GET with long read timeout and limited retries (5xx / flaky network only).
+ * Does not change overlap math — wraps fetch only.
+ */
+async function coFetchOverlapJson(apiUrl) {
+  const READ_TIMEOUT_MS = 120000;
+  const delays = [300, 800];
+  const maxAttempts = 3;
+  const sleep = window.coFetchJson && window.coFetchJson.coSleep ? window.coFetchJson.coSleep : (ms) => new Promise((r) => setTimeout(r, ms));
+
+  let lastRes = /** @type {Response|null} */ (null);
+  let lastData = /** @type {Record<string, unknown>} */ ({});
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const ac = new AbortController();
+    let timer = null;
+    try {
+      timer = setTimeout(() => ac.abort(), READ_TIMEOUT_MS);
+      const res = await fetch(apiUrl, { method: "GET", signal: ac.signal });
+      if (timer != null) clearTimeout(timer);
+      timer = null;
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      lastRes = res;
+      lastData = data;
+      if (res.ok && data && data.success) {
+        return { ok: true, data };
+      }
+      const isLast = attempt === maxAttempts - 1;
+      const retryable =
+        !isLast && (res.status >= 500 || res.status === 429 || res.status === 408 || res.status === 502 || res.status === 503);
+      if (!retryable) {
+        return { ok: false, res, data };
+      }
+      await sleep(delays[attempt] ?? 800);
+    } catch (e) {
+      if (timer != null) clearTimeout(timer);
+      const isLast = attempt === maxAttempts - 1;
+      if (e?.name === "AbortError" && !isLast) {
+        await sleep(delays[attempt] ?? 800);
+        continue;
+      }
+      if (isLast) {
+        const net = messageForNetworkFailure(e, apiUrl);
+        if (net) return { ok: false, err: new Error(net), res: lastRes, data: lastData };
+        return { ok: false, err: e, res: lastRes, data: lastData };
+      }
+      await sleep(delays[attempt] ?? 800);
+    }
+  }
+
+  return { ok: false, res: lastRes, data: lastData };
+}
+
 function collectionsReadyForCompare() {
   if (coMode === "solana") {
     if (!coSolInputA || !coSolInputB) return false;
@@ -564,21 +622,17 @@ async function onCompareSolana() {
   const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
   const useBattleAnim = !prefersReducedMotion();
 
-  const fetchResultP = fetch(apiUrl, { method: "GET" })
-    .then(async (res) => {
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
-      }
-      if (!data?.success) {
-        return { ok: false, err: new Error(data?.error || "Unexpected response") };
-      }
-      return { ok: true, data };
-    })
-    .catch((e) => {
-      const net = messageForNetworkFailure(e, apiUrl);
-      return { ok: false, err: net ? new Error(net) : e };
-    });
+  const fetchResultP = coFetchOverlapJson(apiUrl).then((fr) => {
+    if (fr.ok) return { ok: true, data: fr.data };
+    if (fr.err) return { ok: false, err: fr.err };
+    const res = fr.res;
+    const data = fr.data || {};
+    if (!res) return { ok: false, err: new Error("Request failed after retries") };
+    if (!res.ok) {
+      return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
+    }
+    return { ok: false, err: new Error(data?.error || "Unexpected response") };
+  });
 
   const animPromise = useBattleAnim
     ? runLogoBattleAnimation(
@@ -654,21 +708,17 @@ async function onCompare() {
   const battleB = logoB && String(logoB).trim() ? String(logoB).trim() : CO_COMPARE_MASCOT;
   const useBattleAnim = !prefersReducedMotion();
 
-  const fetchResultP = fetch(apiUrl, { method: "GET" })
-    .then(async (res) => {
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
-      }
-      if (!data?.success) {
-        return { ok: false, err: new Error(data?.error || "Unexpected response") };
-      }
-      return { ok: true, data };
-    })
-    .catch((e) => {
-      const net = messageForNetworkFailure(e, apiUrl);
-      return { ok: false, err: net ? new Error(net) : e };
-    });
+  const fetchResultP = coFetchOverlapJson(apiUrl).then((fr) => {
+    if (fr.ok) return { ok: true, data: fr.data };
+    if (fr.err) return { ok: false, err: fr.err };
+    const res = fr.res;
+    const data = fr.data || {};
+    if (!res) return { ok: false, err: new Error("Request failed after retries") };
+    if (!res.ok) {
+      return { ok: false, err: new Error(messageForOverlapHttpError(res, data, apiUrl)) };
+    }
+    return { ok: false, err: new Error(data?.error || "Unexpected response") };
+  });
 
   const animPromise = useBattleAnim
     ? runLogoBattleAnimation(
