@@ -278,9 +278,26 @@ label.btn input[type="file"] {
 }
 
 canvas#canvas {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Same pixels as canvas — native long-press / right-click “Save image” (iOS + desktop) */
+.canvasExportMirror {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .frameHint {
@@ -289,6 +306,7 @@ canvas#canvas {
   top: var(--fy, 18%);
   width: var(--fw, 60%);
   height: var(--fh, 60%);
+  z-index: 2;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -396,6 +414,7 @@ canvas#canvas {
 .processingOverlay {
   position: absolute;
   inset: 0;
+  z-index: 4;
   display: grid;
   place-items: center;
   background: rgba(0, 0, 0, 0.55);
@@ -425,6 +444,7 @@ canvas#canvas {
 .shutter {
   position: absolute;
   inset: 0;
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -474,6 +494,7 @@ canvas#canvas {
 .flash {
   position: absolute;
   inset: 0;
+  z-index: 6;
   background: white;
   opacity: 0;
   pointer-events: none;
@@ -530,6 +551,53 @@ canvas#canvas {
   }
 }
 
+/* First paint — spin + label while template / logos load */
+.bootLoading {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) env(safe-area-inset-bottom)
+    max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  background:
+    radial-gradient(120% 120% at 20% 10%, rgba(109, 224, 255, 0.22), rgba(0, 0, 0, 0) 55%),
+    radial-gradient(120% 120% at 85% 0%, rgba(255, 221, 85, 0.12), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(180deg, var(--blue), var(--blue2));
+  transition: opacity 0.32s ease, visibility 0.32s ease;
+}
+
+.bootLoading--done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.bootLoading__inner {
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.bootLoading__logo {
+  width: min(44vw, 168px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.4));
+  animation: spin 1.35s linear infinite;
+}
+
+.bootLoading__text {
+  margin: 0;
+  font-weight: 900;
+  font-size: clamp(17px, 4vw, 21px);
+  letter-spacing: 0.06em;
+  color: rgba(238, 246, 255, 0.92);
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .processingOverlay.show,
   .flash.play,
@@ -538,6 +606,10 @@ canvas#canvas {
   .shutter.play .shutterBar.top,
   .shutter.play .shutterBar.bottom {
     animation: none !important;
+  }
+
+  .bootLoading__logo {
+    animation: none;
   }
 }
 

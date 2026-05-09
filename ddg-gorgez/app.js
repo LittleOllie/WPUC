@@ -11,6 +11,11 @@ import {
   USE_SQUARE_FRAME,
 } from "./assets.js";
 
+/** Shared JPEG quality for download + right-click / long-press mirror (MIME `image/jpeg`). */
+const EXPORT_JPEG_QUALITY = 0.92;
+const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.jpg";
+const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.jpg";
+
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
   const { pathname, search, hash } = window.location;
@@ -26,6 +31,7 @@ const fileInput = document.getElementById("fileInput");
 const stage = document.getElementById("stage");
 const canvasWrap = document.getElementById("canvasWrap");
 const canvas = document.getElementById("canvas");
+const canvasExportMirror = document.getElementById("canvasExportMirror");
 const downloadBtn = document.getElementById("downloadBtn");
 const tryAnotherBtn = document.getElementById("tryAnotherBtn");
 const frameHint = document.getElementById("frameHint");
@@ -42,6 +48,7 @@ const processingOverlay = document.getElementById("processingOverlay");
 const scanText = document.getElementById("scanText");
 const shutter = document.getElementById("shutter");
 const flash = document.getElementById("flash");
+const bootLoadingEl = document.getElementById("bootLoading");
 
 const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
 // Initial size matches DDGTemplate.png native aspect until template loads & refits.
@@ -53,6 +60,8 @@ let lastBlobUrl = null;
 let latestRenderedDataUrl = null;
 let detectedFrame = null;
 let templateImgCached = null;
+/** Blob URL for mirror (idle + composite); File-backed so Save / long-press get a .jpg name. */
+let mirroredJpegObjectUrl = null;
 
 function setHidden(el, hidden) {
   el.classList.toggle("hidden", !!hidden);
@@ -82,14 +91,51 @@ function objectFitCover(srcW, srcH, dstW, dstH) {
   return { dx, dy, dw: drawW, dh: drawH };
 }
 
-async function loadImage(src) {
+async function loadImage(src, opts = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.decoding = "async";
+    if (opts.highPriority && "fetchPriority" in img) {
+      img.fetchPriority = "high";
+    }
+    img.decoding = opts.syncDecode ? "sync" : "async";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
   });
+}
+
+/** Prime HTTP cache + decode so first paint is snappy on slow networks. */
+function preloadDecoded(src) {
+  if (!src) return Promise.resolve();
+  return new Promise((resolve) => {
+    const img = new Image();
+    if ("fetchPriority" in img) img.fetchPriority = "high";
+    img.onload = () => {
+      const done = () => resolve();
+      if (img.decode) {
+        img.decode().then(done).catch(done);
+      } else {
+        done();
+      }
+    };
+    img.onerror = () => resolve();
+    img.src = src;
+  });
+}
+
+async function warmupCriticalImages() {
+  await Promise.all([
+    preloadDecoded(ASSETS.template),
+    preloadDecoded(ASSETS.ddgLogo),
+    preloadDecoded(ASSETS.loLogo),
+  ]);
+}
+
+function hideBootLoading() {
+  if (!bootLoadingEl?.isConnected) return;
+  bootLoadingEl.setAttribute("aria-busy", "false");
+  bootLoadingEl.classList.add("bootLoading--done");
+  window.setTimeout(() => bootLoadingEl.remove(), 420);
 }
 
 async function decodeUserImage(file) {
@@ -108,7 +154,7 @@ async function decodeUserImage(file) {
 async function safeLoadOptional(path) {
   if (!path) return null;
   try {
-    return await loadImage(path);
+    return await loadImage(path, { highPriority: true });
   } catch (_) {
     return null;
   }
@@ -116,6 +162,73 @@ async function safeLoadOptional(path) {
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function revokeMirroredJpegUrl() {
+  if (mirroredJpegObjectUrl) {
+    if (latestRenderedDataUrl === mirroredJpegObjectUrl) {
+      latestRenderedDataUrl = null;
+    }
+    URL.revokeObjectURL(mirroredJpegObjectUrl);
+    mirroredJpegObjectUrl = null;
+  }
+}
+
+/**
+ * Encodes the current canvas as JPEG, exposes it on #canvasExportMirror for native save gestures.
+ * Uses `File` + object URL so Chrome / Safari "Save image" suggest a real `.jpg` name (not "unknown").
+ * @param {string} filename e.g. ddg-gorgez.jpg
+ * @param {{ linkForDownload?: boolean }} opts if true, also sets latestRenderedDataUrl for the Download button
+ */
+function assignJpegFromCanvas(filename, opts = {}) {
+  const linkForDownload = !!opts.linkForDownload;
+  const el = canvasExportMirror;
+  if (!el || !canvas.width || !canvas.height) return Promise.resolve();
+
+  revokeMirroredJpegUrl();
+
+  return new Promise((resolve) => {
+    const finishDataUrl = (dataUrl) => {
+      el.src = dataUrl;
+      if (linkForDownload) {
+        latestRenderedDataUrl = dataUrl;
+      }
+      resolve();
+    };
+
+    if (typeof canvas.toBlob !== "function") {
+      finishDataUrl(canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY));
+      return;
+    }
+
+    canvas.toBlob(
+      (blob) => {
+        if (!blob || !el.isConnected) {
+          resolve();
+          return;
+        }
+        let url;
+        try {
+          url = URL.createObjectURL(
+            new File([blob], filename, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            })
+          );
+        } catch (_) {
+          url = URL.createObjectURL(blob);
+        }
+        mirroredJpegObjectUrl = url;
+        el.src = url;
+        if (linkForDownload) {
+          latestRenderedDataUrl = url;
+        }
+        resolve();
+      },
+      "image/jpeg",
+      EXPORT_JPEG_QUALITY
+    );
+  });
 }
 
 function clamp(n, lo, hi) {
@@ -352,7 +465,7 @@ function resolveFrameBase(template) {
 }
 
 async function renderComposite(userImg) {
-  const template = await loadImage(ASSETS.template);
+  const template = await loadImage(ASSETS.template, { highPriority: true });
 
   templateImgCached = template;
   fitCanvasToTemplate(template);
@@ -374,13 +487,13 @@ async function renderComposite(userImg) {
   drawImageToFrame(userImg, frame);
   ctx.restore();
 
-  latestRenderedDataUrl = canvas.toDataURL("image/png");
+  await assignJpegFromCanvas(EXPORT_FILENAME_COMPOSITE, { linkForDownload: true });
 }
 
 async function renderIdleTemplate() {
   try {
     const [template, ddgLogo, loLogo] = await Promise.all([
-      loadImage(ASSETS.template),
+      loadImage(ASSETS.template, { highPriority: true }),
       safeLoadOptional(ASSETS.ddgLogo),
       safeLoadOptional(ASSETS.loLogo),
     ]);
@@ -394,6 +507,7 @@ async function renderIdleTemplate() {
 
     clearCanvas();
     ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+    await assignJpegFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
   } catch (_) {
     // template might not exist yet
   }
@@ -507,7 +621,8 @@ async function handleFile(file) {
   setHidden(tryAnotherBtn, false);
 }
 
-function resetApp() {
+async function resetApp() {
+  revokeMirroredJpegUrl();
   latestRenderedDataUrl = null;
   detectedFrame = null;
   clearCanvas();
@@ -519,11 +634,12 @@ function resetApp() {
   setHidden(shutter, true);
   setHidden(flash, true);
 
-  renderIdleTemplate();
+  await renderIdleTemplate();
 }
 
 /** Same reset as idle, but open the file picker immediately (must stay sync for iOS). */
 function tryAnotherAndPickFile() {
+  revokeMirroredJpegUrl();
   latestRenderedDataUrl = null;
   detectedFrame = null;
   fileInput.value = "";
@@ -539,10 +655,12 @@ function tryAnotherAndPickFile() {
 }
 
 downloadBtn.addEventListener("click", () => {
-  const url = latestRenderedDataUrl || canvas.toDataURL("image/png");
+  const url =
+    latestRenderedDataUrl ||
+    canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "ddg-gorgez.png";
+  a.download = EXPORT_FILENAME_COMPOSITE;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -555,5 +673,20 @@ fileInput.addEventListener("change", () => {
   handleFile(file);
 });
 
-resetApp();
+async function initApp() {
+  try {
+    await warmupCriticalImages();
+    await resetApp();
+  } catch (_) {
+    try {
+      await resetApp();
+    } catch (__) {
+      /* template missing etc. */
+    }
+  } finally {
+    hideBootLoading();
+  }
+}
+
+void initApp();
 

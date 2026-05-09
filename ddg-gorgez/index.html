@@ -5,12 +5,29 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>DDG — Gorgez Template</title>
     <meta name="theme-color" content="#0b0c12" />
+    <link rel="preload" href="assets/DDGTemplate.png" as="image" type="image/png" fetchpriority="high" />
+    <link rel="preload" href="assets/DDGLogo.png" as="image" type="image/png" fetchpriority="high" />
+    <link rel="preload" href="assets/LOLogo.png" as="image" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=tryAnother2" />
+    <link rel="stylesheet" href="style.css?v=namedJpeg1" />
   </head>
   <body>
+    <div id="bootLoading" class="bootLoading" aria-live="polite" aria-busy="true" aria-label="Loading">
+      <div class="bootLoading__inner">
+        <img
+          class="bootLoading__logo"
+          src="assets/DDGLogo.png"
+          width="160"
+          height="160"
+          alt=""
+          decoding="async"
+          fetchpriority="high"
+        />
+        <p class="bootLoading__text">Loading…</p>
+      </div>
+    </div>
     <a class="hubBackBtn" href="../links/" aria-label="Back to Links">
       <span class="hubBackBtn__icon" aria-hidden="true">←</span>
       <span class="hubBackBtn__text">Back to Links</span>
@@ -32,8 +49,20 @@
         </header>
 
         <div class="stage" id="stage">
-          <div class="canvasWrap" id="canvasWrap">
+          <div
+            class="canvasWrap"
+            id="canvasWrap"
+            title="Use Download, or right-click / long-press the card image to save as JPG."
+          >
             <canvas id="canvas" width="1024" height="1193" aria-label="Template preview"></canvas>
+            <img
+              id="canvasExportMirror"
+              class="canvasExportMirror"
+              alt=""
+              draggable="false"
+              decoding="async"
+              aria-hidden="true"
+            />
 
             <div class="frameHint" id="frameHint" aria-hidden="true">
               <div class="frameHintInner">
@@ -70,6 +99,6 @@
       </footer>
     </main>
 
-    <script type="module" src="app.js?v=tryAnother2"></script>
+    <script type="module" src="app.js?v=namedJpeg1"></script>
   </body>
 </html>
