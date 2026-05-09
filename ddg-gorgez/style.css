@@ -1,0 +1,496 @@
+:root{
+  /* Match FlexGrid vibe */
+  --blue:#4c6fff;
+  --blue2:#175d8c;
+  --yellow:#ffdd55;
+  --yellow2:#ffd22e;
+  --text:#eef6ff;
+  --outline: rgba(255,255,255,0.16);
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  position: relative;
+  background:
+    radial-gradient(120% 120% at 20% 10%, rgba(109,224,255,.22), rgba(0,0,0,0) 55%),
+    radial-gradient(120% 120% at 85% 0%, rgba(255,221,85,.16), rgba(0,0,0,0) 55%),
+    linear-gradient(180deg, var(--blue), var(--blue2));
+  color: var(--text);
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.hubBackBtn {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 15px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: clamp(13px, 3.6vw, 16px);
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: #1a1400;
+  background: linear-gradient(180deg, var(--yellow), var(--yellow2));
+  border: 0;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+.hubBackBtn:hover {
+  filter: brightness(1.06);
+}
+.hubBackBtn:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 3px;
+}
+
+.app {
+  min-height: 100%;
+  display: grid;
+  place-items: start center;
+  padding: max(10px, env(safe-area-inset-top)) 12px 16px;
+  align-content: start;
+}
+
+.card {
+  width: min(720px, 100%);
+  border-radius: 18px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  padding: 12px 14px 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.header {
+  margin: 0;
+  padding: 0;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2.4vw, 14px);
+  margin: 4px 0 8px;
+  justify-content: center;
+}
+
+.brandLogoWrap {
+  display: grid;
+  place-items: center;
+}
+
+.brandLogo {
+  height: clamp(76px, 18vw, 104px);
+  width: auto;
+  max-height: min(104px, 26vw);
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.32));
+}
+
+/* Matched headline scale — avoids one logo towering above the × row */
+#loLogoHeader.brandLogo,
+#ddgLogoHeader.brandLogo {
+  height: clamp(76px, 18vw, 104px);
+  max-height: min(104px, 26vw);
+}
+
+#loLogoFallback.brandLogoFallback {
+  height: clamp(76px, 18vw, 104px);
+  min-width: 120px;
+  font-size: clamp(28px, 7vw, 40px);
+  border-radius: 18px;
+}
+
+#ddgLogoFallback.brandLogoFallback {
+  height: clamp(76px, 18vw, 104px);
+  min-width: 132px;
+  font-size: clamp(28px, 7vw, 40px);
+  border-radius: 18px;
+}
+
+.brandLogoFallback {
+  height: 96px;
+  min-width: 150px;
+  padding: 0 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-weight: 950;
+  letter-spacing: 0.4px;
+}
+
+.brandX {
+  flex: 0 0 auto;
+  font-weight: 950;
+  opacity: 0.75;
+  transform: translateY(-1px);
+  font-size: clamp(26px, 6vw, 34px);
+  line-height: 1;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4.6vw, 40px);
+  letter-spacing: -0.2px;
+}
+
+.sub {
+  margin: 10px 0 0 0;
+  opacity: 0.9;
+  font-weight: 800;
+}
+
+.upload {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.hint {
+  margin: 0;
+  opacity: 0.65;
+  font-weight: 600;
+}
+
+.btn {
+  position: relative;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, var(--yellow), var(--yellow2));
+  color: #1a1400;
+  box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35);
+}
+
+.btn.primary.alt {
+  background: linear-gradient(180deg, var(--yellow), var(--yellow2));
+  color: #1a1400;
+  border: 0;
+  box-shadow: 0 10px 18px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35);
+}
+
+.btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eaf0ff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.btn.big {
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.btn:active {
+  transform: translateY(1px) scale(.99);
+}
+
+.btn:hover{ filter: brightness(1.05); }
+
+label.btn input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.stage {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+}
+
+.canvasWrap {
+  position: relative;
+  width: 100%;
+  /* JS sets aspect-ratio from template; fallback matches DDG PNG ~2048×2385 */
+  aspect-ratio: 2048 / 2385;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+canvas#canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.frameHint {
+  position: absolute;
+  left: var(--fx, 20%);
+  top: var(--fy, 18%);
+  width: var(--fw, 60%);
+  height: var(--fh, 60%);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.frameHintInner {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: clamp(6px, 1.8vmin, 11px);
+  /* Extra bottom inset lifts logo + UPLOAD DDG above the Polaroid gutter */
+  padding: clamp(6px, 2vmin, 14px) clamp(10px, 3vmin, 18px)
+    clamp(14%, min(10rem, 20vmin));
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.frameLogo {
+  width: min(68%, min(248px));
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.35));
+}
+
+.frameLogoFallback {
+  width: min(68%, min(248px));
+  min-height: clamp(76px, 18vmin, 120px);
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-weight: 950;
+  font-size: clamp(22px, 6.5vw, 40px);
+  letter-spacing: 0.05em;
+}
+
+.frameHintText {
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  opacity: 0.92;
+  text-align: center;
+  padding: 0 14px;
+}
+
+/* Override .btn.big { width: 100% } — keep upload pill compact */
+.frameUploadBtn.btn.big {
+  width: auto;
+  max-width: min(68%, 220px);
+  min-width: 0;
+}
+
+.frameUploadBtn {
+  pointer-events: auto; /* frameHint is non-interactive by default */
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 52px;
+  padding: 11px clamp(14px, 4vw, 20px);
+  box-sizing: border-box;
+}
+
+.frameLogo.spin {
+  animation: spin 2.6s linear infinite;
+}
+
+.frameUploadBtn .btnText{
+  flex: 0 1 auto;
+  width: 100%;
+  font-size: clamp(17px, 4.8vw, 22px);
+  letter-spacing: 0.045em;
+  text-align: center;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- Processing + shutter + flash --- */
+.processingOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+}
+
+.processingOverlay.show {
+  animation: overlayIn 380ms ease forwards;
+}
+
+@keyframes overlayIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.scanText {
+  font-weight: 900;
+  font-size: clamp(18px, 3.4vw, 24px);
+  text-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.shutter {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shutterBar {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 52%;
+  background: rgba(0, 0, 0, 0.92);
+}
+
+.shutterBar.top {
+  top: -52%;
+}
+.shutterBar.bottom {
+  bottom: -52%;
+}
+
+.shutter.play .shutterBar.top {
+  animation: shutterTop 220ms ease-in forwards, shutterTopOut 240ms ease-out 240ms forwards;
+}
+.shutter.play .shutterBar.bottom {
+  animation: shutterBottom 220ms ease-in forwards, shutterBottomOut 240ms ease-out 240ms forwards;
+}
+
+@keyframes shutterTop {
+  to {
+    top: 0%;
+  }
+}
+@keyframes shutterBottom {
+  to {
+    bottom: 0%;
+  }
+}
+@keyframes shutterTopOut {
+  to {
+    top: -52%;
+  }
+}
+@keyframes shutterBottomOut {
+  to {
+    bottom: -52%;
+  }
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flash.play {
+  animation: flash 260ms ease-out;
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Canvas reveal */
+.canvasWrap.reveal {
+  animation: reveal 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes reveal {
+  0% {
+    transform: scale(0.95);
+    filter: saturate(0.9) contrast(0.96);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1) contrast(1);
+  }
+}
+
+.canvasWrap.shake {
+  animation: shake 220ms ease-out;
+}
+
+@keyframes shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2px, 1px);
+  }
+  55% {
+    transform: translate(2px, -1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processingOverlay.show,
+  .flash.play,
+  .canvasWrap.reveal,
+  .canvasWrap.shake,
+  .shutter.play .shutterBar.top,
+  .shutter.play .shutterBar.bottom {
+    animation: none !important;
+  }
+}
+

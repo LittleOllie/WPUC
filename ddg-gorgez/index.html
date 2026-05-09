@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>DDG — Gorgez Template</title>
+    <meta name="theme-color" content="#0b0c12" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="hubBackBtn" href="../links/">← Back to Links</a>
+    <main class="app">
+      <section class="card" id="card">
+        <header class="header">
+          <div class="brandRow" id="brandRow" aria-label="Little Ollie x DDG">
+            <div class="brandLogoWrap">
+              <img id="loLogoHeader" class="brandLogo hidden" alt="Little Ollie" />
+              <div id="loLogoFallback" class="brandLogoFallback">LO</div>
+            </div>
+            <div class="brandX">×</div>
+            <div class="brandLogoWrap">
+              <img id="ddgLogoHeader" class="brandLogo hidden" alt="DDG" />
+              <div id="ddgLogoFallback" class="brandLogoFallback">DDG</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="stage" id="stage">
+          <div class="canvasWrap" id="canvasWrap">
+            <canvas id="canvas" width="1024" height="1193" aria-label="Template preview"></canvas>
+
+            <div class="frameHint" id="frameHint" aria-hidden="true">
+              <div class="frameHintInner">
+                <img id="ddgLogoInFrame" class="frameLogo hidden" alt="DDG logo" />
+                <div id="ddgLogoInFrameFallback" class="frameLogoFallback">DDG</div>
+                <label class="btn primary big frameUploadBtn" for="fileInput">
+                  <span class="btnText">UPLOAD DDG</span>
+                  <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                </label>
+              </div>
+            </div>
+
+            <div class="processingOverlay hidden" id="processingOverlay" aria-hidden="true">
+              <div class="scanText" id="scanText">Checking your Gorgez level…</div>
+            </div>
+
+            <div class="shutter hidden" id="shutter" aria-hidden="true">
+              <div class="shutterBar top"></div>
+              <div class="shutterBar bottom"></div>
+            </div>
+
+            <div class="flash hidden" id="flash" aria-hidden="true"></div>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary alt big hidden" id="downloadBtn" type="button">DOWNLOAD IMAGE</button>
+            <button class="btn primary alt big hidden" id="tryAnotherBtn" type="button">TRY ANOTHER</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="app.js?v=strokeNudge1"></script>
+  </body>
+</html>
