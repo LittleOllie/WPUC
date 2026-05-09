@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Little Ollie Follow Runner</title>
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="little-ollie-follow-runner.css" />
+  </head>
+  <body>
+    <main class="app" id="appRoot">
+      <canvas id="gameCanvas" aria-label="Little Ollie Follow Runner"></canvas>
+
+      <div class="hud" aria-hidden="true">
+        <div class="hud-top">
+          <div class="pill" id="distancePill">0 m</div>
+          <button class="pill pill-btn" id="muteBtn" type="button" aria-label="Toggle sound">Sound: On</button>
+        </div>
+        <div class="prompt hidden" id="prompt">
+          <div class="prompt-text" id="promptText">JUMP!</div>
+          <div class="prompt-sub" id="promptSub">Get ready</div>
+        </div>
+        <div class="countdown hidden" id="countdown">3</div>
+      </div>
+
+      <section class="overlay" id="startOverlay" aria-label="Start screen">
+        <div class="card">
+          <h1>Run with Little Ollie</h1>
+          <p class="tagline">A self-running follow-along runner. Copy the moves in real life.</p>
+          <ul class="bullets">
+            <li><strong>Jump</strong> over boxes</li>
+            <li><strong>Duck</strong> under low bars</li>
+            <li><strong>Lean</strong> away from walls</li>
+            <li><strong>Punch</strong> the targets</li>
+          </ul>
+          <div class="actions">
+            <button id="startBtn" type="button" class="btn-primary">Start</button>
+            <button id="accessibilityBtn" type="button" class="btn-secondary">Settings</button>
+          </div>
+          <p class="hint">Tip: Works best full-screen. Audio starts after you press Start.</p>
+        </div>
+      </section>
+
+      <section class="overlay hidden" id="settingsOverlay" aria-label="Settings">
+        <div class="card">
+          <h2>Settings</h2>
+          <div class="setting-row">
+            <label for="speedRange">Speed</label>
+            <input id="speedRange" type="range" min="0.85" max="1.25" step="0.01" value="1" />
+            <span id="speedLabel" class="setting-value">1.00×</span>
+          </div>
+          <div class="setting-row">
+            <label for="bigPrompts">Big prompts</label>
+            <input id="bigPrompts" type="checkbox" checked />
+          </div>
+          <div class="setting-row">
+            <label for="reducedMotion">Reduced motion</label>
+            <input id="reducedMotion" type="checkbox" />
+          </div>
+          <div class="actions">
+            <button id="settingsCloseBtn" type="button" class="btn-primary">Done</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="overlay hidden" id="finishOverlay" aria-label="Finish screen">
+        <div class="card">
+          <h1>You made it!</h1>
+          <p class="tagline" id="finishLine">Perfect run. High five!</p>
+          <div class="actions">
+            <button id="restartBtn" type="button" class="btn-primary">Run Again</button>
+            <a class="btn-secondary link-btn" href="../../index.html">← Back to main</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="little-ollie-follow-runner.js"></script>
+  </body>
+</html>
