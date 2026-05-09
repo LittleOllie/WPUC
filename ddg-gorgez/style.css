@@ -28,6 +28,8 @@ body {
   z-index: 100;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 9px 15px;
   border-radius: 14px;
   font-weight: 900;
@@ -41,6 +43,16 @@ body {
     0 10px 22px rgba(0, 0, 0, 0.28),
     inset 0 2px 0 rgba(255, 255, 255, 0.4);
 }
+
+.hubBackBtn__icon {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+.hubBackBtn__text {
+  white-space: nowrap;
+}
+
 .hubBackBtn:hover {
   filter: brightness(1.06);
 }
@@ -50,15 +62,37 @@ body {
 }
 
 .app {
+  box-sizing: border-box;
   min-height: 100%;
-  display: grid;
-  place-items: start center;
-  padding: max(10px, env(safe-area-inset-top)) 12px 16px;
-  align-content: start;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 0
+    max(14px, env(safe-area-inset-left));
+}
+
+.appPoweredBy {
+  margin-top: auto;
+  width: 100%;
+  max-width: min(720px, 100%);
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.appPoweredBy p {
+  margin: 0;
+  font-size: clamp(13px, 3.2vw, 15px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(238, 246, 255, 0.82);
 }
 
 .card {
   width: min(720px, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: 18px;
   background: rgba(0,0,0,0.18);
   border: 1px solid rgba(255,255,255,0.18);
@@ -75,43 +109,51 @@ body {
 
 .brandRow {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: clamp(8px, 2.4vw, 14px);
-  margin: 4px 0 8px;
   justify-content: center;
+  gap: clamp(6px, 2vw, 16px);
+  margin: 4px 0 10px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .brandLogoWrap {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .brandLogo {
-  height: clamp(76px, 18vw, 104px);
   width: auto;
-  max-height: min(104px, 26vw);
   object-fit: contain;
   filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.32));
 }
 
-/* Matched headline scale — avoids one logo towering above the × row */
-#loLogoHeader.brandLogo,
+/* LO slightly smaller; DDG ~2.5× taller — row flex-centers × between them */
+#loLogoHeader.brandLogo {
+  height: clamp(44px, 10.5vw, 68px);
+  max-height: min(68px, 20vw);
+}
+
 #ddgLogoHeader.brandLogo {
-  height: clamp(76px, 18vw, 104px);
-  max-height: min(104px, 26vw);
+  height: clamp(110px, 27vw, 190px);
+  max-height: min(190px, 52vw);
 }
 
 #loLogoFallback.brandLogoFallback {
-  height: clamp(76px, 18vw, 104px);
-  min-width: 120px;
-  font-size: clamp(28px, 7vw, 40px);
-  border-radius: 18px;
+  height: clamp(44px, 10.5vw, 68px);
+  min-width: clamp(72px, 22vw, 100px);
+  font-size: clamp(22px, 6vw, 34px);
+  border-radius: 16px;
 }
 
 #ddgLogoFallback.brandLogoFallback {
-  height: clamp(76px, 18vw, 104px);
-  min-width: 132px;
-  font-size: clamp(28px, 7vw, 40px);
+  height: clamp(110px, 27vw, 190px);
+  min-width: clamp(100px, 28vw, 160px);
+  font-size: clamp(28px, 8vw, 52px);
   border-radius: 18px;
 }
 
@@ -130,11 +172,12 @@ body {
 
 .brandX {
   flex: 0 0 auto;
+  align-self: center;
   font-weight: 950;
-  opacity: 0.75;
-  transform: translateY(-1px);
-  font-size: clamp(26px, 6vw, 34px);
+  opacity: 0.78;
+  font-size: clamp(22px, 5.5vw, 36px);
   line-height: 1;
+  padding: 0 2px;
 }
 
 .header h1 {
@@ -219,6 +262,8 @@ label.btn input[type="file"] {
   margin-top: 8px;
   display: grid;
   gap: 10px;
+  padding-inline: clamp(0px, 1.2vw, 6px);
+  box-sizing: border-box;
 }
 
 .canvasWrap {
@@ -267,22 +312,22 @@ canvas#canvas {
 }
 
 .frameLogo {
-  width: min(68%, min(248px));
+  width: min(88%, min(496px));
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.35));
 }
 
 .frameLogoFallback {
-  width: min(68%, min(248px));
-  min-height: clamp(76px, 18vmin, 120px);
+  width: min(88%, min(496px));
+  min-height: clamp(140px, 32vmin, 220px);
   display: grid;
   place-items: center;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.14);
   font-weight: 950;
-  font-size: clamp(22px, 6.5vw, 40px);
+  font-size: clamp(28px, 9vw, 56px);
   letter-spacing: 0.05em;
 }
 
@@ -339,6 +384,8 @@ canvas#canvas {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  padding-inline: clamp(0px, 1.2vw, 6px);
+  box-sizing: border-box;
 }
 
 .hidden {
@@ -491,6 +538,83 @@ canvas#canvas {
   .shutter.play .shutterBar.top,
   .shutter.play .shutterBar.bottom {
     animation: none !important;
+  }
+}
+
+/* Phones: breathing room at sides of canvas + buttons */
+@media (max-width: 540px) {
+  .app {
+    /* Clear fixed back control (arrow) so it never sits on the logo row */
+    padding-top: calc(env(safe-area-inset-top) + 58px);
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .hubBackBtn {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+  }
+
+  .hubBackBtn__icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .hubBackBtn__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .card {
+    padding: 10px 8px 12px;
+  }
+
+  .stage {
+    padding-inline: 10px;
+  }
+
+  .actions {
+    padding-inline: 10px;
+    padding-bottom: 2px;
+  }
+
+  /* Keep LO × DDG on one row without clipping */
+  #loLogoHeader.brandLogo {
+    height: clamp(40px, 9.5vw, 60px);
+    max-height: min(60px, 18vw);
+  }
+
+  #ddgLogoHeader.brandLogo {
+    height: clamp(92px, 24vw, 150px);
+    max-height: min(150px, 46vw);
+  }
+
+  #loLogoFallback.brandLogoFallback {
+    height: clamp(40px, 9.5vw, 60px);
+    min-width: 64px;
+    font-size: clamp(18px, 5.5vw, 28px);
+  }
+
+  #ddgLogoFallback.brandLogoFallback {
+    height: clamp(92px, 24vw, 150px);
+    min-width: 88px;
+    font-size: clamp(22px, 7vw, 40px);
+  }
+
+  .brandX {
+    font-size: clamp(18px, 5vw, 28px);
   }
 }
 

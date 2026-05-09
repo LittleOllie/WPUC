@@ -8,10 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=tryAnother2" />
   </head>
   <body>
-    <a class="hubBackBtn" href="../links/">← Back to Links</a>
+    <a class="hubBackBtn" href="../links/" aria-label="Back to Links">
+      <span class="hubBackBtn__icon" aria-hidden="true">←</span>
+      <span class="hubBackBtn__text">Back to Links</span>
+    </a>
     <main class="app">
       <section class="card" id="card">
         <header class="header">
@@ -61,8 +64,12 @@
           </div>
         </div>
       </section>
+
+      <footer class="appPoweredBy" role="contentinfo" aria-label="Credits">
+        <p>POWERED BY LITTLE OLLIE LABS</p>
+      </footer>
     </main>
 
-    <script type="module" src="app.js?v=strokeNudge1"></script>
+    <script type="module" src="app.js?v=tryAnother2"></script>
   </body>
 </html>

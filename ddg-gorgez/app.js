@@ -11,6 +11,17 @@ import {
   USE_SQUARE_FRAME,
 } from "./assets.js";
 
+/** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
+try {
+  const { pathname, search, hash } = window.location;
+  const next = pathname.replace(/\/?index\.html$/i, "/");
+  if (next !== pathname) {
+    window.history.replaceState(null, "", `${next}${search}${hash}`);
+  }
+} catch (_) {
+  /* ignore */
+}
+
 const fileInput = document.getElementById("fileInput");
 const stage = document.getElementById("stage");
 const canvasWrap = document.getElementById("canvasWrap");
@@ -511,6 +522,22 @@ function resetApp() {
   renderIdleTemplate();
 }
 
+/** Same reset as idle, but open the file picker immediately (must stay sync for iOS). */
+function tryAnotherAndPickFile() {
+  latestRenderedDataUrl = null;
+  detectedFrame = null;
+  fileInput.value = "";
+  setHidden(downloadBtn, true);
+  setHidden(tryAnotherBtn, true);
+  setHidden(processingOverlay, true);
+  setHidden(shutter, true);
+  setHidden(flash, true);
+  canvasWrap.classList.remove("shake", "reveal");
+  frameHint?.classList.remove("hidden");
+  fileInput.click();
+  void renderIdleTemplate();
+}
+
 downloadBtn.addEventListener("click", () => {
   const url = latestRenderedDataUrl || canvas.toDataURL("image/png");
   const a = document.createElement("a");
@@ -521,7 +548,7 @@ downloadBtn.addEventListener("click", () => {
   a.remove();
 });
 
-tryAnotherBtn.addEventListener("click", resetApp);
+tryAnotherBtn.addEventListener("click", tryAnotherAndPickFile);
 
 fileInput.addEventListener("change", () => {
   const file = fileInput.files?.[0];
