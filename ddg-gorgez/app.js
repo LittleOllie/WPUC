@@ -32,6 +32,7 @@ const stage = document.getElementById("stage");
 const canvasWrap = document.getElementById("canvasWrap");
 const canvas = document.getElementById("canvas");
 const canvasExportMirror = document.getElementById("canvasExportMirror");
+const canvasExportMirrorLink = document.getElementById("canvasExportMirrorLink");
 const downloadBtn = document.getElementById("downloadBtn");
 const tryAnotherBtn = document.getElementById("tryAnotherBtn");
 const frameHint = document.getElementById("frameHint");
@@ -60,9 +61,6 @@ let lastBlobUrl = null;
 let latestRenderedDataUrl = null;
 let detectedFrame = null;
 let templateImgCached = null;
-/** Blob URL for mirror (idle + composite); File-backed so Save / long-press get a .jpg name. */
-let mirroredJpegObjectUrl = null;
-
 function setHidden(el, hidden) {
   el.classList.toggle("hidden", !!hidden);
   el.setAttribute("aria-hidden", hidden ? "true" : "false");
@@ -164,70 +162,30 @@ function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function revokeMirroredJpegUrl() {
-  if (mirroredJpegObjectUrl) {
-    if (latestRenderedDataUrl === mirroredJpegObjectUrl) {
-      latestRenderedDataUrl = null;
-    }
-    URL.revokeObjectURL(mirroredJpegObjectUrl);
-    mirroredJpegObjectUrl = null;
-  }
-}
-
 /**
- * Encodes the current canvas as JPEG, exposes it on #canvasExportMirror for native save gestures.
- * Uses `File` + object URL so Chrome / Safari "Save image" suggest a real `.jpg` name (not "unknown").
+ * Encodes the canvas as JPEG `data:` URL on the mirror `<img>`, and the same URL + `download`
+ * on the wrapping `<a>` so Safari/macOS “Download Linked File” / “Save Link As” use a real .jpg name.
  * @param {string} filename e.g. ddg-gorgez.jpg
  * @param {{ linkForDownload?: boolean }} opts if true, also sets latestRenderedDataUrl for the Download button
  */
 function assignJpegFromCanvas(filename, opts = {}) {
   const linkForDownload = !!opts.linkForDownload;
   const el = canvasExportMirror;
+  const link = canvasExportMirrorLink;
   if (!el || !canvas.width || !canvas.height) return Promise.resolve();
 
-  revokeMirroredJpegUrl();
-
   return new Promise((resolve) => {
-    const finishDataUrl = (dataUrl) => {
-      el.src = dataUrl;
-      if (linkForDownload) {
-        latestRenderedDataUrl = dataUrl;
-      }
-      resolve();
-    };
-
-    if (typeof canvas.toBlob !== "function") {
-      finishDataUrl(canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY));
-      return;
+    const dataUrl = canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
+    el.dataset.saveFilename = filename;
+    el.src = dataUrl;
+    if (link) {
+      link.href = dataUrl;
+      link.setAttribute("download", filename);
     }
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob || !el.isConnected) {
-          resolve();
-          return;
-        }
-        let url;
-        try {
-          url = URL.createObjectURL(
-            new File([blob], filename, {
-              type: "image/jpeg",
-              lastModified: Date.now(),
-            })
-          );
-        } catch (_) {
-          url = URL.createObjectURL(blob);
-        }
-        mirroredJpegObjectUrl = url;
-        el.src = url;
-        if (linkForDownload) {
-          latestRenderedDataUrl = url;
-        }
-        resolve();
-      },
-      "image/jpeg",
-      EXPORT_JPEG_QUALITY
-    );
+    if (linkForDownload) {
+      latestRenderedDataUrl = dataUrl;
+    }
+    resolve();
   });
 }
 
@@ -622,7 +580,6 @@ async function handleFile(file) {
 }
 
 async function resetApp() {
-  revokeMirroredJpegUrl();
   latestRenderedDataUrl = null;
   detectedFrame = null;
   clearCanvas();
@@ -639,7 +596,6 @@ async function resetApp() {
 
 /** Same reset as idle, but open the file picker immediately (must stay sync for iOS). */
 function tryAnotherAndPickFile() {
-  revokeMirroredJpegUrl();
   latestRenderedDataUrl = null;
   detectedFrame = null;
   fileInput.value = "";
@@ -687,6 +643,10 @@ async function initApp() {
     hideBootLoading();
   }
 }
+
+canvasExportMirrorLink?.addEventListener("click", (e) => {
+  e.preventDefault();
+});
 
 void initApp();
 

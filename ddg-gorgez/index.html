@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=namedJpeg1" />
+    <link rel="stylesheet" href="style.css?v=dataUrlLink1" />
   </head>
   <body>
     <div id="bootLoading" class="bootLoading" aria-live="polite" aria-busy="true" aria-label="Loading">
@@ -52,17 +52,25 @@
           <div
             class="canvasWrap"
             id="canvasWrap"
-            title="Use Download, or right-click / long-press the card image to save as JPG."
+            title="Download = named JPG. Right-click the card: if Save Image is “Unknown”, use Download Linked File or Save Link As for a .jpg name."
           >
             <canvas id="canvas" width="1024" height="1193" aria-label="Template preview"></canvas>
-            <img
-              id="canvasExportMirror"
-              class="canvasExportMirror"
-              alt=""
-              draggable="false"
-              decoding="async"
+            <a
+              id="canvasExportMirrorLink"
+              class="canvasExportMirrorLink"
+              href="#"
+              download="ddg-gorgez.jpg"
               aria-hidden="true"
-            />
+            >
+              <img
+                id="canvasExportMirror"
+                class="canvasExportMirror"
+                alt=""
+                draggable="false"
+                decoding="async"
+                aria-hidden="true"
+              />
+            </a>
 
             <div class="frameHint" id="frameHint" aria-hidden="true">
               <div class="frameHintInner">
@@ -99,6 +107,6 @@
       </footer>
     </main>
 
-    <script type="module" src="app.js?v=namedJpeg1"></script>
+    <script type="module" src="app.js?v=dataUrlLink1"></script>
   </body>
 </html>
