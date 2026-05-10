@@ -1679,6 +1679,225 @@ body.dark .walletFlowChainLbl {
   font-size: 20px;
   color: rgba(255,255,255,0.9);
 }
+
+.savedWalletsDropdown{
+  margin: 10px 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(109, 224, 255, 0.28);
+  background: rgba(76, 111, 255, 0.1);
+  overflow: hidden;
+}
+body.dark .savedWalletsDropdown{
+  border-color: rgba(0, 255, 213, 0.22);
+  background: rgba(0, 0, 0, 0.2);
+}
+.savedWalletsSummary{
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1.15;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+}
+.savedWalletsSummary::-webkit-details-marker{
+  display: none;
+}
+.savedWalletsChevron{
+  font-size: 14px;
+  opacity: 0.85;
+  transition: transform 0.15s ease;
+}
+.savedWalletsDropdown[open] .savedWalletsChevron{
+  transform: rotate(-180deg);
+}
+.savedWalletsBody{
+  padding: 0 14px 12px;
+  border-top: 1px solid rgba(109, 224, 255, 0.15);
+}
+body.dark .savedWalletsBody{
+  border-top-color: rgba(0, 255, 213, 0.12);
+}
+.savedWalletsHint{
+  display: none !important;
+}
+.savedWalletsList{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 10px;
+}
+.savedWalletsRow{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.savedWalletsRow.savedWalletsRow--editing{
+  border-color: rgba(109, 224, 255, 0.35);
+}
+.savedWalletsRow .hidden{
+  display: none !important;
+}
+.savedWalletsRowHitLabel{
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+  cursor: pointer;
+}
+.savedWalletsCbWrap input[type="checkbox"]{
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: rgba(109, 224, 255, 0.95);
+}
+.savedWalletsMain{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.savedWalletsNameTitle{
+  font-family: "Baloo 2", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 22px; /* match SAVED WALLETS header size */
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.96);
+}
+.savedWalletsNameTitle--muted{
+  font-weight: 800;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: italic;
+}
+.savedWalletsAddrLine{
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-weight: 800;
+  font-size: 15px; /* slightly smaller than name */
+  line-height: 1.35;
+  word-break: break-all;
+  color: rgba(200, 210, 230, 0.88);
+}
+.savedWalletsNameInput{
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.savedWalletsEditBtns{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.savedWalletsBtnsCol{
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row; /* side-by-side */
+  gap: 8px;
+  align-items: center;
+}
+.savedWalletsRowRename{
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 950;
+  border-radius: 8px;
+  border: 2px solid rgba(109, 224, 255, 0.75); /* blue glow outline */
+  background: linear-gradient(180deg, rgba(255, 220, 60, 0.98), rgba(255, 200, 30, 0.92));
+  color: rgba(10, 22, 40, 0.96);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 2px rgba(109, 224, 255, 0.22),
+    0 0 14px rgba(109, 224, 255, 0.25),
+    0 6px 16px rgba(0, 0, 0, 0.28);
+}
+.savedWalletsRowRename:hover{
+  filter: brightness(1.06);
+}
+.savedWalletsRowRename:active{
+  transform: translateY(0.5px);
+}
+.savedWalletsRowForget{
+  flex-shrink: 0;
+  align-self: center;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 950;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 120, 100, 0.78); /* red glow outline */
+  background: linear-gradient(180deg, rgba(255, 220, 60, 0.98), rgba(255, 200, 30, 0.92));
+  color: rgba(10, 22, 40, 0.96);
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 2px rgba(255, 120, 100, 0.18),
+    0 0 14px rgba(255, 120, 100, 0.22),
+    0 6px 16px rgba(0, 0, 0, 0.28);
+}
+.savedWalletsRowForget:hover{
+  filter: brightness(1.08);
+}
+body.dark .savedWalletsRowRename{
+  box-shadow:
+    0 0 0 2px rgba(0, 255, 213, 0.16),
+    0 0 16px rgba(0, 255, 213, 0.2),
+    0 6px 16px rgba(0, 0, 0, 0.34);
+}
+.savedWalletsActions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.savedWalletsEmpty{
+  padding: 8px 0 4px;
+  font-weight: 700;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.btnGhostSmall{
+  background: transparent;
+  border: 2px solid rgba(109, 224, 255, 0.45);
+  color: rgba(255, 255, 255, 0.9);
+}
+@media (max-width: 900px){
+  .savedWalletsSummary{
+    font-size: 18px;
+    padding: 14px;
+  }
+  .savedWalletsAddrLine{
+    font-size: 13px;
+  }
+  .savedWalletsNameTitle{
+    font-size: 17px;
+  }
+}
 .wallet-textarea::placeholder {
   color: rgba(160, 170, 185, 0.88);
   font-size: 14px;

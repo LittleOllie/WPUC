@@ -207,6 +207,17 @@
               </div>
               <span id="walletValidationHint" class="walletValidationHint"></span>
             </div>
+            <details class="savedWalletsDropdown" id="savedWalletsDropdown">
+              <summary class="savedWalletsSummary">SAVED WALLETS <span class="savedWalletsChevron" aria-hidden="true">▾</span></summary>
+              <div class="savedWalletsBody">
+                <p class="savedWalletsHint" id="savedWalletsHint"></p>
+                <div id="savedWalletsList" class="savedWalletsList" role="group" aria-label="Saved wallet addresses"></div>
+                <div class="savedWalletsActions">
+                  <button type="button" id="savedWalletsAddChecked" class="btn btnSmall" disabled>Add checked to box</button>
+                  <button type="button" id="savedWalletsSelectAllVisible" class="btn btnSmall btnGhostSmall" disabled>Select all</button>
+                </div>
+              </div>
+            </details>
             <div class="walletFlowChainRow" id="walletFlowChainRow">
             <label class="walletFlowChainLbl" for="chainSelect">Chain</label>
             <select id="chainSelect" class="input wallet-flow-field chainSelectGlow" aria-label="Blockchain network">

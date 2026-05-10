@@ -1829,6 +1829,7 @@ function syncWalletEntryUiForSelectedChain() {
 
   // Re-parse + refresh hints/overlays when switching chains mid-input.
   syncWalletsFromInput();
+  renderSavedWalletsPanel();
 }
 
 /** Split pasted / typed text into unique valid wallet addresses (capped at MAX_WALLET_ADDRESSES). */
@@ -2006,6 +2007,401 @@ function renderWalletList() {
   if (!wrap) return;
   wrap.style.display = "none";
   wrap.innerHTML = "";
+}
+
+// ---------- Saved wallets (localStorage + dropdown UI) ----------
+const SAVED_WALLETS_LS_KEY = "flexgrid_saved_wallets_v1";
+const MAX_SAVED_WALLET_RECORDS = 48;
+const MAX_WALLET_NICKNAME_LEN = 48;
+
+/** Stable compare key — EVM lowercase, Solana case-sensitive exact. */
+function savedWalletDedupeKey(chain, addr) {
+  const c = String(chain || "").trim().toLowerCase();
+  const a = String(addr || "").trim();
+  if (!c || !a) return "";
+  return `${c}:${c === "solana" ? a : a.toLowerCase()}`;
+}
+
+function readSavedWalletRecords() {
+  try {
+    const raw = localStorage.getItem(SAVED_WALLETS_LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (r) =>
+        r &&
+        typeof r === "object" &&
+        typeof r.chain === "string" &&
+        r.chain.trim() &&
+        typeof r.address === "string" &&
+        r.address.trim()
+    );
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeSavedWalletRecords(records) {
+  try {
+    const arr = Array.isArray(records) ? records.slice(0, MAX_SAVED_WALLET_RECORDS) : [];
+    localStorage.setItem(SAVED_WALLETS_LS_KEY, JSON.stringify(arr));
+  } catch (_) {
+    /* quota / privacy mode */
+  }
+}
+
+function sanitizeWalletNickname(raw) {
+  const s = String(raw || "").replace(/\s+/g, " ").trim();
+  if (!s) return "";
+  return s.slice(0, MAX_WALLET_NICKNAME_LEN);
+}
+
+function getSavedWalletDisplayName(record) {
+  const n = sanitizeWalletNickname(record?.nickname || record?.label || "");
+  return n || "";
+}
+
+/** After a successful NFT load: remember wallets for this chain (newest first, capped). */
+function persistWalletsFromSuccessfulLoad(chain, wallets) {
+  const ch = String(chain || "").trim().toLowerCase();
+  if (!ch || !Array.isArray(wallets)) return;
+
+  let prior = readSavedWalletRecords();
+  let changed = false;
+  for (const w of wallets) {
+    const addr = String(w || "").trim();
+    if (!addr) continue;
+    if (ch === "solana") {
+      if (!isValidSolanaWalletAddress(addr)) continue;
+    } else {
+      if (!isValidEvmWalletAddress(addr.toLowerCase())) continue;
+    }
+    const dk = savedWalletDedupeKey(ch, addr);
+    const existing = prior.find((r) => savedWalletDedupeKey(r.chain, r.address) === dk);
+    const preserveNick = getSavedWalletDisplayName(existing || {});
+    prior = prior.filter((r) => savedWalletDedupeKey(r.chain, r.address) !== dk);
+    prior.unshift({
+      chain: ch,
+      address: ch === "solana" ? addr : addr.toLowerCase(),
+      ts: Date.now(),
+      nickname: preserveNick,
+    });
+    changed = true;
+  }
+  if (changed) writeSavedWalletRecords(prior.slice(0, MAX_SAVED_WALLET_RECORDS));
+}
+
+function savedWalletsChainLabel(chain) {
+  switch (String(chain || "").trim().toLowerCase()) {
+    case "eth":
+      return "Ethereum";
+    case "base":
+      return "Base";
+    case "apechain":
+      return "ApeChain";
+    case "polygon":
+      return "Polygon";
+    case "solana":
+      return "Solana";
+    default:
+      return chain || "unknown";
+  }
+}
+
+function shortenWalletDisplay(addr, max = 10) {
+  const s = String(addr || "").trim();
+  if (s.length <= max * 2 + 4) return s;
+  return `${s.slice(0, max)}…${s.slice(-Math.max(4, max))}`;
+}
+
+function forgetSavedWalletRecord(chain, address) {
+  const dk = savedWalletDedupeKey(chain, address);
+  if (!dk) return;
+  const next = readSavedWalletRecords().filter((r) => savedWalletDedupeKey(r.chain, r.address) !== dk);
+  writeSavedWalletRecords(next);
+  renderSavedWalletsPanel();
+}
+
+function setSavedWalletNickname(chain, address, rawName) {
+  const dk = savedWalletDedupeKey(chain, address);
+  if (!dk) return;
+  const nickname = sanitizeWalletNickname(rawName);
+  const list = readSavedWalletRecords();
+  let found = false;
+  const next = list.map((r) => {
+    if (savedWalletDedupeKey(r.chain, r.address) !== dk) return r;
+    found = true;
+    const clean = { ...r, nickname };
+    delete clean.label;
+    return clean;
+  });
+  if (!found) return;
+  writeSavedWalletRecords(next);
+  renderSavedWalletsPanel();
+}
+
+function toggleSavedWalletRenameRow(rowEl, entering) {
+  if (!rowEl) return;
+  const view = rowEl.querySelector(".savedWalletsNameView");
+  const edit = rowEl.querySelector(".savedWalletsNameEditWrap");
+  if (!view || !edit) return;
+  if (entering) {
+    view.classList.add("hidden");
+    edit.classList.remove("hidden");
+    const inp = rowEl.querySelector(".savedWalletsNameInput");
+    if (inp) {
+      inp.focus();
+      try {
+        inp.select();
+      } catch (_) {}
+    }
+    rowEl.classList.add("savedWalletsRow--editing");
+  } else {
+    view.classList.remove("hidden");
+    edit.classList.add("hidden");
+    rowEl.classList.remove("savedWalletsRow--editing");
+  }
+}
+
+function updateSavedWalletsActionButtons() {
+  const list = $("savedWalletsList");
+  const addBtn = $("savedWalletsAddChecked");
+  const selBtn = $("savedWalletsSelectAllVisible");
+  if (!list || !addBtn || !selBtn) return;
+  const anyChecked = !!list.querySelector('input.saved-wallets-cb:checked');
+  const rows = !!list.querySelector(".savedWalletsRow");
+  addBtn.disabled = !anyChecked;
+  selBtn.disabled = !rows;
+}
+
+/** Append validated addresses into #walletInput, deduped, capped at MAX_WALLET_ADDRESSES. */
+function appendAddressesToWalletTextarea(extra) {
+  const input = $("walletInput");
+  if (!input || !Array.isArray(extra)) return;
+
+  const chain = getWalletParseChain();
+  const existing = parseWalletAddressesFromInput(String(input.value || ""));
+  const merged = [...existing];
+
+  function hasAddr(a) {
+    if (chain === "solana") return merged.some((x) => x === a);
+    const low = String(a || "").trim().toLowerCase();
+    return merged.some((x) => String(x).toLowerCase() === low);
+  }
+
+  for (const raw of extra) {
+    let a = String(raw || "").trim();
+    if (!a) continue;
+    if (chain === "solana") {
+      if (!isValidSolanaWalletAddress(a)) continue;
+      if (!hasAddr(a)) merged.push(a);
+    } else {
+      a = a.toLowerCase();
+      if (!isValidEvmWalletAddress(a)) continue;
+      if (!hasAddr(a)) merged.push(a);
+    }
+    if (merged.length >= MAX_WALLET_ADDRESSES) break;
+  }
+
+  input.value = merged.join("\n");
+  syncWalletsFromInput();
+  setStatus(`Added wallets — ${merged.length} total in box (max ${MAX_WALLET_ADDRESSES}).`);
+}
+
+function renderSavedWalletsPanel() {
+  const listEl = $("savedWalletsList");
+  const hintEl = $("savedWalletsHint");
+  const dropdown = $("savedWalletsDropdown");
+  if (!listEl || !hintEl || !dropdown) return;
+
+  const chain = getWalletParseChain();
+  const all = readSavedWalletRecords();
+  const filtered = all.filter((r) => String(r.chain || "").trim().toLowerCase() === chain);
+
+  // User requested: no "Saved Ethereum ..." helper line in UI.
+  hintEl.textContent = "";
+
+  listEl.innerHTML = "";
+  if (filtered.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "savedWalletsEmpty";
+    empty.textContent = `No saved wallets for ${savedWalletsChainLabel(chain)}. Enter addresses and tap LOAD WALLET once they load successfully — we’ll remember them on this device.`;
+    listEl.appendChild(empty);
+  } else {
+    const frag = document.createDocumentFragment();
+    const seenUi = new Set();
+    for (const r of filtered) {
+      const dk = savedWalletDedupeKey(r.chain, r.address);
+      if (seenUi.has(dk)) continue;
+      seenUi.add(dk);
+
+      const row = document.createElement("div");
+      row.className = "savedWalletsRow";
+
+      const cbWrap = document.createElement("div");
+      cbWrap.className = "savedWalletsCbWrap";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "saved-wallets-cb";
+      cb.dataset.address = r.chain === "solana" ? r.address : String(r.address).toLowerCase();
+      cb.dataset.chain = String(r.chain).trim().toLowerCase();
+      cb.id = `savedWalCb_${savedWalletDedupeKey(r.chain, r.address).replace(/[^a-z0-9:]/gi, "_")}_${seenUi.size}`;
+      cbWrap.appendChild(cb);
+
+      const main = document.createElement("div");
+      main.className = "savedWalletsMain";
+
+      const nameView = document.createElement("div");
+      nameView.className = "savedWalletsNameView";
+
+      const nick = getSavedWalletDisplayName(r);
+      const title = document.createElement("div");
+      title.className = "savedWalletsNameTitle";
+      if (nick) {
+        title.textContent = nick;
+        title.classList.add("savedWalletsNameTitle--filled");
+      } else {
+        title.textContent = "No name yet — tap Rename";
+        title.classList.add("savedWalletsNameTitle--muted");
+      }
+
+      nameView.appendChild(title);
+
+      const addrLine = document.createElement("div");
+      addrLine.className = "savedWalletsAddrLine";
+      addrLine.textContent = shortenWalletDisplay(r.address, chain === "solana" ? 8 : 6);
+
+      const nameEditWrap = document.createElement("div");
+      nameEditWrap.className = "savedWalletsNameEditWrap hidden";
+
+      const nameInp = document.createElement("input");
+      nameInp.type = "text";
+      nameInp.className = "savedWalletsNameInput input";
+      nameInp.maxLength = MAX_WALLET_NICKNAME_LEN;
+      nameInp.value = nick;
+      nameInp.placeholder = `Name (${MAX_WALLET_NICKNAME_LEN} chars max)`;
+      nameInp.setAttribute("aria-label", "Wallet display name");
+
+      const editBtns = document.createElement("div");
+      editBtns.className = "savedWalletsEditBtns";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.className = "btn btnSmall savedWalletsRenameSave";
+      saveBtn.textContent = "Save";
+      saveBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        setSavedWalletNickname(r.chain, r.address, nameInp.value);
+      });
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "btn btnSmall btnGhostSmall savedWalletsRenameCancel";
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        nameInp.value = getSavedWalletDisplayName(r);
+        toggleSavedWalletRenameRow(row, false);
+      });
+
+      nameInp.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          setSavedWalletNickname(r.chain, r.address, nameInp.value);
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          nameInp.value = getSavedWalletDisplayName(r);
+          toggleSavedWalletRenameRow(row, false);
+        }
+      });
+
+      editBtns.appendChild(saveBtn);
+      editBtns.appendChild(cancelBtn);
+      nameEditWrap.appendChild(nameInp);
+      nameEditWrap.appendChild(editBtns);
+
+      main.appendChild(nameView);
+      main.appendChild(nameEditWrap);
+      main.appendChild(addrLine);
+
+      const btnsCol = document.createElement("div");
+      btnsCol.className = "savedWalletsBtnsCol";
+
+      const renameBtn = document.createElement("button");
+      renameBtn.type = "button";
+      renameBtn.className = "savedWalletsRowRename";
+      renameBtn.textContent = "Rename";
+      renameBtn.title = "Set a friendly name";
+      renameBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (nameEditWrap.classList.contains("hidden")) {
+          nameInp.value = getSavedWalletDisplayName(r);
+          toggleSavedWalletRenameRow(row, true);
+        }
+      });
+
+      const forget = document.createElement("button");
+      forget.type = "button";
+      forget.className = "savedWalletsRowForget";
+      forget.textContent = "Forget";
+      forget.title = "Remove from saved wallets on this device";
+      forget.addEventListener("click", (e) => {
+        e.preventDefault();
+        forgetSavedWalletRecord(r.chain, r.address);
+      });
+
+      btnsCol.appendChild(renameBtn);
+      btnsCol.appendChild(forget);
+
+      const rowLabelForCb = document.createElement("label");
+      rowLabelForCb.className = "savedWalletsRowHitLabel";
+      rowLabelForCb.htmlFor = cb.id;
+      rowLabelForCb.appendChild(cbWrap);
+
+      row.appendChild(rowLabelForCb);
+      row.appendChild(main);
+      row.appendChild(btnsCol);
+      frag.appendChild(row);
+    }
+    listEl.appendChild(frag);
+  }
+
+  updateSavedWalletsActionButtons();
+}
+
+function wireSavedWalletsDropdown() {
+  const listEl = $("savedWalletsList");
+  const addBtn = $("savedWalletsAddChecked");
+  const selBtn = $("savedWalletsSelectAllVisible");
+  if (!listEl || !addBtn || !selBtn) return;
+  if (listEl.dataset.savedWalletsBound === "1") return;
+  listEl.dataset.savedWalletsBound = "1";
+
+  listEl.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t && t.matches && t.matches('input.saved-wallets-cb')) updateSavedWalletsActionButtons();
+  });
+
+  selBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    listEl.querySelectorAll('input.saved-wallets-cb').forEach((cb) => {
+      cb.checked = true;
+    });
+    updateSavedWalletsActionButtons();
+  });
+
+  addBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const chain = getWalletParseChain();
+    const pick = [...listEl.querySelectorAll('input.saved-wallets-cb:checked')]
+      .map((cb) => String(cb.dataset.address || "").trim())
+      .filter(Boolean);
+    if (!pick.length) return;
+    appendAddressesToWalletTextarea(pick);
+  });
 }
 
 // ---------- Manual selection modal ----------
@@ -5660,6 +6056,9 @@ async function loadWallets() {
       : `😅 Hmm... no NFTs found here`);
     showConnectionStatus(true);
 
+    persistWalletsFromSuccessfulLoad(chain, state.wallets);
+    renderSavedWalletsPanel();
+
     await new Promise((r) => setTimeout(r, 400));
     hideLoading();
   } catch (err) {
@@ -7071,6 +7470,9 @@ function toggleStageLayoutSection() {
     hubBackBtn.addEventListener("click", onHubBackClick);
   }
   syncHubBackButton();
+
+  wireSavedWalletsDropdown();
+  renderSavedWalletsPanel();
 
   const walletInput = $("walletInput");
   if (walletInput) {
