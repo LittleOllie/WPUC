@@ -385,6 +385,11 @@ let manualModal = {
   _virtualSliceEl: null,
   _virtualLayout: null,
   _virtualLastRange: null,
+  /** Active collection object for virtual indices (single ref; no duplicate NFT arrays). */
+  _virtualCollection: null,
+  /** Scroll-thrash guard: pause expanding mounted previews until user taps resume. */
+  _manualLoadPaused: false,
+  _sliceRebuildMs: null,
 };
 
 function destroyManualModalVirtualizer() {
@@ -417,6 +422,11 @@ function destroyManualModalVirtualizer() {
   manualModal._virtualSliceEl = null;
   manualModal._virtualLayout = null;
   manualModal._virtualLastRange = null;
+  manualModal._virtualCollection = null;
+  manualModal._manualLoadPaused = false;
+  manualModal._sliceRebuildMs = null;
+  const pauseEl = document.getElementById("manualSelectionPauseBanner");
+  if (pauseEl) pauseEl.remove();
 }
 
 /** Match `.manual-selection-grid` + breakpoints: auto-fill minmax(72|88px, 1fr). */
@@ -432,7 +442,9 @@ function computeManualModalGridMetrics(gridEl) {
 }
 
 function manualModalVirtualBufferRows() {
-  return isIOS() || (typeof window.innerWidth === "number" && window.innerWidth < 520) ? 5 : 3;
+  if (isIOS()) return 1;
+  if (typeof window.innerWidth === "number" && window.innerWidth < 520) return 2;
+  return 3;
 }
 
 function scheduleManualModalVirtualUpdate() {
@@ -452,8 +464,10 @@ function detachManualModalNFTCell(cell) {
     img.onerror = null;
   } catch (_) {}
   try {
-    img.src = "";
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
     img.removeAttribute("src");
+    img.src = "";
   } catch (_) {}
 }
 
@@ -472,7 +486,9 @@ function finalizeManualPreviewKey(nftKey, outcome) {
   }
 }
 
-function createManualModalNFTCell(nft, k) {
+function createManualModalNFTCell(collection, nftIndex, k, cellPx) {
+  const nft = collection?.nfts?.[nftIndex];
+  if (!nft) return null;
   const cell = document.createElement("button");
   cell.type = "button";
   cell.className = "manual-nft-tile";
@@ -483,8 +499,19 @@ function createManualModalNFTCell(nft, k) {
   img.alt = "";
   img.loading = "lazy";
   img.decoding = "async";
+  try {
+    if ("fetchPriority" in img) img.fetchPriority = "low";
+  } catch (_) {}
   img.referrerPolicy = "no-referrer";
   img.crossOrigin = "anonymous";
+  const dpr = typeof window.devicePixelRatio === "number" && window.devicePixelRatio > 0 ? Math.min(2, window.devicePixelRatio) : 1;
+  const cs = Math.max(48, Math.round(cellPx || 88));
+  const attrPx = Math.min(512, Math.ceil(cs * dpr));
+  try {
+    img.width = attrPx;
+    img.height = attrPx;
+    img.setAttribute("sizes", `${cs}px`);
+  } catch (_) {}
 
   const retryBtn = document.createElement("button");
   retryBtn.type = "button";
@@ -518,13 +545,48 @@ function createManualModalNFTCell(nft, k) {
   return cell;
 }
 
+function ensureManualModalPauseBanner(scroll) {
+  if (!scroll) return null;
+  let el = document.getElementById("manualSelectionPauseBanner");
+  if (el) return el;
+  el = document.createElement("div");
+  el.id = "manualSelectionPauseBanner";
+  el.className = "manual-selection-pause-banner hidden";
+  el.setAttribute("role", "status");
+  const wrap = document.createElement("div");
+  wrap.className = "manual-selection-pause-banner-inner";
+  const msg = document.createElement("span");
+  msg.className = "manual-selection-pause-banner-msg";
+  msg.textContent = "Loading previews paused to save memory.";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btnSmall manual-selection-pause-banner-btn";
+  btn.textContent = "Tap to resume";
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    manualModal._manualLoadPaused = false;
+    manualModal._sliceRebuildMs = [];
+    manualModal._virtualLastRange = null;
+    el.classList.add("hidden");
+    scheduleManualModalVirtualUpdate();
+  });
+  wrap.appendChild(msg);
+  wrap.appendChild(btn);
+  el.appendChild(wrap);
+  scroll.appendChild(el);
+  return el;
+}
+
 function renderManualModalVirtualSlice() {
   const scroll = manualModal._virtualScrollEl;
   const grid = document.getElementById("manualSelectionGrid");
   const layout = manualModal._virtualLayout;
   const slice = manualModal._virtualSliceEl;
-  if (!scroll || !grid || !layout || !slice) return;
+  const collection = manualModal._virtualCollection;
+  if (!scroll || !grid || !layout || !slice || !collection) return;
 
+  const n = layout.itemIndices.length;
   const metrics = computeManualModalGridMetrics(grid);
   if (
     metrics.cols !== layout.cols ||
@@ -537,7 +599,7 @@ function renderManualModalVirtualSlice() {
     layout.cellSize = metrics.cellSize;
     layout.rowStride = metrics.rowStride;
     layout.width = metrics.width;
-    layout.totalRows = Math.max(1, Math.ceil(layout.items.length / layout.cols));
+    layout.totalRows = Math.max(1, Math.ceil(n / layout.cols));
     const totalH = layout.totalRows * layout.rowStride - layout.gap;
     grid.style.minHeight = `${Math.max(0, totalH)}px`;
     slice.style.gridTemplateColumns = `repeat(${layout.cols}, 1fr)`;
@@ -554,33 +616,68 @@ function renderManualModalVirtualSlice() {
   let lastRow = Math.ceil((st + vh) / rs) - 1 + buf;
   lastRow = Math.min(layout.totalRows - 1, lastRow);
 
+  const maxCells = manualModalMaxDomCells();
+  const maxRows = Math.max(1, Math.ceil(maxCells / layout.cols));
+  if (lastRow - firstRow + 1 > maxRows) {
+    const midRow = Math.floor((st + vh * 0.5) / rs);
+    const half = Math.floor(maxRows / 2);
+    firstRow = Math.max(0, midRow - half);
+    lastRow = Math.min(layout.totalRows - 1, firstRow + maxRows - 1);
+    if (lastRow - firstRow + 1 < maxRows) firstRow = Math.max(0, lastRow - maxRows + 1);
+  }
+
   if (
     manualModal._virtualLastRange &&
     manualModal._virtualLastRange.fr === firstRow &&
-    manualModal._virtualLastRange.lr === lastRow
+    manualModal._virtualLastRange.lr === lastRow &&
+    manualModal._virtualLastRange.paused === !!manualModal._manualLoadPaused
   ) {
+    const pb = ensureManualModalPauseBanner(scroll);
+    if (pb) pb.classList.toggle("hidden", !manualModal._manualLoadPaused);
     return;
   }
-  manualModal._virtualLastRange = { fr: firstRow, lr: lastRow };
+
+  const now = performance.now();
+  if (!manualModal._manualLoadPaused) {
+    if (!Array.isArray(manualModal._sliceRebuildMs)) manualModal._sliceRebuildMs = [];
+    manualModal._sliceRebuildMs.push(now);
+    manualModal._sliceRebuildMs = manualModal._sliceRebuildMs.filter((t) => now - t < 2000);
+    if (manualModal._sliceRebuildMs.length > 18) {
+      manualModal._manualLoadPaused = true;
+      manualModal._sliceRebuildMs = [];
+    }
+  }
+
+  manualModal._virtualLastRange = { fr: firstRow, lr: lastRow, paused: !!manualModal._manualLoadPaused };
 
   slice.querySelectorAll(".manual-nft-tile").forEach((el) => detachManualModalNFTCell(el));
   slice.innerHTML = "";
 
   const firstIdx = firstRow * layout.cols;
-  const lastIdx = Math.min(layout.items.length - 1, (lastRow + 1) * layout.cols - 1);
+  const lastIdx = Math.min(n - 1, (lastRow + 1) * layout.cols - 1);
   const frag = document.createDocumentFragment();
-  for (let i = firstIdx; i <= lastIdx && i < layout.items.length; i++) {
-    const { nft, key } = layout.items[i];
-    frag.appendChild(createManualModalNFTCell(nft, key));
+  for (let i = firstIdx; i <= lastIdx && i < n; i++) {
+    const ni = layout.itemIndices[i];
+    const nft = collection.nfts[ni];
+    const key = getNFTSelectionKey(nft);
+    if (!key) continue;
+    const cell = createManualModalNFTCell(collection, ni, key, layout.cellSize);
+    if (cell) frag.appendChild(cell);
   }
   slice.appendChild(frag);
 
   slice.style.top = `${firstRow * rs}px`;
+
+  const pb = ensureManualModalPauseBanner(scroll);
+  if (pb) pb.classList.toggle("hidden", !manualModal._manualLoadPaused);
 }
 
 function wireManualModalVirtualizer(grid, collection) {
   const scroll = manualModal.overlay?.querySelector(".manual-selection-scroll");
   if (!scroll || !grid) return;
+
+  const modalShell = manualModal.overlay?.querySelector(".manual-selection-modal");
+  if (modalShell) modalShell.classList.toggle("manual-selection-modal--ios-perf", isIOS());
 
   manualModal._virtualScrollEl = scroll;
   manualModal._virtualOnScroll = () => scheduleManualModalVirtualUpdate();
@@ -1494,6 +1591,29 @@ function gridProxyUrl(src) {
   return toProxyUrl(src) || normalizeImageUrl(src) || src;
 }
 
+/** Worker `/img` supports `&mw=` (see worker.js) to downscale at the edge when available. */
+function withManualModalMaxWidth(url, maxPx) {
+  if (!maxPx || !url || typeof url !== "string" || !IMG_PROXY) return url;
+  if (!url.startsWith(IMG_PROXY)) return url;
+  if (/[&?]mw=\d+/i.test(url)) return url;
+  const n = Math.max(64, Math.min(768, Math.round(maxPx)));
+  return `${url}&mw=${n}`;
+}
+
+/** Max long-edge hint for manual picker proxy fetches (iOS gets the smallest). */
+function manualModalThumbMaxPx() {
+  if (isIOS()) return 200;
+  if (typeof window.innerWidth === "number" && window.innerWidth < 520) return 260;
+  return 360;
+}
+
+/** Hard cap on mounted picker tiles (memory). Tightens further when `_manualLoadPaused`. */
+function manualModalMaxDomCells() {
+  if (manualModal._manualLoadPaused) return 14;
+  if (isIOS()) return 28;
+  return 44;
+}
+
 /** Proxy first when available, then direct gateways as fallback. */
 function buildImageCandidates(rawUrl) {
   const normalized = normalizeImageUrl(rawUrl);
@@ -2076,9 +2196,15 @@ function isManualModalImageRenderable(img) {
  * Uses `modules/imageLoader.js` for IPFS/Arweave gateway rotation + session cache (no indexer calls).
  * @returns {{ ok: boolean, winningUrl?: string }}
  */
-async function resolveRawUrlOntoImage(img, rawUrl) {
+async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
   const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
   if (!raw) return { ok: false };
+
+  const manualMw = typeof opts.manualThumbMax === "number" && opts.manualThumbMax > 0 ? opts.manualThumbMax : 0;
+  const mapManualTry = (u) => {
+    if (!manualMw || !u) return u;
+    return withManualModalMaxWidth(gridProxyUrl(u) || u, manualMw);
+  };
 
   // Solana: support explicit candidate list (encoded) so we can try in order without changing the loader.
   // Format: "__CANDS__:<json>"
@@ -2108,9 +2234,12 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
     }
   }
 
-  const candidates = (explicitCandidates && explicitCandidates.length ? explicitCandidates : buildImageCandidates(raw))
+  let candidates = (explicitCandidates && explicitCandidates.length ? explicitCandidates : buildImageCandidates(raw))
     .filter(Boolean)
     .slice(0, 3); // cap to 2–3 tries (fast + mobile safe)
+  if (manualMw > 0) {
+    candidates = candidates.map((u) => mapManualTry(u));
+  }
   if (candidates.length === 0) return { ok: false };
 
   for (const url of candidates) {
@@ -2127,7 +2256,7 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
   const resolved = await queueImageLoad(() =>
     resolveImageUrlWithCandidates(loaderId, candidates, {
       rawArt: raw,
-      mapTryUrl: (u) => gridProxyUrl(u) || u,
+      mapTryUrl: (u) => (manualMw > 0 ? mapManualTry(u) : gridProxyUrl(u) || u),
       timeoutMs,
     })
   );
@@ -2166,7 +2295,7 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
     }
     img.src = GRID_LOADING_PLACEHOLDER_SRC;
     clearImageLoaderFailure(cacheKeyFromRawArt(String(rawOk || "").trim()));
-    const resHit = await resolveRawUrlOntoImage(img, rawOk);
+    const resHit = await resolveRawUrlOntoImage(img, rawOk, { manualThumbMax: manualModalThumbMaxPx() });
     if (resHit.ok && img.isConnected) {
       try {
         if (typeof img.decode === "function") await img.decode();
@@ -2192,7 +2321,7 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
 
   clearImageLoaderFailure(cacheKeyFromRawArt(String(raw || "").trim()));
 
-  const res = await resolveRawUrlOntoImage(img, raw);
+  const res = await resolveRawUrlOntoImage(img, raw, { manualThumbMax: manualModalThumbMaxPx() });
   let ok = res.ok;
   if (ok) {
     try {
@@ -2331,6 +2460,9 @@ function renderManualSelectionModalGrid(collection) {
   grid.style.minHeight = "";
   manualModal.previewKeyOutcome = new Map();
   manualModal._previewFailedKeys = new Set();
+  manualModal._manualLoadPaused = false;
+  manualModal._sliceRebuildMs = [];
+  manualModal._virtualCollection = collection;
 
   const bar = document.getElementById("manualSelectionLoadingBar");
   if (bar) {
@@ -2359,22 +2491,21 @@ function renderManualSelectionModalGrid(collection) {
 
   manualModal.waitingForNfts = false;
 
-  const items = [];
+  const itemIndices = [];
   for (let i = 0; i < nfts.length; i++) {
-    const nft = nfts[i];
-    const k = getNFTSelectionKey(nft);
-    if (k) items.push({ nft, key: k });
+    if (getNFTSelectionKey(nfts[i])) itemIndices.push(i);
   }
 
   let loadableN = 0;
-  for (const { nft } of items) {
+  for (const idx of itemIndices) {
+    const nft = nfts[idx];
     const src = modalThumbSrcForNFT(nft);
     if (src && src !== TILE_PLACEHOLDER_SRC) loadableN++;
   }
   manualModal.imageLoadState = { total: loadableN, settled: 0 };
 
   const metrics = computeManualModalGridMetrics(grid);
-  const totalRows = Math.max(1, Math.ceil(items.length / metrics.cols));
+  const totalRows = Math.max(1, Math.ceil(itemIndices.length / metrics.cols));
   const totalH = totalRows * metrics.rowStride - metrics.gap;
   grid.style.minHeight = `${Math.max(0, totalH)}px`;
   grid.classList.add("manual-selection-grid--virtual");
@@ -2388,7 +2519,7 @@ function renderManualSelectionModalGrid(collection) {
   manualModal._virtualSliceEl = slice;
   manualModal._virtualLayout = {
     ...metrics,
-    items,
+    itemIndices,
     totalRows,
     collectionKey: collection.key,
   };

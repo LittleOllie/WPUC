@@ -3300,6 +3300,44 @@ body.dark .manual-selection-scroll{
     gap: 8px;
   }
 }
+.manual-selection-modal--ios-perf .manual-nft-tile{
+  transition: none !important;
+}
+.manual-selection-pause-banner{
+  position: sticky;
+  bottom: 0;
+  z-index: 8;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(20, 30, 55, 0.92);
+  border: 1px solid rgba(109, 224, 255, 0.35);
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.35);
+}
+.manual-selection-pause-banner.hidden{
+  display: none !important;
+}
+.manual-selection-pause-banner-inner{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.manual-selection-pause-banner-msg{
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+  flex: 1 1 12rem;
+}
+.manual-selection-pause-banner-btn{
+  flex-shrink: 0;
+}
+body.dark .manual-selection-pause-banner{
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(0, 255, 213, 0.28);
+}
 .manual-nft-tile{
   position: relative;
   aspect-ratio: 1;

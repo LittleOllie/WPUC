@@ -671,23 +671,45 @@ function headersForImageOrigin(url) {
   return { "User-Agent": "FlexGrid-ImageProxy/2.0" };
 }
 
-async function fetchWithTimeout(resource, timeoutMs = IMAGE_FETCH_TIMEOUT_MS, headerOverrides = {}) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+/**
+ * Optional `imageMaxWidth` uses Cloudflare `cf.image` resize when supported; falls back to plain fetch on error/non-OK.
+ */
+async function fetchWithTimeout(resource, timeoutMs = IMAGE_FETCH_TIMEOUT_MS, headerOverrides = {}, imageMaxWidth = 0) {
+  const runOnce = async (mw) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const cf = { ...ORIGIN_FETCH_CF };
+      if (mw > 0 && mw <= 768) {
+        cf.image = { width: mw, fit: "scale-down" };
+      }
+      const res = await fetch(resource, {
+        redirect: "follow",
+        headers: {
+          ...headersForImageOrigin(resource),
+          ...headerOverrides,
+        },
+        signal: controller.signal,
+        cf,
+      });
+      clearTimeout(id);
+      return res;
+    } catch (err) {
+      clearTimeout(id);
+      throw err;
+    }
+  };
+
   try {
-    const res = await fetch(resource, {
-      redirect: "follow",
-      headers: {
-        ...headersForImageOrigin(resource),
-        ...headerOverrides,
-      },
-      signal: controller.signal,
-      cf: ORIGIN_FETCH_CF,
-    });
-    clearTimeout(id);
+    let res = await runOnce(imageMaxWidth);
+    if ((!res || !res.ok) && imageMaxWidth > 0) {
+      res = await runOnce(0);
+    }
     return res;
   } catch (err) {
-    clearTimeout(id);
+    if (imageMaxWidth > 0) {
+      return runOnce(0);
+    }
     throw err;
   }
 }
@@ -743,7 +765,7 @@ function imageProxyError(status, message) {
 /**
  * Try IPFS path across gateways; optional quick second pass for flaky networks.
  */
-async function fetchIPFS(ipfsPath, env) {
+async function fetchIPFS(ipfsPath, env, imageMaxWidth = 0) {
   const path = sanitizeIpfsPathForGateway(ipfsPath);
   if (!path) return null;
 
@@ -751,7 +773,7 @@ async function fetchIPFS(ipfsPath, env) {
     for (const gateway of IPFS_GATEWAYS) {
       const url = gateway + path;
       try {
-        const res = await fetchWithTimeout(url, IMAGE_FETCH_TIMEOUT_MS);
+        const res = await fetchWithTimeout(url, IMAGE_FETCH_TIMEOUT_MS, {}, imageMaxWidth);
         if (isAcceptableImageResponse(res, { allowUnknownContentType: true })) {
           return res;
         }
@@ -773,12 +795,12 @@ async function fetchIPFS(ipfsPath, env) {
 /**
  * Plain HTTP(S) image: one attempt + one retry after delay.
  */
-async function fetchHttpImage(decodedUrl, env) {
+async function fetchHttpImage(decodedUrl, env, imageMaxWidth = 0) {
   const attempts = [
-    () => fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS),
+    () => fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS, {}, imageMaxWidth),
     async () => {
       await new Promise((r) => setTimeout(r, IMAGE_HTTP_RETRY_DELAY_MS));
-      return fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS);
+      return fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS, {}, imageMaxWidth);
     },
   ];
 
@@ -801,7 +823,7 @@ async function fetchHttpImage(decodedUrl, env) {
 /**
  * Optional: try original URL once when it looks like IPFS HTTP URL (before pure gateway path).
  */
-async function fetchDirectIpfsUrl(decodedUrl, env) {
+async function fetchDirectIpfsUrl(decodedUrl, env, imageMaxWidth = 0) {
   if (!/^https?:\/\//i.test(decodedUrl)) return null;
   const looksIpfs =
     /\/ipfs\//i.test(decodedUrl) ||
@@ -809,7 +831,7 @@ async function fetchDirectIpfsUrl(decodedUrl, env) {
     /ipfs\.io\/ipfs/i.test(decodedUrl);
   if (!looksIpfs) return null;
   try {
-    const res = await fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS);
+    const res = await fetchWithTimeout(decodedUrl, IMAGE_FETCH_TIMEOUT_MS, {}, imageMaxWidth);
     if (isAcceptableImageResponse(res, { allowUnknownContentType: true })) return res;
   } catch {
     /* fall through */
@@ -837,6 +859,13 @@ async function handleImageProxy(request, env, ctx) {
     return imageProxyError(400, "Invalid url");
   }
   decodedUrl = repairBrokenImageUrl(decodedUrl);
+
+  const mwRaw = urlObj.searchParams.get("mw");
+  let imageMaxWidth = 0;
+  if (mwRaw != null) {
+    const n = parseInt(String(mwRaw), 10);
+    if (Number.isFinite(n) && n >= 64 && n <= 768) imageMaxWidth = n;
+  }
 
   /** Inline raster/SVG — do not fetch; decode here (client should skip proxy for data: URLs). */
   if (/^data:image\//i.test(decodedUrl)) {
@@ -875,15 +904,15 @@ async function handleImageProxy(request, env, ctx) {
   let originRes = null;
 
   if (ipfsPath) {
-    originRes = await fetchDirectIpfsUrl(decodedUrl, env);
+    originRes = await fetchDirectIpfsUrl(decodedUrl, env, imageMaxWidth);
     if (!originRes) {
-      originRes = await fetchIPFS(ipfsPath, env);
+      originRes = await fetchIPFS(ipfsPath, env, imageMaxWidth);
     }
   } else {
     if (!/^https?:\/\//i.test(decodedUrl)) {
       return imageProxyError(400, "Unsupported URL scheme");
     }
-    originRes = await fetchHttpImage(decodedUrl, env);
+    originRes = await fetchHttpImage(decodedUrl, env, imageMaxWidth);
   }
 
   if (!originRes || !originRes.ok) {
