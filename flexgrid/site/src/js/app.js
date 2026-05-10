@@ -15,6 +15,8 @@ import {
   preloadResolvedUrlsForExport,
   clearImageLoaderFailure,
   cacheKeyFromRawArt,
+  peekResolvedForRawArt,
+  primeResolvedRawArt,
 } from "./modules/imageLoader.js";
 
 hydrateImageLoaderFromSession();
@@ -22,6 +24,8 @@ hydrateImageLoaderFromSession();
 const DEV = window.location.hostname === "localhost";
 /** Max NFTs (including custom uploads) in one grid build / reorder. */
 const FLEX_GRID_MAX_NFTS = 900;
+/** Points users to #retryBtn (above the grid) when image loads fail. */
+const RETRY_MISSING_BUTTON_HINT = "Try the 🔄 Retry missing button above.";
 const $ = (id) => document.getElementById(id);
 
 function getGridPrimary() {
@@ -913,8 +917,9 @@ let BUILD_ID = Date.now();
 const imageCache = new Map();
 
 // ---------- Concurrent load limiter (prevents network overload) ----------
-const MAX_CONCURRENT_LOADS_DEFAULT = 6;
-const MAX_CONCURRENT_LOADS_WHALE = 4;
+/** Higher than before, but capped to avoid CDN/worker stampede causing synchronized onerror bursts. */
+const MAX_CONCURRENT_LOADS_DEFAULT = 8;
+const MAX_CONCURRENT_LOADS_WHALE = 5;
 let activeLoads = 0;
 const loadQueue = [];
 
@@ -1265,7 +1270,8 @@ function updateImageProgress() {
     ? `✨ All ${total} images loaded`
     : `Loading images: ${settled}/${total}`;
   if (failed > 0) statusMsg += ` • ${failed} failed`;
-  if (retrying > 0) statusMsg += ` • retrying...`;
+  if (retrying > 0) statusMsg += ` • retrying…`;
+  else if (failed > 0) statusMsg += ` — ${RETRY_MISSING_BUTTON_HINT}`;
 
   setStatus(statusMsg);
 
@@ -1282,9 +1288,14 @@ function updateImageProgress() {
     if (stageHint) {
       if (settled >= total) {
         stageHint.textContent =
-          failed > 0 ? `Finished — ${failed} image(s) need attention` : "All images loaded";
+          failed > 0
+            ? `Finished — ${failed} image(s) need attention. ${RETRY_MISSING_BUTTON_HINT}`
+            : "All images loaded";
       } else {
-        stageHint.textContent = `Loading images… ${settled}/${total}`;
+        stageHint.textContent =
+          failed > 0
+            ? `Loading images… ${settled}/${total} — ${failed} need attention · ${RETRY_MISSING_BUTTON_HINT}`
+            : `Loading images… ${settled}/${total}`;
       }
     }
   }
@@ -2587,6 +2598,109 @@ function isManualModalImageRenderable(img) {
   return w >= MIN && h >= MIN;
 }
 
+/** Grid image load: tolerate slow workers / GIF / AVIF progressive decode (timer alone used to falsely fail). */
+const GRID_IMG_MIN_DIMENSION = 4;
+
+/**
+ * Try candidate URLs directly on the real grid `<img>` (single active fetch per candidate).
+ * Avoids hidden `Image()` probes AND avoids starving slow loads with naive timers.
+ */
+async function attachWorkingCandidateToImgElement(img, candidateUrls, timeoutMs = 28000) {
+  const uniq = [...new Set((candidateUrls || []).map((u) => String(u || "").trim()).filter(Boolean))];
+  if (!uniq.length) return null;
+
+  setImgCORS(img, true);
+  try {
+    img.decoding = "async";
+  } catch (_) {}
+
+  const hardMs = Math.max(8000, Math.min(55000, Number(timeoutMs) || 28000));
+  /** Poll catches WebKit quirks where decoded pixels exist before / without a reliable load event. */
+  const pollMs = 180;
+
+  for (let u = 0; u < uniq.length; u++) {
+    const url = uniq[u];
+    const winner = await new Promise((resolve) => {
+      let settled = false;
+      let hardTid = null;
+      let pollTid = null;
+
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        if (hardTid != null) clearTimeout(hardTid);
+        if (pollTid != null) clearInterval(pollTid);
+        hardTid = null;
+        pollTid = null;
+        try {
+          img.onload = null;
+          img.onerror = null;
+        } catch (_) {}
+        resolve(value);
+      };
+
+      hardTid = setTimeout(() => {
+        try {
+          const nw = img.naturalWidth || 0;
+          const nh = img.naturalHeight || 0;
+          if (
+            img.complete &&
+            nw >= GRID_IMG_MIN_DIMENSION &&
+            nh >= GRID_IMG_MIN_DIMENSION &&
+            nw < 8192 &&
+            nh < 8192
+          ) {
+            finish(url);
+            return;
+          }
+        } catch (_) {}
+        finish(null);
+      }, hardMs);
+
+      pollTid = setInterval(() => {
+        try {
+          const nw = img.naturalWidth || 0;
+          const nh = img.naturalHeight || 0;
+          if (
+            img.complete &&
+            nw >= GRID_IMG_MIN_DIMENSION &&
+            nh >= GRID_IMG_MIN_DIMENSION &&
+            nw < 8192 &&
+            nh < 8192
+          ) {
+            finish(url);
+          }
+        } catch (_) {}
+      }, pollMs);
+
+      img.onload = () => finish(url);
+      img.onerror = () => finish(null);
+
+      try {
+        try {
+          img.removeAttribute("src");
+        } catch (_) {
+          img.src = "";
+        }
+        img.src = url;
+      } catch (_) {
+        finish(null);
+      }
+    });
+
+    if (winner) return String(winner);
+
+    try {
+      img.src = GRID_LOADING_PLACEHOLDER_SRC;
+    } catch (_) {}
+    try {
+      await new Promise((r) => setTimeout(r, 0));
+    } catch (_) {}
+  }
+
+  return null;
+}
+
 /**
  * Same resolution path as grid tiles: cache, Worker proxy, gateway fallbacks, queued + timeout loads.
  * Uses `modules/imageLoader.js` for IPFS/Arweave gateway rotation + session cache (no indexer calls).
@@ -2597,6 +2711,7 @@ async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
   if (!raw) return { ok: false };
 
   const manualMw = typeof opts.manualThumbMax === "number" && opts.manualThumbMax > 0 ? opts.manualThumbMax : 0;
+  const gridDirect = !!opts.gridDirect && manualMw <= 0;
   const mapManualTry = (u) => {
     if (!manualMw || !u) return u;
     return withManualModalMaxWidth(gridProxyUrl(u) || u, manualMw);
@@ -2648,7 +2763,33 @@ async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
   }
 
   const loaderId = cacheKeyFromRawArt(raw);
-  const timeoutMs = state?.whaleMode ? 7000 : 11000;
+  /** Large assets / cold worker cache need headroom — short timers caused mass false failures + retry. */
+  const timeoutMs = state?.whaleMode ? 18000 : 26000;
+
+  if (gridDirect) {
+    const peek = peekResolvedForRawArt(loaderId);
+    if (peek === null) return { ok: false };
+    if (typeof peek === "string" && peek.trim()) {
+      const hit = peek.trim();
+      setImgCORS(img, true);
+      img.src = hit;
+      for (const c of candidates) if (c) imageCache.set(c, hit);
+      return { ok: true, winningUrl: hit };
+    }
+
+    clearImageLoaderFailure(loaderId);
+    /** Queue limits concurrent grid fetches so CDN/worker/IPFS gateways don't 429/every-image-onerror stamps. */
+    const win = await queueImageLoad(() => attachWorkingCandidateToImgElement(img, candidates, timeoutMs));
+    if (win) {
+      primeResolvedRawArt(loaderId, win);
+      for (const c of candidates) if (c) imageCache.set(c, win);
+      return { ok: true, winningUrl: win };
+    }
+
+    /** Do not `markFail()` here: synchronized transient timeouts/CDN blips poisoned unrelated tiles sharing raw keys. */
+    return { ok: false };
+  }
+
   const resolved = await queueImageLoad(() =>
     resolveImageUrlWithCandidates(loaderId, candidates, {
       rawArt: raw,
@@ -4888,7 +5029,36 @@ function ensureSolanaLazyObserver() {
 function shouldLazyLoadTileImage() {
   const ch = String(state.chain || "").trim().toLowerCase();
   if (ch !== "solana") return false;
+  // UX: small collections must show immediately (avoid “looks broken”).
+  // Also avoids cases where IntersectionObserver fails to fire promptly on some iOS WebKit builds.
+  const total = Number(state?.imageLoadState?.total || 0);
+  if (Number.isFinite(total) && total > 0 && total <= 80) return false;
   return solanaTileSeq >= SOLANA_EAGER_IMAGE_BUDGET;
+}
+
+function kickstartVisibleTileLoads(maxTiles = 40) {
+  const cap = Math.max(1, Math.min(160, Math.round(Number(maxTiles) || 40)));
+  const roots = [];
+  const p = getGridPrimary();
+  const o = getGridOverflow();
+  if (p) roots.push(p);
+  if (o && o.style.display !== "none") roots.push(o);
+  let started = 0;
+  for (const root of roots) {
+    const tiles = root.querySelectorAll(".tile[data-kind='nft']");
+    for (let i = 0; i < tiles.length && started < cap; i++) {
+      const tile = tiles[i];
+      const raw = String(tile?.dataset?.rawUrl || "").trim();
+      if (!raw) continue;
+      const img = tile.querySelector("img");
+      if (!img) continue;
+      if (img.dataset.didStartLoad === "1") continue;
+      img.dataset.didStartLoad = "1";
+      started++;
+      loadTileImage(tile, img, raw).catch(() => {});
+    }
+    if (started >= cap) break;
+  }
 }
 
 /** Classic grid: padded slot list (NFTs + GRID_EMPTY_SENTINEL), length === totalSlots — no trailing filler pass. */
@@ -5054,6 +5224,9 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
     }
     scheduleProgressiveClassicPaddedGrid(grid, trimmedPaddedClassic, buildId, 0);
     updateImageTotalsAfterGridBuild(denseForLog);
+    if ((state?.imageLoadState?.total || 0) > 0 && (state.imageLoadState.total || 0) <= 80) {
+      kickstartVisibleTileLoads(60);
+    }
     syncOrderedItemsFromGrid();
     requestAnimationFrame(syncWatermarkDOMToOneTile);
     return;
@@ -5091,6 +5264,9 @@ function renderFullLayoutFromItems(items, layoutId, buildId, classicOverride = n
   }
 
   state.imageLoadState.total = items.filter((it) => it?.image).length;
+  if ((state?.imageLoadState?.total || 0) > 0 && (state.imageLoadState.total || 0) <= 80) {
+    kickstartVisibleTileLoads(60);
+  }
 
   if (remainingItems.length > 0 && overflowEl) {
     showGridOverflow(true);
@@ -5362,7 +5538,7 @@ function removeUnloadedAndReshuffle() {
   const tiles = queryAllGridTiles();
   const loadedTiles = tiles.filter((t) => t.classList.contains("isLoaded"));
   if (loadedTiles.length === 0) {
-    setStatus("😕 No loaded images to keep — try Retry missing first");
+    setStatus(`😕 No loaded images to keep — ${RETRY_MISSING_BUTTON_HINT}`);
     return;
   }
 
@@ -5467,6 +5643,9 @@ function markMissing(tile, img, rawUrl) {
   tile.classList.remove("isLoaded");
   tile.classList.add("isMissing");
   tile.dataset.rawUrl = rawUrl || tile.dataset.rawUrl || "";
+  try {
+    tile.title = RETRY_MISSING_BUTTON_HINT;
+  } catch (_) {}
 
   if (DEV) {
     console.warn("❌ Tile missing", {
@@ -5508,6 +5687,9 @@ async function retryMissingTiles() {
       tile.dataset.rawUrl = rawUrl;
     } catch (_) {}
     tile.classList.remove("isMissing");
+    try {
+      tile.removeAttribute("title");
+    } catch (_) {}
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
     clearImageLoaderFailure(cacheKeyFromRawArt(rawUrl));
@@ -5533,7 +5715,11 @@ async function retryMissingTiles() {
   }
   const exportRoot = $("gridStack") || primary;
   const stillMissing = exportRoot ? exportRoot.querySelectorAll(".tile.isMissing").length : 0;
-  setStatus(stillMissing > 0 ? `😕 ${stillMissing} still failed` : "✅ Retry complete!");
+  setStatus(
+    stillMissing > 0
+      ? `😕 ${stillMissing} still failed — ${RETRY_MISSING_BUTTON_HINT}`
+      : "✅ Retry complete!"
+  );
   updateImageProgress();
 }
 
@@ -5546,17 +5732,37 @@ async function loadTileImage(tile, img, rawUrl) {
     return false;
   }
 
+  clearImageLoaderFailure(cacheKeyFromRawArt(raw));
+
   if (raw.startsWith("blob:")) {
     tile.dataset.ipfsPath = "";
   } else {
     tile.dataset.ipfsPath = getIpfsPath(raw) || "";
   }
 
-  const res = await resolveRawUrlOntoImage(img, raw);
+  const res = await resolveRawUrlOntoImage(img, raw, { gridDirect: true });
   if (res.ok) {
+    let dimOk = true;
+    try {
+      const nw = img.naturalWidth || 0;
+      const nh = img.naturalHeight || 0;
+      dimOk =
+        nw >= GRID_IMG_MIN_DIMENSION && nh >= GRID_IMG_MIN_DIMENSION && nw <= 8192 && nh <= 8192;
+    } catch (_) {
+      dimOk = false;
+    }
+    if (!dimOk) {
+      markMissing(tile, img, rawUrl);
+      state.imageLoadState.failed++;
+      updateImageProgress();
+      return false;
+    }
     const win = (res.winningUrl || (img.currentSrc || img.src || "")).trim();
     tile.dataset.src = win;
     tile.classList.remove("isMissing");
+    try {
+      tile.removeAttribute("title");
+    } catch (_) {}
     tile.classList.add("isLoaded");
     state.imageLoadState.loaded++;
     updateImageProgress();

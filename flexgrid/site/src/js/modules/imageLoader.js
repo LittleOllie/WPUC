@@ -31,6 +31,30 @@ function markOk(rawUrl, resolvedUrl) {
   memCache.set(rawUrl, resolvedUrl || rawUrl);
 }
 
+/** Read session-ish cache keyed by FlexGrid raw-art stable id (`cacheKeyFromRawArt`). */
+export function peekResolvedForRawArt(rawArtCacheKey) {
+  const key = String(rawArtCacheKey || "").trim();
+  if (!key || !memCache.has(key)) return undefined;
+  return memCache.get(key);
+}
+
+/** Persist a resolved winning URL keyed by FlexGrid raw-art stable id (used by grid fast-load). */
+export function primeResolvedRawArt(rawArtCacheKey, resolvedUrl) {
+  const key = String(rawArtCacheKey || "").trim();
+  const win = String(resolvedUrl || "").trim();
+  if (!key || !win) return;
+  markOk(key, win);
+  persistSoon();
+}
+
+/** Mark a failure for the FlexGrid stable raw-art cache key so we stop hammering known-bad combos. */
+export function noteRawArtResolveFailed(rawArtCacheKey) {
+  const key = String(rawArtCacheKey || "").trim();
+  if (!key) return;
+  markFail(key);
+  persistSoon();
+}
+
 function safeParseJSON(s) {
   try {
     return JSON.parse(s);

@@ -175,7 +175,8 @@ const ORIGIN_FETCH_CF = {
   cacheTtl: 86400,
 };
 
-const IMAGE_FETCH_TIMEOUT_MS = 8000;
+/** Larger collections cold-cache many gateways; premature abort surfaced as widespread client decode failures */
+const IMAGE_FETCH_TIMEOUT_MS = 15000;
 const IMAGE_HTTP_RETRY_DELAY_MS = 400;
 const MAX_IMAGE_BYTES = 45 * 1024 * 1024; // safety cap (45MB)
 
