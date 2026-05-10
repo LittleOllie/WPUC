@@ -373,7 +373,241 @@ let manualModal = {
   waitingForNfts: false,
   _nftPollTid: null,
   _nftPollAttempts: 0,
+  /** getNFTSelectionKey -> "ok" | "fail" — first load terminal state (for virtual remount + progress) */
+  previewKeyOutcome: null,
+  /** Keys whose last resolved preview failed */
+  _previewFailedKeys: null,
+  _virtualRaf: null,
+  _virtualScrollEl: null,
+  _virtualOnScroll: null,
+  _virtualOnResize: null,
+  _virtualResizeObserver: null,
+  _virtualSliceEl: null,
+  _virtualLayout: null,
+  _virtualLastRange: null,
 };
+
+function destroyManualModalVirtualizer() {
+  if (manualModal._virtualRaf != null) {
+    try {
+      cancelAnimationFrame(manualModal._virtualRaf);
+    } catch (_) {}
+    manualModal._virtualRaf = null;
+  }
+  const scroll = manualModal._virtualScrollEl;
+  if (scroll && manualModal._virtualOnScroll) {
+    try {
+      scroll.removeEventListener("scroll", manualModal._virtualOnScroll);
+    } catch (_) {}
+  }
+  manualModal._virtualScrollEl = null;
+  manualModal._virtualOnScroll = null;
+  if (manualModal._virtualOnResize) {
+    try {
+      window.removeEventListener("resize", manualModal._virtualOnResize);
+    } catch (_) {}
+    manualModal._virtualOnResize = null;
+  }
+  if (manualModal._virtualResizeObserver) {
+    try {
+      manualModal._virtualResizeObserver.disconnect();
+    } catch (_) {}
+    manualModal._virtualResizeObserver = null;
+  }
+  manualModal._virtualSliceEl = null;
+  manualModal._virtualLayout = null;
+  manualModal._virtualLastRange = null;
+}
+
+/** Match `.manual-selection-grid` + breakpoints: auto-fill minmax(72|88px, 1fr). */
+function computeManualModalGridMetrics(gridEl) {
+  const w = Math.max(1, gridEl?.clientWidth || 0) || 300;
+  const narrow = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 520px)").matches;
+  const minCol = narrow ? 72 : 88;
+  const gap = narrow ? 8 : 10;
+  const cols = Math.max(1, Math.floor((w + gap) / (minCol + gap)));
+  const cellSize = (w - gap * (cols - 1)) / cols;
+  const rowStride = cellSize + gap;
+  return { cols, gap, minCol, cellSize, rowStride, width: w };
+}
+
+function manualModalVirtualBufferRows() {
+  return isIOS() || (typeof window.innerWidth === "number" && window.innerWidth < 520) ? 5 : 3;
+}
+
+function scheduleManualModalVirtualUpdate() {
+  if (manualModal._virtualRaf != null) return;
+  manualModal._virtualRaf = requestAnimationFrame(() => {
+    manualModal._virtualRaf = null;
+    renderManualModalVirtualSlice();
+  });
+}
+
+function detachManualModalNFTCell(cell) {
+  if (!cell) return;
+  const img = cell.querySelector("img");
+  if (!img) return;
+  try {
+    img.onload = null;
+    img.onerror = null;
+  } catch (_) {}
+  try {
+    img.src = "";
+    img.removeAttribute("src");
+  } catch (_) {}
+}
+
+function finalizeManualPreviewKey(nftKey, outcome) {
+  const out = outcome === "ok" ? "ok" : "fail";
+  if (!nftKey) return;
+  const om = manualModal.previewKeyOutcome;
+  if (!om || om.has(nftKey)) return;
+  om.set(nftKey, out);
+  if (out === "fail") manualModal._previewFailedKeys?.add(nftKey);
+  else manualModal._previewFailedKeys?.delete(nftKey);
+  const st = manualModal.imageLoadState;
+  if (st) {
+    st.settled++;
+    updateManualModalLoadProgress();
+  }
+}
+
+function createManualModalNFTCell(nft, k) {
+  const cell = document.createElement("button");
+  cell.type = "button";
+  cell.className = "manual-nft-tile";
+  cell.dataset.nftKey = k;
+  if (manualModal.draftKeys?.has(k)) cell.classList.add("manual-nft-tile--selected");
+
+  const img = document.createElement("img");
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.referrerPolicy = "no-referrer";
+  img.crossOrigin = "anonymous";
+
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "manual-nft-tile-retry";
+  retryBtn.textContent = "↻";
+  retryBtn.title = "Retry loading image";
+  retryBtn.setAttribute("aria-label", "Retry loading image");
+  retryBtn.hidden = true;
+  retryBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    retryManualModalImage(img, nft, retryBtn, cell);
+  });
+
+  const src = modalThumbSrcForNFT(nft);
+  const isPlaceholder = !src || src === TILE_PLACEHOLDER_SRC;
+
+  cell.appendChild(img);
+  cell.appendChild(retryBtn);
+  cell.addEventListener("click", (e) => {
+    if (e.target.closest(".manual-nft-tile-retry")) return;
+    e.stopPropagation();
+    toggleManualNFTSelection(k);
+  });
+
+  if (!isPlaceholder) {
+    void startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry: false });
+  } else {
+    img.src = src;
+  }
+  return cell;
+}
+
+function renderManualModalVirtualSlice() {
+  const scroll = manualModal._virtualScrollEl;
+  const grid = document.getElementById("manualSelectionGrid");
+  const layout = manualModal._virtualLayout;
+  const slice = manualModal._virtualSliceEl;
+  if (!scroll || !grid || !layout || !slice) return;
+
+  const metrics = computeManualModalGridMetrics(grid);
+  if (
+    metrics.cols !== layout.cols ||
+    Math.abs(metrics.cellSize - layout.cellSize) > 0.5 ||
+    Math.abs(metrics.rowStride - layout.rowStride) > 0.5
+  ) {
+    layout.cols = metrics.cols;
+    layout.gap = metrics.gap;
+    layout.minCol = metrics.minCol;
+    layout.cellSize = metrics.cellSize;
+    layout.rowStride = metrics.rowStride;
+    layout.width = metrics.width;
+    layout.totalRows = Math.max(1, Math.ceil(layout.items.length / layout.cols));
+    const totalH = layout.totalRows * layout.rowStride - layout.gap;
+    grid.style.minHeight = `${Math.max(0, totalH)}px`;
+    slice.style.gridTemplateColumns = `repeat(${layout.cols}, 1fr)`;
+    slice.style.gap = `${layout.gap}px`;
+    manualModal._virtualLastRange = null;
+  }
+
+  const st = scroll.scrollTop;
+  const vh = scroll.clientHeight;
+  const rs = layout.rowStride || 1;
+  const buf = manualModalVirtualBufferRows();
+  let firstRow = Math.floor(st / rs);
+  firstRow = Math.max(0, firstRow - buf);
+  let lastRow = Math.ceil((st + vh) / rs) - 1 + buf;
+  lastRow = Math.min(layout.totalRows - 1, lastRow);
+
+  if (
+    manualModal._virtualLastRange &&
+    manualModal._virtualLastRange.fr === firstRow &&
+    manualModal._virtualLastRange.lr === lastRow
+  ) {
+    return;
+  }
+  manualModal._virtualLastRange = { fr: firstRow, lr: lastRow };
+
+  slice.querySelectorAll(".manual-nft-tile").forEach((el) => detachManualModalNFTCell(el));
+  slice.innerHTML = "";
+
+  const firstIdx = firstRow * layout.cols;
+  const lastIdx = Math.min(layout.items.length - 1, (lastRow + 1) * layout.cols - 1);
+  const frag = document.createDocumentFragment();
+  for (let i = firstIdx; i <= lastIdx && i < layout.items.length; i++) {
+    const { nft, key } = layout.items[i];
+    frag.appendChild(createManualModalNFTCell(nft, key));
+  }
+  slice.appendChild(frag);
+
+  slice.style.top = `${firstRow * rs}px`;
+}
+
+function wireManualModalVirtualizer(grid, collection) {
+  const scroll = manualModal.overlay?.querySelector(".manual-selection-scroll");
+  if (!scroll || !grid) return;
+
+  manualModal._virtualScrollEl = scroll;
+  manualModal._virtualOnScroll = () => scheduleManualModalVirtualUpdate();
+  scroll.addEventListener("scroll", manualModal._virtualOnScroll, { passive: true });
+
+  manualModal._virtualOnResize = () => {
+    manualModal._virtualLastRange = null;
+    scheduleManualModalVirtualUpdate();
+  };
+  window.addEventListener("resize", manualModal._virtualOnResize);
+
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => {
+      manualModal._virtualLastRange = null;
+      scheduleManualModalVirtualUpdate();
+    });
+    try {
+      ro.observe(grid);
+      manualModal._virtualResizeObserver = ro;
+    } catch (_) {}
+  }
+
+  requestAnimationFrame(() => {
+    if (manualModal.collectionKey !== collection.key) return;
+    scheduleManualModalVirtualUpdate();
+  });
+}
 
 const MANUAL_MODAL_NFT_POLL_MS = 320;
 const MANUAL_MODAL_NFT_POLL_MAX = 140;
@@ -1799,7 +2033,7 @@ function updateManualModalLoadProgress() {
   }
 
   bar.classList.remove("manual-selection-loading--empty");
-  const failedCount = grid ? grid.querySelectorAll(".manual-nft-tile--error").length : 0;
+  const failedCount = manualModal._previewFailedKeys?.size ?? (grid ? grid.querySelectorAll(".manual-nft-tile--error").length : 0);
   const pct = Math.min(100, Math.round((st.settled / st.total) * 100));
   if (fill) {
     fill.style.width = `${pct}%`;
@@ -1911,20 +2145,46 @@ async function resolveRawUrlOntoImage(img, rawUrl) {
 }
 
 /** Full thumbnail load for manual picker — mirrors `loadTileImage` (proxy + fallbacks), then decode / size check. */
-async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSettled } = {}) {
-  const st = manualModal.imageLoadState;
+async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry } = {}) {
+  const nftKey = getNFTSelectionKey(nft) || "";
+  const prior = manualModal.previewKeyOutcome?.get(nftKey);
+
   cell.classList.remove("manual-nft-tile--error");
   retryBtn.hidden = true;
   delete cell.dataset.thumbCandIdx;
+
+  if (isRetry) {
+    try {
+      manualModal.previewKeyOutcome?.delete(nftKey);
+    } catch (_) {}
+    manualModal._previewFailedKeys?.delete(nftKey);
+  } else if (prior === "ok") {
+    const rawOk = getImage(nft);
+    if (!rawOk || !String(rawOk).trim()) {
+      img.src = TILE_PLACEHOLDER_SRC;
+      return;
+    }
+    img.src = GRID_LOADING_PLACEHOLDER_SRC;
+    clearImageLoaderFailure(cacheKeyFromRawArt(String(rawOk || "").trim()));
+    const resHit = await resolveRawUrlOntoImage(img, rawOk);
+    if (resHit.ok && img.isConnected) {
+      try {
+        if (typeof img.decode === "function") await img.decode();
+      } catch (_) {}
+      if (isManualModalImageRenderable(img) && nft) primeImageCacheFromManualPreview(nft, img);
+    }
+    return;
+  } else if (prior === "fail") {
+    retryBtn.hidden = false;
+    cell.classList.add("manual-nft-tile--error");
+    img.src = TILE_PLACEHOLDER_SRC;
+    return;
+  }
 
   const raw = getImage(nft);
   if (!raw || !String(raw).trim()) {
     img.src = TILE_PLACEHOLDER_SRC;
     retryBtn.hidden = true;
-    if (bumpSettled && st) {
-      st.settled++;
-      updateManualModalLoadProgress();
-    }
     return;
   }
 
@@ -1943,24 +2203,42 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSet
     if (ok && !isManualModalImageRenderable(img)) ok = false;
   }
 
-  if (!ok) {
-    retryBtn.hidden = false;
-    cell.classList.add("manual-nft-tile--error");
-    img.src = TILE_PLACEHOLDER_SRC;
-  } else {
-    retryBtn.hidden = true;
-    cell.classList.remove("manual-nft-tile--error");
-    if (nft) primeImageCacheFromManualPreview(nft, img);
-  }
+  const connected = img.isConnected && cell.isConnected;
 
-  if (bumpSettled && st) {
-    st.settled++;
-    updateManualModalLoadProgress();
+  if (!ok) {
+    if (connected) {
+      retryBtn.hidden = false;
+      cell.classList.add("manual-nft-tile--error");
+      img.src = TILE_PLACEHOLDER_SRC;
+    }
+    if (isRetry) {
+      manualModal.previewKeyOutcome?.set(nftKey, "fail");
+      manualModal._previewFailedKeys?.add(nftKey);
+    } else {
+      finalizeManualPreviewKey(nftKey, "fail");
+    }
+  } else {
+    if (connected) {
+      retryBtn.hidden = true;
+      cell.classList.remove("manual-nft-tile--error");
+    }
+    if (nft) {
+      try {
+        primeImageCacheFromManualPreview(nft, img);
+      } catch (_) {}
+    }
+    if (isRetry) {
+      manualModal.previewKeyOutcome?.set(nftKey, "ok");
+      manualModal._previewFailedKeys?.delete(nftKey);
+    } else {
+      finalizeManualPreviewKey(nftKey, "ok");
+    }
   }
+  updateManualModalLoadProgress();
 }
 
 function retryManualModalImage(img, nft, retryBtn, cell) {
-  void startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSettled: false });
+  void startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry: true });
 }
 
 async function retryAllFailedManualModalImages() {
@@ -1983,7 +2261,7 @@ async function retryAllFailedManualModalImages() {
         if (!nft) return;
         const img = cell.querySelector("img");
         const retryBtn = cell.querySelector(".manual-nft-tile-retry");
-        if (img && retryBtn) await startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSettled: false });
+        if (img && retryBtn) await startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry: true });
       })
     );
   } finally {
@@ -2017,7 +2295,10 @@ function primeManualModalOpenShell() {
   const label = document.getElementById("manualSelectionLoadLabel");
   const track = document.getElementById("manualSelectionProgressTrack");
   const retryAll = document.getElementById("manualSelectionRetryFailed");
-  if (grid) grid.innerHTML = "";
+  if (grid) {
+    destroyManualModalVirtualizer();
+    grid.innerHTML = "";
+  }
   manualModal.imageLoadState = { total: 0, settled: 0 };
   manualModal.waitingForNfts = false;
   if (bar) {
@@ -2043,8 +2324,13 @@ function primeManualModalOpenShell() {
 function renderManualSelectionModalGrid(collection) {
   const grid = document.getElementById("manualSelectionGrid");
   if (!grid) return;
+
+  destroyManualModalVirtualizer();
   grid.innerHTML = "";
-  manualModal.imageLoadState = { total: 0, settled: 0 };
+  grid.classList.remove("manual-selection-grid--virtual");
+  grid.style.minHeight = "";
+  manualModal.previewKeyOutcome = new Map();
+  manualModal._previewFailedKeys = new Set();
 
   const bar = document.getElementById("manualSelectionLoadingBar");
   if (bar) {
@@ -2057,6 +2343,7 @@ function renderManualSelectionModalGrid(collection) {
   const nfts = collection.nfts || [];
   if (nfts.length === 0) {
     manualModal.waitingForNfts = true;
+    manualModal.imageLoadState = { total: 0, settled: 0 };
     const hold = document.createElement("div");
     hold.className = "manual-selection-nfts-waiting";
     hold.innerHTML =
@@ -2072,56 +2359,42 @@ function renderManualSelectionModalGrid(collection) {
 
   manualModal.waitingForNfts = false;
 
-  const frag = document.createDocumentFragment();
+  const items = [];
   for (let i = 0; i < nfts.length; i++) {
     const nft = nfts[i];
     const k = getNFTSelectionKey(nft);
-    if (!k) continue;
-    const cell = document.createElement("button");
-    cell.type = "button";
-    cell.className = "manual-nft-tile";
-    cell.dataset.nftKey = k;
-    if (manualModal.draftKeys.has(k)) cell.classList.add("manual-nft-tile--selected");
-
-    const img = document.createElement("img");
-    img.alt = "";
-    img.loading = "eager";
-    img.referrerPolicy = "no-referrer";
-    img.crossOrigin = "anonymous";
-
-    const retryBtn = document.createElement("button");
-    retryBtn.type = "button";
-    retryBtn.className = "manual-nft-tile-retry";
-    retryBtn.textContent = "↻";
-    retryBtn.title = "Retry loading image";
-    retryBtn.setAttribute("aria-label", "Retry loading image");
-    retryBtn.hidden = true;
-    retryBtn.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      retryManualModalImage(img, nft, retryBtn, cell);
-    });
-
-    const src = modalThumbSrcForNFT(nft);
-    const isPlaceholder = !src || src === TILE_PLACEHOLDER_SRC;
-
-    cell.appendChild(img);
-    cell.appendChild(retryBtn);
-    cell.addEventListener("click", (e) => {
-      if (e.target.closest(".manual-nft-tile-retry")) return;
-      e.stopPropagation();
-      toggleManualNFTSelection(k);
-    });
-    frag.appendChild(cell);
-
-    if (!isPlaceholder && manualModal.imageLoadState) {
-      manualModal.imageLoadState.total++;
-      void startManualModalThumbnailLoad(img, cell, retryBtn, nft, { bumpSettled: true });
-    } else {
-      img.src = src;
-    }
+    if (k) items.push({ nft, key: k });
   }
-  grid.appendChild(frag);
+
+  let loadableN = 0;
+  for (const { nft } of items) {
+    const src = modalThumbSrcForNFT(nft);
+    if (src && src !== TILE_PLACEHOLDER_SRC) loadableN++;
+  }
+  manualModal.imageLoadState = { total: loadableN, settled: 0 };
+
+  const metrics = computeManualModalGridMetrics(grid);
+  const totalRows = Math.max(1, Math.ceil(items.length / metrics.cols));
+  const totalH = totalRows * metrics.rowStride - metrics.gap;
+  grid.style.minHeight = `${Math.max(0, totalH)}px`;
+  grid.classList.add("manual-selection-grid--virtual");
+
+  const slice = document.createElement("div");
+  slice.className = "manual-selection-virtual-slice";
+  slice.style.gridTemplateColumns = `repeat(${metrics.cols}, 1fr)`;
+  slice.style.gap = `${metrics.gap}px`;
+  grid.appendChild(slice);
+
+  manualModal._virtualSliceEl = slice;
+  manualModal._virtualLayout = {
+    ...metrics,
+    items,
+    totalRows,
+    collectionKey: collection.key,
+  };
+  manualModal._virtualLastRange = null;
+
+  wireManualModalVirtualizer(grid, collection);
 
   updateManualModalLoadProgress();
 
@@ -2180,6 +2453,7 @@ function openManualSelectionModal(collectionKey) {
 function closeManualSelectionModal() {
   clearManualModalNftPoll();
   manualModal.waitingForNfts = false;
+  destroyManualModalVirtualizer();
   const overlay = manualModal.overlay;
   if (overlay) {
     overlay.classList.add("hidden");

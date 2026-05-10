@@ -3279,6 +3279,27 @@ body.dark .manual-selection-scroll{
   grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   gap: 10px;
 }
+/* Virtualized manual picker: outer shell holds min-height; only visible slice is a grid */
+.manual-selection-grid.manual-selection-grid--virtual{
+  display: block;
+  position: relative;
+  width: 100%;
+  contain: layout style;
+}
+.manual-selection-virtual-slice{
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 520px){
+  .manual-selection-virtual-slice{
+    gap: 8px;
+  }
+}
 .manual-nft-tile{
   position: relative;
   aspect-ratio: 1;
