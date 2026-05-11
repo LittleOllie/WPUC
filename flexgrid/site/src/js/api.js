@@ -149,7 +149,7 @@ function tryReadNftCaches(cacheKey, bypassCache) {
   return null;
 }
 
-export function getNftFetchCacheKey(wallet, chain, contractAddresses, minimal = false) {
+export function getNftFetchCacheKey(wallet, chain, contractAddresses, minimal = false, thumbOnly = false) {
   const w = String(wallet || "")
     .trim()
     .toLowerCase();
@@ -160,7 +160,8 @@ export function getNftFetchCacheKey(wallet, chain, contractAddresses, minimal = 
     .trim()
     .toLowerCase();
   const m = minimal === true ? "::m1" : "";
-  return `${w}::${c}::${f}${m}`;
+  const t = thumbOnly === true ? "::t1" : "";
+  return `${w}::${c}::${f}${m}${t}`;
 }
 
 function warnIfHugeNftResponse(list, chainParam) {
@@ -185,6 +186,7 @@ async function fetchNFTsFromWorkerHttp(opts = {}) {
   const pageKey = typeof opts.pageKey === "string" && opts.pageKey.trim() ? opts.pageKey.trim() : null;
   const pageOnly = opts.pageOnly === true;
   const minimal = opts.minimal === true;
+  const thumbOnly = opts.thumbOnly === true;
 
   const networkLabel = flexGridLogNetwork(chainParam);
   const backendHint =
@@ -202,6 +204,9 @@ async function fetchNFTsFromWorkerHttp(opts = {}) {
   }
   if (minimal) {
     url += `&minimal=1`;
+  }
+  if (thumbOnly) {
+    url += `&thumbOnly=1`;
   }
 
   const controller = new AbortController();
@@ -257,7 +262,8 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
   const contractFilter = String(opts.contractAddresses || "").trim();
   const bypassCache = opts.bypassCache === true;
   const minimal = opts.minimal === true;
-  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal);
+  const thumbOnly = opts.thumbOnly === true;
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal, thumbOnly);
 
   if (!wallet) {
     console.warn("[FlexGrid] fetchNFTsFromWorker: missing wallet");
@@ -303,6 +309,7 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
         chain: chainParam,
         contractAddresses: contractFilter || undefined,
         minimal,
+        thumbOnly,
       });
       const raw = pack?.nfts || [];
       warnIfHugeNftResponse(raw, chainParam);

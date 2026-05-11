@@ -1285,6 +1285,7 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses,
   const allNFTs = [];
   const pageOnly = opts && opts.pageOnly === true;
   const minimal = opts && opts.minimal === true;
+  const thumbOnly = opts && opts.thumbOnly === true;
   let pageKey = opts && typeof opts.pageKey === "string" && opts.pageKey.trim() ? opts.pageKey.trim() : null;
 
   console.log("[FlexGrid Worker] NFT fetch (Alchemy)", { chain, host, owner: ownerVal });
@@ -1297,12 +1298,21 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses,
         pageSize: "100",
       });
       if (pageKey) params.set("pageKey", pageKey);
-      /* Contract-scoped: 0 = Alchemy cache-only token URI resolution (avoids long IPFS tails). Full-wallet scans keep 20s. */
-      const tokenUriMs =
-        contractAddresses?.length && contractAddresses.length > 0 ? "0" : "20000";
+      /* Speed lever for Polygon collections:
+         - full metadata: allow some URI resolution time
+         - thumbOnly: skip/limit heavy media_items/normalize and keep tokenUriTimeout lower
+      */
+      const isContractScoped = !!(contractAddresses?.length && contractAddresses.length > 0);
+      const tokenUriMs = thumbOnly ? "8000" : isContractScoped ? "12000" : "20000";
       params.set("tokenUriTimeoutInMs", tokenUriMs);
       if (contractAddresses?.length) {
         contractAddresses.forEach((addr) => params.append("contractAddresses[]", addr));
+      }
+      // These options control how much image/media + normalized metadata Alchemy returns.
+      // Full mode keeps previous behavior; `thumbOnly` skips this heavy expansion.
+      if (!minimal && !thumbOnly) {
+        params.set("media_items", "true");
+        params.set("normalizeMetadata", "true");
       }
 
       const fetchUrl = `${baseUrl}?${params.toString()}`;
@@ -1352,6 +1362,7 @@ async function handleApiNfts(request, env) {
   const pageKey = url.searchParams.get("pageKey");
   const pageOnly = url.searchParams.get("pageOnly") === "1" || url.searchParams.get("pageOnly") === "true";
   const minimal = url.searchParams.get("minimal") === "1" || url.searchParams.get("minimal") === "true";
+  const thumbOnly = url.searchParams.get("thumbOnly") === "1" || url.searchParams.get("thumbOnly") === "true";
 
   if (!owner || String(owner).trim() === "") {
     return corsResponse(JSON.stringify({ error: "Missing owner" }), 400);
@@ -1425,10 +1436,10 @@ async function handleApiNfts(request, env) {
       }
     }
     // Moralis cursor pagination doesn't map cleanly to Alchemy pageKey. Keep ApeChain behavior unchanged.
-    return fetchAlchemyNftsForOwner(env, ownerVal, "apechain", contractAddresses, { pageKey, pageOnly, minimal });
+    return fetchAlchemyNftsForOwner(env, ownerVal, "apechain", contractAddresses, { pageKey, pageOnly, minimal, thumbOnly });
   }
 
-  return fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses, { pageKey, pageOnly, minimal });
+  return fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses, { pageKey, pageOnly, minimal, thumbOnly });
 }
 
 async function handleApiNftMetadata(request, env) {

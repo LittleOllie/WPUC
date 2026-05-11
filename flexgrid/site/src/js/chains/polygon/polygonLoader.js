@@ -21,13 +21,43 @@ export async function loadPolygonWalletContractNfts(opts = {}) {
   const contract = normalizePolygonContract(opts.contract);
   if (!wallet || !contract) return [];
 
-  /* Full metadata (not `minimal`) — Alchemy’s fast list omits token media; without it the grid has no image URLs and collection cards have no logo. */
-  return fetchNFTsFromWorker({
+  // Fast path: `thumbOnly` skips heavy media_items/normalizeMetadata expansion in Alchemy.
+  // If it returns NFTs without enough image candidates, we immediately retry with full metadata.
+  const bypassCache = opts.bypassCache === true;
+
+  const quick = await fetchNFTsFromWorker({
     wallet,
     chain: "polygon",
     contractAddresses: contract,
-    bypassCache: opts.bypassCache === true,
+    bypassCache,
+    thumbOnly: true,
   });
+
+  const sample = Array.isArray(quick) ? quick : [];
+  const artCount = sample.slice(0, 10).reduce((acc, n) => {
+    if (!n || typeof n !== "object") return acc;
+    const has =
+      (typeof n.image === "string" && n.image.trim()) ||
+      (typeof n.image_url === "string" && n.image_url.trim()) ||
+      (typeof n.tokenUri?.gateway === "string" && n.tokenUri.gateway.trim()) ||
+      (typeof n?.metadata?.image === "string" && n.metadata.image.trim()) ||
+      (typeof n?.rawMetadata?.image === "string" && n.rawMetadata.image.trim()) ||
+      (Array.isArray(n?.media) && n.media.length > 0) ||
+      (typeof n?.media?.[0]?.raw === "string" && n.media[0].raw.trim());
+    return acc + (has ? 1 : 0);
+  }, 0);
+
+  const needFallback = sample.length > 0 && artCount < Math.min(3, sample.length);
+  if (needFallback) {
+    return fetchNFTsFromWorker({
+      wallet,
+      chain: "polygon",
+      contractAddresses: contract,
+      bypassCache,
+    });
+  }
+
+  return sample;
 }
 
 /**
