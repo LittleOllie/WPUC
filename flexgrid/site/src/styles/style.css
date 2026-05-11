@@ -4883,3 +4883,111 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
     font-size: 20px;
   }
 }
+
+/* ---------- Polygon (isolated wallet step UI) ---------- */
+.polygonContractRow{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.polygonContractHint{
+  margin: 0;
+  font-weight: 600;
+  color: rgba(255,255,255,0.78);
+}
+.polygonSaveRow{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.polygonBookmarkHint{
+  margin: 0;
+}
+.polygonSavedRow{
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.polygonSavedRowLabel{
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.72);
+  margin-bottom: 8px;
+}
+.polygonSavedStrip{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.polygonSavedCard{
+  position: relative;
+  flex: 0 0 auto;
+  width: 112px;
+  min-height: 132px;
+  padding: 8px 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.22);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+.polygonSavedCard:hover{
+  border-color: rgba(255, 221, 85, 0.55);
+  filter: brightness(1.04);
+}
+.polygonSavedCardImg{
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(255,255,255,0.08);
+}
+.polygonSavedCardImg--placeholder{
+  background: linear-gradient(145deg, rgba(109,224,255,0.35), rgba(76,111,255,0.45));
+}
+.polygonSavedCardCap{
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: rgba(255,255,255,0.92);
+  max-width: 100%;
+  word-break: break-word;
+}
+.polygonSavedCardRemove{
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.polygonSavedCardRemove:hover{
+  background: rgba(244, 67, 54, 0.75);
+}

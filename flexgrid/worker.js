@@ -1297,7 +1297,10 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses,
         pageSize: "100",
       });
       if (pageKey) params.set("pageKey", pageKey);
-      params.set("tokenUriTimeoutInMs", "20000");
+      /* Contract-scoped: 0 = Alchemy cache-only token URI resolution (avoids long IPFS tails). Full-wallet scans keep 20s. */
+      const tokenUriMs =
+        contractAddresses?.length && contractAddresses.length > 0 ? "0" : "20000";
+      params.set("tokenUriTimeoutInMs", tokenUriMs);
       if (contractAddresses?.length) {
         contractAddresses.forEach((addr) => params.append("contractAddresses[]", addr));
       }
@@ -1489,6 +1492,20 @@ async function handleApiNftMetadata(request, env) {
   }
 }
 
+/** Human-readable collection name from Alchemy `getContractMetadata` (v3) JSON. */
+function pickContractDisplayNameFromAlchemyContractMetadata(json) {
+  if (!json || typeof json !== "object") return null;
+  const t = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  return (
+    t(json.name) ||
+    t(json.contractMetadata?.name) ||
+    t(json.contract?.name) ||
+    t(json.openSeaMetadata?.collectionName) ||
+    t(json.openSea?.collectionName) ||
+    null
+  );
+}
+
 function pickOpenSeaCollectionLogoFromContractMetadata(data) {
   if (!data || typeof data !== "object") return null;
   const pick = (obj) => {
@@ -1605,8 +1622,12 @@ async function handleApiContractMetadata(request, env) {
           20000
         );
         const rawLogoUrl = pickLogoFromMoralisContractMeta(json);
+        const contractName =
+          (typeof json?.name === "string" && json.name.trim()) ||
+          (typeof json?.token_name === "string" && json.token_name.trim()) ||
+          null;
         console.log("[FlexGrid][ApeChain] contract logo resolved:", !!rawLogoUrl, "contract:", addr);
-        return corsResponse(JSON.stringify({ rawLogoUrl: rawLogoUrl || null }));
+        return corsResponse(JSON.stringify({ rawLogoUrl: rawLogoUrl || null, contractName }));
       } catch (e) {
         const msg =
           e?.name === "AbortError"
@@ -1642,7 +1663,8 @@ async function handleApiContractMetadata(request, env) {
       return corsResponse(JSON.stringify({ error: json.error.message, rawLogoUrl: null }), 502);
     }
     const rawLogoUrl = pickOpenSeaCollectionLogoFromContractMetadata(json);
-    return corsResponse(JSON.stringify({ rawLogoUrl }));
+    const contractName = pickContractDisplayNameFromAlchemyContractMetadata(json);
+    return corsResponse(JSON.stringify({ rawLogoUrl, contractName: contractName || null }));
   } catch (e) {
     const msg =
       e?.name === "AbortError"

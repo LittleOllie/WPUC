@@ -149,7 +149,7 @@ function tryReadNftCaches(cacheKey, bypassCache) {
   return null;
 }
 
-export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
+export function getNftFetchCacheKey(wallet, chain, contractAddresses, minimal = false) {
   const w = String(wallet || "")
     .trim()
     .toLowerCase();
@@ -159,7 +159,8 @@ export function getNftFetchCacheKey(wallet, chain, contractAddresses) {
   const f = String(contractAddresses || "")
     .trim()
     .toLowerCase();
-  return `${w}::${c}::${f}`;
+  const m = minimal === true ? "::m1" : "";
+  return `${w}::${c}::${f}${m}`;
 }
 
 function warnIfHugeNftResponse(list, chainParam) {
@@ -255,7 +256,8 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
   const contractFilter = String(opts.contractAddresses || "").trim();
   const bypassCache = opts.bypassCache === true;
-  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter);
+  const minimal = opts.minimal === true;
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal);
 
   if (!wallet) {
     console.warn("[FlexGrid] fetchNFTsFromWorker: missing wallet");
@@ -300,6 +302,7 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
         wallet,
         chain: chainParam,
         contractAddresses: contractFilter || undefined,
+        minimal,
       });
       const raw = pack?.nfts || [];
       warnIfHugeNftResponse(raw, chainParam);
@@ -330,7 +333,7 @@ async function fetchNFTsFromWorkerAlchemyOnce(opts = {}) {
  * Fetches NFTs for a wallet via the FlexGrid Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
  * Uses in-memory cache + in-flight coalescing to avoid duplicate Worker/Alchemy work.
  *
- * @param {{ wallet: string, chain?: string, contractAddresses?: string, bypassCache?: boolean }} opts
+ * @param {{ wallet: string, chain?: string, contractAddresses?: string, bypassCache?: boolean, minimal?: boolean }} opts
  */
 export async function fetchNFTsFromWorker(opts = {}) {
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
@@ -380,7 +383,7 @@ export async function loadWalletSafe(opts = {}) {
  * Paged NFT loading (best for 300–1000+). Uses Worker pageKey support to avoid one massive response.
  * IMPORTANT: This does not change watermark/export logic.
  *
- * @param {{ wallet: string, chain?: string, contractAddresses?: string, minimal?: boolean }} opts
+ * @param {{ wallet: string, chain?: string, contractAddresses?: string, minimal?: boolean, bypassCache?: boolean, onProgress?: (info: { page: number, pageSize: number, total: number, hasMore: boolean }) => void }} opts
  */
 export async function fetchNFTsInBatches(opts = {}) {
   const wallet = String(opts.wallet || "").trim();
@@ -390,7 +393,7 @@ export async function fetchNFTsInBatches(opts = {}) {
   const bypassCache = opts.bypassCache === true;
   if (!wallet) return [];
 
-  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter);
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal);
   const cachedHit = tryReadNftCaches(cacheKey, bypassCache);
   if (cachedHit) {
     console.log("[FlexGrid] Using cached NFTs (paged path)", { cacheKey, count: cachedHit.length });
@@ -443,6 +446,18 @@ export async function fetchNFTsInBatches(opts = {}) {
         }
         pageKey = nextKey;
         console.log("[FlexGrid] Fetching NFTs (paged) page", { page, got: rows.length, total: all.length, hasMore: !!pageKey });
+        if (typeof opts.onProgress === "function") {
+          try {
+            opts.onProgress({
+              page,
+              pageSize: rows.length,
+              total: all.length,
+              hasMore: !!pageKey,
+            });
+          } catch (_) {
+            /* ignore observer errors */
+          }
+        }
         // small delay to avoid spikes
         if (pageKey) await new Promise((r) => setTimeout(r, 150));
       } while (pageKey);
@@ -517,7 +532,7 @@ export async function fetchNFTsFromZora({ wallet, contractAddress }) {
 
 /**
  * Contract-level collection image via Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
- * Returns { rawLogoUrl: string | null, error?: string }.
+ * Returns { rawLogoUrl: string | null, contractName?: string | null, error?: string }.
  */
 export async function fetchContractMetadataFromWorker({ contract, chain }) {
   const chainParam = String(chain || "eth").trim().toLowerCase();
@@ -546,10 +561,12 @@ export async function fetchContractMetadataFromWorker({ contract, chain }) {
   }
   const rawLogoUrl =
     typeof json.rawLogoUrl === "string" && json.rawLogoUrl.trim() ? json.rawLogoUrl.trim() : null;
+  const contractName =
+    typeof json.contractName === "string" && json.contractName.trim() ? json.contractName.trim() : null;
   if (chainParam === "apechain") {
     console.log("[FlexGrid][ApeChain] contract-metadata rawLogoUrl:", rawLogoUrl ? "(set)" : "(null)");
   }
-  return { rawLogoUrl };
+  return { rawLogoUrl, contractName };
 }
 
 /** @deprecated Use getWorkerBase() after config load. */

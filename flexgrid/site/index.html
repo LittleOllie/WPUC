@@ -169,7 +169,7 @@
               <button type="button" class="flexgrid-chain-btn" data-chain="eth" aria-pressed="false">Ethereum</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="base" aria-pressed="false">Base</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
-              <button type="button" class="flexgrid-chain-btn flexgrid-chain-btn--disabled" disabled aria-disabled="true">Polygon (Coming Soon)</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false">Polygon</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false">Solana (Beta)</button>
             </div>
 
@@ -224,9 +224,34 @@
               <option value="eth" selected>Ethereum</option>
               <option value="base">Base</option>
               <option value="apechain">ApeChain</option>
-              <option value="polygon">Polygon (Coming Soon)</option>
+              <option value="polygon">Polygon</option>
               <option value="solana">Solana (Beta)</option>
             </select>
+            </div>
+            <div id="polygonContractRow" class="polygonContractRow hidden" aria-hidden="true">
+              <label class="walletFlowChainLbl" for="polygonContractInput">Collection contract</label>
+              <input
+                id="polygonContractInput"
+                class="input wallet-flow-field"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="0x… NFT contract (required)"
+                aria-describedby="polygonContractHint"
+              />
+              <p id="polygonContractHint" class="hint polygonContractHint">
+                Only NFTs you own from this contract are loaded — not your full wallet (better for large wallets and mobile).
+              </p>
+              <div class="polygonSaveRow">
+                <button type="button" id="polygonSaveCollectionBtn" class="btn btnSmall" disabled>Bookmark collection</button>
+              </div>
+              <p class="hint polygonBookmarkHint">Bookmarks use the <strong>first</strong> wallet in the box plus this contract (for one-tap reload).</p>
+            </div>
+            <div id="polygonSavedRow" class="polygonSavedRow hidden" aria-hidden="true">
+              <div class="polygonSavedRowLabel">Saved Polygon collections</div>
+              <div id="polygonSavedStrip" class="polygonSavedStrip" role="list" aria-label="Saved Polygon collections"></div>
             </div>
             <button id="loadBtn" class="btn walletFlowLoadBtn" type="button" disabled>🔍 LOAD WALLET</button>
           </div>

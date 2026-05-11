@@ -8,6 +8,9 @@ import {
   fetchContractMetadataFromWorker,
   getWorkerBase,
 } from "./api.js";
+import { readPolygonSavedCollections, upsertPolygonSavedCollection, removePolygonSavedCollection } from "./chains/polygon/polygonCache.js";
+import { isValidPolygonEvmAddress, normalizePolygonContract } from "./chains/polygon/polygonService.js";
+import { loadPolygonWalletsContractSequential } from "./chains/polygon/polygonLoader.js";
 import { getAlchemyNetworkId } from "./alchemyNetworks.js";
 import {
   hydrateImageLoaderFromSession,
@@ -1260,6 +1263,9 @@ function updateImageProgress() {
       stageFill.style.width = "0%";
       stageFill.classList.remove("indeterminate");
     }
+    /* Avoid stale “All images loaded” from a previous build when this grid has zero image loads. */
+    const stageHint = document.querySelector(".grid-stage-image-loading-hint");
+    if (stageHint) stageHint.textContent = "Loading images…";
     return;
   }
 
@@ -1329,7 +1335,14 @@ function enableButtons() {
   const gifBtn = $("gridGifBtn");
 
   const hasWallets = state.wallets.length > 0;
-  if (loadBtn) loadBtn.disabled = !hasWallets;
+  const ch = getWalletParseChain();
+  const polyContractRaw = String($("polygonContractInput")?.value || "").trim().toLowerCase();
+  const polygonContractOk = ch !== "polygon" || isValidPolygonEvmAddress(polyContractRaw);
+  if (loadBtn) loadBtn.disabled = !hasWallets || !polygonContractOk;
+  const polySave = $("polygonSaveCollectionBtn");
+  if (polySave) {
+    polySave.disabled = !(ch === "polygon" && hasWallets && polygonContractOk);
+  }
   syncSelectedKeysFromSelection();
   const buildDisabled = !hasItemsForBuild();
   if (buildBtn) buildBtn.disabled = buildDisabled;
@@ -1819,6 +1832,147 @@ function isValidSolanaWalletAddress(addr) {
   return true;
 }
 
+function renderPolygonSavedStrip() {
+  const strip = $("polygonSavedStrip");
+  const polySavedRow = $("polygonSavedRow");
+  if (!strip) return;
+  const list = readPolygonSavedCollections();
+  strip.innerHTML = "";
+  for (const rec of list) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "polygonSavedCard";
+    btn.setAttribute("role", "listitem");
+    btn.dataset.wallet = rec.wallet;
+    btn.dataset.contract = rec.contract;
+    btn.dataset.savedId = rec.id;
+    const label = (rec.nickname && String(rec.nickname).trim()) || rec.collectionName || "Collection";
+    btn.setAttribute("aria-label", `Load saved collection ${label}`);
+    const img = document.createElement("img");
+    img.className = "polygonSavedCardImg";
+    img.alt = "";
+    if (rec.logo) {
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = rec.logo;
+    } else {
+      img.removeAttribute("src");
+      img.classList.add("polygonSavedCardImg--placeholder");
+    }
+    const cap = document.createElement("span");
+    cap.className = "polygonSavedCardCap";
+    cap.textContent = label.length > 22 ? `${label.slice(0, 20)}…` : label;
+    const rm = document.createElement("span");
+    rm.className = "polygonSavedCardRemove";
+    rm.setAttribute("role", "button");
+    rm.setAttribute("aria-label", "Remove saved collection");
+    rm.setAttribute("data-saved-id-remove", rec.id);
+    rm.textContent = "×";
+    btn.appendChild(img);
+    btn.appendChild(cap);
+    btn.appendChild(rm);
+    strip.appendChild(btn);
+  }
+  if (polySavedRow) {
+    const ch = getWalletParseChain();
+    const showSaved = ch === "polygon" && list.length > 0;
+    polySavedRow.classList.toggle("hidden", !showSaved);
+    polySavedRow.setAttribute("aria-hidden", showSaved ? "false" : "true");
+  }
+}
+
+/**
+ * Alchemy `minimal` list omits contract/collection context; without this, `_contractAddress` becomes
+ * "unknown", everything merges into one broken group, and Select All / build fail.
+ */
+function applyPolygonListEnrichment(nfts, contractLower, contractDisplayName, contractLogoRaw) {
+  const c = String(contractLower || "").trim().toLowerCase();
+  if (!isValidPolygonEvmAddress(c)) return;
+  const display =
+    (typeof contractDisplayName === "string" && contractDisplayName.trim() && contractDisplayName.trim()) ||
+    `Collection ${c.slice(0, 6)}…${c.slice(-4)}`;
+  const logoU =
+    typeof contractLogoRaw === "string" && contractLogoRaw.trim() ? repairBrokenImageUrl(contractLogoRaw.trim()) : "";
+
+  for (let i = 0; i < nfts.length; i++) {
+    const n = nfts[i];
+    if (!n || typeof n !== "object") continue;
+
+    const prevContract = n.contract && typeof n.contract === "object" ? { ...n.contract } : {};
+    const curAddr = String(prevContract.address || n.contractAddress || n.collection?.address || "")
+      .trim()
+      .toLowerCase();
+    if (!curAddr || curAddr === "unknown") {
+      prevContract.address = c;
+    }
+    if (!prevContract.name) prevContract.name = display;
+    n.contract = prevContract;
+    n.contractAddress = String(prevContract.address || c)
+      .trim()
+      .toLowerCase() || c;
+
+    const prevCol = n.collection && typeof n.collection === "object" ? { ...n.collection } : {};
+    if (!prevCol.name) prevCol.name = display;
+    if (!prevCol.address) prevCol.address = c;
+    n.collection = prevCol;
+
+    const prevCm = n.contractMetadata && typeof n.contractMetadata === "object" ? { ...n.contractMetadata } : {};
+    if (!prevCm.name) prevCm.name = display;
+    /* So `extractCollectionLogoRawUrlFromNft` + collection row can show the logo above the title. */
+    if (logoU && !extractCollectionLogoRawUrlFromNft(n)) {
+      const os =
+        typeof prevCm.openSeaMetadata === "object" && prevCm.openSeaMetadata ? { ...prevCm.openSeaMetadata } : {};
+      if (!os.imageUrl && !os.image_url) os.imageUrl = logoU;
+      prevCm.openSeaMetadata = { ...os };
+    }
+    n.contractMetadata = prevCm;
+  }
+}
+
+async function bookmarkPolygonCollectionFromUi() {
+  const chain = getWalletParseChain();
+  if (chain !== "polygon") return;
+  const contract = normalizePolygonContract(String($("polygonContractInput")?.value || "").trim());
+  if (!contract || !isValidPolygonEvmAddress(contract)) {
+    setStatus("Polygon: enter a valid collection contract to bookmark.");
+    return;
+  }
+  if (!state.wallets.length) {
+    setStatus("Add at least one wallet first.");
+    return;
+  }
+  const wallet = String(state.wallets[0] || "").trim().toLowerCase();
+  if (!isValidPolygonEvmAddress(wallet)) {
+    setStatus("Polygon bookmark uses the first wallet in the box.");
+    return;
+  }
+  let collectionName = "Polygon collection";
+  let logo = null;
+  try {
+    const meta = await fetchContractMetadataFromWorker({ contract, chain: "polygon" });
+    logo = meta?.rawLogoUrl && String(meta.rawLogoUrl).trim() ? String(meta.rawLogoUrl).trim() : null;
+    if (typeof meta?.contractName === "string" && meta.contractName.trim()) collectionName = meta.contractName.trim();
+  } catch (_) {}
+  if (Array.isArray(state.collections) && state.collections.length > 0) {
+    const n0 = state.collections[0]?.name;
+    if (typeof n0 === "string" && n0.trim() && n0.trim() !== "Unknown Collection") collectionName = n0.trim();
+  }
+  upsertPolygonSavedCollection({
+    wallet,
+    contract,
+    collectionName,
+    logo,
+    nickname: null,
+  });
+  renderPolygonSavedStrip();
+  const polySavedRow = $("polygonSavedRow");
+  if (polySavedRow) {
+    polySavedRow.classList.remove("hidden");
+    polySavedRow.setAttribute("aria-hidden", "false");
+  }
+  setStatus("Saved Polygon collection — tap a card above to reload anytime.");
+}
+
 function syncWalletEntryUiForSelectedChain() {
   const input = $("walletInput");
   const hintP = document.querySelector("#walletSection .walletFlowSubHint");
@@ -1835,12 +1989,28 @@ function syncWalletEntryUiForSelectedChain() {
     hintP.textContent =
       chain === "solana"
         ? "Add multiple Solana wallets with a comma, space, or new line (max 12)."
-        : "Add multiple wallets with a comma, space, or new line (max 12).";
+        : chain === "polygon"
+          ? "Polygon: add wallet(s), paste the collection contract below, then load — only that collection’s NFTs for your wallet(s)."
+          : "Add multiple wallets with a comma, space, or new line (max 12).";
+  }
+
+  const polyRow = $("polygonContractRow");
+  const polySavedRow = $("polygonSavedRow");
+  if (polyRow) {
+    const showPoly = chain === "polygon";
+    polyRow.classList.toggle("hidden", !showPoly);
+    polyRow.setAttribute("aria-hidden", showPoly ? "false" : "true");
+  }
+  if (polySavedRow) {
+    const showSaved = chain === "polygon" && readPolygonSavedCollections().length > 0;
+    polySavedRow.classList.toggle("hidden", !showSaved);
+    polySavedRow.setAttribute("aria-hidden", showSaved ? "false" : "true");
   }
 
   // Re-parse + refresh hints/overlays when switching chains mid-input.
   syncWalletsFromInput();
   renderSavedWalletsPanel();
+  renderPolygonSavedStrip();
 }
 
 /** Split pasted / typed text into unique valid wallet addresses (capped at MAX_WALLET_ADDRESSES). */
@@ -1897,8 +2067,14 @@ function updateWalletInputHint() {
     return;
   }
   if (n > 0) {
-    hint.textContent = `✓ ${n} wallet${n === 1 ? "" : "s"} ready`;
-    hint.style.color = "#4CAF50";
+    const polyC = String($("polygonContractInput")?.value || "").trim().toLowerCase();
+    if (chain === "polygon" && !isValidPolygonEvmAddress(polyC)) {
+      hint.textContent = `✓ ${n} wallet${n === 1 ? "" : "s"} — add valid collection contract (0x…)`;
+      hint.style.color = "#ff9800";
+    } else {
+      hint.textContent = `✓ ${n} wallet${n === 1 ? "" : "s"} ready`;
+      hint.style.color = "#4CAF50";
+    }
   } else {
     hint.textContent =
       chain === "solana"
@@ -2600,6 +2776,79 @@ function isManualModalImageRenderable(img) {
 
 /** Grid image load: tolerate slow workers / GIF / AVIF progressive decode (timer alone used to falsely fail). */
 const GRID_IMG_MIN_DIMENSION = 4;
+
+function gridImageHasRenderableDimensions(img) {
+  try {
+    const nw = img.naturalWidth || 0;
+    const nh = img.naturalHeight || 0;
+    return (
+      nw >= GRID_IMG_MIN_DIMENSION &&
+      nh >= GRID_IMG_MIN_DIMENSION &&
+      nw <= 8192 &&
+      nh <= 8192
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * `resolveRawUrlOntoImage` often returns immediately after setting `img.src` (memory cache, session peek).
+ * Decoded width/height can still be 0 for a tick — that falsely triggered `markMissing` and "need attention"
+ * until Retry, when the browser cache made dimensions appear synchronously.
+ */
+async function waitForGridImageDimensions(img, timeoutMs = 12000) {
+  if (gridImageHasRenderableDimensions(img)) return true;
+
+  try {
+    if (typeof img.decode === "function") await img.decode();
+  } catch (_) {
+    /* Broken or undecodable; fall through to load/poll/error. */
+  }
+  if (gridImageHasRenderableDimensions(img)) return true;
+
+  const ms = Math.max(400, Math.min(25000, Number(timeoutMs) || 12000));
+  return await new Promise((resolve) => {
+    const t0 = Date.now();
+    let done = false;
+    let pollTid = null;
+
+    const cleanup = () => {
+      if (pollTid != null) {
+        clearInterval(pollTid);
+        pollTid = null;
+      }
+      try {
+        img.removeEventListener("load", onLoad);
+        img.removeEventListener("error", onErr);
+      } catch (_) {}
+    };
+
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      resolve(v);
+    };
+
+    const onLoad = () => {
+      if (gridImageHasRenderableDimensions(img)) finish(true);
+    };
+    const onErr = () => finish(false);
+
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", onErr);
+
+    pollTid = setInterval(() => {
+      if (gridImageHasRenderableDimensions(img)) finish(true);
+      else if (Date.now() - t0 >= ms) finish(gridImageHasRenderableDimensions(img));
+    }, 80);
+
+    try {
+      if (img.complete && gridImageHasRenderableDimensions(img)) finish(true);
+    } catch (_) {}
+  });
+}
 
 /**
  * Try candidate URLs directly on the real grid `<img>` (single active fetch per candidate).
@@ -5742,15 +5991,8 @@ async function loadTileImage(tile, img, rawUrl) {
 
   const res = await resolveRawUrlOntoImage(img, raw, { gridDirect: true });
   if (res.ok) {
-    let dimOk = true;
-    try {
-      const nw = img.naturalWidth || 0;
-      const nh = img.naturalHeight || 0;
-      dimOk =
-        nw >= GRID_IMG_MIN_DIMENSION && nh >= GRID_IMG_MIN_DIMENSION && nw <= 8192 && nh <= 8192;
-    } catch (_) {
-      dimOk = false;
-    }
+    const decodeMs = state?.whaleMode ? 11000 : 16000;
+    const dimOk = await waitForGridImageDimensions(img, decodeMs);
     if (!dimOk) {
       markMissing(tile, img, rawUrl);
       state.imageLoadState.failed++;
@@ -6067,7 +6309,7 @@ function enableDragDrop() {
 }
 
 // ---------- Entry wrapper bridge (/flexgrid/app.html → /flexgrid/site/) ----------
-function loadWallet({ wallet, chain } = {}) {
+function loadWallet({ wallet, chain, contract: polygonContractOpt } = {}) {
   const input = $("walletInput");
   const sel = $("chainSelect");
   const w = String(wallet || "").trim();
@@ -6080,7 +6322,7 @@ function loadWallet({ wallet, chain } = {}) {
   }
   // Ensure we're on the Wallets step.
   goToStep(1);
-  if (c === "eth" || c === "base" || c === "apechain" || c === "solana") {
+  if (c === "eth" || c === "base" || c === "apechain" || c === "solana" || c === "polygon") {
     sel.value = c;
     try {
       sel.dispatchEvent(new Event("change", { bubbles: true }));
@@ -6091,6 +6333,10 @@ function loadWallet({ wallet, chain } = {}) {
     console.warn("[FlexGrid] Unsupported chain from wrapper:", cRaw);
   }
   input.value = w;
+  const pci = $("polygonContractInput");
+  if (c === "polygon" && pci && typeof polygonContractOpt === "string" && polygonContractOpt.trim()) {
+    pci.value = polygonContractOpt.trim();
+  }
   // Kick off the existing load flow (debounced + overlap guard).
   triggerLoadWallets();
 }
@@ -6145,6 +6391,15 @@ async function loadWallets() {
   const host = ALCHEMY_HOST[chain];
   if (chain !== "apechain" && chain !== "solana" && !host) return setStatus("Chain not configured.");
 
+  if (chain === "polygon") {
+    const pc = normalizePolygonContract(String($("polygonContractInput")?.value || "").trim());
+    if (!pc) {
+      return setStatus(
+        "Polygon: paste the NFT collection contract (0x + 40 hex). Only NFTs you own from that contract are loaded — not your full wallet."
+      );
+    }
+  }
+
   if (loadWalletsInFlight) {
     console.warn("[FlexGrid] Prevented overlapping loadWallets (already in progress)");
     return;
@@ -6184,6 +6439,33 @@ async function loadWallets() {
         const nfts = await loadWalletSafe({ wallet: w, chain });
         allNfts.push(...(nfts || []));
       }
+    } else if (chain === "polygon") {
+      const polygonContract = normalizePolygonContract(String($("polygonContractInput")?.value || "").trim());
+      showLoading(gatherMsg, "");
+      setStatus(`Polygon: loading collection ${polygonContract.slice(0, 10)}… (scoped to this contract only)`);
+      const [metaRes, chunk] = await Promise.all([
+        fetchContractMetadataFromWorker({ contract: polygonContract, chain: "polygon" }).catch(() => ({
+          rawLogoUrl: null,
+          contractName: null,
+        })),
+        loadPolygonWalletsContractSequential({
+          wallets: state.wallets.slice(),
+          contract: polygonContract,
+          onProgress: ({ batchIndex, total, walletCount }) => {
+            showLoading(gatherMsg, `${total} NFT(s)`);
+            setStatus(
+              `Polygon: fetching collection… batch ${batchIndex} (${walletCount} wallet${walletCount === 1 ? "" : "s"}) — ${total} NFT(s) so far`
+            );
+          },
+        }),
+      ]);
+      allNfts.push(...(chunk || []));
+      applyPolygonListEnrichment(
+        allNfts,
+        polygonContract,
+        typeof metaRes?.contractName === "string" ? metaRes.contractName : null,
+        typeof metaRes?.rawLogoUrl === "string" ? metaRes.rawLogoUrl : null
+      );
     } else {
       const WALLET_BATCH_SIZE = 3;
       for (let i = 0; i < state.wallets.length; i += WALLET_BATCH_SIZE) {
@@ -6257,13 +6539,18 @@ async function loadWallets() {
     const stageMeta = $("stageMeta");
     if (stageMeta) stageMeta.textContent = "Wallets loaded — select collections, then 🧩 Build grid.";
 
-    setStatus(grouped.length > 0
-      ? `🎉 Boom! Loaded your wallets — ${grouped.length} collection(s) found`
-      : `😅 Hmm... no NFTs found here`);
+    setStatus(
+      grouped.length > 0
+        ? `🎉 Boom! Loaded your wallets — ${grouped.length} collection(s) found`
+        : chain === "polygon"
+          ? `😅 No NFTs from this contract for these wallet(s). Double-check the contract and that you still hold items there.`
+          : `😅 Hmm... no NFTs found here`
+    );
     showConnectionStatus(true);
 
     persistWalletsFromSuccessfulLoad(chain, state.wallets);
     renderSavedWalletsPanel();
+    renderPolygonSavedStrip();
 
     await new Promise((r) => setTimeout(r, 400));
     hideLoading();
@@ -7716,6 +8003,66 @@ function toggleStageLayoutSection() {
     });
   }
 
+  const polygonContractInput = $("polygonContractInput");
+  if (polygonContractInput) {
+    polygonContractInput.addEventListener("input", () => {
+      enableButtons();
+      updateWalletInputHint();
+    });
+    polygonContractInput.addEventListener("blur", () => {
+      const v = String(polygonContractInput.value || "").trim();
+      if (v && !v.startsWith("0x")) polygonContractInput.value = v;
+      enableButtons();
+      updateWalletInputHint();
+    });
+  }
+
+  const polygonSaveCollectionBtn = $("polygonSaveCollectionBtn");
+  if (polygonSaveCollectionBtn) {
+    polygonSaveCollectionBtn.addEventListener("click", () => {
+      void bookmarkPolygonCollectionFromUi();
+    });
+  }
+
+  const polygonSavedStrip = $("polygonSavedStrip");
+  if (polygonSavedStrip) {
+    polygonSavedStrip.addEventListener("click", (e) => {
+      const rm = e.target.closest?.(".polygonSavedCardRemove");
+      if (rm) {
+        e.preventDefault();
+        e.stopPropagation();
+        const sid = rm.getAttribute("data-saved-id-remove");
+        if (sid) removePolygonSavedCollection(sid);
+        renderPolygonSavedStrip();
+        syncWalletEntryUiForSelectedChain();
+        return;
+      }
+      const card = e.target.closest?.(".polygonSavedCard");
+      if (!card) return;
+      const w = card.getAttribute("data-wallet");
+      const c = card.getAttribute("data-contract");
+      if (!w || !c) return;
+      const sel = $("chainSelect");
+      if (sel) {
+        sel.value = "polygon";
+        try {
+          sel.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (_) {
+          applyChainSelectionFromDom();
+        }
+      }
+      syncWalletEntryUiForSelectedChain();
+      const wi = $("walletInput");
+      if (wi) wi.value = w;
+      if (polygonContractInput) polygonContractInput.value = c;
+      syncWalletsFromInput();
+      uiState.wallet = w;
+      uiState.step = 3;
+      triggerLoadWallets();
+      renderUI({ scrollTop: true });
+    });
+  }
+
   const selectAllBtn = $("selectAllBtn");
   const selectNoneBtn = $("selectNoneBtn");
   if (selectAllBtn) selectAllBtn.addEventListener("click", () => setAllCollections(true));
@@ -7890,7 +8237,14 @@ function toggleStageLayoutSection() {
     });
     if (chainNext) chainNext.disabled = !selectedChain;
     uiState.chain = selectedChain || null;
-    if (chainSelectEl && (selectedChain === "eth" || selectedChain === "base" || selectedChain === "apechain" || selectedChain === "solana")) {
+    if (
+      chainSelectEl &&
+      (selectedChain === "eth" ||
+        selectedChain === "base" ||
+        selectedChain === "apechain" ||
+        selectedChain === "solana" ||
+        selectedChain === "polygon")
+    ) {
       chainSelectEl.value = selectedChain;
       try {
         chainSelectEl.dispatchEvent(new Event("change", { bubbles: true }));
