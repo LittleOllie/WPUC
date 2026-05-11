@@ -1832,6 +1832,46 @@ function isValidSolanaWalletAddress(addr) {
   return true;
 }
 
+/** Placeholder names from APIs/UI — never show these as the saved card title. */
+function isGenericPolygonCollectionName(name) {
+  const s = String(name || "").trim().toLowerCase();
+  return !s || s === "unknown collection" || s === "polygon collection" || s === "collection";
+}
+
+function formatPolygonContractShort(contract) {
+  const c = normalizePolygonContract(String(contract || "").trim());
+  if (!c) return "Saved collection";
+  return `${c.slice(0, 6)}…${c.slice(-4)}`;
+}
+
+/** Which saved Polygon card is highlighted (yellow outline) on the wallet step. */
+let polygonSavedCardSelectedId = "";
+
+function clearPolygonSavedCardSelection() {
+  polygonSavedCardSelectedId = "";
+}
+
+function polygonSavedDisplayLabel(rec) {
+  const nick = rec.nickname && String(rec.nickname).trim();
+  if (nick) return nick;
+  const rawName = String(rec.collectionName || "").trim();
+  if (rawName && !isGenericPolygonCollectionName(rawName)) return rawName;
+  return formatPolygonContractShort(rec.contract);
+}
+
+/** Clear yellow outline when the contract field no longer matches the selected saved card. */
+function syncPolygonSavedSelectionFromContractInput() {
+  if (!polygonSavedCardSelectedId) return;
+  const list = readPolygonSavedCollections();
+  const rec = list.find((r) => r.id === polygonSavedCardSelectedId);
+  const inpEl = $("polygonContractInput");
+  const inp = inpEl ? normalizePolygonContract(String(inpEl.value || "").trim()) : "";
+  if (!rec || !inp || normalizePolygonContract(rec.contract) !== inp) {
+    clearPolygonSavedCardSelection();
+    renderPolygonSavedStrip();
+  }
+}
+
 function renderPolygonSavedStrip() {
   const strip = $("polygonSavedStrip");
   const polySavedRow = $("polygonSavedRow");
@@ -1846,7 +1886,10 @@ function renderPolygonSavedStrip() {
     btn.dataset.wallet = rec.wallet;
     btn.dataset.contract = rec.contract;
     btn.dataset.savedId = rec.id;
-    const label = (rec.nickname && String(rec.nickname).trim()) || rec.collectionName || "Collection";
+    const label = polygonSavedDisplayLabel(rec);
+    const selected = rec.id === polygonSavedCardSelectedId;
+    if (selected) btn.classList.add("polygonSavedCard--selected");
+    btn.setAttribute("aria-pressed", selected ? "true" : "false");
     btn.setAttribute("aria-label", `Load saved collection ${label}`);
     const img = document.createElement("img");
     img.className = "polygonSavedCardImg";
@@ -1861,7 +1904,7 @@ function renderPolygonSavedStrip() {
     }
     const cap = document.createElement("span");
     cap.className = "polygonSavedCardCap";
-    cap.textContent = label.length > 22 ? `${label.slice(0, 20)}…` : label;
+    cap.textContent = label;
     const rm = document.createElement("span");
     rm.className = "polygonSavedCardRemove";
     rm.setAttribute("role", "button");
@@ -1946,17 +1989,19 @@ async function bookmarkPolygonCollectionFromUi() {
     setStatus("Polygon bookmark uses the first wallet in the box.");
     return;
   }
-  let collectionName = "Polygon collection";
+  let collectionName = "";
   let logo = null;
   try {
     const meta = await fetchContractMetadataFromWorker({ contract, chain: "polygon" });
     logo = meta?.rawLogoUrl && String(meta.rawLogoUrl).trim() ? String(meta.rawLogoUrl).trim() : null;
-    if (typeof meta?.contractName === "string" && meta.contractName.trim()) collectionName = meta.contractName.trim();
+    const cn = typeof meta?.contractName === "string" ? meta.contractName.trim() : "";
+    if (cn && !isGenericPolygonCollectionName(cn)) collectionName = cn;
   } catch (_) {}
-  if (Array.isArray(state.collections) && state.collections.length > 0) {
+  if (!collectionName && Array.isArray(state.collections) && state.collections.length > 0) {
     const n0 = state.collections[0]?.name;
-    if (typeof n0 === "string" && n0.trim() && n0.trim() !== "Unknown Collection") collectionName = n0.trim();
+    if (typeof n0 === "string" && n0.trim() && !isGenericPolygonCollectionName(n0.trim())) collectionName = n0.trim();
   }
+  if (!collectionName) collectionName = formatPolygonContractShort(contract);
   upsertPolygonSavedCollection({
     wallet,
     contract,
@@ -2006,6 +2051,8 @@ function syncWalletEntryUiForSelectedChain() {
     polySavedRow.classList.toggle("hidden", !showSaved);
     polySavedRow.setAttribute("aria-hidden", showSaved ? "false" : "true");
   }
+
+  if (chain !== "polygon") clearPolygonSavedCardSelection();
 
   // Re-parse + refresh hints/overlays when switching chains mid-input.
   syncWalletsFromInput();
@@ -7177,7 +7224,70 @@ function isImgUsable(img) {
   return img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0;
 }
 
+/** NFT tiles boot with `GRID_LOADING_PLACEHOLDER_SRC`; that image is “complete” before real art loads — do not treat as export-ready. */
+function countNftTilesStillAwaitingLoad(tiles) {
+  let n = 0;
+  for (const t of tiles || []) {
+    if (t?.dataset?.kind !== "nft") continue;
+    if (t.classList.contains("isLoaded") || t.classList.contains("isMissing")) continue;
+    n++;
+  }
+  return n;
+}
+
+/** Start image fetch for any NFT tile that has not begun (lazy / progressive grid). */
+function ensureExportGridImageLoads(tiles) {
+  for (const tile of tiles || []) {
+    if (tile?.dataset?.kind !== "nft") continue;
+    const raw = String(tile?.dataset?.rawUrl || "").trim();
+    if (!raw) continue;
+    const img = tile.querySelector("img");
+    if (!img) continue;
+    if (img.dataset.didStartLoad === "1") continue;
+    img.dataset.didStartLoad = "1";
+    void loadTileImage(tile, img, raw).catch(() => {});
+  }
+}
+
+function waitForTileExportSettled(tile, img, timeoutMs) {
+  if (!tile || tile.dataset?.kind !== "nft") return Promise.resolve();
+  if (!img) return Promise.resolve();
+  if (tile.classList.contains("isMissing")) return Promise.resolve();
+  if (tile.classList.contains("isLoaded") && isImgUsable(img)) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let iv = null;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (iv) clearInterval(iv);
+      iv = null;
+      try {
+        img.removeEventListener("load", onImg);
+        img.removeEventListener("error", onImg);
+      } catch (_) {}
+      resolve();
+    };
+
+    const tick = () => {
+      if (tile.classList.contains("isMissing")) return finish();
+      if (tile.classList.contains("isLoaded") && isImgUsable(img)) return finish();
+      if (Date.now() - started > timeoutMs) return finish();
+    };
+
+    const onImg = () => tick();
+    const started = Date.now();
+    img.addEventListener("load", onImg);
+    img.addEventListener("error", onImg);
+    iv = setInterval(tick, 80);
+    tick();
+  });
+}
+
 async function waitForExportImages(tiles) {
+  ensureExportGridImageLoads(tiles);
+
   const preloadById = new Map();
   for (const t of tiles || []) {
     const raw = String(t?.dataset?.rawUrl || "").trim();
@@ -7195,22 +7305,10 @@ async function waitForExportImages(tiles) {
     });
   }
 
-  const imgs = tiles.map((t) => t.querySelector("img")).filter(Boolean);
-  await Promise.all(
-    imgs.map(
-      (img) =>
-        new Promise((resolve) => {
-          if (img.complete && img.naturalWidth > 0) {
-            resolve();
-            return;
-          }
-          const done = () => resolve();
-          img.addEventListener("load", done, { once: true });
-          img.addEventListener("error", done, { once: true });
-          setTimeout(done, 15000);
-        })
-    )
-  );
+  const settleMs = state?.whaleMode ? 20000 : 28000;
+  await Promise.all((tiles || []).map((tile) => waitForTileExportSettled(tile, tile.querySelector("img"), settleMs)));
+
+  const imgs = (tiles || []).map((t) => t.querySelector("img")).filter(Boolean);
   await Promise.all(
     imgs.map(async (img) => {
       if (typeof img.decode !== "function") return;
@@ -7231,6 +7329,13 @@ async function exportPNG() {
     if (!tiles.length) return setStatus("😅 Nothing to export yet — build a grid first!");
 
     await waitForExportImages(tiles);
+    const stillLoading = countNftTilesStillAwaitingLoad(tiles);
+    if (stillLoading > 0) {
+      setStatus(
+        `📸 ${stillLoading} tile${stillLoading === 1 ? "" : "s"} still loading artwork — wait until the grid finishes, then export again.`
+      );
+      return;
+    }
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const gridRect = exportRoot.getBoundingClientRect();
@@ -7508,6 +7613,12 @@ async function exportMP4() {
 
   // Safety: huge GIF-like runs as video can still be heavy, but much safer than gif.js.
   await waitForExportImages(tiles);
+  if (countNftTilesStillAwaitingLoad(tiles) > 0) {
+    setStatus("📸 Artwork still loading — wait for grid images to finish, then export again.");
+    if (gifBtn) gifBtn.disabled = false;
+    if (pngBtn) pngBtn.disabled = false;
+    return;
+  }
 
   var mime = pickVideoMimeType();
   if (!mime) {
@@ -7671,6 +7782,12 @@ async function exportGIF() {
 
   // Ensure images are ready to draw.
   await waitForExportImages(tiles);
+  if (countNftTilesStillAwaitingLoad(tiles) > 0) {
+    setStatus("📸 Artwork still loading — wait for grid images to finish, then export again.");
+    if (gifBtn) gifBtn.disabled = false;
+    if (pngBtn) pngBtn.disabled = false;
+    return;
+  }
 
   var bg = "#0B0F1A";
   var size = GRID_GIF_SIZE;
@@ -8006,12 +8123,14 @@ function toggleStageLayoutSection() {
   const polygonContractInput = $("polygonContractInput");
   if (polygonContractInput) {
     polygonContractInput.addEventListener("input", () => {
+      syncPolygonSavedSelectionFromContractInput();
       enableButtons();
       updateWalletInputHint();
     });
     polygonContractInput.addEventListener("blur", () => {
       const v = String(polygonContractInput.value || "").trim();
       if (v && !v.startsWith("0x")) polygonContractInput.value = v;
+      syncPolygonSavedSelectionFromContractInput();
       enableButtons();
       updateWalletInputHint();
     });
@@ -8032,6 +8151,7 @@ function toggleStageLayoutSection() {
         e.preventDefault();
         e.stopPropagation();
         const sid = rm.getAttribute("data-saved-id-remove");
+        if (sid && sid === polygonSavedCardSelectedId) clearPolygonSavedCardSelection();
         if (sid) removePolygonSavedCollection(sid);
         renderPolygonSavedStrip();
         syncWalletEntryUiForSelectedChain();
@@ -8039,9 +8159,9 @@ function toggleStageLayoutSection() {
       }
       const card = e.target.closest?.(".polygonSavedCard");
       if (!card) return;
-      const w = card.getAttribute("data-wallet");
       const c = card.getAttribute("data-contract");
-      if (!w || !c) return;
+      if (!c) return;
+      polygonSavedCardSelectedId = String(card.getAttribute("data-saved-id") || "");
       const sel = $("chainSelect");
       if (sel) {
         sel.value = "polygon";
@@ -8053,13 +8173,23 @@ function toggleStageLayoutSection() {
       }
       syncWalletEntryUiForSelectedChain();
       const wi = $("walletInput");
-      if (wi) wi.value = w;
+      // IMPORTANT: Saved collection cards must NOT overwrite the wallet the user entered above.
+      // Only fill the wallet input from the card if the wallet input is currently empty.
+      if (wi) {
+        const existing = String(wi.value || "").trim();
+        if (!existing) {
+          const wSaved = card.getAttribute("data-wallet") || "";
+          if (wSaved) wi.value = wSaved;
+        }
+      }
       if (polygonContractInput) polygonContractInput.value = c;
       syncWalletsFromInput();
-      uiState.wallet = w;
-      uiState.step = 3;
-      triggerLoadWallets();
-      renderUI({ scrollTop: true });
+      // IMPORTANT UX: selecting a saved collection should only fill the contract input.
+      // Do NOT auto-fetch NFTs / auto-advance pages; user must press "🔍 LOAD WALLET".
+      if (uiState.step !== 2) {
+        uiState.step = 2;
+        renderUI({ scrollTop: true });
+      }
     });
   }
 

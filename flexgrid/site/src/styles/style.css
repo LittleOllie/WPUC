@@ -2226,10 +2226,11 @@ body.dark .collection-trait-control--dropTarget{
 }
 .grid-stage-image-loading-hint{
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 20px; /* bigger so it's readable during slow loads */
+  font-weight: 900;
   text-align: center;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.2;
 }
 .grid-stage-image-loading.grid-stage-image-loading--done .grid-stage-image-loading-barFill{
   width: 100% !important;
@@ -4954,6 +4955,12 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   border-color: rgba(255, 221, 85, 0.55);
   filter: brightness(1.04);
 }
+.polygonSavedCard--selected{
+  outline: 2px solid #ffdf42;
+  outline-offset: 2px;
+  border-color: rgba(255, 221, 85, 0.95);
+  box-shadow: 0 0 0 2px rgba(255, 223, 66, 0.45), 0 6px 16px rgba(0,0,0,0.25);
+}
 .polygonSavedCardImg{
   width: 72px;
   height: 72px;
@@ -4971,6 +4978,10 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   color: rgba(255,255,255,0.92);
   max-width: 100%;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .polygonSavedCardRemove{
   position: absolute;

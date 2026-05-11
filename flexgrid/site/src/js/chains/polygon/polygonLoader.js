@@ -47,7 +47,9 @@ export async function loadPolygonWalletContractNfts(opts = {}) {
     return acc + (has ? 1 : 0);
   }, 0);
 
-  const needFallback = sample.length > 0 && artCount < Math.min(3, sample.length);
+  // Only fall back to full metadata when the quick response provides *no* usable art hints.
+  // Otherwise we keep the fast path (speed) and let the in-grid image loader resolve media lazily.
+  const needFallback = sample.length > 0 && artCount === 0;
   if (needFallback) {
     return fetchNFTsFromWorker({
       wallet,
