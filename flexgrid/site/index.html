@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+  (function () {
+    var loc = window.location;
+    var p = loc.pathname;
+    // Legacy bookmarks: .../flexgrid/index.html → .../flexgrid/
+    if (/\/index\.html$/i.test(p)) {
+      var stripped = p.replace(/\/index\.html$/i, "/");
+      if (stripped !== p) {
+        loc.replace(loc.origin + stripped + loc.search + loc.hash);
+        return;
+      }
+    }
+    // Bare .../flexgrid (no trailing slash): relative asset URLs resolve incorrectly
+    if (/\/flexgrid$/i.test(p)) {
+      loc.replace(loc.origin + p + "/" + loc.search + loc.hash);
+    }
+  })();
+</script>
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  base-uri 'self';
+  object-src 'none';
+
+  img-src 'self' data: blob: https:;
+
+  style-src
+    'self'
+    'unsafe-inline'
+    https://fonts.googleapis.com;
+
+  font-src
+    'self'
+    https://fonts.gstatic.com
+    data:;
+
+  script-src
+    'self'
+    'unsafe-inline';
+
+  worker-src
+    'self';
+
+  connect-src
+    'self'
+    http://localhost:3000
+    https://api.zora.co
+    https://loflexgrid.littleollienft.workers.dev;
+">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Little Ollie Flex Grid</title>
+
+  <!-- Favicon & app icons -->
+  <link rel="icon" type="image/png" href="src/assets/images/LO.png">
+  <link rel="shortcut icon" href="src/assets/images/LO.png">
+  <link rel="apple-touch-icon" href="src/assets/images/LO.png">
+  <link rel="mask-icon" href="src/assets/images/LO.png" color="#000000">
+
+  <!-- iOS web app -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FlexGrid">
+
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles/style.css">
+  <!-- Inline styles removed - see src/styles/style.css -->
+</head>
+
+<body>
+  <!-- Welcome disclaimer (shown on every visit; Continue only hides until next load) -->
+  <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
+    <div class="disclaimer-modal">
+      <a href="https://littleollielabs.com/links/" class="disclaimer-back-link">← BACK TO LINKS</a>
+      <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
+      <div class="disclaimer-content">
+        <h2 class="disclaimer-title">👋 Welcome to Little Ollie Flex Grid!</h2>
+        <p class="disclaimer-text">Unfortunately, not all collections work 100% yet — we're actively looking into compatibility. Please reach out with any issues so we can keep improving this for everyone!</p>
+        <div class="disclaimer-socials">
+          <a href="mailto:Littleollienft@gmail.com" class="disclaimer-link" aria-label="Email us">✉️ Email</a>
+          <a href="https://instagram.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Instagram">📷 Instagram</a>
+          <a href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Twitter / X">🐦 Twitter</a>
+        </div>
+        <button id="disclaimerContinue" class="btn disclaimer-continue" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var overlay = document.getElementById("disclaimerOverlay");
+      var btn = document.getElementById("disclaimerContinue");
+      function dismissDisclaimer() {
+        if (!overlay) return;
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+      if (btn && overlay) {
+        btn.addEventListener("click", dismissDisclaimer);
+      }
+      /* Tap dimmed area outside the modal — same as Continue (overlay was blocking chain buttons). */
+      if (overlay) {
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) dismissDisclaimer();
+        });
+      }
+    })();
+  </script>
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-overlay-inner" aria-busy="true">
+      <div class="loading-overlay-orbit">
+        <div class="loading-overlay-ring" aria-hidden="true"></div>
+        <div class="loading-overlay-orbitCenter">
+          <img
+            src="src/assets/images/LO.png"
+            alt=""
+            class="loading-overlay-lo-img"
+            width="140"
+            height="140"
+            decoding="async"
+          />
+          <div class="loading-overlay-title" aria-hidden="true">Loading</div>
+        </div>
+      </div>
+      <p id="loadingOverlayStatus" class="loading-overlay-status" aria-live="polite"></p>
+      <p class="loading-overlay-hint">This may take a moment</p>
+    </div>
+  </div>
+  <div class="wrap container">
+
+    <div class="heroHeader heroHeaderStack" aria-label="Little Ollie FlexGrid">
+      <img src="src/assets/images/dad.png" class="heroHeaderSide heroHeaderSide--left" alt="Dad" loading="eager" decoding="async" />
+      <div class="heroHeaderCenter">
+        <img src="src/assets/images/lo1.png" class="heroHeaderLo" alt="Little Ollie" loading="eager" decoding="async" />
+        <img src="src/assets/images/FG.png" class="heroHeaderFg" alt="Flex Grid" loading="eager" decoding="async" />
+      </div>
+      <img src="src/assets/images/LO.png" class="heroHeaderSide heroHeaderSide--right" alt="Little Ollie character" loading="eager" decoding="async" />
+    </div>
+    <p class="heroTagline">Your NFTs. One Grid. Multi-Chain.</p>
+
+    <!-- Step indicator + theme toggle -->
+    <div class="stepBar">
+    <button type="button" id="hubBackBtn" class="hubBackLink">← BACK</button>
+    <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
+      <button type="button" class="stepItem" data-step="0">1. Chain</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="1">2. Wallets</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="2">3. Collections</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="3">4. Grid</button>
+    </nav>
+    <div class="stepBarTrailing">
+    <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
+      <span class="themeToggleKnob" aria-hidden="true">
+        <span class="themeToggleGlyph themeToggleGlyphSun">☀️</span>
+        <span class="themeToggleGlyph themeToggleGlyphMoon">🌙</span>
+      </span>
+    </div>
+    <button type="button" id="settingsBtn" class="settingsTopBtn" aria-label="Settings" aria-expanded="false" title="Settings">⚙️</button>
+    </div>
+    </div>
+
+    <!-- STEP 1: Chain selection -->
+    <div id="screen-chain" class="screen">
+    <section class="panel" id="chainPanel">
+      <div class="walletSection" style="margin-top:0;">
+        <div class="walletSectionContent">
+          <div class="walletFlowStack">
+            <h2 class="walletFlowTitle">Chain</h2>
+            <p style="margin:0 0 12px; font-weight:800; color: rgba(255,255,255,0.9);">Choose your chain to get started</p>
+
+            <div class="flexgrid-chain-grid" role="group" aria-label="Choose chain">
+              <button type="button" class="flexgrid-chain-btn" data-chain="eth" aria-pressed="false">Ethereum</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="base" aria-pressed="false">Base</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false">Polygon</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false">Solana (Beta)</button>
+            </div>
+
+            <button id="chainNextBtn" class="btn walletFlowLoadBtn" type="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- STEP 2: Add Wallets -->
+    <div id="screen-wallets" class="screen" style="display:none;">
+    <section class="panel" id="setupPanel">
+      <div class="topSection">
+
+        <!-- Wallet step (no collapsible header) -->
+        <div class="walletSection" id="walletSection">
+          <div class="walletSectionContent">
+          <div class="walletFlowStack">
+            <h2 class="walletFlowTitle">Wallet</h2>
+            <p class="walletFlowSubHint">Add multiple wallets with a comma, space, or new line (max 12).</p>
+            <div class="walletInputRow">
+              <div class="walletInputOverlayWrap">
+              <textarea
+                id="walletInput"
+                class="input guideGlow wallet-flow-field wallet-textarea"
+                rows="4"
+                placeholder="0xabc…&#10;Multiple: comma, space, or new line (max 12)"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                inputmode="text"
+              ></textarea>
+              <div id="walletInputOverlay" class="walletInputOverlay" aria-hidden="true"></div>
+              </div>
+              <span id="walletValidationHint" class="walletValidationHint"></span>
+            </div>
+            <details class="savedWalletsDropdown" id="savedWalletsDropdown">
+              <summary class="savedWalletsSummary">SAVED WALLETS <span class="savedWalletsChevron" aria-hidden="true">▾</span></summary>
+              <div class="savedWalletsBody">
+                <p class="savedWalletsHint" id="savedWalletsHint"></p>
+                <div id="savedWalletsList" class="savedWalletsList" role="group" aria-label="Saved wallet addresses"></div>
+                <div class="savedWalletsActions">
+                  <button type="button" id="savedWalletsAddChecked" class="btn btnSmall" disabled>Add checked to box</button>
+                  <button type="button" id="savedWalletsSelectAllVisible" class="btn btnSmall btnGhostSmall" disabled>Select all</button>
+                </div>
+              </div>
+            </details>
+            <div class="walletFlowChainRow" id="walletFlowChainRow">
+            <label class="walletFlowChainLbl" for="chainSelect">Chain</label>
+            <select id="chainSelect" class="input wallet-flow-field chainSelectGlow" aria-label="Blockchain network">
+              <option value="eth" selected>Ethereum</option>
+              <option value="base">Base</option>
+              <option value="apechain">ApeChain</option>
+              <option value="polygon">Polygon</option>
+              <option value="solana">Solana (Beta)</option>
+            </select>
+            </div>
+            <div id="polygonContractRow" class="polygonContractRow hidden" aria-hidden="true">
+              <label class="walletFlowChainLbl" for="polygonContractInput">Collection contract</label>
+              <input
+                id="polygonContractInput"
+                class="input wallet-flow-field"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="0x… NFT contract (required)"
+                aria-describedby="polygonContractHint polygonContractPreview"
+              />
+              <div id="polygonContractPreview" class="polygonContractPreview hidden" aria-live="polite" aria-atomic="true">
+                <div class="polygonContractPreviewInner">
+                  <div class="polygonContractPreviewImgWrap" aria-hidden="true">
+                    <img id="polygonContractPreviewImg" class="polygonContractPreviewImg" alt="" width="56" height="56" decoding="async" />
+                  </div>
+                  <div class="polygonContractPreviewBody">
+                    <div id="polygonContractPreviewName" class="polygonContractPreviewName"></div>
+                    <p id="polygonContractPreviewMsg" class="polygonContractPreviewMsg hint"></p>
+                  </div>
+                </div>
+                <p id="polygonContractPreviewError" class="polygonContractPreviewError hint hidden" role="status"></p>
+              </div>
+              <p id="polygonContractHint" class="hint polygonContractHint">
+                Only NFTs you own from this contract are loaded — not your full wallet (better for large wallets and mobile).
+              </p>
+              <div class="polygonSaveRow">
+                <button type="button" id="polygonSaveCollectionBtn" class="btn btnSmall" disabled>Bookmark collection</button>
+              </div>
+              <p class="hint polygonBookmarkHint">Bookmarks use the <strong>first</strong> wallet in the box plus this contract (for one-tap reload).</p>
+            </div>
+            <div id="polygonSavedRow" class="polygonSavedRow hidden" aria-hidden="true">
+              <div class="polygonSavedRowLabel">Saved Polygon collections</div>
+              <div id="polygonSavedStrip" class="polygonSavedStrip" role="list" aria-label="Saved Polygon collections"></div>
+            </div>
+            <button id="loadBtn" class="btn walletFlowLoadBtn" type="button" disabled>🔍 LOAD WALLET</button>
+          </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="status" class="status" role="status" aria-live="polite" style="min-height:24px;font-weight:800;margin-top:8px;"></div>
+      
+      <!-- Error Log -->
+      <div id="errorLog" style="display: none; margin-top: 12px; padding: 12px; background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.3); border-radius: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 17px; font-weight: 900; color: #f44336;">⚠️ Error Log</span>
+          <button id="clearErrorLog" style="margin-left: auto; padding: 4px 8px; font-size: 17px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.4); border-radius: 6px; color: #f44336; cursor: pointer;">Clear</button>
+        </div>
+        <div id="errorLogContent" style="max-height: 200px; overflow-y: auto; font-family: 'Monaco', 'Courier New', monospace; font-size: 17px; line-height: 1.6;">
+          <!-- Errors will be added here -->
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- STEP 2: Collections Selection -->
+    <div id="screen-collections" class="screen" style="display:none;">
+    <section class="panel" id="controlsPanel">
+      <div class="collectionsSection collapsed" id="collectionsSection">
+      <div class="collectionsSectionHeader" id="collectionsSectionHeader" role="button" tabindex="0">
+        <span>Collections</span>
+        <span class="collapseIcon">▶</span>
+      </div>
+      <div class="collectionsCard" id="collectionsCard">
+        <div class="collectionsCardGrid">
+          <div class="collectionsRow">
+            <div class="searchWrap">
+              <input id="collectionSearch" class="input guideGlow" placeholder="Search collections..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+              <div class="hint">Use Select All or Select Manually on each collection.</div>
+            </div>
+            <div class="collectionsRowBtns">
+              <button class="btn btnSmall" type="button" id="selectAllBtn">✅ Select all</button>
+              <button class="btn btnSmall" type="button" id="selectNoneBtn">🚫 Select none</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="collectionsEmptyState" class="emptyState" style="display:none;">👇 Select collections to build your grid</div>
+        <div id="collectionsList" class="collectionList collections-container"></div>
+        <div id="traitFiltersWrap" class="traitFiltersWrap" style="display:none; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.12);">
+          <label class="lbl" style="margin-bottom:8px;">Trait + value filter (each collection independently)</label>
+          <div id="traitFiltersList"></div>
+        </div>
+        <div class="buildGridRow">
+          <button id="gridBuildBtn" class="btn" type="button" disabled>🧩 BUILD GRID NOW</button>
+        </div>
+      </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- STEP 3: Grid Builder (retry + grid shown below) -->
+    <div id="screen-grid" class="screen" style="display:none;">
+    <div class="buildExportRow" id="buildExportRow">
+      <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
+      <button id="removeUnloadedBtn" class="btn" type="button" style="display:none;">🗑️ Remove unloaded & reshuffle</button>
+      <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Import Image / Logo</button>
+      <button id="gridRemoveImportedBtn" class="btn btnSmall" type="button" title="Remove all imported images from this session" hidden aria-hidden="true">🗑️ Remove imports</button>
+      <input type="file" id="importImageInput" accept="image/*" multiple class="srOnly" tabindex="-1" aria-hidden="true" />
+      <button id="gridShuffleBtn" class="btn btnSmall" type="button" style="display:none;">🔀 Shuffle order</button>
+    </div>
+    </div>
+
+    <!-- Grid stage (visible in Step 3) -->
+    <div id="gridStageWrapper" class="screen" style="display:none;">
+    <section class="stageWrap" id="gridPanel">
+      <div class="gridStageCollapsibles">
+        <div class="traitOrderSection collapsed" id="traitOrderSection">
+          <div class="traitOrderSectionHeader" id="traitOrderSectionHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="traitOrderContent">
+            <span class="traitOrderHeaderText">
+              <span class="traitOrderHeaderTitle">Trait order</span>
+              <span class="traitOrderHeaderHint">Drag ⋮⋮ to reorder · trait menu sorts NFTs</span>
+            </span>
+            <span class="collapseIcon">▶</span>
+          </div>
+          <div class="traitOrderContent" id="traitOrderContent">
+            <div id="collectionTraitControls" class="collectionTraitControls trait-row"></div>
+          </div>
+        </div>
+        <div class="stageLayoutSection collapsed" id="stageLayoutSection">
+          <div class="stageLayoutSectionHeader" id="stageLayoutSectionHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="stageLayoutSectionContent">
+            <span class="stageLayoutSectionHeaderText">
+              <span class="stageLayoutSectionHeaderTitle">Layout</span>
+              <span class="stageLayoutSectionHeaderHint">Switch collage template on the fly</span>
+            </span>
+            <span class="collapseIcon">▶</span>
+          </div>
+          <div class="stageLayoutSectionContent" id="stageLayoutSectionContent">
+            <div id="stageLayoutBar" class="stageLayoutBar">
+              <span class="lbl stageLayoutBarLabel">Layout</span>
+              <div class="layoutPickerBtns stageLayoutPickerBtns" id="stageLayoutPickerBtns" role="group" aria-label="Switch collage layout"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="stage" class="stage">
+        <div class="stageMetaRow">
+          <div id="stageMeta" class="stageMeta"></div>
+        </div>
+
+        <div class="gridWrap">
+        <div id="gridStageImageLoading" class="grid-stage-image-loading grid-stage-image-loading--empty" aria-live="polite">
+          <div class="grid-stage-image-loading-inner">
+            <div class="grid-stage-image-loading-barTrack" aria-hidden="true">
+              <div id="gridStageImageLoadingBarFill" class="grid-stage-image-loading-barFill"></div>
+            </div>
+            <p class="grid-stage-image-loading-hint">Loading images…</p>
+          </div>
+        </div>
+        <div id="stageCaptionOverlay" class="stageCaptionOverlay" hidden aria-live="polite"></div>
+  <div id="gridStack" class="gridStack">
+  <div id="grid" class="grid"></div>
+  <div id="gridOverflow" class="grid gridOverflow" style="display: none;" aria-hidden="true"></div>
+  <img
+    id="wmGrid"
+    class="watermarkGrid"
+    src="src/assets/images/pblo.png"
+    alt="Powered by Little Ollie Studio"
+    style="display:none;"
+  />
+  </div>
+
+        </div>
+
+        <div class="gridExportBar">
+          <button id="gridExportBtn" class="btn" type="button" disabled>📸 Export PNG</button>
+        </div>
+        <div class="gridExportBar" style="border-top:none; padding-top:0;">
+          <button id="gridGifBtn" class="btn" type="button" disabled>🎞️ Create GIF</button>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div id="gridGifOptionsModal" class="grid-gif-options-modal hidden" aria-hidden="true">
+      <div class="grid-gif-options-panel" role="dialog" aria-modal="true" aria-labelledby="gridGifOptionsTitle">
+        <div class="grid-gif-options-head">
+          <h3 id="gridGifOptionsTitle" class="grid-gif-options-title">Animation export</h3>
+          <button id="gridGifOptionsClose" class="grid-gif-options-close" type="button" aria-label="Close">×</button>
+        </div>
+        <img
+          class="grid-gif-options-header flexgrid-modal-banner"
+          src="src/assets/images/header.png"
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+        />
+        <p id="gridGifOptionsSummary" class="grid-gif-options-summary" aria-live="polite"></p>
+
+        <div class="grid-gif-options-actions" style="justify-content:flex-start; gap:10px; padding: 6px 0 12px;">
+          <button id="gridExportTypeGif" class="btn btnSmall btnPrimary" type="button" aria-pressed="true">Export as GIF</button>
+          <button id="gridExportTypeMp4" class="btn btnSmall" type="button" aria-pressed="false">Export as MP4</button>
+        </div>
+        <p id="gridExportTypeHint" class="grid-gif-options-duration" aria-live="polite" style="margin-top:-6px;"></p>
+
+        <label class="grid-gif-options-label" for="gridGifOptionsMax">NFT frames to include</label>
+        <input
+          type="number"
+          id="gridGifOptionsMax"
+          class="grid-gif-options-input"
+          min="1"
+          max="400"
+          step="1"
+          value="25"
+        />
+
+        <label class="grid-gif-options-label grid-gif-options-label--section" for="gridGifOptionsSpeed">Speed</label>
+        <div class="grid-gif-options-speed-scale" aria-hidden="true">
+          <span>Slow</span>
+          <span>Fast</span>
+        </div>
+        <div class="grid-gif-options-range-row">
+          <input
+            type="range"
+            id="gridGifOptionsSpeed"
+            class="grid-gif-options-range"
+            min="0"
+            max="100"
+            step="5"
+            value="50"
+            aria-label="GIF speed, slow to fast"
+          />
+        </div>
+        <p id="gridGifOptionsDuration" class="grid-gif-options-duration" aria-live="polite"></p>
+
+        <div class="grid-gif-options-actions">
+          <button id="gridGifOptionsCancel" class="btn" type="button">Cancel</button>
+          <button id="gridGifOptionsConfirm" class="btn btnPrimary" type="button">Export</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gridGifCreatingModal" class="grid-gif-creating-modal hidden" aria-hidden="true">
+      <div class="grid-gif-creating-panel">
+        <p class="grid-gif-creating-title">Creating GIF…</p>
+        <div class="grid-gif-creating-spinner" aria-hidden="true"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Collection search filter (unchanged) -->
+  <script>
+    (function(){
+      const $ = (id)=>document.getElementById(id);
+      const list = $("collectionsList");
+      const search = $("collectionSearch");
+
+      if (search && list){
+        search.addEventListener("input", () => {
+          const q = search.value.trim().toLowerCase();
+          // Collection-first UX renders cards inside `.collection-grid`.
+          // Filter the cards rather than `#collectionsList` direct children.
+          const grid = list.querySelector(".collection-grid");
+          const cards = grid ? Array.from(grid.querySelectorAll(".collection-card")) : [];
+          cards.forEach((el) => {
+            const txt = (el.innerText || "").toLowerCase();
+            el.style.display = (!q || txt.includes(q)) ? "" : "none";
+          });
+        });
+      }
+    })();
+  </script>
+
+  <!-- ✅ Watermark auto-scale + lock width to 1 tile (fixes overlap into tile #2) -->
+<script>
+  (function(){
+    const key = "lo_theme";
+    const wrap = document.getElementById("themeToggleWrap");
+    if(!wrap) return;
+
+    const updateState = () => {
+      wrap.classList.toggle("dark", document.body.classList.contains("dark"));
+      wrap.setAttribute("aria-checked", document.body.classList.contains("dark"));
+    };
+
+    // 1) Load saved theme, otherwise use system preference
+    const saved = localStorage.getItem(key);
+    if(saved === "dark"){
+      document.body.classList.add("dark");
+    }else if(saved === "light"){
+      document.body.classList.remove("dark");
+    }else{
+      if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.body.classList.add("dark");
+      }
+    }
+    updateState();
+
+    // 2) Toggle on click/key + persist
+    const toggle = () => {
+      document.body.classList.toggle("dark");
+      localStorage.setItem(key, document.body.classList.contains("dark") ? "dark" : "light");
+      updateState();
+    };
+    wrap.addEventListener("click", toggle);
+    wrap.addEventListener("keydown", (e) => { if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
+  })();
+</script>
+ 
+<script src="vendor/loGifBranding.js"></script>
+<script src="vendor/gif.js"></script>
+<script type="module" src="src/js/app.js"></script>
+</body>
+</html>
