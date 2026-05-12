@@ -1,19 +1,29 @@
-/** Full template PNG + picker thumbs (`assets/DDG1.png` … `assets/DDG7.png`). */
+/**
+ * Resolve `assets/<filename>` relative to this module (not the HTML URL).
+ * GitHub Pages is case-sensitive and serves from the repo as deployed — this avoids
+ * broken relative resolution if the app is ever opened from an unexpected path.
+ */
+export function assetUrl(filename) {
+  const name = String(filename || "").replace(/^\.?\//, "");
+  return new URL(`./assets/${name}`, import.meta.url).href;
+}
+
+/** Full template PNG + picker thumbs — files must be committed for GitHub Pages (`DDG1.png`…`DDG7.png`). */
 export const TEMPLATE_CHOICES = [
-  { id: 1, template: "assets/DDGTemplate1.png", thumb: "assets/DDG1.png" },
-  { id: 2, template: "assets/DDGTemplate2.png", thumb: "assets/DDG2.png" },
-  { id: 3, template: "assets/DDGTemplate3.png", thumb: "assets/DDG3.png" },
-  { id: 4, template: "assets/DDGTemplate4.png", thumb: "assets/DDG4.png" },
-  { id: 5, template: "assets/DDGTemplate5.png", thumb: "assets/DDG5.png" },
-  { id: 6, template: "assets/DDGTemplate6.png", thumb: "assets/DDG6.png" },
-  { id: 7, template: "assets/DDGTemplate7.png", thumb: "assets/DDG7.png" },
+  { id: 1, template: assetUrl("DDGTemplate1.png"), thumb: assetUrl("DDG1.png") },
+  { id: 2, template: assetUrl("DDGTemplate2.png"), thumb: assetUrl("DDG2.png") },
+  { id: 3, template: assetUrl("DDGTemplate3.png"), thumb: assetUrl("DDG3.png") },
+  { id: 4, template: assetUrl("DDGTemplate4.png"), thumb: assetUrl("DDG4.png") },
+  { id: 5, template: assetUrl("DDGTemplate5.png"), thumb: assetUrl("DDG5.png") },
+  { id: 6, template: assetUrl("DDGTemplate6.png"), thumb: assetUrl("DDG6.png") },
+  { id: 7, template: assetUrl("DDGTemplate7.png"), thumb: assetUrl("DDG7.png") },
 ];
 
 export const ASSETS = {
   /** Current template URL — updated when the user picks another template. */
   template: TEMPLATE_CHOICES[0].template,
-  ddgLogo: "assets/DDGLogo.png",
-  loLogo: "assets/LOLogo.png",
+  ddgLogo: assetUrl("DDGLogo.png"),
+  loLogo: assetUrl("LOLogo.png"),
 
   // Optional future additions:
   shutterSound: null,

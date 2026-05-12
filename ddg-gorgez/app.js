@@ -640,6 +640,26 @@ function tryAnotherAndPickFile() {
   void renderIdleTemplate();
 }
 
+/** GitHub Pages (Linux) is case-sensitive; macOS dev trees often are not — try .png then .PNG. */
+function setThumbSrcWithCaseFallback(img, primaryUrl) {
+  const primary = String(primaryUrl || "").trim();
+  const urls = [primary];
+  if (/\.png$/i.test(primary)) {
+    const alt = primary.replace(/\.png$/i, (ext) => (ext === ".png" ? ".PNG" : ".png"));
+    if (alt !== primary) urls.push(alt);
+  }
+  let i = 0;
+  img.onerror = () => {
+    i += 1;
+    if (i < urls.length) {
+      img.src = urls[i];
+    } else {
+      img.onerror = null;
+    }
+  };
+  img.src = urls[0];
+}
+
 function buildTemplatePickerGrid() {
   if (!templatePickerGrid) return;
   templatePickerGrid.innerHTML = "";
@@ -652,7 +672,7 @@ function buildTemplatePickerGrid() {
     if (index === activeTemplateIndex) btn.classList.add("isSelected");
     btn.dataset.templateIndex = String(index);
     const img = document.createElement("img");
-    img.src = choice.thumb;
+    setThumbSrcWithCaseFallback(img, choice.thumb);
     img.alt = `Template ${choice.id} preview`;
     img.loading = "lazy";
     img.decoding = "async";
