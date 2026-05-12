@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <title>DDG — Gorgez Template</title>
     <meta name="theme-color" content="#0b0c12" />
-    <link rel="preload" href="assets/DDGTemplate.png" as="image" type="image/png" fetchpriority="high" />
+    <link rel="preload" href="assets/DDGTemplate1.png" as="image" type="image/png" fetchpriority="high" />
     <link rel="preload" href="assets/DDGLogo.png" as="image" type="image/png" fetchpriority="high" />
     <link rel="preload" href="assets/LOLogo.png" as="image" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -96,11 +96,59 @@
           </div>
 
           <div class="actions">
+            <button class="btn blue big" id="changeTemplateBtn" type="button">CHANGE TEMPLATE</button>
             <button class="btn primary alt big hidden" id="downloadBtn" type="button">DOWNLOAD IMAGE</button>
             <button class="btn primary alt big hidden" id="tryAnotherBtn" type="button">TRY ANOTHER</button>
           </div>
         </div>
       </section>
+
+      <div
+        id="templatePickerOverlay"
+        class="templatePickerOverlay hidden"
+        aria-hidden="true"
+      >
+        <div
+          class="templatePickerModal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="templatePickerTitle"
+        >
+          <header class="templatePickerHeader">
+            <div class="templatePickerBrandRow brandRow" aria-label="Little Ollie x DDG">
+              <div class="brandLogoWrap">
+                <img
+                  class="brandLogo templatePickerBrandLo"
+                  src="assets/LOLogo.png"
+                  alt="Little Ollie"
+                  width="120"
+                  height="68"
+                  decoding="async"
+                />
+              </div>
+              <div class="brandX">×</div>
+              <div class="brandLogoWrap">
+                <img
+                  class="brandLogo templatePickerBrandDdg"
+                  src="assets/DDGLogo.png"
+                  alt="DDG"
+                  width="200"
+                  height="190"
+                  decoding="async"
+                />
+              </div>
+            </div>
+          </header>
+          <div class="templatePickerHead">
+            <h2 class="templatePickerTitle" id="templatePickerTitle">Choose a template</h2>
+            <button type="button" class="templatePickerClose" id="templatePickerClose" aria-label="Close">
+              ×
+            </button>
+          </div>
+          <p class="templatePickerSub hint">Tap a layout — your Gorgez photo is kept if you already uploaded one.</p>
+          <div class="templatePickerList" id="templatePickerGrid" role="listbox" aria-label="Template previews"></div>
+        </div>
+      </div>
 
       <footer class="appPoweredBy" role="contentinfo" aria-label="Credits">
         <p>POWERED BY LITTLE OLLIE LABS</p>

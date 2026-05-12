@@ -93,10 +93,18 @@
     (function(){
       var overlay = document.getElementById("disclaimerOverlay");
       var btn = document.getElementById("disclaimerContinue");
+      function dismissDisclaimer() {
+        if (!overlay) return;
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+      }
       if (btn && overlay) {
-        btn.addEventListener("click", function(){
-          overlay.classList.add("hidden");
-          overlay.setAttribute("aria-hidden", "true");
+        btn.addEventListener("click", dismissDisclaimer);
+      }
+      /* Tap dimmed area outside the modal — same as Continue (overlay was blocking chain buttons). */
+      if (overlay) {
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) dismissDisclaimer();
         });
       }
     })();
@@ -137,13 +145,13 @@
     <div class="stepBar">
     <button type="button" id="hubBackBtn" class="hubBackLink">← BACK</button>
     <nav id="stepIndicator" class="stepIndicator" aria-label="Progress">
-      <span class="stepItem" data-step="0">1. Chain</span>
-      <span class="stepConnector">→</span>
-      <span class="stepItem" data-step="1">2. Wallets</span>
-      <span class="stepConnector">→</span>
-      <span class="stepItem" data-step="2">3. Collections</span>
-      <span class="stepConnector">→</span>
-      <span class="stepItem" data-step="3">4. Grid</span>
+      <button type="button" class="stepItem" data-step="0">1. Chain</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="1">2. Wallets</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="2">3. Collections</button>
+      <span class="stepConnector" aria-hidden="true">→</span>
+      <button type="button" class="stepItem" data-step="3">4. Grid</button>
     </nav>
     <div class="stepBarTrailing">
     <div id="themeToggleWrap" class="themeToggleWrap" role="button" tabindex="0" aria-label="Toggle dark mode" title="Light / Dark mode">
@@ -239,8 +247,20 @@
                 autocapitalize="none"
                 spellcheck="false"
                 placeholder="0x… NFT contract (required)"
-                aria-describedby="polygonContractHint"
+                aria-describedby="polygonContractHint polygonContractPreview"
               />
+              <div id="polygonContractPreview" class="polygonContractPreview hidden" aria-live="polite" aria-atomic="true">
+                <div class="polygonContractPreviewInner">
+                  <div class="polygonContractPreviewImgWrap" aria-hidden="true">
+                    <img id="polygonContractPreviewImg" class="polygonContractPreviewImg" alt="" width="56" height="56" decoding="async" />
+                  </div>
+                  <div class="polygonContractPreviewBody">
+                    <div id="polygonContractPreviewName" class="polygonContractPreviewName"></div>
+                    <p id="polygonContractPreviewMsg" class="polygonContractPreviewMsg hint"></p>
+                  </div>
+                </div>
+                <p id="polygonContractPreviewError" class="polygonContractPreviewError hint hidden" role="status"></p>
+              </div>
               <p id="polygonContractHint" class="hint polygonContractHint">
                 Only NFTs you own from this contract are loaded — not your full wallet (better for large wallets and mobile).
               </p>

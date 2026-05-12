@@ -141,7 +141,9 @@ export async function resolveImageUrlWithCandidates(rawUrl, candidates = []) {
 
   const uniq = [];
   const seen = new Set();
-  for (const u of [key, ...(Array.isArray(candidates) ? candidates : [])]) {
+  // First arg is often a composite cache key (`0x…::tokenId::https…`); only seed tries when it is a real URL.
+  const seed = /^https?:\/\//i.test(key) || key.startsWith("data:") || key.startsWith("blob:") ? [key] : [];
+  for (const u of [...seed, ...(Array.isArray(candidates) ? candidates : [])]) {
     const s = typeof u === "string" ? u.trim() : "";
     if (!s) continue;
     if (seen.has(s)) continue;
@@ -202,11 +204,25 @@ export async function preloadResolvedUrlsForExport(urls = []) {
 /**
  * Produces a stable-ish cache key for NFT/custom image objects.
  * This is UI-only caching; do not include secrets.
+ *
+ * For string URLs, optional `identity` (`{ contract, tokenId }`) scopes session cache so many
+ * pre-reveal NFTs that share one placeholder URL do not share one `peekResolved` / memCache entry
+ * (fixes Mac showing old placeholder art for some tokens after reveal while iPhone session was fresh).
  */
-export function cacheKeyFromRawArt(raw) {
+export function cacheKeyFromRawArt(raw, identity) {
   try {
     if (!raw) return "";
-    if (typeof raw === "string") return raw;
+    if (typeof raw === "string") {
+      const s = raw.trim();
+      if (!s) return "";
+      const id = identity && typeof identity === "object" ? identity : null;
+      if (id) {
+        const c = id.contract != null ? String(id.contract).trim().toLowerCase() : "";
+        const tid = id.tokenId != null ? String(id.tokenId).trim() : "";
+        if (c && tid) return `${c}::${tid}::${s}`;
+      }
+      return s;
+    }
     if (typeof raw === "object") {
       const parts = [];
       if (raw.contract) parts.push(String(raw.contract));

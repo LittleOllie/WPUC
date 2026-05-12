@@ -13,10 +13,11 @@ body {
   height: 100%;
   margin: 0;
   position: relative;
-  background:
-    radial-gradient(120% 120% at 20% 10%, rgba(109,224,255,.22), rgba(0,0,0,0) 55%),
-    radial-gradient(120% 120% at 85% 0%, rgba(255,221,85,.16), rgba(0,0,0,0) 55%),
+  --app-page-bg:
+    radial-gradient(120% 120% at 20% 10%, rgba(109, 224, 255, 0.22), rgba(0, 0, 0, 0) 55%),
+    radial-gradient(120% 120% at 85% 0%, rgba(255, 221, 85, 0.16), rgba(0, 0, 0, 0) 55%),
     linear-gradient(180deg, var(--blue), var(--blue2));
+  background: var(--app-page-bg);
   color: var(--text);
   font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
@@ -133,12 +134,14 @@ body {
 }
 
 /* LO slightly smaller; DDG ~2.5× taller — row flex-centers × between them */
-#loLogoHeader.brandLogo {
+#loLogoHeader.brandLogo,
+.templatePickerBrandRow .templatePickerBrandLo {
   height: clamp(44px, 10.5vw, 68px);
   max-height: min(68px, 20vw);
 }
 
-#ddgLogoHeader.brandLogo {
+#ddgLogoHeader.brandLogo,
+.templatePickerBrandRow .templatePickerBrandDdg {
   height: clamp(110px, 27vw, 190px);
   max-height: min(190px, 52vw);
 }
@@ -234,6 +237,16 @@ body {
   background: rgba(255, 255, 255, 0.08);
   color: #eaf0ff;
   border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.btn.blue {
+  background: linear-gradient(180deg, #6d9fff, var(--blue) 42%, #3d5fd4);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.22);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .btn.big {
@@ -412,8 +425,9 @@ canvas#canvas {
 
 .actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding-inline: clamp(0px, 1.2vw, 6px);
   box-sizing: border-box;
 }
@@ -675,12 +689,14 @@ canvas#canvas {
   }
 
   /* Keep LO × DDG on one row without clipping */
-  #loLogoHeader.brandLogo {
+  #loLogoHeader.brandLogo,
+  .templatePickerBrandRow .templatePickerBrandLo {
     height: clamp(40px, 9.5vw, 60px);
     max-height: min(60px, 18vw);
   }
 
-  #ddgLogoHeader.brandLogo {
+  #ddgLogoHeader.brandLogo,
+  .templatePickerBrandRow .templatePickerBrandDdg {
     height: clamp(92px, 24vw, 150px);
     max-height: min(150px, 46vw);
   }
@@ -715,5 +731,175 @@ canvas#canvas {
   .frameUploadBtn {
     margin-top: 2px;
   }
+
+  .templatePickerOptionFrame,
+  .templatePickerOption img {
+    max-height: min(42vh, 420px);
+  }
+}
+
+/* --- Template picker (CHANGE TEMPLATE) --- */
+.templatePickerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: var(--app-page-bg);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-sizing: border-box;
+}
+
+.templatePickerOverlay.hidden {
+  display: none !important;
+}
+
+.templatePickerModal {
+  width: min(640px, 100%);
+  max-height: min(92vh, 900px);
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--app-page-bg);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px 14px 16px;
+  box-sizing: border-box;
+}
+
+.templatePickerHeader {
+  margin: 0 0 10px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.templatePickerBrandRow {
+  margin: 2px 0 0;
+}
+
+.templatePickerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.templatePickerTitle {
+  margin: 0;
+  font-size: clamp(22px, 4.2vw, 28px);
+  font-weight: 950;
+  letter-spacing: -0.15px;
+  color: #fff;
+  line-height: 1.15;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.templatePickerClose {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.templatePickerClose:hover {
+  filter: brightness(1.12);
+  border-color: rgba(255, 221, 85, 0.45);
+}
+
+.templatePickerSub {
+  margin: 0 0 14px;
+  font-size: clamp(14px, 3.4vw, 17px);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.templatePickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.templatePickerOption {
+  position: relative;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 8px;
+  margin: 0;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: visible;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+}
+
+.templatePickerOption:hover {
+  border-color: rgba(255, 221, 85, 0.45);
+}
+
+.templatePickerOption:active {
+  transform: scale(0.99);
+}
+
+.templatePickerOption.isSelected {
+  border-color: rgba(255, 221, 85, 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 221, 85, 0.25), 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.templatePickerOptionFrame {
+  width: 100%;
+  max-height: min(52vh, 560px);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.templatePickerOption img {
+  display: block;
+  max-width: 100%;
+  max-height: min(52vh, 560px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.templatePickerOption .templatePickerOptionBadge {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: clamp(12px, 3vw, 14px);
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 

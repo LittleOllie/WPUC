@@ -1,6 +1,17 @@
+/** Full template PNG + small picker thumb (`assets/1.png` … `assets/7.png`). */
+export const TEMPLATE_CHOICES = [
+  { id: 1, template: "assets/DDGTemplate1.png", thumb: "assets/1.png" },
+  { id: 2, template: "assets/DDGTemplate2.png", thumb: "assets/2.png" },
+  { id: 3, template: "assets/DDGTemplate3.png", thumb: "assets/3.png" },
+  { id: 4, template: "assets/DDGTemplate4.png", thumb: "assets/4.png" },
+  { id: 5, template: "assets/DDGTemplate5.png", thumb: "assets/5.png" },
+  { id: 6, template: "assets/DDGTemplate6.png", thumb: "assets/6.png" },
+  { id: 7, template: "assets/DDGTemplate7.png", thumb: "assets/7.png" },
+];
+
 export const ASSETS = {
-  // Required (you will add these files):
-  template: "assets/DDGTemplate.png",
+  /** Current template URL — updated when the user picks another template. */
+  template: TEMPLATE_CHOICES[0].template,
   ddgLogo: "assets/DDGLogo.png",
   loLogo: "assets/LOLogo.png",
 

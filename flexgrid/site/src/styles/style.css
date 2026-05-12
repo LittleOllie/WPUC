@@ -1320,15 +1320,26 @@ body.dark .stageLayoutSectionHeaderHint{
   flex-wrap: wrap;
 }
 .stepItem {
+  position: relative;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  margin: 0;
+  font: inherit;
   font-size: 17px;
   font-weight: 700;
   color: rgba(255,255,255,.5);
-  padding: 6px 14px;
+  padding: 6px 14px 12px;
   border-radius: 10px;
+  background: transparent;
   transition: color .2s, background .2s, border-color .2s, box-shadow .2s;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+.stepItem:focus-visible {
+  outline: 2px solid rgba(255, 221, 85, 0.95);
+  outline-offset: 2px;
 }
 .stepItem.active {
   background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
@@ -1341,6 +1352,25 @@ body.dark .stageLayoutSectionHeaderHint{
   color: var(--btnText);
   border: 1px solid rgba(255,255,255,.35);
   box-shadow: 0 2px 6px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.4);
+}
+/* Yellow progress bar under each step label (current + completed) */
+.stepItem.active::after,
+.stepItem.completed::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 3px;
+  height: 5px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
+  box-shadow: 0 2px 10px rgba(255, 221, 85, 0.55);
+  pointer-events: none;
+}
+.stepItem.completed::after {
+  opacity: 0.55;
+  height: 4px;
+  box-shadow: 0 1px 6px rgba(255, 221, 85, 0.35);
 }
 .stepConnector {
   color: rgba(255,255,255,.35);
@@ -1417,6 +1447,10 @@ body.dark .stageLayoutSectionHeaderHint{
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: transform .08s ease, filter .15s ease, box-shadow .15s ease, border-color .15s ease;
+  position: relative;
+  z-index: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255,221,85,0.25);
 }
 .flexgrid-chain-btn:hover{ filter: brightness(1.05); }
 .flexgrid-chain-btn:active{ transform: translateY(1px) scale(0.99); }
@@ -1452,6 +1486,23 @@ body.dark .stageLayoutSectionHeaderHint{
 @media (min-width: 900px){
   .flexgrid-chain-btn{ min-height: 88px; font-size: 22px; }
   .flexgrid-chain-grid{ grid-template-columns: 1fr 1fr; }
+}
+
+/* Wizard screens: lift the active step above stray siblings so taps reach real controls */
+#screen-chain,
+#screen-wallets,
+#screen-collections,
+#screen-grid,
+#gridStageWrapper {
+  position: relative;
+  z-index: 1;
+}
+body[data-flexgrid-step="1"] #screen-chain,
+body[data-flexgrid-step="2"] #screen-wallets,
+body[data-flexgrid-step="3"] #screen-collections,
+body[data-flexgrid-step="4"] #screen-grid,
+body[data-flexgrid-step="4"] #gridStageWrapper {
+  z-index: 24;
 }
 
 /* Step navigation */
@@ -1500,6 +1551,7 @@ body.dark .stageLayoutSectionHeaderHint{
 }
 
 .walletFlowTitle {
+  position: relative;
   margin: 0;
   padding: 0;
   font-family: "Baloo 2", system-ui, sans-serif;
@@ -1510,6 +1562,51 @@ body.dark .stageLayoutSectionHeaderHint{
   color: #fff;
   line-height: 1.15;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+body[data-flexgrid-step="1"] #screen-chain .walletFlowTitle,
+body[data-flexgrid-step="2"] #screen-wallets .walletFlowTitle {
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
+body[data-flexgrid-step="1"] #screen-chain .walletFlowTitle::after,
+body[data-flexgrid-step="2"] #screen-wallets .walletFlowTitle::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
+  box-shadow: 0 2px 12px rgba(255, 221, 85, 0.45);
+}
+body[data-flexgrid-step="3"] .collectionsSectionHeader {
+  position: relative;
+  padding-bottom: 20px;
+}
+body[data-flexgrid-step="3"] .collectionsSectionHeader::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
+  height: 6px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
+  box-shadow: 0 2px 12px rgba(255, 221, 85, 0.45);
+  pointer-events: none;
+}
+body[data-flexgrid-step="4"] #gridStageWrapper .stageWrap {
+  position: relative;
+}
+body[data-flexgrid-step="4"] #gridStageWrapper .stageWrap::before {
+  content: "";
+  display: block;
+  height: 6px;
+  border-radius: 8px;
+  margin: 0 0 14px;
+  background: linear-gradient(90deg, var(--btnYellow), var(--btnYellow2));
+  box-shadow: 0 2px 12px rgba(255, 221, 85, 0.45);
 }
 body.dark .walletFlowTitle {
   color: rgba(255, 255, 255, 0.98);
@@ -3021,6 +3118,7 @@ body.dark .tile[data-kind="empty"]{
 .disclaimer-overlay.hidden{
   opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 .disclaimer-modal{
   max-width: 520px;
@@ -4893,6 +4991,70 @@ body.dark .collection-actions-btns .btn.collection-actions-choice.collection-act
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.polygonContractPreview{
+  margin-top: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 221, 85, 0.32);
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+.polygonContractPreview.hidden{
+  display: none !important;
+}
+.polygonContractPreviewInner{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.polygonContractPreviewImgWrap{
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+.polygonContractPreviewImg{
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+}
+.polygonContractPreviewImg--placeholder{
+  width: 56px;
+  height: 56px;
+  min-height: 56px;
+  background: linear-gradient(145deg, rgba(109, 224, 255, 0.35), rgba(76, 111, 255, 0.45));
+}
+.polygonContractPreviewBody{
+  flex: 1;
+  min-width: 0;
+}
+.polygonContractPreviewName{
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.98);
+  line-height: 1.2;
+  word-break: break-word;
+}
+.polygonContractPreviewMsg{
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+}
+.polygonContractPreviewError{
+  margin: 8px 0 0;
+  font-weight: 800;
+  color: rgba(255, 183, 120, 0.98);
+}
+.polygonContractPreviewError.hidden{
+  display: none !important;
 }
 .polygonContractHint{
   margin: 0;

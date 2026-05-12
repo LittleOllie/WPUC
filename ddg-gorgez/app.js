@@ -1,5 +1,6 @@
 import {
   ASSETS,
+  TEMPLATE_CHOICES,
   CANVAS_OUTPUT_WIDTH,
   AUTO_DETECT_FRAME,
   CALIBRATED_TEMPLATE_FRAME,
@@ -15,6 +16,7 @@ import {
 const EXPORT_JPEG_QUALITY = 0.92;
 const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.jpg";
 const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.jpg";
+const TEMPLATE_INDEX_LS_KEY = "ddg-gorgez-template-index";
 
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
@@ -35,6 +37,10 @@ const canvasExportMirror = document.getElementById("canvasExportMirror");
 const canvasExportMirrorLink = document.getElementById("canvasExportMirrorLink");
 const downloadBtn = document.getElementById("downloadBtn");
 const tryAnotherBtn = document.getElementById("tryAnotherBtn");
+const changeTemplateBtn = document.getElementById("changeTemplateBtn");
+const templatePickerOverlay = document.getElementById("templatePickerOverlay");
+const templatePickerGrid = document.getElementById("templatePickerGrid");
+const templatePickerClose = document.getElementById("templatePickerClose");
 const frameHint = document.getElementById("frameHint");
 
 const loLogoHeader = document.getElementById("loLogoHeader");
@@ -58,9 +64,30 @@ canvas.height = Math.round((CANVAS_OUTPUT_WIDTH * 2385) / 2048);
 canvasWrap.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
 
 let lastBlobUrl = null;
+/** Last uploaded file — used to re-render when switching templates after a composite exists. */
+let lastUserFile = null;
 let latestRenderedDataUrl = null;
 let detectedFrame = null;
 let templateImgCached = null;
+/** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1 / thumb 1.png). */
+let activeTemplateIndex = 0;
+
+function readStoredTemplateIndex() {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_INDEX_LS_KEY);
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 0 && n < TEMPLATE_CHOICES.length) return n;
+  } catch (_) {
+    /* ignore */
+  }
+  return 0;
+}
+
+function syncActiveTemplateToAssets() {
+  const choice = TEMPLATE_CHOICES[activeTemplateIndex] || TEMPLATE_CHOICES[0];
+  ASSETS.template = choice.template;
+}
+
 function setHidden(el, hidden) {
   el.classList.toggle("hidden", !!hidden);
   el.setAttribute("aria-hidden", hidden ? "true" : "false");
@@ -570,6 +597,7 @@ async function handleFile(file) {
   setHidden(downloadBtn, true);
   setHidden(tryAnotherBtn, true);
 
+  lastUserFile = file;
   const userImg = await decodeUserImage(file);
   await renderComposite(userImg);
   await playUploadAnimation();
@@ -582,6 +610,7 @@ async function handleFile(file) {
 async function resetApp() {
   latestRenderedDataUrl = null;
   detectedFrame = null;
+  lastUserFile = null;
   clearCanvas();
   fileInput.value = "";
   setHidden(stage, false);
@@ -598,6 +627,7 @@ async function resetApp() {
 function tryAnotherAndPickFile() {
   latestRenderedDataUrl = null;
   detectedFrame = null;
+  lastUserFile = null;
   fileInput.value = "";
   setHidden(downloadBtn, true);
   setHidden(tryAnotherBtn, true);
@@ -609,6 +639,103 @@ function tryAnotherAndPickFile() {
   fileInput.click();
   void renderIdleTemplate();
 }
+
+function buildTemplatePickerGrid() {
+  if (!templatePickerGrid) return;
+  templatePickerGrid.innerHTML = "";
+  TEMPLATE_CHOICES.forEach((choice, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "templatePickerOption";
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", index === activeTemplateIndex ? "true" : "false");
+    if (index === activeTemplateIndex) btn.classList.add("isSelected");
+    btn.dataset.templateIndex = String(index);
+    const img = document.createElement("img");
+    img.src = choice.thumb;
+    img.alt = `Template ${choice.id} preview`;
+    img.loading = "lazy";
+    img.decoding = "async";
+    const frame = document.createElement("div");
+    frame.className = "templatePickerOptionFrame";
+    frame.appendChild(img);
+    const badge = document.createElement("span");
+    badge.className = "templatePickerOptionBadge";
+    badge.textContent = String(choice.id);
+    btn.appendChild(frame);
+    btn.appendChild(badge);
+    btn.addEventListener("click", () => {
+      void applyTemplateChoice(index);
+    });
+    templatePickerGrid.appendChild(btn);
+  });
+}
+
+function openTemplatePicker() {
+  if (!templatePickerOverlay) return;
+  buildTemplatePickerGrid();
+  setHidden(templatePickerOverlay, false);
+  templatePickerOverlay.setAttribute("aria-hidden", "false");
+  templatePickerClose?.focus();
+}
+
+function closeTemplatePicker() {
+  if (!templatePickerOverlay) return;
+  setHidden(templatePickerOverlay, true);
+  templatePickerOverlay.setAttribute("aria-hidden", "true");
+  changeTemplateBtn?.focus();
+}
+
+async function applyTemplateChoice(index) {
+  const n = Math.max(0, Math.min(TEMPLATE_CHOICES.length - 1, Number(index) || 0));
+  if (n === activeTemplateIndex) {
+    closeTemplatePicker();
+    return;
+  }
+  activeTemplateIndex = n;
+  try {
+    localStorage.setItem(TEMPLATE_INDEX_LS_KEY, String(activeTemplateIndex));
+  } catch (_) {
+    /* ignore */
+  }
+  syncActiveTemplateToAssets();
+  closeTemplatePicker();
+  await reconcileAfterTemplateChange();
+}
+
+async function reconcileAfterTemplateChange() {
+  try {
+    if (lastUserFile) {
+      const userImg = await decodeUserImage(lastUserFile);
+      await renderComposite(userImg);
+      setHidden(downloadBtn, false);
+      setHidden(tryAnotherBtn, false);
+      frameHint?.classList.add("hidden");
+    } else {
+      await renderIdleTemplate();
+    }
+  } catch (_) {
+    try {
+      await renderIdleTemplate();
+    } catch (__) {
+      /* ignore */
+    }
+  }
+}
+
+changeTemplateBtn?.addEventListener("click", () => openTemplatePicker());
+templatePickerClose?.addEventListener("click", () => closeTemplatePicker());
+templatePickerOverlay?.addEventListener("click", (e) => {
+  if (e.target === templatePickerOverlay) closeTemplatePicker();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (templatePickerOverlay && !templatePickerOverlay.classList.contains("hidden")) {
+    e.preventDefault();
+    closeTemplatePicker();
+  }
+});
 
 downloadBtn.addEventListener("click", () => {
   const url =
@@ -630,6 +757,8 @@ fileInput.addEventListener("change", () => {
 });
 
 async function initApp() {
+  activeTemplateIndex = readStoredTemplateIndex();
+  syncActiveTemplateToAssets();
   try {
     await warmupCriticalImages();
     await resetApp();

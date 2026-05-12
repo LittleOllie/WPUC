@@ -8,7 +8,7 @@ import {
   fetchContractMetadataFromWorker,
   getWorkerBase,
 } from "./api.js";
-import { readPolygonSavedCollections, upsertPolygonSavedCollection, removePolygonSavedCollection } from "./chains/polygon/polygonCache.js";
+import { readPolygonSavedCollections, upsertPolygonSavedCollection, removePolygonSavedCollection, makePolygonSavedId } from "./chains/polygon/polygonCache.js";
 import { isValidPolygonEvmAddress, normalizePolygonContract } from "./chains/polygon/polygonService.js";
 import { loadPolygonWalletsContractSequential } from "./chains/polygon/polygonLoader.js";
 import { getAlchemyNetworkId } from "./alchemyNetworks.js";
@@ -85,12 +85,27 @@ function renderUI({ scrollTop = false } = {}) {
   if (grid) grid.style.display = currentStep === 3 ? "block" : "none";
   if (gridStage) gridStage.style.display = currentStep === 3 ? "block" : "none";
 
+  try {
+    document.body.dataset.flexgridStep = String(uiState.step ?? 1);
+  } catch (_) {}
+  /* Never leave the global loading veil up on early steps (it would block taps). */
+  if (currentStep === 0) {
+    try {
+      hideLoading();
+    } catch (_) {}
+  }
+
   // Step indicator
   document.querySelectorAll(".stepItem").forEach((el) => {
     const s = parseInt(el.dataset.step, 10);
     el.classList.remove("active", "completed");
-    if (s === currentStep) el.classList.add("active");
-    else if (s < currentStep) el.classList.add("completed");
+    el.removeAttribute("aria-current");
+    if (s === currentStep) {
+      el.classList.add("active");
+      el.setAttribute("aria-current", "step");
+    } else if (s < currentStep) {
+      el.classList.add("completed");
+    }
   });
 
   // Expand sections when entering their step
@@ -1421,18 +1436,18 @@ function getBestImage(nft) {
     };
     return (
       pick(nft?.media?.[0]?.gateway) ||
-      pick(nft?.media?.[0]?.thumbnail) ||
       pick(nft?.media?.[0]?.raw) ||
+      pick(nft?.media?.[0]?.thumbnail) ||
       pick(merged.image) ||
       pick(merged.image_url) ||
       pick(nft?.rawMetadata?.image) ||
       pick(nft?.rawMetadata?.image_url) ||
       coerceImageDataUrl(nft?.rawMetadata?.image_data) ||
       pick(typeof nft?.image === "string" ? nft.image : null) ||
-      pick(nft?.image?.cachedUrl) ||
-      pick(nft?.image?.thumbnailUrl) ||
       pick(nft?.image?.originalUrl) ||
+      pick(nft?.image?.cachedUrl) ||
       pick(nft?.image?.pngUrl) ||
+      pick(nft?.image?.thumbnailUrl) ||
       null
     );
   } catch (err) {
@@ -1924,6 +1939,172 @@ function renderPolygonSavedStrip() {
   }
 }
 
+/** Live lookup under Polygon collection contract: logo + name + bookmark hint. */
+let polygonContractPreviewTimer = null;
+let polygonContractPreviewRequestId = 0;
+/** @type {{ phase: "loading" | "ok" | "error", contract: string, displayName?: string, logoUrl?: string | null, error?: string } | null} */
+let polygonContractPreviewState = null;
+
+function hidePolygonContractPreview() {
+  polygonContractPreviewRequestId++;
+  polygonContractPreviewState = null;
+  if (polygonContractPreviewTimer) {
+    clearTimeout(polygonContractPreviewTimer);
+    polygonContractPreviewTimer = null;
+  }
+  const wrap = $("polygonContractPreview");
+  if (wrap) {
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden", "true");
+  }
+  const errEl = $("polygonContractPreviewError");
+  if (errEl) {
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+  }
+}
+
+function getPolygonContractPreviewBookmarkHint(contractNorm) {
+  const w0 = state.wallets[0] ? String(state.wallets[0]).trim().toLowerCase() : "";
+  const list = readPolygonSavedCollections();
+  const same =
+    w0 &&
+    isValidPolygonEvmAddress(w0) &&
+    list.some((r) => r.id === makePolygonSavedId(w0, contractNorm));
+  if (same) return "Already in your saved strip — tap Bookmark again to refresh name and logo.";
+  if (list.some((r) => normalizePolygonContract(r.contract) === contractNorm)) {
+    return "This contract is bookmarked for another wallet in your list. You can still add one for your first wallet below.";
+  }
+  if (!state.wallets.length) return "Add a wallet above, then tap Bookmark collection to save this for quick reload.";
+  if (!w0 || !isValidPolygonEvmAddress(w0)) return "Enter a valid first wallet, then tap Bookmark collection below.";
+  return "Want to save this? Tap Bookmark collection below (uses your first wallet + this contract).";
+}
+
+function renderPolygonContractPreviewPanel() {
+  const wrap = $("polygonContractPreview");
+  const img = $("polygonContractPreviewImg");
+  const nameEl = $("polygonContractPreviewName");
+  const msgEl = $("polygonContractPreviewMsg");
+  const errEl = $("polygonContractPreviewError");
+  if (!wrap || !img || !nameEl || !msgEl || !errEl) return;
+
+  const inp = $("polygonContractInput");
+  const cur = inp ? normalizePolygonContract(String(inp.value || "").trim()) : "";
+  if (!polygonContractPreviewState || !cur || polygonContractPreviewState.contract !== cur) {
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden", "true");
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+    return;
+  }
+
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden", "false");
+  const st = polygonContractPreviewState;
+
+  if (st.phase === "loading") {
+    nameEl.textContent = "Looking up collection…";
+    msgEl.textContent = "";
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+    img.removeAttribute("src");
+    img.classList.add("polygonContractPreviewImg--placeholder");
+    return;
+  }
+
+  if (st.phase === "error") {
+    nameEl.textContent = formatPolygonContractShort(st.contract);
+    msgEl.textContent = "";
+    errEl.classList.remove("hidden");
+    errEl.textContent = st.error || "Could not load collection details.";
+    img.removeAttribute("src");
+    img.classList.add("polygonContractPreviewImg--placeholder");
+    return;
+  }
+
+  errEl.classList.add("hidden");
+  errEl.textContent = "";
+  nameEl.textContent = st.displayName || formatPolygonContractShort(st.contract);
+  msgEl.textContent = getPolygonContractPreviewBookmarkHint(st.contract);
+  if (st.logoUrl) {
+    img.classList.remove("polygonContractPreviewImg--placeholder");
+    img.alt = "";
+    img.onerror = () => {
+      img.removeAttribute("src");
+      img.classList.add("polygonContractPreviewImg--placeholder");
+    };
+    img.src = st.logoUrl;
+  } else {
+    img.removeAttribute("src");
+    img.classList.add("polygonContractPreviewImg--placeholder");
+  }
+}
+
+async function fetchPolygonContractPreviewMetadata(contractNorm) {
+  const myId = ++polygonContractPreviewRequestId;
+  polygonContractPreviewState = { phase: "loading", contract: contractNorm };
+  renderPolygonContractPreviewPanel();
+
+  let meta;
+  try {
+    meta = await fetchContractMetadataFromWorker({ contract: contractNorm, chain: "polygon" });
+  } catch (e) {
+    if (myId !== polygonContractPreviewRequestId) return;
+    polygonContractPreviewState = {
+      phase: "error",
+      contract: contractNorm,
+      error: e?.message || "Request failed",
+    };
+    renderPolygonContractPreviewPanel();
+    return;
+  }
+  if (myId !== polygonContractPreviewRequestId) return;
+
+  if (meta?.error) {
+    polygonContractPreviewState = { phase: "error", contract: contractNorm, error: String(meta.error) };
+    renderPolygonContractPreviewPanel();
+    return;
+  }
+
+  const cn = typeof meta?.contractName === "string" ? meta.contractName.trim() : "";
+  const displayName =
+    cn && !isGenericPolygonCollectionName(cn) ? cn : formatPolygonContractShort(contractNorm);
+  let logoUrl = null;
+  if (meta?.rawLogoUrl && String(meta.rawLogoUrl).trim()) {
+    const u = repairBrokenImageUrl(String(meta.rawLogoUrl).trim());
+    if (u) logoUrl = u;
+  }
+
+  polygonContractPreviewState = { phase: "ok", contract: contractNorm, displayName, logoUrl };
+  renderPolygonContractPreviewPanel();
+}
+
+function schedulePolygonContractPreview() {
+  if (polygonContractPreviewTimer) clearTimeout(polygonContractPreviewTimer);
+  const ch = getWalletParseChain();
+  if (ch !== "polygon") {
+    hidePolygonContractPreview();
+    return;
+  }
+  const raw = String($("polygonContractInput")?.value || "").trim();
+  const contractNorm = normalizePolygonContract(raw);
+  if (!contractNorm || !isValidPolygonEvmAddress(contractNorm)) {
+    hidePolygonContractPreview();
+    return;
+  }
+
+  polygonContractPreviewTimer = setTimeout(() => {
+    polygonContractPreviewTimer = null;
+    const raw2 = String($("polygonContractInput")?.value || "").trim();
+    const c2 = normalizePolygonContract(raw2);
+    if (!c2 || !isValidPolygonEvmAddress(c2)) {
+      hidePolygonContractPreview();
+      return;
+    }
+    void fetchPolygonContractPreviewMetadata(c2);
+  }, 480);
+}
+
 /**
  * Alchemy `minimal` list omits contract/collection context; without this, `_contractAddress` becomes
  * "unknown", everything merges into one broken group, and Select All / build fail.
@@ -2016,12 +2197,21 @@ async function bookmarkPolygonCollectionFromUi() {
     polySavedRow.setAttribute("aria-hidden", "false");
   }
   setStatus("Saved Polygon collection — tap a card above to reload anytime.");
+  const displayLabel =
+    collectionName && !isGenericPolygonCollectionName(collectionName)
+      ? collectionName
+      : formatPolygonContractShort(contract);
+  const logoUrl = logo && String(logo).trim() ? repairBrokenImageUrl(String(logo).trim()) : null;
+  polygonContractPreviewState = { phase: "ok", contract, displayName: displayLabel, logoUrl };
+  renderPolygonContractPreviewPanel();
 }
 
 function syncWalletEntryUiForSelectedChain() {
   const input = $("walletInput");
   const hintP = document.querySelector("#walletSection .walletFlowSubHint");
   const chain = getWalletParseChain();
+
+  if (chain !== "polygon") hidePolygonContractPreview();
 
   if (input) {
     input.placeholder =
@@ -2058,6 +2248,7 @@ function syncWalletEntryUiForSelectedChain() {
   syncWalletsFromInput();
   renderSavedWalletsPanel();
   renderPolygonSavedStrip();
+  if (chain === "polygon") schedulePolygonContractPreview();
 }
 
 /** Split pasted / typed text into unique valid wallet addresses (capped at MAX_WALLET_ADDRESSES). */
@@ -2233,6 +2424,7 @@ function syncWalletsFromInput() {
   updateGuideGlow();
   updateWalletInputHint();
   renderWalletInputOverlay();
+  if (polygonContractPreviewState?.contract) renderPolygonContractPreviewPanel();
   return state.wallets.length;
 }
 
@@ -2998,6 +3190,34 @@ async function attachWorkingCandidateToImgElement(img, candidateUrls, timeoutMs 
 }
 
 /**
+ * Session image-loader keys must be scoped per token when many NFTs share one pre-reveal image URL;
+ * otherwise `peekResolvedForRawArt` / sessionStorage serve the wrong tile's cached resolution on desktop.
+ */
+function gridTileImageIdentity(tile) {
+  if (!tile?.dataset) return null;
+  const contract = String(tile.dataset.contract || "").trim().toLowerCase();
+  const tokenId = String(tile.dataset.tokenId ?? "").trim();
+  if (!contract || !tokenId) return null;
+  return { contract, tokenId };
+}
+
+function nftImageCacheIdentity(nft) {
+  if (!nft || typeof nft !== "object") return null;
+  const contract = String(
+    nft._contractAddress ||
+      nft?.contract?.address ||
+      nft?.collection?.address ||
+      nft?.contractAddress ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+  const tokenId = String(nft?._tokenId ?? nft?.tokenId ?? nft?.token_id ?? nft?.id?.tokenId ?? nft?.id ?? "").trim();
+  if (!contract || !tokenId) return null;
+  return { contract, tokenId };
+}
+
+/**
  * Same resolution path as grid tiles: cache, Worker proxy, gateway fallbacks, queued + timeout loads.
  * Uses `modules/imageLoader.js` for IPFS/Arweave gateway rotation + session cache (no indexer calls).
  * @returns {{ ok: boolean, winningUrl?: string }}
@@ -3006,6 +3226,7 @@ async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
   const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
   if (!raw) return { ok: false };
 
+  const identity = opts.imageIdentity || null;
   const manualMw = typeof opts.manualThumbMax === "number" && opts.manualThumbMax > 0 ? opts.manualThumbMax : 0;
   const gridDirect = !!opts.gridDirect && manualMw <= 0;
   const mapManualTry = (u) => {
@@ -3058,7 +3279,7 @@ async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
     }
   }
 
-  const loaderId = cacheKeyFromRawArt(raw);
+  const loaderId = cacheKeyFromRawArt(raw, identity);
   /** Large assets / cold worker cache need headroom — short timers caused mass false failures + retry. */
   const timeoutMs = state?.whaleMode ? 18000 : 26000;
 
@@ -3127,8 +3348,11 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
       return;
     }
     img.src = GRID_LOADING_PLACEHOLDER_SRC;
-    clearImageLoaderFailure(cacheKeyFromRawArt(String(rawOk || "").trim()));
-    const resHit = await resolveRawUrlOntoImage(img, rawOk, { manualThumbMax: manualModalThumbMaxPx() });
+    clearImageLoaderFailure(cacheKeyFromRawArt(String(rawOk || "").trim(), nftImageCacheIdentity(nft)));
+    const resHit = await resolveRawUrlOntoImage(img, rawOk, {
+      manualThumbMax: manualModalThumbMaxPx(),
+      imageIdentity: nftImageCacheIdentity(nft),
+    });
     if (resHit.ok && img.isConnected) {
       try {
         if (typeof img.decode === "function") await img.decode();
@@ -3152,9 +3376,12 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
 
   img.src = GRID_LOADING_PLACEHOLDER_SRC;
 
-  clearImageLoaderFailure(cacheKeyFromRawArt(String(raw || "").trim()));
+  clearImageLoaderFailure(cacheKeyFromRawArt(String(raw || "").trim(), nftImageCacheIdentity(nft)));
 
-  const res = await resolveRawUrlOntoImage(img, raw, { manualThumbMax: manualModalThumbMaxPx() });
+  const res = await resolveRawUrlOntoImage(img, raw, {
+    manualThumbMax: manualModalThumbMaxPx(),
+    imageIdentity: nftImageCacheIdentity(nft),
+  });
   let ok = res.ok;
   if (ok) {
     try {
@@ -5988,7 +6215,7 @@ async function retryMissingTiles() {
     } catch (_) {}
     tile.dataset.retryCount = "0";
     tile.dataset.loadStartedAt = String(Date.now());
-    clearImageLoaderFailure(cacheKeyFromRawArt(rawUrl));
+    clearImageLoaderFailure(cacheKeyFromRawArt(rawUrl, gridTileImageIdentity(tile)));
     let img = tile.querySelector("img");
     if (!img) {
       img = document.createElement("img");
@@ -6028,7 +6255,7 @@ async function loadTileImage(tile, img, rawUrl) {
     return false;
   }
 
-  clearImageLoaderFailure(cacheKeyFromRawArt(raw));
+  clearImageLoaderFailure(cacheKeyFromRawArt(raw, gridTileImageIdentity(tile)));
 
   if (raw.startsWith("blob:")) {
     tile.dataset.ipfsPath = "";
@@ -6036,7 +6263,7 @@ async function loadTileImage(tile, img, rawUrl) {
     tile.dataset.ipfsPath = getIpfsPath(raw) || "";
   }
 
-  const res = await resolveRawUrlOntoImage(img, raw, { gridDirect: true });
+  const res = await resolveRawUrlOntoImage(img, raw, { gridDirect: true, imageIdentity: gridTileImageIdentity(tile) });
   if (res.ok) {
     const decodeMs = state?.whaleMode ? 11000 : 16000;
     const dimOk = await waitForGridImageDimensions(img, decodeMs);
@@ -6827,12 +7054,13 @@ function getImage(nft) {
   const logo = extractCollectionLogoRawUrlFromNft(nft);
   const normLogo = logo ? String(logo).trim() : "";
   const merged = mergedNFTMetadata(nft);
+  /** Prefer full-size sources; thumbnails first caused sharp early tiles + pixelated exports on Ethereum. */
   const candidates = [
     merged.image,
     merged.image_url,
-    nft?.media?.[0]?.thumbnail,
     nft?.media?.[0]?.gateway,
     nft?.media?.[0]?.raw,
+    nft?.media?.[0]?.thumbnail,
     nft?.raw?.metadata?.image,
     nft?.raw?.metadata?.image_url,
     nft?.rawMetadata?.image,
@@ -6840,11 +7068,11 @@ function getImage(nft) {
     nft?.metadata?.image,
     nft?.metadata?.image_url,
     nft?.tokenUri?.gateway,
+    nft?.image?.originalUrl,
     nft?.image?.cachedUrl,
     nft?.image?.pngUrl,
-    nft?.image?.thumbnailUrl,
-    nft?.image?.originalUrl,
     typeof nft?.image === "string" ? nft.image : "",
+    nft?.image?.thumbnailUrl,
   ];
   for (const c of candidates) {
     if (c == null || c === "") continue;
@@ -7000,6 +7228,92 @@ function drawImageCover(ctx, img, dx, dy, dw, dh) {
   ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
 }
 
+function exportCanvasUniformScale(ctx) {
+  try {
+    const m = ctx.getTransform();
+    return Math.max(Math.abs(m.a), Math.abs(m.d), 1);
+  } catch (_) {
+    return 2;
+  }
+}
+
+/** Long edge of this tile in output bitmap pixels (ctx is already scaled). */
+function exportTileOutputLongPx(ctx, dw, dh) {
+  return Math.max(1, dw, dh) * exportCanvasUniformScale(ctx);
+}
+
+function exportBitmapLongEdgeSharpEnough(bw, bh, ctx, dw, dh) {
+  const need = exportTileOutputLongPx(ctx, dw, dh);
+  const src = Math.max(bw || 0, bh || 0);
+  if (src <= 0) return false;
+  return src >= need * 0.9;
+}
+
+/** CDN URLs often include `?w=…` / `width=` — try a de-sized variant for export. */
+function expandUrlVariantsForExport(url) {
+  const s = String(url || "").trim();
+  if (!s || s.startsWith("data:") || s.startsWith("blob:")) return [];
+  const out = [];
+  try {
+    const u = new URL(s);
+    const host = u.hostname.toLowerCase();
+    const sized =
+      u.searchParams.has("w") ||
+      u.searchParams.has("width") ||
+      u.searchParams.has("h") ||
+      u.searchParams.has("height") ||
+      /seadn\.io|looksrare|blur\.io|openseauserdata|nft-cdn/i.test(host);
+    if (!sized) return [];
+    u.searchParams.delete("w");
+    u.searchParams.delete("width");
+    u.searchParams.delete("h");
+    u.searchParams.delete("height");
+    const next = u.toString();
+    if (next !== s) out.push(next);
+  } catch (_) {}
+  return out;
+}
+
+/** Extra image URLs to try when exporting (full-res alternates not in dataset.rawUrl). */
+function buildExportImageExpandedUrlList(tile) {
+  const uniq = new Set();
+  const add = (u) => {
+    const t = typeof u === "string" ? u.trim() : "";
+    if (!t || t.startsWith("__CANDS__:") || t.startsWith("blob:")) return;
+    for (const c of buildImageCandidates(t)) {
+      if (c) uniq.add(c);
+    }
+    for (const v of expandUrlVariantsForExport(t)) {
+      for (const c of buildImageCandidates(v)) {
+        if (c) uniq.add(c);
+      }
+    }
+  };
+
+  const raw = String(getRawArtUrlForGridTile(tile) || "").trim();
+  if (raw.startsWith("__CANDS__:")) {
+    try {
+      const arr = JSON.parse(raw.slice("__CANDS__:".length));
+      if (Array.isArray(arr)) for (const c of arr) add(String(c || ""));
+    } catch (_) {}
+  } else add(raw);
+
+  const key = String(tile?.dataset?.key || "").trim();
+  const wantColl = String(tile?.dataset?.collectionKey || "").trim().toLowerCase();
+  for (const it of state.currentGridItems || []) {
+    if (isGridSlotEmpty(it)) continue;
+    if (getGridItemKey(it) !== key) continue;
+    if (wantColl && String(it?.sourceKey || "").trim().toLowerCase() !== wantColl) continue;
+    if (typeof it._displayImageUrl === "string") add(it._displayImageUrl);
+    if (typeof it._rawImageUrl === "string") add(it._rawImageUrl);
+    if (typeof it.image === "string") add(it.image);
+    if (Array.isArray(it.imageCandidates)) for (const c of it.imageCandidates) add(String(c || ""));
+    break;
+  }
+
+  return [...uniq];
+}
+
 /**
  * PNG export: screen `<img>` can look loaded while canvas draw still fails (decode race, WebKit paint,
  * or rare CORS quirks). Decode + drawImage, then createImageBitmap, then re-fetch via proxy/gateways.
@@ -7014,27 +7328,10 @@ async function drawImageCoverWithExportFallbacks(ctx, tile, img, dx, dy, dw, dh)
       await img.decode();
     } catch (_) {}
   }
-  if (isImgUsable(img)) {
-    try {
-      drawImageCover(ctx, img, dx, dy, dw, dh);
-      return;
-    } catch (e) {
-      if (DEV) console.warn("[export] drawImageCover failed, retrying", e);
-    }
-  }
-  try {
-    if (typeof createImageBitmap === "function" && isImgUsable(img)) {
-      const bmp = await createImageBitmap(img);
-      try {
-        drawImageCover(ctx, bmp, dx, dy, dw, dh);
-        return;
-      } finally {
-        if (typeof bmp.close === "function") bmp.close();
-      }
-    }
-  } catch (_) {}
 
-  const tryFetchBitmap = async (url) => {
+  let drew = false;
+
+  const tryFetchBitmap = async (url, requireSharp) => {
     if (!url || typeof url !== "string" || typeof createImageBitmap !== "function") return false;
     const u = url.trim();
     if (!u || u.startsWith("data:")) return false;
@@ -7043,29 +7340,71 @@ async function drawImageCoverWithExportFallbacks(ctx, tile, img, dx, dy, dw, dh)
     const blob = await res.blob();
     const bmp = await createImageBitmap(blob);
     try {
+      if (requireSharp && !exportBitmapLongEdgeSharpEnough(bmp.width, bmp.height, ctx, dw, dh)) {
+        return false;
+      }
       drawImageCover(ctx, bmp, dx, dy, dw, dh);
+      drew = true;
       return true;
+    } catch (_) {
+      return false;
     } finally {
       if (typeof bmp.close === "function") bmp.close();
     }
   };
 
-  const directSrc = (img.currentSrc || img.src || "").trim();
-  try {
-    if (await tryFetchBitmap(directSrc)) return;
-  } catch (_) {}
-
-  const raw = (tile?.dataset?.rawUrl || "").trim();
-  if (raw) {
-    const urls = buildImageCandidates(raw);
-    for (let i = 0; i < urls.length; i++) {
-      try {
-        if (await tryFetchBitmap(urls[i])) return;
-      } catch (_) {}
+  if (isImgUsable(img)) {
+    try {
+      drawImageCover(ctx, img, dx, dy, dw, dh);
+      drew = true;
+      if (exportBitmapLongEdgeSharpEnough(img.naturalWidth, img.naturalHeight, ctx, dw, dh)) return;
+    } catch (e) {
+      if (DEV) console.warn("[export] drawImageCover failed, retrying", e);
+      drew = false;
     }
   }
 
-  drawPlaceholder(ctx, dx, dy, dw, dh);
+  try {
+    if (typeof createImageBitmap === "function" && isImgUsable(img)) {
+      const bmp = await createImageBitmap(img);
+      try {
+        if (exportBitmapLongEdgeSharpEnough(bmp.width, bmp.height, ctx, dw, dh)) {
+          drawImageCover(ctx, bmp, dx, dy, dw, dh);
+          drew = true;
+          return;
+        }
+      } finally {
+        if (typeof bmp.close === "function") bmp.close();
+      }
+    }
+  } catch (_) {}
+
+  const seen = new Set();
+  const allUrls = [];
+  const pushU = (u) => {
+    const t = String(u || "").trim();
+    if (!t || seen.has(t)) return;
+    seen.add(t);
+    allUrls.push(t);
+  };
+
+  pushU((img.currentSrc || img.src || "").trim());
+  const rawDom = String(tile?.dataset?.rawUrl || "").trim();
+  if (rawDom) for (const u of buildImageCandidates(rawDom)) pushU(u);
+  for (const u of buildExportImageExpandedUrlList(tile)) pushU(u);
+
+  for (let i = 0; i < allUrls.length; i++) {
+    try {
+      if (await tryFetchBitmap(allUrls[i], true)) return;
+    } catch (_) {}
+  }
+  for (let i = 0; i < allUrls.length; i++) {
+    try {
+      if (await tryFetchBitmap(allUrls[i], false)) return;
+    } catch (_) {}
+  }
+
+  if (!drew) drawPlaceholder(ctx, dx, dy, dw, dh);
 }
 
 // ✅ WKWebView-safe export handler + browser fallback
@@ -7294,15 +7633,23 @@ async function waitForExportImages(tiles) {
     if (!raw || t?.dataset?.kind === "empty") continue;
     const candidates = buildImageCandidates(raw);
     if (!candidates.length) continue;
-    const id = cacheKeyFromRawArt(raw);
+    const id = cacheKeyFromRawArt(raw, {
+      contract: t?.dataset?.contract,
+      tokenId: t?.dataset?.tokenId,
+    });
     if (!preloadById.has(id)) preloadById.set(id, { id, candidates, rawArt: raw });
   }
   const preloadRows = [...preloadById.values()];
   if (preloadRows.length) {
-    await preloadResolvedUrlsForExport(preloadRows, {
-      mapTryUrl: (u) => gridProxyUrl(u) || u,
-      timeoutMs: state?.whaleMode ? 7000 : 11000,
-    });
+    const flat = [];
+    for (const row of preloadRows) {
+      if (row?.candidates && Array.isArray(row.candidates)) {
+        for (const c of row.candidates) {
+          if (c) flat.push(c);
+        }
+      }
+    }
+    if (flat.length) await preloadResolvedUrlsForExport(flat);
   }
 
   const settleMs = state?.whaleMode ? 20000 : 28000;
@@ -7343,7 +7690,7 @@ async function exportPNG() {
     const logicalH = Math.max(1, gridRect.height);
 
     const dpr = window.devicePixelRatio || 1;
-    const scale = Math.min(3, dpr * 2);
+    const scale = Math.min(4, Math.max(2, dpr * 2));
     const pad = 4;
 
     const outW = Math.round((logicalW + pad * 2) * scale);
@@ -8126,6 +8473,7 @@ function toggleStageLayoutSection() {
       syncPolygonSavedSelectionFromContractInput();
       enableButtons();
       updateWalletInputHint();
+      schedulePolygonContractPreview();
     });
     polygonContractInput.addEventListener("blur", () => {
       const v = String(polygonContractInput.value || "").trim();
@@ -8133,6 +8481,7 @@ function toggleStageLayoutSection() {
       syncPolygonSavedSelectionFromContractInput();
       enableButtons();
       updateWalletInputHint();
+      schedulePolygonContractPreview();
     });
   }
 
@@ -8184,6 +8533,7 @@ function toggleStageLayoutSection() {
       }
       if (polygonContractInput) polygonContractInput.value = c;
       syncWalletsFromInput();
+      schedulePolygonContractPreview();
       // IMPORTANT UX: selecting a saved collection should only fill the contract input.
       // Do NOT auto-fetch NFTs / auto-advance pages; user must press "🔍 LOAD WALLET".
       if (uiState.step !== 2) {
@@ -8352,15 +8702,14 @@ function toggleStageLayoutSection() {
     });
   });
 
-  // Chain selection step
+  // Chain selection step (delegated clicks: survives late DOM / avoids stale NodeList if markup moves)
   const chainNext = $("chainNextBtn");
-  const chainBtns = document.querySelectorAll(".flexgrid-chain-btn[data-chain]");
   const chainSelectEl = $("chainSelect");
   let selectedChain = "";
 
   const setChain = (c) => {
     selectedChain = String(c || "").trim().toLowerCase();
-    chainBtns.forEach((b) => {
+    document.querySelectorAll(".flexgrid-chain-btn[data-chain]").forEach((b) => {
       const on = b.dataset.chain === selectedChain;
       b.classList.toggle("isSelected", on);
       b.setAttribute("aria-pressed", on ? "true" : "false");
@@ -8385,9 +8734,30 @@ function toggleStageLayoutSection() {
     renderUI();
   };
 
-  chainBtns.forEach((b) => {
-    b.addEventListener("click", () => setChain(b.dataset.chain));
-  });
+  const chainScreenEl = $("screen-chain");
+  const onChainChipPick = (e) => {
+    const b = e.target.closest(".flexgrid-chain-btn[data-chain]");
+    if (!b || b.disabled) return;
+    if (b.classList.contains("flexgrid-chain-btn--disabled")) return;
+    const raw = b.getAttribute("data-chain");
+    if (!raw) return;
+    setChain(raw);
+  };
+  /* One handler per tap: pointerdown + click both fired on many devices and a debounce blocked real picks. */
+  if (chainScreenEl) {
+    chainScreenEl.addEventListener("click", onChainChipPick, true);
+  }
+
+  const discOv = $("disclaimerOverlay");
+  if (discOv && !discOv.dataset.flexgridBackdropBound) {
+    discOv.dataset.flexgridBackdropBound = "1";
+    discOv.addEventListener("click", (e) => {
+      if (e.target !== discOv) return;
+      discOv.classList.add("hidden");
+      discOv.setAttribute("aria-hidden", "true");
+    });
+  }
+
   if (chainNext) {
     chainNext.addEventListener("click", () => {
       if (!selectedChain) return;
