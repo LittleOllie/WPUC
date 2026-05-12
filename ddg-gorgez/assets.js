@@ -8,7 +8,7 @@ export function assetUrl(filename) {
   return new URL(`./assets/${name}`, import.meta.url).href;
 }
 
-/** Full template PNG + picker thumbs — files must be committed for GitHub Pages (`DDG1.png`…`DDG7.png`). */
+/** Full template PNG + picker thumbs — add `DDGTemplateN.png` + `DDGN.png` to `assets/` and commit for GitHub Pages. */
 export const TEMPLATE_CHOICES = [
   { id: 1, template: assetUrl("DDGTemplate1.png"), thumb: assetUrl("DDG1.png") },
   { id: 2, template: assetUrl("DDGTemplate2.png"), thumb: assetUrl("DDG2.png") },
@@ -17,6 +17,11 @@ export const TEMPLATE_CHOICES = [
   { id: 5, template: assetUrl("DDGTemplate5.png"), thumb: assetUrl("DDG5.png") },
   { id: 6, template: assetUrl("DDGTemplate6.png"), thumb: assetUrl("DDG6.png") },
   { id: 7, template: assetUrl("DDGTemplate7.png"), thumb: assetUrl("DDG7.png") },
+  { id: 8, template: assetUrl("DDGTemplate8.png"), thumb: assetUrl("DDG8.png") },
+  { id: 9, template: assetUrl("DDGTemplate9.png"), thumb: assetUrl("DDG9.png") },
+  { id: 10, template: assetUrl("DDGTemplate10.png"), thumb: assetUrl("DDG10.png") },
+  { id: 11, template: assetUrl("DDGTemplate11.png"), thumb: assetUrl("DDG11.png") },
+  { id: 12, template: assetUrl("DDGTemplate12.png"), thumb: assetUrl("DDG12.png") },
 ];
 
 export const ASSETS = {
