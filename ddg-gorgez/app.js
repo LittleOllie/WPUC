@@ -69,7 +69,7 @@ let lastUserFile = null;
 let latestRenderedDataUrl = null;
 let detectedFrame = null;
 let templateImgCached = null;
-/** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1 / thumb 1.png). */
+/** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1 / thumb DDG1.png). */
 let activeTemplateIndex = 0;
 
 function readStoredTemplateIndex() {
