@@ -76,7 +76,7 @@
                 <img id="ddgLogoInFrame" class="frameLogo hidden" alt="DDG logo" />
                 <div id="ddgLogoInFrameFallback" class="frameLogoFallback">DDG</div>
                 <label class="btn primary big frameUploadBtn" for="fileInput">
-                  <span class="btnText">UPLOAD DDG</span>
+                  <span class="btnText">UPLOAD DDG <span class="frameUploadSkull" aria-hidden="true">💀</span></span>
                   <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" />
                 </label>
               </div>
@@ -96,6 +96,36 @@
 
           <div class="actions">
             <button class="btn blue big" id="changeTemplateBtn" type="button">CHANGE TEMPLATE</button>
+            <div class="customSloganWrap" id="customSloganWrap">
+              <button
+                type="button"
+                class="btn blue big customSloganBtn"
+                id="customSloganBtn"
+                aria-expanded="false"
+                aria-controls="customSloganPanel"
+              >
+                CUSTOM SLOGAN
+              </button>
+              <div
+                class="customSloganPanel hidden"
+                id="customSloganPanel"
+                role="region"
+                aria-label="Custom slogan"
+              >
+                <textarea
+                  id="sloganInput"
+                  class="input customSloganInput"
+                  rows="3"
+                  maxlength="200"
+                  spellcheck="true"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  autocomplete="off"
+                  aria-label="Custom slogan"
+                  placeholder="Type your slogan…"
+                ></textarea>
+              </div>
+            </div>
             <button class="btn primary alt big hidden" id="downloadBtn" type="button">DOWNLOAD IMAGE</button>
             <button class="btn primary alt big hidden" id="tryAnotherBtn" type="button">TRY ANOTHER</button>
           </div>

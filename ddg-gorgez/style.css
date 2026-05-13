@@ -106,25 +106,36 @@ body {
 .header {
   margin: 0;
   padding: 0;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .brandRow {
   display: flex;
+  flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: clamp(6px, 2vw, 16px);
-  margin: 4px 0 10px;
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
+  margin: 4px auto 10px;
+  gap: 0;
 }
 
 .brandLogoWrap {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 1 auto;
-  min-width: 0;
+}
+
+.brandLogoWrap:first-of-type {
+  justify-content: flex-end;
+}
+
+.brandLogoWrap:last-of-type {
+  justify-content: flex-start;
 }
 
 .brandLogo {
@@ -133,30 +144,30 @@ body {
   filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.32));
 }
 
-/* LO slightly smaller; DDG ~2.5× taller — row flex-centers × between them */
+/* LO smaller than DDG; equal flex columns + gap keeps × optically centered between them */
 #loLogoHeader.brandLogo,
 .templatePickerBrandRow .templatePickerBrandLo {
-  height: clamp(44px, 10.5vw, 68px);
-  max-height: min(68px, 20vw);
+  height: clamp(56px, 13vw, 86px);
+  max-height: min(86px, 26vw);
 }
 
 #ddgLogoHeader.brandLogo,
 .templatePickerBrandRow .templatePickerBrandDdg {
-  height: clamp(110px, 27vw, 190px);
-  max-height: min(190px, 52vw);
+  height: clamp(136px, 32vw, 228px);
+  max-height: min(228px, 58vw);
 }
 
 #loLogoFallback.brandLogoFallback {
-  height: clamp(44px, 10.5vw, 68px);
-  min-width: clamp(72px, 22vw, 100px);
-  font-size: clamp(22px, 6vw, 34px);
+  height: clamp(56px, 13vw, 86px);
+  min-width: clamp(82px, 25vw, 118px);
+  font-size: clamp(26px, 7vw, 40px);
   border-radius: 16px;
 }
 
 #ddgLogoFallback.brandLogoFallback {
-  height: clamp(110px, 27vw, 190px);
-  min-width: clamp(100px, 28vw, 160px);
-  font-size: clamp(28px, 8vw, 52px);
+  height: clamp(136px, 32vw, 228px);
+  min-width: clamp(112px, 32vw, 180px);
+  font-size: clamp(32px, 9vw, 58px);
   border-radius: 18px;
 }
 
@@ -175,12 +186,14 @@ body {
 
 .brandX {
   flex: 0 0 auto;
-  align-self: center;
+  flex-shrink: 0;
   font-weight: 950;
   opacity: 0.78;
-  font-size: clamp(22px, 5.5vw, 36px);
+  font-size: clamp(30px, 7vw, 48px);
   line-height: 1;
-  padding: 0 2px;
+  /* Equal space from × to each logo — tighten slightly to bring logos closer */
+  padding: 0 clamp(9px, 2.5vw, 26px);
+  margin: 0;
 }
 
 .header h1 {
@@ -331,7 +344,7 @@ canvas#canvas {
   top: var(--fy, 18%);
   width: var(--fw, 60%);
   height: var(--fh, 60%);
-  z-index: 2;
+  z-index: 3;
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -340,13 +353,12 @@ canvas#canvas {
 .frameHintInner {
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: clamp(6px, 1.8vmin, 11px);
-  /* Extra bottom inset lifts logo + UPLOAD DDG above the Polaroid gutter */
-  padding: clamp(6px, 2vmin, 14px) clamp(10px, 3vmin, 18px)
-    clamp(14%, min(10rem, 20vmin));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vmin, 14px);
+  padding: clamp(8px, 2vmin, 16px);
   box-sizing: border-box;
   border-radius: 16px;
   border: 0;
@@ -405,13 +417,22 @@ canvas#canvas {
   animation: spin 2.6s linear infinite;
 }
 
-.frameUploadBtn .btnText{
+.frameUploadBtn .btnText {
   flex: 0 1 auto;
   width: 100%;
   font-size: clamp(17px, 4.8vw, 22px);
   letter-spacing: 0.045em;
   text-align: center;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.2em;
+}
+
+.frameUploadSkull {
+  font-size: 1.15em;
+  line-height: 1;
 }
 
 @keyframes spin {
@@ -430,6 +451,51 @@ canvas#canvas {
   flex-wrap: nowrap;
   padding-inline: clamp(0px, 1.2vw, 6px);
   box-sizing: border-box;
+}
+
+.customSloganWrap {
+  position: relative;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.customSloganBtn {
+  width: 100%;
+}
+
+.customSloganPanel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(200, 155, 0, 0.55);
+  background: linear-gradient(180deg, rgba(255, 250, 210, 0.98), rgba(255, 236, 150, 0.96));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+}
+
+.customSloganInput {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-size: clamp(17px, 4vw, 20px);
+  font-weight: 700;
+  line-height: 1.35;
+  border-radius: 12px;
+  border: 1px solid rgba(170, 130, 0, 0.45);
+  background: rgba(255, 255, 255, 0.78);
+  color: #1a1400;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.customSloganInput::placeholder {
+  color: rgba(55, 45, 0, 0.42);
+}
+
+.customSloganInput:focus {
+  outline: 2px solid rgba(200, 150, 0, 0.65);
+  outline-offset: 2px;
 }
 
 .hidden {
@@ -691,41 +757,37 @@ canvas#canvas {
   /* Keep LO × DDG on one row without clipping */
   #loLogoHeader.brandLogo,
   .templatePickerBrandRow .templatePickerBrandLo {
-    height: clamp(40px, 9.5vw, 60px);
-    max-height: min(60px, 18vw);
+    height: clamp(48px, 11.5vw, 76px);
+    max-height: min(76px, 24vw);
   }
 
   #ddgLogoHeader.brandLogo,
   .templatePickerBrandRow .templatePickerBrandDdg {
-    height: clamp(92px, 24vw, 150px);
-    max-height: min(150px, 46vw);
+    height: clamp(110px, 28vw, 176px);
+    max-height: min(176px, 52vw);
   }
 
   #loLogoFallback.brandLogoFallback {
-    height: clamp(40px, 9.5vw, 60px);
-    min-width: 64px;
-    font-size: clamp(18px, 5.5vw, 28px);
+    height: clamp(48px, 11.5vw, 76px);
+    min-width: 72px;
+    font-size: clamp(22px, 6.5vw, 34px);
   }
 
   #ddgLogoFallback.brandLogoFallback {
-    height: clamp(92px, 24vw, 150px);
-    min-width: 88px;
-    font-size: clamp(22px, 7vw, 40px);
+    height: clamp(110px, 28vw, 176px);
+    min-width: 96px;
+    font-size: clamp(26px, 8vw, 46px);
   }
 
   .brandX {
-    font-size: clamp(18px, 5vw, 28px);
+    font-size: clamp(26px, 6.5vw, 38px);
+    padding: 0 clamp(8px, 2.4vw, 22px);
   }
 
-  /* Stack logo → UPLOAD from top of hole; less bottom padding so pill isn’t pushed too low */
   .frameHintInner {
-    align-content: start;
-    justify-items: center;
-    padding-top: clamp(7%, 9vmin, 13%);
-    padding-bottom: clamp(5%, 7vmin, 11%);
-    padding-left: clamp(8px, 2.5vmin, 14px);
-    padding-right: clamp(8px, 2.5vmin, 14px);
-    gap: clamp(6px, 2vmin, 10px);
+    justify-content: center;
+    padding: clamp(6px, 1.8vmin, 12px);
+    gap: clamp(6px, 1.8vmin, 12px);
   }
 
   .frameUploadBtn {
@@ -775,10 +837,13 @@ canvas#canvas {
   margin: 0 0 10px;
   padding: 0 0 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .templatePickerBrandRow {
-  margin: 2px 0 0;
+  margin: 2px auto 0;
 }
 
 .templatePickerHead {

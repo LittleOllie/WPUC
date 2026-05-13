@@ -10,6 +10,12 @@ import {
   FRAME_OVERLAP_PX,
   UPLOAD_IMAGE_SCALE,
   USE_SQUARE_FRAME,
+  CUSTOM_SLOGAN_BOX_NATIVE,
+  CUSTOM_SLOGAN_LETTER_GAP,
+  CUSTOM_SLOGAN_SPACE_RATIO,
+  CUSTOM_SLOGAN_WRAP_MAX_CHARS,
+  BLANK_SLOGAN_TEMPLATE,
+  ddgLetterUrlsFromStem,
 } from "./assets.js";
 
 /** Shared JPEG quality for download + right-click / long-press mirror (MIME `image/jpeg`). */
@@ -17,6 +23,7 @@ const EXPORT_JPEG_QUALITY = 0.92;
 const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.jpg";
 const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.jpg";
 const TEMPLATE_INDEX_LS_KEY = "ddg-gorgez-template-index";
+const CUSTOM_SLOGAN_LS_KEY = "ddg-gorgez-custom-slogan";
 
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
@@ -38,6 +45,10 @@ const canvasExportMirrorLink = document.getElementById("canvasExportMirrorLink")
 const downloadBtn = document.getElementById("downloadBtn");
 const tryAnotherBtn = document.getElementById("tryAnotherBtn");
 const changeTemplateBtn = document.getElementById("changeTemplateBtn");
+const sloganInput = document.getElementById("sloganInput");
+const customSloganWrap = document.getElementById("customSloganWrap");
+const customSloganBtn = document.getElementById("customSloganBtn");
+const customSloganPanel = document.getElementById("customSloganPanel");
 const templatePickerOverlay = document.getElementById("templatePickerOverlay");
 const templatePickerGrid = document.getElementById("templatePickerGrid");
 const templatePickerClose = document.getElementById("templatePickerClose");
@@ -58,7 +69,7 @@ const flash = document.getElementById("flash");
 const bootLoadingEl = document.getElementById("bootLoading");
 
 const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
-// Initial size matches DDGTemplate.png native aspect until template loads & refits.
+// Initial size matches primary template native aspect until template loads & refits.
 canvas.width = CANVAS_OUTPUT_WIDTH;
 canvas.height = Math.round((CANVAS_OUTPUT_WIDTH * 2385) / 2048);
 canvasWrap.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
@@ -69,26 +80,461 @@ let lastUserFile = null;
 let latestRenderedDataUrl = null;
 let detectedFrame = null;
 let templateImgCached = null;
-/** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1 / thumb DDG1.png). */
+/** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1.png / thumb DDG1.png). */
 let activeTemplateIndex = 0;
+/** `blanktemplate.png` is used whenever `customSloganText` has letters/digits to preview (see `syncActiveTemplateToAssets`). */
 
-function readStoredTemplateIndex() {
+function migrateLegacyBlankTemplateSelection() {
   try {
     const raw = localStorage.getItem(TEMPLATE_INDEX_LS_KEY);
-    const n = parseInt(raw, 10);
-    if (Number.isFinite(n) && n >= 0 && n < TEMPLATE_CHOICES.length) return n;
+    if (raw !== "12" || TEMPLATE_CHOICES.length !== 12) return;
+    localStorage.setItem(TEMPLATE_INDEX_LS_KEY, "0");
   } catch (_) {
     /* ignore */
   }
-  return 0;
 }
 
 function syncActiveTemplateToAssets() {
-  const choice = TEMPLATE_CHOICES[activeTemplateIndex] || TEMPLATE_CHOICES[0];
-  ASSETS.template = choice.template;
+  if (String(customSloganText || "").length > 0) {
+    ASSETS.template = BLANK_SLOGAN_TEMPLATE;
+  } else {
+    const choice = TEMPLATE_CHOICES[activeTemplateIndex] || TEMPLATE_CHOICES[0];
+    ASSETS.template = choice.template;
+  }
+}
+
+const letterImageCache = new Map();
+
+let customSloganText = "";
+let sloganRedrawTimer = null;
+
+function readStoredSlogan() {
+  try {
+    const t = localStorage.getItem(CUSTOM_SLOGAN_LS_KEY);
+    if (t != null) return String(t);
+  } catch (_) {
+    /* ignore */
+  }
+  return "";
+}
+
+function persistSlogan(text) {
+  try {
+    localStorage.setItem(CUSTOM_SLOGAN_LS_KEY, String(text ?? ""));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function scaleSloganBoxToCanvas(box, templateImg) {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const refW = box.templateWidth || 2048;
+  const refH = box.templateHeight || 2385;
+  return {
+    x: (box.x / refW) * cw,
+    y: (box.y / refH) * ch,
+    w: (box.w / refW) * cw,
+    h: (box.h / refH) * ch,
+  };
+}
+
+const SLOGAN_CHAR_ALIASES = new Map([
+  ["\u2018", "'"],
+  ["\u2019", "'"],
+  ["\u02BC", "'"],
+  ["\u201c", '"'],
+  ["\u201d", '"'],
+  ["\u00a0", " "],
+  ["\u2013", "-"],
+  ["\u2014", "-"],
+  ["\u2212", "-"],
+]);
+
+function normalizeSloganChar(ch) {
+  return SLOGAN_CHAR_ALIASES.get(ch) ?? ch;
+}
+
+/**
+ * Keyboard / typed character → candidate PNG stems (see `ddgLetterUrlsFromStem` in assets.js for folders).
+ * Prefer literal filenames first where safe (e.g. `!.png`); add names your exports use.
+ */
+const SLOGAN_CHAR_STEMS = new Map([
+  ["!", ["exclamationpoint", "exclamation", "exclamationmark", "exclamation-mark", "bang", "!"]],
+  ["?", ["questionmark", "question", "question-mark", "?"]],
+  [".", ["period", "dot", "fullstop", "full-stop", "."]],
+  [",", ["comma", ","]],
+  [":", ["colon", ":"]],
+  [";", ["semicolon", ";"]],
+  ["'", ["apostrophe", "quotesingle", "quote-single", "'"]],
+  ['"', ["quotation", "quotedbl", "quote", "doublequote", "double-quote"]],
+  ["-", ["-", "hyphen", "hyphenminus", "minus", "dash", "Hyphen"]],
+  ["_", ["_", "underscore", "Underscore"]],
+  ["(", ["(", "parenleft", "leftparen", "parenthesisleft", "open-paren"]],
+  [")", [")", "parenright", "rightparen", "parenthesisright", "close-paren"]],
+  ["&", ["&", "ampersand", "and", "Ampersand"]],
+  ["@", ["@", "at", "at-sign", "At"]],
+  ["#", ["#", "hash", "numbersign", "pound", "number-sign", "Hash"]],
+  ["$", ["$", "dollar", "Dollar"]],
+  ["%", ["%", "percent", "Percent"]],
+  ["+", ["+", "plus", "Plus"]],
+  ["=", ["=", "equals", "Equal"]],
+  ["/", ["/", "slash", "solidus", "Slash"]],
+  ["*", ["*", "asterisk", "star", "Asterisk"]],
+  ["[", ["[", "bracketleft", "leftbracket", "Bracketleft"]],
+  ["]", ["]", "bracketright", "rightbracket", "Bracketright"]],
+  ["{", ["{", "braceleft", "Braceleft"]],
+  ["}", ["}", "braceright", "Braceright"]],
+  ["<", ["<", "less", "lessthan", "Less"]],
+  [">", [">", "greater", "greaterthan", "Greater"]],
+  ["|", ["bar", "pipe", "verticalbar", "Bar"]],
+  ["~", ["~", "tilde", "Tilde"]],
+  ["`", ["`", "grave", "backtick", "Grave"]],
+  ["^", ["^", "caret", "asciicircum", "Caret"]],
+]);
+
+/** Single chars that may be used as literal `X.png` when not in the stem map (path-safe). */
+function literalSafeForPngStem(ch) {
+  if (!ch || ch.length !== 1) return false;
+  if (/\s/.test(ch)) return false;
+  if (ch === "/" || ch === "\\") return false;
+  return true;
+}
+
+function variantStemsForPunctStem(stem) {
+  const s = String(stem);
+  if (s.length <= 1) return [s];
+  const lo = s.toLowerCase();
+  const tit = lo.charAt(0).toUpperCase() + lo.slice(1);
+  const up = lo.toUpperCase();
+  return [...new Set([s, lo, tit, up])];
+}
+
+/** Load order for one map entry: literal first when listed, then names with case variants. */
+function tryStemsForOneMapStem(nk, stem) {
+  if (stem.length === 1 && /[0-9A-Za-z]/.test(stem)) {
+    return [stem];
+  }
+  return variantStemsForPunctStem(stem);
+}
+
+function stemsForChar(nk) {
+  if (nk >= "0" && nk <= "9") return [nk];
+  if (nk >= "a" && nk <= "z") return [nk, nk.toUpperCase()];
+  if (nk >= "A" && nk <= "Z") return [nk];
+  const mapped = SLOGAN_CHAR_STEMS.get(nk);
+  if (mapped) {
+    const base = Array.isArray(mapped) ? mapped : [mapped];
+    const out = [];
+    for (const stem of base) {
+      for (const v of tryStemsForOneMapStem(nk, stem)) {
+        if (!out.includes(v)) out.push(v);
+      }
+    }
+    return out;
+  }
+  if (literalSafeForPngStem(nk)) return [nk];
+  return [];
+}
+
+/** Cache key for a drawable slogan glyph (letters, digits, mapped or literal punctuation). */
+function drawableGlyphKey(ch) {
+  const nk = normalizeSloganChar(ch);
+  if (nk >= "0" && nk <= "9") return nk;
+  if (nk >= "a" && nk <= "z") return nk;
+  if (nk >= "A" && nk <= "Z") return nk;
+  if (SLOGAN_CHAR_STEMS.has(nk)) return nk;
+  if (literalSafeForPngStem(nk)) return nk;
+  return null;
+}
+
+function isSloganLetterChar(ch) {
+  return drawableGlyphKey(ch) != null;
+}
+
+async function ensureLetterImage(ch) {
+  const nk = normalizeSloganChar(ch);
+  const key = drawableGlyphKey(nk);
+  if (!key) return null;
+  if (letterImageCache.has(key)) return letterImageCache.get(key);
+  const stems = stemsForChar(nk);
+  for (const stem of stems) {
+    const urls = ddgLetterUrlsFromStem(stem);
+    for (const url of urls) {
+      try {
+        const img = await loadLetterAsset(url, { highPriority: false });
+        letterImageCache.set(key, img);
+        return img;
+      } catch (_) {
+        /* try next URL / stem */
+      }
+    }
+  }
+  return null;
+}
+
+function glyphWidthForCh(ch, dh) {
+  const key = drawableGlyphKey(ch);
+  if (!key) return 0;
+  const img = letterImageCache.get(key);
+  if (!img || !img.naturalWidth) return dh * 0.55;
+  return dh * (img.naturalWidth / img.naturalHeight);
+}
+
+async function ensureLettersForLineGlyphs(lineGlyphs) {
+  const need = new Set();
+  for (const lg of lineGlyphs) {
+    for (const g of lg) {
+      if (g.ch) need.add(g.ch);
+    }
+  }
+  await Promise.all([...need].map((c) => ensureLetterImage(c)));
+}
+
+/** Pack `para` into lines of at most `maxLen` characters (spaces count); breaks at spaces when possible, else hard-breaks long tokens. */
+function wrapParagraphToMaxChars(para, maxLen) {
+  if (!para) return [];
+  const n = Math.max(8, Math.min(200, maxLen | 0)) || 25;
+  const lines = [];
+  let cur = "";
+  const tokens = para.split(/(\s+)/).filter((t) => t.length > 0);
+  for (const tok of tokens) {
+    if (cur.length + tok.length <= n) {
+      cur += tok;
+      continue;
+    }
+    if (cur.length) {
+      lines.push(cur);
+      cur = "";
+    }
+    if (tok.length <= n) {
+      cur = tok;
+      continue;
+    }
+    let rest = tok;
+    while (rest.length > n) {
+      lines.push(rest.slice(0, n));
+      rest = rest.slice(n);
+    }
+    cur = rest;
+  }
+  if (cur.length) lines.push(cur);
+  return lines;
+}
+
+/** Respect user newlines; each paragraph is wrapped to `maxLen` chars per canvas line. */
+function wrapSloganFullText(text, maxLen) {
+  const paragraphs = String(text || "").split(/\r?\n/);
+  const lines = [];
+  for (const para of paragraphs) {
+    if (para === "") {
+      lines.push("");
+      continue;
+    }
+    lines.push(...wrapParagraphToMaxChars(para, maxLen));
+  }
+  return lines;
+}
+
+/** Each entry is `{ space: true }` or `{ ch }` for drawable glyphs (see `drawableGlyphKey`). */
+function parseSloganLine(line) {
+  const out = [];
+  for (const ch of line) {
+    if (ch === " ") {
+      out.push({ space: true });
+      continue;
+    }
+    const nk = normalizeSloganChar(ch);
+    if (drawableGlyphKey(nk)) out.push({ ch: nk });
+  }
+  return out;
+}
+
+function measureLineWidth(glyphs, dh, gapFrac) {
+  let w = 0;
+  for (let i = 0; i < glyphs.length; i++) {
+    const g = glyphs[i];
+    if (g.space) {
+      w += dh * CUSTOM_SLOGAN_SPACE_RATIO;
+      continue;
+    }
+    const dw = glyphWidthForCh(g.ch, dh);
+    if (!dw) continue;
+    w += dw;
+    const hasMore = i < glyphs.length - 1;
+    if (hasMore) w += dw * gapFrac;
+  }
+  return w;
+}
+
+/**
+ * Vertical span for layout iterations — each line uses one uniform row height `dhUse` (full image),
+ * matching Procreate canvas alignment (no per-glyph ink shifting).
+ */
+function measureSloganVerticalSpanLetters(lineGlyphs, dhUse, box, lineGapRel) {
+  const gap = dhUse * lineGapRel;
+  let lineTopY = box.y + 3;
+  let maxBottom = lineTopY;
+  for (let li = 0; li < lineGlyphs.length; li++) {
+    const lineBottom = lineTopY + dhUse;
+    lineTopY = lineBottom + gap;
+    maxBottom = lineBottom;
+  }
+  return maxBottom - box.y;
+}
+
+async function drawCustomSloganOnCanvas(templateImg) {
+  const text = String(customSloganText || "").trim();
+  if (!text) return;
+
+  const wrapMax = Math.max(8, Math.min(200, Number(CUSTOM_SLOGAN_WRAP_MAX_CHARS) || 25));
+  const wrappedLineStrings = wrapSloganFullText(text, wrapMax);
+  const lineGlyphsRaw = wrappedLineStrings.map((ln) => parseSloganLine(ln));
+  const lineGlyphs = lineGlyphsRaw.map((lg) => lg.filter((g) => g.space || isSloganLetterChar(g.ch)));
+  const anyDrawable = lineGlyphs.some((lg) => lg.some((g) => !g.space));
+  if (!anyDrawable) return;
+
+  await ensureLettersForLineGlyphs(lineGlyphs);
+
+  const box = scaleSloganBoxToCanvas(CUSTOM_SLOGAN_BOX_NATIVE, templateImg);
+  const gapFrac = Number.isFinite(Number(CUSTOM_SLOGAN_LETTER_GAP))
+    ? Number(CUSTOM_SLOGAN_LETTER_GAP)
+    : 0;
+
+  const lineCount = Math.max(1, lineGlyphs.length);
+  let dh = (box.h / lineCount) * 0.88;
+
+  let maxNeeded = 0;
+  for (const glyphs of lineGlyphs) {
+    maxNeeded = Math.max(maxNeeded, measureLineWidth(glyphs, dh, gapFrac));
+  }
+  if (maxNeeded > box.w && maxNeeded > 0) {
+    dh *= box.w / maxNeeded;
+  }
+
+  const lineGapRel = 0.14;
+  const vMax = box.h - 10;
+
+  for (let iter = 0; iter < 18; iter++) {
+    let mw = 0;
+    for (const glyphs of lineGlyphs) {
+      mw = Math.max(mw, measureLineWidth(glyphs, dh, gapFrac));
+    }
+    if (mw > box.w && mw > 0) dh *= box.w / mw;
+
+    mw = 0;
+    for (const glyphs of lineGlyphs) {
+      mw = Math.max(mw, measureLineWidth(glyphs, dh, gapFrac));
+    }
+    const vSpan = measureSloganVerticalSpanLetters(lineGlyphs, dh, box, lineGapRel);
+    if (vSpan <= vMax && mw <= box.w + 0.5) break;
+    if (dh <= 4) break;
+    if (vSpan > vMax) dh *= 0.988;
+    else if (mw > box.w) dh *= 0.988;
+  }
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingQuality = "high";
+
+  let lineTopY = box.y + 3;
+  for (let li = 0; li < lineGlyphs.length; li++) {
+    const glyphs = lineGlyphs[li];
+    const lineW = measureLineWidth(glyphs, dh, gapFrac);
+    let x = Math.floor(box.x + (box.w - lineW) / 2);
+    const drawY = Math.round(lineTopY);
+    for (let gi = 0; gi < glyphs.length; gi++) {
+      const g = glyphs[gi];
+      if (g.space) {
+        x += dh * CUSTOM_SLOGAN_SPACE_RATIO;
+        continue;
+      }
+      const key = drawableGlyphKey(g.ch);
+      if (!key) continue;
+      const img = letterImageCache.get(key);
+      if (!img) continue;
+      const dw = dh * (img.naturalWidth / img.naturalHeight);
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, x, drawY, dw, dh);
+      x += dw;
+      if (gi < glyphs.length - 1) x += dw * gapFrac;
+    }
+    lineTopY = drawY + dh + dh * lineGapRel;
+  }
+  ctx.restore();
+}
+
+function scheduleSloganRedraw() {
+  if (sloganRedrawTimer) clearTimeout(sloganRedrawTimer);
+  sloganRedrawTimer = setTimeout(() => {
+    sloganRedrawTimer = null;
+    void redrawSloganOnly();
+  }, 120);
+}
+
+function isBlankSloganTemplateActive() {
+  return ASSETS.template === BLANK_SLOGAN_TEMPLATE;
+}
+
+function sameTemplateUrl(imgSrc, templateHref) {
+  try {
+    return new URL(imgSrc, window.location.href).href === new URL(templateHref, window.location.href).href;
+  } catch (_) {
+    return String(imgSrc || "") === String(templateHref || "");
+  }
+}
+
+async function paintIdleTemplateCanvas(template) {
+  fitCanvasToTemplate(template);
+  const frameBase = resolveFrameBase(template);
+  const frame = insetFrame(expandFrame(frameBase, FRAME_OVERLAP_PX), FRAME_INSET_PX);
+  applyFrameHint(frame);
+  clearCanvas();
+  ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
+  if (String(customSloganText || "").trim()) {
+    await drawCustomSloganOnCanvas(template);
+  }
+  await assignJpegFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
+}
+
+async function redrawSloganOnly() {
+  try {
+    if (lastUserFile) {
+      const userImg = await decodeUserImage(lastUserFile);
+      await renderComposite(userImg);
+      return;
+    }
+    let template = templateImgCached;
+    if (!template?.naturalWidth || !sameTemplateUrl(template.src, ASSETS.template)) {
+      template = await loadImage(ASSETS.template, { highPriority: true });
+      templateImgCached = template;
+    }
+    await paintIdleTemplateCanvas(template);
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function isCustomSloganPanelOpen() {
+  return !!(customSloganPanel && !customSloganPanel.classList.contains("hidden"));
+}
+
+function setCustomSloganPanelOpen(open) {
+  if (!customSloganPanel || !customSloganBtn) return;
+  setHidden(customSloganPanel, !open);
+  customSloganBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (open) {
+    window.requestAnimationFrame(() => sloganInput?.focus());
+  } else {
+    customSloganBtn.focus();
+  }
+}
+
+function toggleCustomSloganPanel() {
+  setCustomSloganPanelOpen(!isCustomSloganPanelOpen());
 }
 
 function setHidden(el, hidden) {
+  if (!el?.classList) return;
   el.classList.toggle("hidden", !!hidden);
   el.setAttribute("aria-hidden", hidden ? "true" : "false");
 }
@@ -129,6 +575,21 @@ async function loadImage(src, opts = {}) {
   });
 }
 
+/** Letter PNGs: some static hosts prefer encoded vs raw `%20` paths — try both. */
+async function loadLetterAsset(url, opts = {}) {
+  try {
+    return await loadImage(url, opts);
+  } catch (e) {
+    try {
+      const dec = decodeURI(url);
+      if (dec !== url) return await loadImage(dec, opts);
+    } catch (_) {
+      /* ignore */
+    }
+    throw e;
+  }
+}
+
 /** Prime HTTP cache + decode so first paint is snappy on slow networks. */
 function preloadDecoded(src) {
   if (!src) return Promise.resolve();
@@ -153,6 +614,7 @@ async function warmupCriticalImages() {
     preloadDecoded(ASSETS.template),
     preloadDecoded(ASSETS.ddgLogo),
     preloadDecoded(ASSETS.loLogo),
+    preloadDecoded(BLANK_SLOGAN_TEMPLATE),
   ]);
 }
 
@@ -407,7 +869,7 @@ function growSquareFrameCoverage(frame, mult) {
   return { x, y, width: side, height: side };
 }
 
-/** Hard-coded hole for DDGTemplate.png when native size matches calibration. */
+/** Hard-coded hole for the primary 2048×2385 template when native size matches calibration. */
 function frameFromCalibrated(templateImg) {
   if (!USE_CALIBRATED_FRAME) return null;
   const m = CALIBRATED_TEMPLATE_FRAME;
@@ -472,6 +934,10 @@ async function renderComposite(userImg) {
   drawImageToFrame(userImg, frame);
   ctx.restore();
 
+  if (String(customSloganText || "").trim()) {
+    await drawCustomSloganOnCanvas(template);
+  }
+
   await assignJpegFromCanvas(EXPORT_FILENAME_COMPOSITE, { linkForDownload: true });
 }
 
@@ -484,15 +950,8 @@ async function renderIdleTemplate() {
     ]);
 
     templateImgCached = template;
-    fitCanvasToTemplate(template);
-    const frameBase = resolveFrameBase(template);
-    const frame = insetFrame(expandFrame(frameBase, FRAME_OVERLAP_PX), FRAME_INSET_PX);
-    applyFrameHint(frame);
+    await paintIdleTemplateCanvas(template);
     applyLogos({ ddgLogo, loLogo });
-
-    clearCanvas();
-    ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
-    await assignJpegFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
   } catch (_) {
     // template might not exist yet
   }
@@ -513,10 +972,16 @@ function applyLogos({ ddgLogo, loLogo }) {
     ddgLogoHeader.classList.remove("hidden");
     ddgLogoFallback.classList.add("hidden");
 
-    ddgLogoInFrame.src = ddgLogo.src;
-    ddgLogoInFrame.classList.remove("hidden");
-    ddgLogoInFrame.classList.add("spin");
-    ddgLogoInFrameFallback.classList.add("hidden");
+    if (isBlankSloganTemplateActive()) {
+      ddgLogoInFrame.classList.add("hidden");
+      ddgLogoInFrame.classList.remove("spin");
+      ddgLogoInFrameFallback.classList.add("hidden");
+    } else {
+      ddgLogoInFrame.src = ddgLogo.src;
+      ddgLogoInFrame.classList.remove("hidden");
+      ddgLogoInFrame.classList.add("spin");
+      ddgLogoInFrameFallback.classList.add("hidden");
+    }
   } else {
     ddgLogoHeader.classList.add("hidden");
     ddgLogoFallback.classList.remove("hidden");
@@ -537,7 +1002,18 @@ function applyFrameHint(framePx) {
   canvasWrap.style.setProperty("--fy", `${fy}%`);
   canvasWrap.style.setProperty("--fw", `${fw}%`);
   canvasWrap.style.setProperty("--fh", `${fh}%`);
-  frameHint?.classList.remove("hidden");
+  if (shouldShowFrameUploadHint()) {
+    frameHint?.classList.remove("hidden");
+    frameHint?.setAttribute("aria-hidden", "false");
+  } else {
+    frameHint?.classList.add("hidden");
+    frameHint?.setAttribute("aria-hidden", "true");
+  }
+}
+
+/** UPLOAD DDG until the user has chosen an image (always available before first upload). */
+function shouldShowFrameUploadHint() {
+  return !lastUserFile;
 }
 
 function randomScanLine() {
@@ -635,7 +1111,6 @@ function tryAnotherAndPickFile() {
   setHidden(shutter, true);
   setHidden(flash, true);
   canvasWrap.classList.remove("shake", "reveal");
-  frameHint?.classList.remove("hidden");
   fileInput.click();
   void renderIdleTemplate();
 }
@@ -708,10 +1183,9 @@ function closeTemplatePicker() {
 
 async function applyTemplateChoice(index) {
   const n = Math.max(0, Math.min(TEMPLATE_CHOICES.length - 1, Number(index) || 0));
-  if (n === activeTemplateIndex) {
-    closeTemplatePicker();
-    return;
-  }
+  customSloganText = "";
+  persistSlogan("");
+  if (sloganInput) sloganInput.value = "";
   activeTemplateIndex = n;
   try {
     localStorage.setItem(TEMPLATE_INDEX_LS_KEY, String(activeTemplateIndex));
@@ -751,6 +1225,11 @@ templatePickerOverlay?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
+  if (isCustomSloganPanelOpen()) {
+    e.preventDefault();
+    setCustomSloganPanelOpen(false);
+    return;
+  }
   if (templatePickerOverlay && !templatePickerOverlay.classList.contains("hidden")) {
     e.preventDefault();
     closeTemplatePicker();
@@ -776,8 +1255,45 @@ fileInput.addEventListener("change", () => {
   handleFile(file);
 });
 
+if (sloganInput) {
+  sloganInput.addEventListener("input", () => {
+    const prevLen = String(customSloganText || "").length;
+    customSloganText = String(sloganInput.value || "").slice(0, 200);
+    persistSlogan(customSloganText);
+    const nextLen = customSloganText.length;
+    if ((prevLen === 0) !== (nextLen === 0)) {
+      syncActiveTemplateToAssets();
+      void reconcileAfterTemplateChange();
+    } else {
+      scheduleSloganRedraw();
+    }
+  });
+}
+
+customSloganBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleCustomSloganPanel();
+});
+
+document.addEventListener("pointerdown", (e) => {
+  if (!isCustomSloganPanelOpen()) return;
+  if (customSloganWrap?.contains(e.target)) return;
+  setCustomSloganPanelOpen(false);
+});
+
 async function initApp() {
-  activeTemplateIndex = readStoredTemplateIndex();
+  migrateLegacyBlankTemplateSelection();
+  letterImageCache.clear();
+  try {
+    const raw = localStorage.getItem(TEMPLATE_INDEX_LS_KEY);
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 0 && n < TEMPLATE_CHOICES.length) activeTemplateIndex = n;
+    else activeTemplateIndex = 0;
+  } catch (_) {
+    activeTemplateIndex = 0;
+  }
+  customSloganText = readStoredSlogan();
+  if (sloganInput) sloganInput.value = customSloganText;
   syncActiveTemplateToAssets();
   try {
     await warmupCriticalImages();
