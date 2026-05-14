@@ -1165,6 +1165,7 @@ canvas#canvas {
   -webkit-backdrop-filter: blur(10px);
 }
 
+.templatePickerModal.entryModal {
   text-align: center;
 }
 
@@ -1182,7 +1183,10 @@ canvas#canvas {
 }
 
 .entryTitle {
-  margin: 0 0 18px;
+  margin: 0 auto 18px;
+  max-width: 100%;
+  width: 100%;
+  text-align: center;
   font-size: clamp(20px, 5vw, 26px);
   font-weight: 950;
   letter-spacing: 0.04em;
@@ -1341,10 +1345,16 @@ canvas#canvas {
   margin-top: 4px;
   padding-top: 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .entryFlexPromoTitle {
   margin: 0 0 8px;
+  max-width: 100%;
   font-size: clamp(18px, 4.5vw, 24px);
   font-weight: 800;
   line-height: 1.25;
@@ -1352,10 +1362,23 @@ canvas#canvas {
 
 .entryFlexPromoSub {
   margin: 0 0 14px;
+  max-width: 100%;
   font-size: clamp(16px, 4vw, 20px);
   font-weight: 700;
   opacity: 0.92;
   line-height: 1.35;
+}
+
+.entryFlexLink.btn.big {
+  width: 100%;
+  max-width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 950;
+  box-sizing: border-box;
+  justify-content: center;
 }
 
 .entryFlexLink {

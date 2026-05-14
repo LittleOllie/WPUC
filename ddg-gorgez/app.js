@@ -764,8 +764,15 @@ async function loadImage(src, opts = {}) {
     if (opts.highPriority && "fetchPriority" in img) {
       img.fetchPriority = "high";
     }
-    img.decoding = opts.syncDecode ? "sync" : "async";
-    img.onload = () => resolve(img);
+    img.decoding = opts.awaitDecode ? "sync" : opts.syncDecode ? "sync" : "async";
+    img.onload = () => {
+      const finish = () => resolve(img);
+      if (opts.awaitDecode && img.decode) {
+        img.decode().then(finish).catch(finish);
+      } else {
+        finish();
+      }
+    };
     img.onerror = reject;
     img.src = src;
   });
@@ -774,6 +781,15 @@ async function loadImage(src, opts = {}) {
 function disposeDrawable(d) {
   try {
     if (d && typeof d.close === "function") d.close();
+  } catch (_) {
+    /* ignore */
+  }
+  try {
+    const blobUrl = d && d.__ddgBlobUrl;
+    if (typeof blobUrl === "string" && blobUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(blobUrl);
+      d.__ddgBlobUrl = "";
+    }
   } catch (_) {
     /* ignore */
   }
@@ -799,36 +815,47 @@ function drawablePixels(source) {
 }
 
 /**
- * Load a remote NFT image so it can be painted on the canvas without tainting when the host allows CORS.
- * The interactive overlay uses plain `<img src>` (always visible); the export uses this path for the canvas.
+ * Load a remote NFT image for canvas export. iOS Safari is picky: prefer fetch→blob→blob URL→Image
+ * (same-origin pixels, no taint) and await decode. Falls back to crossOrigin Image, then plain Image.
  */
 async function loadRemoteImageForCanvas(url) {
   const u = String(url || "").trim();
   if (!u) throw new Error("empty url");
+
   try {
-    const res = await fetch(u, { mode: "cors", credentials: "omit", cache: "force-cache" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(u, { mode: "cors", credentials: "omit", cache: "default" });
+    if (!res.ok) throw new Error(String(res.status));
     const blob = await res.blob();
-    if ("createImageBitmap" in window) {
-      try {
-        return await createImageBitmap(blob);
-      } catch (_) {
-        /* fall through to blob URL + Image */
-      }
-    }
     const objUrl = URL.createObjectURL(blob);
     try {
-      return await loadImage(objUrl, { highPriority: true });
-    } finally {
+      const img = await loadImage(objUrl, { highPriority: true, awaitDecode: true });
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) {
+        URL.revokeObjectURL(objUrl);
+        throw new Error("zero dimensions");
+      }
+      img.__ddgBlobUrl = objUrl;
+      return img;
+    } catch (e) {
       try {
         URL.revokeObjectURL(objUrl);
       } catch (_) {
         /* ignore */
       }
+      throw e;
     }
   } catch (_) {
-    return loadImage(u, { highPriority: true, crossOrigin: "anonymous" });
+    /* try fallbacks */
   }
+
+  try {
+    return await loadImage(u, { highPriority: true, crossOrigin: "anonymous", awaitDecode: true });
+  } catch (_) {
+    /* ignore */
+  }
+
+  return loadImage(u, { highPriority: true, awaitDecode: true });
 }
 
 /** Letter PNGs: some static hosts prefer encoded vs raw `%20` paths — try both. */
@@ -1156,6 +1183,12 @@ function resolveFrameBase(template) {
   return toCenteredSquareFrame(base);
 }
 
+/** Let decoded wallet images settle before canvas readback (helps Safari / iOS). */
+async function yieldForBitmapExport() {
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise((r) => setTimeout(r, 24));
+}
+
 async function renderComposite(userImg) {
   const template = await loadImage(ASSETS.template, { highPriority: true });
 
@@ -1167,7 +1200,10 @@ async function renderComposite(userImg) {
   const frame = insetFrame(expandFrame(frameBase, FRAME_OVERLAP_PX), FRAME_INSET_PX);
   applyFrameHint(frame);
 
-  if (lastWalletNfts.length) await ensureWalletImagesLoaded();
+  if (lastWalletNfts.length) {
+    await ensureWalletImagesLoaded();
+    await yieldForBitmapExport();
+  }
 
   // Render order:
   // Template background
@@ -1204,30 +1240,28 @@ async function renderComposite(userImg) {
 }
 
 async function ensureWalletImagesLoaded() {
-  const tasks = [];
-  for (const n of lastWalletNfts) {
+  async function loadOne(n) {
     const id = String(n.tokenId);
-    if (walletImageByTokenId.has(id)) continue;
     const full = String(n.full || "").trim();
     const thumb = String(n.thumb || "").trim();
     const tryUrls = [...new Set([full, thumb].filter(Boolean))];
-    if (!tryUrls.length) continue;
-    tasks.push(
-      (async () => {
-        for (const src of tryUrls) {
-          try {
-            const drawable = await loadRemoteImageForCanvas(src);
-            disposeDrawable(walletImageByTokenId.get(id));
-            walletImageByTokenId.set(id, drawable);
-            return;
-          } catch (_) {
-            /* try next URL */
-          }
-        }
-      })()
-    );
+    if (!tryUrls.length) return;
+    for (const src of tryUrls) {
+      try {
+        const drawable = await loadRemoteImageForCanvas(src);
+        disposeDrawable(walletImageByTokenId.get(id));
+        walletImageByTokenId.set(id, drawable);
+        return;
+      } catch (_) {
+        /* try next URL */
+      }
+    }
   }
-  await Promise.all(tasks);
+  for (let pass = 0; pass < 2; pass++) {
+    const need = lastWalletNfts.filter((n) => !walletImageByTokenId.has(String(n.tokenId)));
+    if (!need.length) return;
+    await Promise.all(need.map((n) => loadOne(n)));
+  }
 }
 
 async function rebuildUploadImageCache() {
@@ -1730,8 +1764,7 @@ downloadBtn?.addEventListener("click", async () => {
   if (!downloadBtn) return;
   downloadBtn.disabled = true;
   try {
-    if (lastWalletNfts.length) await ensureWalletImagesLoaded();
-    else if (lastUploadFiles.length) await rebuildUploadImageCache();
+    if (lastUploadFiles.length) await rebuildUploadImageCache();
     await renderComposite(null);
     const url = canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
     latestRenderedDataUrl = url;
