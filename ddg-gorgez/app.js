@@ -929,6 +929,21 @@ function prepareHtml2CanvasClone(doc) {
   }
 }
 
+/** html2canvas `scale`: keep output sharp on retina phones (CSS width ≪ canvas bitmap width). */
+const EXPORT_H2C_MIN_SCALE = 2;
+const EXPORT_H2C_MAX_SCALE = 4;
+
+function computeExportScreenshotScale() {
+  const el = getDdgTemplateExportEl();
+  const rect = el?.getBoundingClientRect?.();
+  const cssW = Math.max(1, rect?.width || 1);
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 2);
+  const bitmapW = canvas?.width || CANVAS_OUTPUT_WIDTH;
+  const matchBitmap = bitmapW / cssW;
+  const dprBoost = dpr * 1.25;
+  return Math.min(EXPORT_H2C_MAX_SCALE, Math.max(EXPORT_H2C_MIN_SCALE, matchBitmap, dprBoost));
+}
+
 /**
  * Screenshot of `.ddg-template` (same DOM as preview). Fallback: canvas readback if html2canvas missing/fails.
  */
@@ -947,7 +962,7 @@ async function getExportDataUrl() {
   const h2c = globalThis.html2canvas;
   if (typeof h2c === "function" && exportEl) {
     try {
-      const scale = Math.min(2.5, Math.max(1, Number(window.devicePixelRatio) || 2));
+      const scale = computeExportScreenshotScale();
       const shot = await h2c(exportEl, {
         backgroundColor: null,
         scale,
