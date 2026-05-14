@@ -29,6 +29,7 @@ import { mountEntry } from "./entryFlow.js";
  * Clone callback clears backdrop-filter so html2canvas does not return a blank bitmap.
  */
 const EXPORT_MIME = "image/png";
+/** PNG is lossless — best for sharp NFT edges. JPEG recompression would make downloads look worse, especially after html2canvas. */
 const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.png";
 const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.png";
 const TEMPLATE_INDEX_LS_KEY = "ddg-gorgez-template-index";
@@ -39,7 +40,9 @@ const OVERLAY_PLACEHOLDER_DATA_URL =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 /** Extra % of canvas height on `#frameMultiOverlay` when a poster grid is shown — hides a thin black seam at the bottom of the hole. */
-const MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT = 0.22;
+const MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT = 0.38;
+/** Nudge overlay down a hair so the grid covers any subpixel gap above template black at the bottom. */
+const MULTI_GRID_OVERLAY_TOP_NUDGE_PCT = 0.08;
 
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
@@ -929,9 +932,23 @@ function prepareHtml2CanvasClone(doc) {
   }
 }
 
-/** html2canvas `scale`: keep output sharp on retina phones (CSS width ≪ canvas bitmap width). */
+/** html2canvas `scale` caps — iPhone CSS width is small vs 1024px artboard, so NFTs need a higher scale or they look soft after capture. */
 const EXPORT_H2C_MIN_SCALE = 2;
 const EXPORT_H2C_MAX_SCALE = 4;
+const EXPORT_H2C_MIN_SCALE_IOS = 2.75;
+const EXPORT_H2C_MAX_SCALE_IOS = 5.75;
+
+function isAppleMobileDevice() {
+  try {
+    const ua = navigator.userAgent || "";
+    if (/iPhone|iPod/i.test(ua)) return true;
+    if (/iPad/i.test(ua)) return true;
+    if (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1) return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
 
 function computeExportScreenshotScale() {
   const el = getDdgTemplateExportEl();
@@ -940,8 +957,12 @@ function computeExportScreenshotScale() {
   const dpr = Math.max(1, Number(window.devicePixelRatio) || 2);
   const bitmapW = canvas?.width || CANVAS_OUTPUT_WIDTH;
   const matchBitmap = bitmapW / cssW;
-  const dprBoost = dpr * 1.25;
-  return Math.min(EXPORT_H2C_MAX_SCALE, Math.max(EXPORT_H2C_MIN_SCALE, matchBitmap, dprBoost));
+  const ios = isAppleMobileDevice();
+  const minS = ios ? EXPORT_H2C_MIN_SCALE_IOS : EXPORT_H2C_MIN_SCALE;
+  const maxS = ios ? EXPORT_H2C_MAX_SCALE_IOS : EXPORT_H2C_MAX_SCALE;
+  const dprBoost = dpr * (ios ? 1.45 : 1.25);
+  const oversample = matchBitmap * (ios ? 1.18 : 1.08);
+  return Math.min(maxS, Math.max(minS, oversample, dprBoost));
 }
 
 /**
@@ -1534,10 +1555,11 @@ function applyFrameHint(framePx) {
   const cw = canvas.width || 1;
   const ch = canvas.height || 1;
   const fx = (framePx.x / cw) * 100;
-  const fy = (framePx.y / ch) * 100;
+  let fy = (framePx.y / ch) * 100;
   const fw = (framePx.width / cw) * 100;
   let fh = (framePx.height / ch) * 100;
   if (lastWalletNfts.length > 0 || lastUploadFiles.length > 0) {
+    fy += MULTI_GRID_OVERLAY_TOP_NUDGE_PCT;
     fh += MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT;
   }
   canvasWrap.style.setProperty("--fx", `${fx}%`);
