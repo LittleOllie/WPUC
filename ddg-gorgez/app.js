@@ -17,6 +17,8 @@ import {
   BLANK_SLOGAN_TEMPLATE,
   ddgLetterUrlsFromStem,
 } from "./assets.js";
+import { getPosterLayout } from "./posterLayouts.js";
+import { mountEntry } from "./entryFlow.js";
 
 /** Shared JPEG quality for download + right-click / long-press mirror (MIME `image/jpeg`). */
 const EXPORT_JPEG_QUALITY = 0.92;
@@ -53,6 +55,11 @@ const templatePickerOverlay = document.getElementById("templatePickerOverlay");
 const templatePickerGrid = document.getElementById("templatePickerGrid");
 const templatePickerClose = document.getElementById("templatePickerClose");
 const frameHint = document.getElementById("frameHint");
+const walletPickerStrip = document.getElementById("walletPickerStrip");
+const frameMultiOverlay = document.getElementById("frameMultiOverlay");
+const frameAddMoreWrap = document.getElementById("frameAddMoreWrap");
+const hubBackBtn = document.getElementById("hubBackBtn");
+const hubBackBtnText = document.getElementById("hubBackBtnText");
 
 const loLogoHeader = document.getElementById("loLogoHeader");
 const ddgLogoHeader = document.getElementById("ddgLogoHeader");
@@ -74,10 +81,21 @@ canvas.width = CANVAS_OUTPUT_WIDTH;
 canvas.height = Math.round((CANVAS_OUTPUT_WIDTH * 2385) / 2048);
 canvasWrap.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
 
-let lastBlobUrl = null;
-/** Last uploaded file — used to re-render when switching templates after a composite exists. */
-let lastUserFile = null;
+/** @type {{ tokenId: string; thumb: string; full: string; name: string }[]} */
+let walletPoolNfts = [];
+/** Selected wallet NFTs in tap order (max 9). */
+let lastWalletNfts = [];
+const walletImageByTokenId = new Map();
+/** Upload queue (append up to 9). */
+let lastUploadFiles = [];
+const uploadImageByIndex = new Map();
+/** Multi-grid: index of NFT being moved to swap with another cell (no in-cell pan). */
+let gridSwapFrom = null;
 let latestRenderedDataUrl = null;
+/** Object URLs for decode fallbacks (upload path). */
+const uploadBlobUrls = [];
+/** Object URLs only for multi-cell overlay previews (upload path). */
+const overlayPreviewUrls = [];
 let detectedFrame = null;
 let templateImgCached = null;
 /** Index into `TEMPLATE_CHOICES` (0 = DDGTemplate1.png / thumb DDG1.png). */
@@ -249,6 +267,7 @@ function drawableGlyphKey(ch) {
 }
 
 function isSloganLetterChar(ch) {
+  if (ch == null || ch === "") return false;
   return drawableGlyphKey(ch) != null;
 }
 
@@ -263,6 +282,13 @@ async function ensureLetterImage(ch) {
     for (const url of urls) {
       try {
         const img = await loadLetterAsset(url, { highPriority: false });
+        if (typeof img.decode === "function") {
+          try {
+            await img.decode();
+          } catch (_) {
+            /* decode optional; naturalWidth may populate after onload */
+          }
+        }
         letterImageCache.set(key, img);
         return img;
       } catch (_) {
@@ -452,9 +478,12 @@ async function drawCustomSloganOnCanvas(templateImg) {
       const key = drawableGlyphKey(g.ch);
       if (!key) continue;
       const img = letterImageCache.get(key);
-      if (!img) continue;
-      const dw = dh * (img.naturalWidth / img.naturalHeight);
-      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, x, drawY, dw, dh);
+      const dw = img?.naturalWidth && img?.naturalHeight
+        ? dh * (img.naturalWidth / img.naturalHeight)
+        : glyphWidthForCh(g.ch, dh);
+      if (img?.naturalWidth && img?.naturalHeight) {
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, x, drawY, dw, dh);
+      }
       x += dw;
       if (gi < glyphs.length - 1) x += dw * gapFrac;
     }
@@ -494,13 +523,19 @@ async function paintIdleTemplateCanvas(template) {
     await drawCustomSloganOnCanvas(template);
   }
   await assignJpegFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
+  syncFrameMultiOverlay();
 }
 
 async function redrawSloganOnly() {
   try {
-    if (lastUserFile) {
-      const userImg = await decodeUserImage(lastUserFile);
-      await renderComposite(userImg);
+    if (lastWalletNfts.length) {
+      await ensureWalletImagesLoaded();
+      await renderComposite(null);
+      return;
+    }
+    if (lastUploadFiles.length) {
+      await rebuildUploadImageCache();
+      await renderComposite(null);
       return;
     }
     let template = templateImgCached;
@@ -539,6 +574,29 @@ function setHidden(el, hidden) {
   el.setAttribute("aria-hidden", hidden ? "true" : "false");
 }
 
+/** DOWNLOAD is always visible — exports the current canvas (idle template or composite). */
+function ensureDownloadButtonVisible() {
+  if (!downloadBtn) return;
+  downloadBtn.classList.remove("hidden");
+  downloadBtn.removeAttribute("aria-hidden");
+  downloadBtn.disabled = false;
+}
+
+function syncHubBackUi() {
+  const hub = hubBackBtn;
+  const textEl = hubBackBtnText;
+  const card = document.getElementById("card");
+  if (!hub || !textEl) return;
+  const onGrid = !!(card && !card.classList.contains("hidden"));
+  if (onGrid) {
+    textEl.textContent = "Back";
+    hub.setAttribute("aria-label", "Back to start");
+  } else {
+    textEl.textContent = "Back to links";
+    hub.setAttribute("aria-label", "Back to links");
+  }
+}
+
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -562,9 +620,147 @@ function objectFitCover(srcW, srcH, dstW, dstH) {
   return { dx, dy, dw: drawW, dh: drawH };
 }
 
+function parseTemplateAreaRows(templateAreas) {
+  const cleaned = String(templateAreas || "")
+    .replace(/\//g, "")
+    .trim();
+  const rows = [];
+  const re = /"([^"]+)"/g;
+  let m;
+  while ((m = re.exec(cleaned))) {
+    rows.push(m[1].trim().split(/\s+/).filter(Boolean));
+  }
+  return rows;
+}
+
+function findCellSpanInGrid(grid, areaName) {
+  const name = String(areaName);
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] !== name) continue;
+      let c1 = c;
+      while (c1 < row.length && row[c1] === name) c1++;
+      return { row: r, col: c, colSpan: c1 - c };
+    }
+  }
+  return null;
+}
+
+function rectForGridArea(frame, grid, layout, areaName) {
+  const span = findCellSpanInGrid(grid, areaName);
+  if (!span) return null;
+  const cols = Math.max(...grid.map((row) => row.length));
+  const numRows = grid.length;
+  const rf = layout.rowFr;
+  const rowFr =
+    Array.isArray(rf) && rf.length === numRows && rf.every((x) => typeof x === "number" && x > 0 && Number.isFinite(x))
+      ? rf
+      : Array(numRows).fill(1);
+  const rsum = rowFr.reduce((a, b) => a + b, 0);
+  const rowHs = rowFr.map((fr) => (fr / rsum) * frame.height);
+  let y = frame.y;
+  for (let i = 0; i < span.row; i++) y += rowHs[i];
+  const cellW = frame.width / cols;
+  return {
+    x: frame.x + span.col * cellW,
+    y,
+    width: span.colSpan * cellW,
+    height: rowHs[span.row],
+  };
+}
+
+function drawImageCoverInRect(img, rect, panRel, edgeBleedPx = 0) {
+  const { w: srcW, h: srcH } = drawablePixels(img);
+  if (!srcW || !srcH || !rect.width || !rect.height) return;
+  const { dx, dy, dw, dh } = objectFitCover(srcW, srcH, rect.width, rect.height);
+  const pr = panRel || { rx: 0, ry: 0 };
+  const panTx = (Number(pr.rx) || 0) * rect.width;
+  const panTy = (Number(pr.ry) || 0) * rect.height;
+  const b = Math.max(0, Number(edgeBleedPx) || 0);
+  ctx.drawImage(img, 0, 0, srcW, srcH, rect.x + dx + panTx - b, rect.y + dy + panTy - b, dw + 2 * b, dh + 2 * b);
+}
+
+/** Extra canvas pixels past each poster cell edge to hide subpixel seams (matches overlay image bleed). */
+const POSTER_GRID_EDGE_BLEED = 1;
+
+function drawWalletLayoutInFrame(frame, nfts, gridLogoImg, revealImg) {
+  const layout = getPosterLayout(nfts.length);
+  const grid = parseTemplateAreaRows(layout.templateAreas);
+  if (!grid.length) return;
+  let nftIdx = 0;
+  for (const slot of layout.slots) {
+    const rect = rectForGridArea(frame, grid, layout, slot.area);
+    if (!rect) continue;
+    const pan = { rx: 0, ry: 0 };
+    if (slot.kind === "logo") {
+      if (gridLogoImg) drawImageCoverInRect(gridLogoImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else if (slot.kind === "reveal") {
+      if (revealImg) drawImageCoverInRect(revealImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else {
+      const nft = nfts[nftIdx++];
+      if (!nft) continue;
+      const im = walletImageByTokenId.get(String(nft.tokenId));
+      if (im) drawImageCoverInRect(im, rect, pan, POSTER_GRID_EDGE_BLEED);
+    }
+  }
+}
+
+function drawUploadLayoutInFrame(frame, gridLogoImg, revealImg) {
+  const n = lastUploadFiles.length;
+  if (!n) return;
+  const layout = getPosterLayout(n);
+  const grid = parseTemplateAreaRows(layout.templateAreas);
+  if (!grid.length) return;
+  let upIdx = 0;
+  for (const slot of layout.slots) {
+    const rect = rectForGridArea(frame, grid, layout, slot.area);
+    if (!rect) continue;
+    const pan = { rx: 0, ry: 0 };
+    if (slot.kind === "logo") {
+      if (gridLogoImg) drawImageCoverInRect(gridLogoImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else if (slot.kind === "reveal") {
+      if (revealImg) drawImageCoverInRect(revealImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else {
+      const im = uploadImageByIndex.get(String(upIdx));
+      upIdx += 1;
+      if (im) drawImageCoverInRect(im, rect, pan, POSTER_GRID_EDGE_BLEED);
+    }
+  }
+}
+
+function clearWalletCompositeState() {
+  walletPoolNfts = [];
+  lastWalletNfts = [];
+  disposeWalletImageMap();
+  if (walletPickerStrip) {
+    walletPickerStrip.innerHTML = "";
+    walletPickerStrip.classList.add("hidden");
+  }
+}
+
+function clearUploadCompositeState() {
+  lastUploadFiles = [];
+  uploadImageByIndex.clear();
+  for (const u of uploadBlobUrls) {
+    try {
+      URL.revokeObjectURL(u);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  uploadBlobUrls.length = 0;
+}
+
+function clearAllUserMediaState() {
+  clearWalletCompositeState();
+  clearUploadCompositeState();
+}
+
 async function loadImage(src, opts = {}) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    if (opts.crossOrigin) img.crossOrigin = opts.crossOrigin;
     if (opts.highPriority && "fetchPriority" in img) {
       img.fetchPriority = "high";
     }
@@ -573,6 +769,66 @@ async function loadImage(src, opts = {}) {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+function disposeDrawable(d) {
+  try {
+    if (d && typeof d.close === "function") d.close();
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function disposeWalletImageMap() {
+  for (const d of walletImageByTokenId.values()) disposeDrawable(d);
+  walletImageByTokenId.clear();
+}
+
+/** Width/height for canvas draw (supports `ImageBitmap` + `HTMLImageElement`). */
+function drawablePixels(source) {
+  try {
+    if (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap) {
+      return { w: source.width, h: source.height };
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  const w = source.naturalWidth || source.width;
+  const h = source.naturalHeight || source.height;
+  return { w, h };
+}
+
+/**
+ * Load a remote NFT image so it can be painted on the canvas without tainting when the host allows CORS.
+ * The interactive overlay uses plain `<img src>` (always visible); the export uses this path for the canvas.
+ */
+async function loadRemoteImageForCanvas(url) {
+  const u = String(url || "").trim();
+  if (!u) throw new Error("empty url");
+  try {
+    const res = await fetch(u, { mode: "cors", credentials: "omit", cache: "force-cache" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    if ("createImageBitmap" in window) {
+      try {
+        return await createImageBitmap(blob);
+      } catch (_) {
+        /* fall through to blob URL + Image */
+      }
+    }
+    const objUrl = URL.createObjectURL(blob);
+    try {
+      return await loadImage(objUrl, { highPriority: true });
+    } finally {
+      try {
+        URL.revokeObjectURL(objUrl);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  } catch (_) {
+    return loadImage(u, { highPriority: true, crossOrigin: "anonymous" });
+  }
 }
 
 /** Letter PNGs: some static hosts prefer encoded vs raw `%20` paths — try both. */
@@ -613,6 +869,8 @@ async function warmupCriticalImages() {
   await Promise.all([
     preloadDecoded(ASSETS.template),
     preloadDecoded(ASSETS.ddgLogo),
+    preloadDecoded(ASSETS.ddgGridLogo),
+    preloadDecoded(ASSETS.ddgReveal),
     preloadDecoded(ASSETS.loLogo),
     preloadDecoded(BLANK_SLOGAN_TEMPLATE),
   ]);
@@ -623,19 +881,6 @@ function hideBootLoading() {
   bootLoadingEl.setAttribute("aria-busy", "false");
   bootLoadingEl.classList.add("bootLoading--done");
   window.setTimeout(() => bootLoadingEl.remove(), 420);
-}
-
-async function decodeUserImage(file) {
-  if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-  lastBlobUrl = URL.createObjectURL(file);
-  if ("createImageBitmap" in window) {
-    try {
-      return await createImageBitmap(file);
-    } catch (_) {
-      // fallback below
-    }
-  }
-  return await loadImage(lastBlobUrl);
 }
 
 async function safeLoadOptional(path) {
@@ -922,6 +1167,8 @@ async function renderComposite(userImg) {
   const frame = insetFrame(expandFrame(frameBase, FRAME_OVERLAP_PX), FRAME_INSET_PX);
   applyFrameHint(frame);
 
+  if (lastWalletNfts.length) await ensureWalletImagesLoaded();
+
   // Render order:
   // Template background
   // User image into frame
@@ -931,7 +1178,21 @@ async function renderComposite(userImg) {
   ctx.beginPath();
   ctx.rect(frame.x, frame.y, frame.width, frame.height);
   ctx.clip();
-  drawImageToFrame(userImg, frame);
+  if (lastWalletNfts.length) {
+    const [gridLogoImg, revealImg] = await Promise.all([
+      safeLoadOptional(ASSETS.ddgGridLogo),
+      safeLoadOptional(ASSETS.ddgReveal),
+    ]);
+    drawWalletLayoutInFrame(frame, lastWalletNfts, gridLogoImg, revealImg);
+  } else if (lastUploadFiles.length) {
+    const [gridLogoImg, revealImg] = await Promise.all([
+      safeLoadOptional(ASSETS.ddgGridLogo),
+      safeLoadOptional(ASSETS.ddgReveal),
+    ]);
+    drawUploadLayoutInFrame(frame, gridLogoImg, revealImg);
+  } else if (userImg) {
+    drawImageToFrame(userImg, frame);
+  }
   ctx.restore();
 
   if (String(customSloganText || "").trim()) {
@@ -939,6 +1200,207 @@ async function renderComposite(userImg) {
   }
 
   await assignJpegFromCanvas(EXPORT_FILENAME_COMPOSITE, { linkForDownload: true });
+  syncFrameMultiOverlay();
+}
+
+async function ensureWalletImagesLoaded() {
+  const tasks = [];
+  for (const n of lastWalletNfts) {
+    const id = String(n.tokenId);
+    if (walletImageByTokenId.has(id)) continue;
+    const full = String(n.full || "").trim();
+    const thumb = String(n.thumb || "").trim();
+    const tryUrls = [...new Set([full, thumb].filter(Boolean))];
+    if (!tryUrls.length) continue;
+    tasks.push(
+      (async () => {
+        for (const src of tryUrls) {
+          try {
+            const drawable = await loadRemoteImageForCanvas(src);
+            disposeDrawable(walletImageByTokenId.get(id));
+            walletImageByTokenId.set(id, drawable);
+            return;
+          } catch (_) {
+            /* try next URL */
+          }
+        }
+      })()
+    );
+  }
+  await Promise.all(tasks);
+}
+
+async function rebuildUploadImageCache() {
+  uploadImageByIndex.clear();
+  for (const u of uploadBlobUrls) {
+    try {
+      URL.revokeObjectURL(u);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  uploadBlobUrls.length = 0;
+  for (let i = 0; i < lastUploadFiles.length; i++) {
+    const f = lastUploadFiles[i];
+    if ("createImageBitmap" in window) {
+      try {
+        const bmp = await createImageBitmap(f);
+        uploadImageByIndex.set(String(i), bmp);
+        continue;
+      } catch (_) {
+        /* fall through */
+      }
+    }
+    const url = URL.createObjectURL(f);
+    uploadBlobUrls.push(url);
+    const img = await loadImage(url);
+    uploadImageByIndex.set(String(i), img);
+  }
+}
+
+async function performGridSlotSwap(from, to) {
+  if (lastWalletNfts.length) {
+    const arr = lastWalletNfts;
+    if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
+    const t = arr[from];
+    arr[from] = arr[to];
+    arr[to] = t;
+    refreshWalletPickerStripUi();
+    await renderComposite(null);
+    return;
+  }
+  if (lastUploadFiles.length) {
+    const arr = lastUploadFiles;
+    if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return;
+    const tmp = arr[from];
+    arr[from] = arr[to];
+    arr[to] = tmp;
+    await rebuildUploadImageCache();
+    await renderComposite(null);
+  }
+}
+
+function attachGridSlotInteraction(cell, slot) {
+  if ((slot.kind === "logo" || slot.kind === "reveal") || !frameMultiOverlay) return;
+
+  cell.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const from = Number(cell.dataset.slotNftIndex);
+    gridSwapFrom = Number.isFinite(from) ? from : null;
+    if (gridSwapFrom != null) cell.classList.add("frameMultiCell--dragSource");
+    try {
+      cell.setPointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+  });
+  cell.addEventListener("pointerup", (e) => {
+    cell.classList.remove("frameMultiCell--dragSource");
+    try {
+      if (cell.hasPointerCapture(e.pointerId)) cell.releasePointerCapture(e.pointerId);
+    } catch (_) {
+      /* ignore */
+    }
+    const from = gridSwapFrom;
+    gridSwapFrom = null;
+    if (!Number.isFinite(from)) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const target = el?.closest?.(".frameMultiCell");
+    if (!target || !frameMultiOverlay.contains(target)) return;
+    if (target.dataset.slotRole === "logo" || target.dataset.slotRole === "reveal") return;
+    const toRaw = target.dataset.slotNftIndex;
+    const to = toRaw != null && toRaw !== "" ? Number(toRaw) : NaN;
+    if (!Number.isFinite(to) || to === from) return;
+    void performGridSlotSwap(from, to);
+  });
+  cell.addEventListener("pointercancel", () => {
+    gridSwapFrom = null;
+    cell.classList.remove("frameMultiCell--dragSource");
+  });
+}
+
+function revokeOverlayPreviewUrls() {
+  for (const u of overlayPreviewUrls) {
+    try {
+      URL.revokeObjectURL(u);
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  overlayPreviewUrls.length = 0;
+}
+
+function syncFrameMultiOverlay() {
+  if (!frameMultiOverlay || !canvasWrap) return;
+  const n = lastWalletNfts.length || lastUploadFiles.length;
+  if (n < 1) {
+    revokeOverlayPreviewUrls();
+    frameMultiOverlay.innerHTML = "";
+    frameMultiOverlay.classList.add("hidden");
+    frameMultiOverlay.setAttribute("aria-hidden", "true");
+    canvasWrap?.classList.remove("hasMultiOverlay");
+    delete frameMultiOverlay.dataset.posterN;
+    return;
+  }
+  revokeOverlayPreviewUrls();
+  const layout = getPosterLayout(n);
+  frameMultiOverlay.classList.remove("hidden");
+  frameMultiOverlay.setAttribute("aria-hidden", "false");
+  canvasWrap?.classList.add("hasMultiOverlay");
+  frameMultiOverlay.dataset.posterN = String(n);
+  frameMultiOverlay.style.gridTemplateColumns = layout.columns;
+  frameMultiOverlay.style.gridTemplateRows = layout.rows;
+  frameMultiOverlay.style.gridTemplateAreas = layout.templateAreas.replace(/\//g, "");
+  frameMultiOverlay.innerHTML = "";
+
+  let nftIdx = 0;
+  let upIdx = 0;
+  for (const slot of layout.slots) {
+    const cell = document.createElement("div");
+    cell.className = "frameMultiCell";
+    cell.style.gridArea = slot.area;
+    cell.dataset.area = slot.area;
+    const pan = document.createElement("div");
+    pan.className = "frameMultiPan";
+    const img = document.createElement("img");
+    img.className = "frameMultiImg";
+    img.draggable = false;
+    img.decoding = "async";
+    img.loading = "lazy";
+    if (slot.kind === "logo") {
+      img.alt = "DDG";
+      img.src = ASSETS.ddgGridLogo;
+      cell.dataset.slotRole = "logo";
+    } else if (slot.kind === "reveal") {
+      img.alt = "";
+      img.src = ASSETS.ddgReveal;
+      cell.dataset.slotRole = "reveal";
+    } else if (lastWalletNfts.length) {
+      const si = nftIdx;
+      nftIdx += 1;
+      cell.dataset.slotNftIndex = String(si);
+      const nft = lastWalletNfts[si];
+      img.alt = nft?.name || "";
+      img.src = nft ? nft.thumb || nft.full || "" : "";
+    } else {
+      const si = upIdx;
+      upIdx += 1;
+      cell.dataset.slotNftIndex = String(si);
+      const f = lastUploadFiles[si];
+      img.alt = f?.name || "";
+      if (f) {
+        const u = URL.createObjectURL(f);
+        overlayPreviewUrls.push(u);
+        img.src = u;
+      }
+    }
+    img.style.transform = "";
+    pan.appendChild(img);
+    cell.appendChild(pan);
+    frameMultiOverlay.appendChild(cell);
+    attachGridSlotInteraction(cell, slot);
+  }
 }
 
 async function renderIdleTemplate() {
@@ -1009,11 +1471,20 @@ function applyFrameHint(framePx) {
     frameHint?.classList.add("hidden");
     frameHint?.setAttribute("aria-hidden", "true");
   }
+  updateFrameAddMoreVisibility();
 }
 
-/** UPLOAD DDG until the user has chosen an image (always available before first upload). */
+/** Show frame hint (spinning DDG + upload) until user has uploads or at least one wallet NFT picked. */
 function shouldShowFrameUploadHint() {
-  return !lastUserFile;
+  if (lastUploadFiles.length) return false;
+  if (lastWalletNfts.length) return false;
+  return true;
+}
+
+function updateFrameAddMoreVisibility() {
+  if (!frameAddMoreWrap) return;
+  const show = lastUploadFiles.length > 0 && lastUploadFiles.length < 9;
+  frameAddMoreWrap.classList.toggle("hidden", !show);
 }
 
 function randomScanLine() {
@@ -1066,46 +1537,57 @@ async function playUploadAnimation() {
   setHidden(processingOverlay, true);
 }
 
-async function handleFile(file) {
-  if (!file) return;
+async function handleFileInputAppend() {
+  const incoming = fileInput?.files ? [...fileInput.files] : [];
+  if (!incoming.length) return;
 
-  // UI transition
-  setHidden(downloadBtn, true);
+  const prevLen = lastUploadFiles.length;
+  clearWalletCompositeState();
+
+  const ok = (f) =>
+    /^image\/(png|jpeg|webp)$/i.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
+
+  for (const f of incoming) {
+    if (lastUploadFiles.length >= 9) break;
+    if (!ok(f)) continue;
+    lastUploadFiles.push(f);
+  }
+  if (fileInput) fileInput.value = "";
+
+  if (!lastUploadFiles.length) return;
+
   setHidden(tryAnotherBtn, true);
-
-  lastUserFile = file;
-  const userImg = await decodeUserImage(file);
-  await renderComposite(userImg);
-  await playUploadAnimation();
-
+  await rebuildUploadImageCache();
+  await renderComposite(null);
+  if (prevLen === 0) await playUploadAnimation();
   frameHint?.classList.add("hidden");
-  setHidden(downloadBtn, false);
   setHidden(tryAnotherBtn, false);
+  ensureDownloadButtonVisible();
+  updateFrameAddMoreVisibility();
 }
 
 async function resetApp() {
   latestRenderedDataUrl = null;
   detectedFrame = null;
-  lastUserFile = null;
+  clearAllUserMediaState();
   clearCanvas();
-  fileInput.value = "";
+  if (fileInput) fileInput.value = "";
   setHidden(stage, false);
-  setHidden(downloadBtn, true);
   setHidden(tryAnotherBtn, true);
   setHidden(processingOverlay, true);
   setHidden(shutter, true);
   setHidden(flash, true);
 
   await renderIdleTemplate();
+  ensureDownloadButtonVisible();
 }
 
 /** Same reset as idle, but open the file picker immediately (must stay sync for iOS). */
 function tryAnotherAndPickFile() {
   latestRenderedDataUrl = null;
   detectedFrame = null;
-  lastUserFile = null;
-  fileInput.value = "";
-  setHidden(downloadBtn, true);
+  clearAllUserMediaState();
+  if (fileInput) fileInput.value = "";
   setHidden(tryAnotherBtn, true);
   setHidden(processingOverlay, true);
   setHidden(shutter, true);
@@ -1113,6 +1595,7 @@ function tryAnotherAndPickFile() {
   canvasWrap.classList.remove("shake", "reveal");
   fileInput.click();
   void renderIdleTemplate();
+  ensureDownloadButtonVisible();
 }
 
 /** GitHub Pages (Linux) is case-sensitive; macOS dev trees often are not — try .png then .PNG. */
@@ -1199,10 +1682,14 @@ async function applyTemplateChoice(index) {
 
 async function reconcileAfterTemplateChange() {
   try {
-    if (lastUserFile) {
-      const userImg = await decodeUserImage(lastUserFile);
-      await renderComposite(userImg);
-      setHidden(downloadBtn, false);
+    if (lastWalletNfts.length) {
+      await ensureWalletImagesLoaded();
+      await renderComposite(null);
+      setHidden(tryAnotherBtn, false);
+      frameHint?.classList.add("hidden");
+    } else if (lastUploadFiles.length) {
+      await rebuildUploadImageCache();
+      await renderComposite(null);
       setHidden(tryAnotherBtn, false);
       frameHint?.classList.add("hidden");
     } else {
@@ -1214,10 +1701,13 @@ async function reconcileAfterTemplateChange() {
     } catch (__) {
       /* ignore */
     }
+  } finally {
+    ensureDownloadButtonVisible();
+    syncHubBackUi();
   }
 }
-
 changeTemplateBtn?.addEventListener("click", () => openTemplatePicker());
+
 templatePickerClose?.addEventListener("click", () => closeTemplatePicker());
 templatePickerOverlay?.addEventListener("click", (e) => {
   if (e.target === templatePickerOverlay) closeTemplatePicker();
@@ -1236,23 +1726,61 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-downloadBtn.addEventListener("click", () => {
-  const url =
-    latestRenderedDataUrl ||
-    canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = EXPORT_FILENAME_COMPOSITE;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+downloadBtn?.addEventListener("click", async () => {
+  if (!downloadBtn) return;
+  downloadBtn.disabled = true;
+  try {
+    if (lastWalletNfts.length) await ensureWalletImagesLoaded();
+    else if (lastUploadFiles.length) await rebuildUploadImageCache();
+    await renderComposite(null);
+    const url = canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
+    latestRenderedDataUrl = url;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = EXPORT_FILENAME_COMPOSITE;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    console.error(e);
+    try {
+      window.alert(
+        "Could not export the image (often a browser security limit on remote art). Try again in a few seconds, or use Upload DDGs with local files."
+      );
+    } catch (_) {
+      /* ignore */
+    }
+  } finally {
+    downloadBtn.disabled = false;
+  }
+});
+
+hubBackBtn?.addEventListener("click", () => {
+  const card = document.getElementById("card");
+  const onGrid = !!(card && !card.classList.contains("hidden"));
+  if (onGrid) {
+    document.dispatchEvent(
+      new CustomEvent("ddg-gorgez-back-to-entry", {
+        detail: { expandWalletPanel: walletPoolNfts.length > 0 },
+      })
+    );
+    return;
+  }
+  try {
+    window.location.href = new URL("../links/", window.location.href).href;
+  } catch (_) {
+    window.location.assign("../links/");
+  }
+});
+
+document.addEventListener("ddg-gorgez-nav-changed", () => {
+  syncHubBackUi();
 });
 
 tryAnotherBtn.addEventListener("click", tryAnotherAndPickFile);
 
 fileInput.addEventListener("change", () => {
-  const file = fileInput.files?.[0];
-  handleFile(file);
+  void handleFileInputAppend();
 });
 
 if (sloganInput) {
@@ -1306,6 +1834,8 @@ async function initApp() {
     }
   } finally {
     hideBootLoading();
+    ensureDownloadButtonVisible();
+    syncHubBackUi();
   }
 }
 
@@ -1313,5 +1843,105 @@ canvasExportMirrorLink?.addEventListener("click", (e) => {
   e.preventDefault();
 });
 
-void initApp();
+function buildWalletPickerStrip() {
+  if (!walletPickerStrip) return;
+  walletPickerStrip.innerHTML = "";
+  if (!walletPoolNfts.length) {
+    walletPickerStrip.classList.add("hidden");
+    return;
+  }
+  walletPickerStrip.classList.remove("hidden");
+  const row = document.createElement("div");
+  row.className = "walletPickerStripRow";
+  for (const nft of walletPoolNfts) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "walletPickerChip";
+    b.dataset.tokenId = String(nft.tokenId);
+    b.setAttribute("aria-pressed", "false");
+    const im = document.createElement("img");
+    im.className = "walletPickerChipImg";
+    im.src = nft.thumb || nft.full || "";
+    im.alt = "";
+    im.loading = "lazy";
+    im.decoding = "async";
+    const cap = document.createElement("span");
+    cap.className = "walletPickerChipCap";
+    cap.textContent = `#${nft.tokenId}`;
+    b.appendChild(im);
+    b.appendChild(cap);
+    b.addEventListener("click", () => void toggleWalletSelection(String(nft.tokenId)));
+    row.appendChild(b);
+  }
+  walletPickerStrip.appendChild(row);
+  refreshWalletPickerStripUi();
+}
+
+function refreshWalletPickerStripUi() {
+  if (!walletPickerStrip) return;
+  const sel = new Set(lastWalletNfts.map((n) => String(n.tokenId)));
+  for (const b of walletPickerStrip.querySelectorAll(".walletPickerChip")) {
+    const on = sel.has(String(b.dataset.tokenId));
+    b.classList.toggle("walletPickerChip--on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+}
+
+async function toggleWalletSelection(tokenId) {
+  const id = String(tokenId);
+  const prevCount = lastWalletNfts.length;
+  gridSwapFrom = null;
+  const idx = lastWalletNfts.findIndex((n) => String(n.tokenId) === id);
+  if (idx >= 0) {
+    lastWalletNfts.splice(idx, 1);
+  } else {
+    if (lastWalletNfts.length >= 9) lastWalletNfts.shift();
+    const nft = walletPoolNfts.find((n) => String(n.tokenId) === id);
+    if (nft) lastWalletNfts.push(nft);
+  }
+  refreshWalletPickerStripUi();
+  clearUploadCompositeState();
+  if (!lastWalletNfts.length) {
+    await renderIdleTemplate();
+    setHidden(tryAnotherBtn, true);
+    ensureDownloadButtonVisible();
+  } else {
+    try {
+      await ensureWalletImagesLoaded();
+      await renderComposite(null);
+      if (prevCount === 0 && lastWalletNfts.length) await playUploadAnimation();
+    } catch (_) {
+      try {
+        await ensureWalletImagesLoaded();
+        await renderComposite(null);
+      } catch (__) {
+        /* ignore */
+      }
+    } finally {
+      ensureDownloadButtonVisible();
+      setHidden(tryAnotherBtn, false);
+      frameHint?.classList.add("hidden");
+    }
+  }
+  updateFrameAddMoreVisibility();
+}
+
+/**
+ * @param {{ tokenId: string; thumb: string; full: string; name: string }[]} nfts
+ */
+async function onWalletPoolLoaded(nfts) {
+  clearUploadCompositeState();
+  lastWalletNfts = [];
+  disposeWalletImageMap();
+  walletPoolNfts = Array.isArray(nfts) ? nfts : [];
+  if (fileInput) fileInput.value = "";
+  buildWalletPickerStrip();
+  setHidden(tryAnotherBtn, true);
+  await renderIdleTemplate();
+  updateFrameAddMoreVisibility();
+  ensureDownloadButtonVisible();
+  syncHubBackUi();
+}
+
+mountEntry({ startClassic: initApp, onWalletPoolLoaded });
 

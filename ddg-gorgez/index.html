@@ -13,6 +13,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css?v=dataUrlLink1" />
+    <!--
+      Wallet loading: Alchemy NFT API key (not shown in the app UI). Visible in page source — rotate if leaked; prefer a server proxy for production.
+      Override before this script if needed: window.DDG_GORGEZ_ALCHEMY_KEY = "…";
+      Fallbacks (see walletLoader.js): meta name="ddg-gorgez-alchemy-key", localhost sessionStorage.DDG_GORGEZ_ALCHEMY_KEY.
+    -->
+    <script>
+      window.DDG_GORGEZ_ALCHEMY_KEY = window.DDG_GORGEZ_ALCHEMY_KEY || "eadmEoxRFK-i4vfpLIovV";
+    </script>
   </head>
   <body>
     <div id="bootLoading" class="bootLoading" aria-live="polite" aria-busy="true" aria-label="Loading">
@@ -29,12 +37,12 @@
         <p class="bootLoading__text">Loading…</p>
       </div>
     </div>
-    <a class="hubBackBtn" href="../links/" aria-label="Back to Links">
+    <button type="button" class="hubBackBtn" id="hubBackBtn" aria-label="Back to links">
       <span class="hubBackBtn__icon" aria-hidden="true">←</span>
-      <span class="hubBackBtn__text">Back to Links</span>
-    </a>
+      <span class="hubBackBtn__text" id="hubBackBtnText">Back to links</span>
+    </button>
     <main class="app">
-      <section class="card" id="card">
+      <section class="card hidden" id="card" aria-hidden="true">
         <header class="header">
           <div class="brandRow" id="brandRow" aria-label="Little Ollie x DDG">
             <div class="brandLogoWrap">
@@ -48,6 +56,8 @@
             </div>
           </div>
         </header>
+
+        <section id="walletPickerStrip" class="walletPickerStrip hidden" aria-label="Your DDGs from wallet"></section>
 
         <div class="stage" id="stage">
           <div
@@ -79,7 +89,10 @@
                 <div id="ddgLogoInFrameFallback" class="frameLogoFallback">DDG</div>
                 <label class="btn primary big frameUploadBtn" for="fileInput">
                   <span class="btnText">UPLOAD DDG <span class="frameUploadSkull" aria-hidden="true">💀</span></span>
-                  <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                  <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" multiple />
+                </label>
+                <label class="btn blue big frameAddMoreBtn hidden" id="frameAddMoreWrap" for="fileInput">
+                  <span class="btnText">Add more files</span>
                 </label>
               </div>
             </div>
@@ -94,6 +107,8 @@
             </div>
 
             <div class="flash hidden" id="flash" aria-hidden="true"></div>
+
+            <div id="frameMultiOverlay" class="frameMultiOverlay hidden" aria-hidden="true"></div>
           </div>
 
           <div class="actions">
@@ -128,7 +143,7 @@
                 ></textarea>
               </div>
             </div>
-            <button class="btn primary alt big hidden" id="downloadBtn" type="button">DOWNLOAD IMAGE</button>
+            <button class="btn primary alt big" id="downloadBtn" type="button">DOWNLOAD IMAGE</button>
             <button class="btn primary alt big hidden" id="tryAnotherBtn" type="button">TRY ANOTHER</button>
           </div>
         </div>
@@ -185,6 +200,90 @@
         <p>POWERED BY LITTLE OLLIE LABS</p>
       </footer>
     </main>
+
+    <div
+      id="entryOverlay"
+      class="templatePickerOverlay entryOverlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="entryTitle"
+      aria-hidden="false"
+    >
+      <div class="templatePickerModal entryModal modalMatchCard">
+        <header class="templatePickerHeader entryModalHeader">
+          <div class="templatePickerBrandRow brandRow" aria-label="Little Ollie x DDG">
+            <div class="brandLogoWrap">
+              <img
+                class="brandLogo templatePickerBrandLo"
+                src="assets/LOLogo.png"
+                alt="Little Ollie"
+                width="120"
+                height="68"
+                decoding="async"
+              />
+            </div>
+            <div class="brandX">×</div>
+            <div class="brandLogoWrap">
+              <img
+                class="brandLogo templatePickerBrandDdg"
+                src="assets/DDGLogo.png"
+                alt="DDG"
+                width="200"
+                height="190"
+                decoding="async"
+              />
+            </div>
+          </div>
+        </header>
+        <h1 class="templatePickerTitle entryTitle" id="entryTitle">DROP DEAD GORGEZ CREATOR</h1>
+        <div class="entryActions">
+          <button type="button" class="btn primary big entryChoiceBtn entryChoiceBtn--preserveAcronym" id="entryUploadBtn">
+            UPLOAD DDGs FROM DEVICE
+          </button>
+          <button
+            type="button"
+            class="btn blue big entryChoiceBtn"
+            id="entryWalletBtn"
+            aria-expanded="false"
+            aria-controls="entryWalletPanel"
+          >
+            Upload from wallet
+          </button>
+        </div>
+        <div
+          id="entryWalletPanel"
+          class="entryWalletPanel"
+          role="region"
+          aria-labelledby="entryWalletPanelTitle"
+          aria-hidden="true"
+        >
+          <div class="entryWalletPanelInner">
+            <h2 class="entryWalletPanelTitle visuallyHidden" id="entryWalletPanelTitle">Load from wallets</h2>
+            <p class="entryWalletIntro">
+              Paste one or more Ethereum addresses (0x…). We load every wallet and merge your DDGs (duplicates by token
+              ID appear once).
+            </p>
+            <div id="entryWalletRows" class="entryWalletRows"></div>
+            <button type="button" class="btn primary alt big entryWalletAddBtn" id="entryWalletAddBtn">
+              + Add another wallet
+            </button>
+            <button type="button" class="btn blue big entryWalletLoadBtn" id="entryWalletLoadBtn">Load DDGs</button>
+            <p class="entryWalletStatus" id="entryWalletStatus" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="entryFlexPromo">
+          <p class="entryFlexPromoTitle">Need to flex your WHOLE collection?</p>
+          <p class="entryFlexPromoSub">Try FlexGrid 🚀</p>
+          <a
+            class="btn primary alt big entryFlexLink"
+            id="flexGridPromoLink"
+            href="https://littleollielabs.com/flexgrid"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Open FlexGrid</a>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="app.js?v=dataUrlLink1"></script>
   </body>

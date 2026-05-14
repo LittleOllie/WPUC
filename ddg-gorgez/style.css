@@ -26,7 +26,9 @@ body {
   position: fixed;
   top: max(10px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
-  z-index: 100;
+  z-index: 2500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -35,7 +37,8 @@ body {
   border-radius: 14px;
   font-weight: 900;
   font-size: clamp(13px, 3.6vw, 16px);
-  letter-spacing: 0.03em;
+  font-family: inherit;
+  cursor: pointer;
   text-decoration: none;
   color: #1a1400;
   background: linear-gradient(180deg, var(--yellow), var(--yellow2));
@@ -222,6 +225,16 @@ body {
   font-weight: 600;
 }
 
+.btn,
+label.btn {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entryChoiceBtn--preserveAcronym {
+  text-transform: none;
+}
+
 .btn {
   position: relative;
   border: 0;
@@ -229,7 +242,7 @@ body {
   padding: 12px 16px;
   cursor: pointer;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.04em;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -443,6 +456,151 @@ canvas#canvas {
   to {
     transform: rotate(360deg);
   }
+}
+
+.frameAddMoreBtn.frameAddMoreBtn {
+  pointer-events: auto;
+  margin: 0 auto;
+  width: auto;
+  max-width: min(72%, 200px);
+  min-height: 48px;
+}
+
+.walletPickerStrip {
+  margin: 6px auto 0;
+  padding: 8px 12px 6px;
+  max-width: min(680px, 100%);
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.22);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.walletPickerStrip.hidden {
+  display: none !important;
+}
+
+.walletPickerStripRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.walletPickerChip {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  width: 82px;
+  min-width: 82px;
+  padding: 0;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.walletPickerChip:active {
+  transform: scale(0.97);
+}
+
+.walletPickerChip--on {
+  border-color: rgba(255, 221, 85, 0.95);
+  box-shadow: 0 0 0 2px rgba(255, 221, 85, 0.2);
+}
+
+.walletPickerChipImg {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.walletPickerChipCap {
+  padding: 3px 4px 5px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: rgba(238, 246, 255, 0.9);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frameMultiOverlay {
+  position: absolute;
+  left: var(--fx, 20%);
+  top: var(--fy, 18%);
+  width: var(--fw, 60%);
+  height: var(--fh, 60%);
+  z-index: 4;
+  display: grid;
+  gap: 0;
+  row-gap: 0;
+  column-gap: 0;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: clamp(4px, 1vmin, 8px);
+  overflow: hidden;
+  pointer-events: auto;
+  touch-action: none;
+  background: transparent;
+}
+
+.frameMultiCell {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.frameMultiCell[data-slot-nft-index] {
+  cursor: grab;
+}
+
+.frameMultiCell.frameMultiCell--dragSource {
+  cursor: grabbing;
+}
+
+.frameMultiPan {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+}
+
+.frameMultiPan--drag {
+  cursor: grabbing;
+}
+
+.frameMultiImg {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.canvasWrap.hasMultiOverlay .canvasExportMirrorLink {
+  pointer-events: none;
 }
 
 .actions {
@@ -704,6 +862,10 @@ canvas#canvas {
   .bootLoading__logo {
     animation: none;
   }
+
+  .templatePickerOverlay.entryOverlay {
+    animation: none !important;
+  }
 }
 
 /* Phones: breathing room at sides of canvas + buttons */
@@ -805,7 +967,7 @@ canvas#canvas {
 .templatePickerOverlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 3100;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -914,6 +1076,8 @@ canvas#canvas {
   display: block;
   width: 100%;
   box-sizing: border-box;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   -webkit-tap-highlight-color: transparent;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
 }
@@ -970,3 +1134,257 @@ canvas#canvas {
   font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+
+/* --- Entry + wallet modals (shell = template picker overlay/modal) --- */
+@keyframes entryFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.templatePickerOverlay.entryOverlay {
+  z-index: 1990;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  animation: entryFadeIn 0.3s ease both;
+}
+
+.templatePickerModal.modalMatchCard {
+  width: min(720px, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px 14px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+  text-align: center;
+}
+
+.entryModalHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.entryModalHeader .templatePickerBrandRow {
+  margin: 0 auto;
+}
+
+.entryTitle {
+  margin: 0 0 18px;
+  font-size: clamp(20px, 5vw, 26px);
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.entryActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.entryChoiceBtn {
+  width: 100%;
+  justify-content: center;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.entryChoiceBtn:active {
+  transform: scale(0.98);
+}
+
+.entryChoiceBtn--openWallet {
+  box-shadow: 0 0 0 2px rgba(255, 221, 85, 0.45);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.entryWalletPanel {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.38s ease, opacity 0.28s ease, margin 0.28s ease, padding 0.28s ease;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+.entryWalletPanel--open {
+  max-height: min(1200px, 92vh);
+  opacity: 1;
+  margin: 12px 0 14px;
+  padding: 14px 0 2px;
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.entryWalletPanelInner {
+  text-align: left;
+}
+
+.entryWalletIntro {
+  margin: 0 0 12px;
+  font-size: clamp(13px, 3.2vw, 15px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(238, 246, 255, 0.9);
+}
+
+.entryWalletRows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entryWalletRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entryWalletRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.entryWalletRowLabel {
+  margin: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.entryWalletRowRemove {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.entryWalletRowRemove:hover {
+  filter: brightness(1.12);
+  border-color: rgba(255, 221, 85, 0.45);
+}
+
+.entryWalletRowRemove:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.entryWalletRowRemove--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.entryWalletAddBtn {
+  width: 100%;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.entryWalletLoadBtn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.entryWalletStatus {
+  margin: 12px 0 0;
+  min-height: 1.35em;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(238, 246, 255, 0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entryWalletPanel {
+    transition: none !important;
+  }
+}
+
+.entryFlexPromo {
+  margin-top: 4px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.entryFlexPromoTitle {
+  margin: 0 0 8px;
+  font-size: clamp(18px, 4.5vw, 24px);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.entryFlexPromoSub {
+  margin: 0 0 14px;
+  font-size: clamp(16px, 4vw, 20px);
+  font-weight: 700;
+  opacity: 0.92;
+  line-height: 1.35;
+}
+
+.entryFlexLink {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.walletFieldLabel {
+  display: block;
+  margin: 2px 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  color: rgba(238, 246, 255, 0.95);
+}
+
+.walletInput {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  padding: 11px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: "Baloo 2", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}

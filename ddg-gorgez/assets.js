@@ -92,6 +92,10 @@ export const ASSETS = {
   /** Current template URL — updated when the user picks another template. */
   template: TEMPLATE_CHOICES[0].template,
   ddgLogo: assetUrl("DDGLogo.png"),
+  /** Used only for multi-poster “logo” grid cells (not the header / frame spinner). */
+  ddgGridLogo: assetUrl("DDGGridLogo.png"),
+  /** 7-up poster: decorative cell opposite the grid logo. */
+  ddgReveal: assetUrl("DDGReveal.png"),
   loLogo: assetUrl("LOLogo.png"),
 
   // Optional future additions:
