@@ -22,11 +22,10 @@ import { mountEntry } from "./entryFlow.js";
 
 /**
  * DO NOT recreate separate export positioning logic.
- * NFT grid is ONLY the live DOM (`#frameMultiOverlay`): `.frameMultiFill` uses `background-size: cover`
- * for wallet/upload art so html2canvas matches preview (avoids squashed `<img>` + `object-fit` in h2c);
- * `.frameMultiImg` is for logo/reveal static assets. The canvas draws the static template (+ optional slogan)
- * only — it does not redraw wallet/upload NFT tiles. PNG download = html2canvas(`.ddg-template`).
- * Clone callback clears backdrop-filter so html2canvas does not return a blank bitmap.
+ * With a poster grid, download uses a high-res offscreen canvas: upscale the live `#canvas` (template + slogan),
+ * then paint each `.frameMultiCell` from the same wallet/upload drawables with `objectFitCover` math; slot
+ * bounds come from `getBoundingClientRect` vs `#canvas` so layout matches the preview. html2canvas is only
+ * a fallback (it resamples DOM / backgrounds and looks soft on iPhone). The on-screen grid stays DOM-only.
  */
 const EXPORT_MIME = "image/png";
 /** PNG is lossless — best for sharp NFT edges. JPEG recompression would make downloads look worse, especially after html2canvas. */
@@ -43,6 +42,10 @@ const OVERLAY_PLACEHOLDER_DATA_URL =
 const MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT = 0.38;
 /** Nudge overlay down a hair so the grid covers any subpixel gap above template black at the bottom. */
 const MULTI_GRID_OVERLAY_TOP_NUDGE_PCT = 0.08;
+
+/** Max width (px) for lossless poster export; scales from `canvas.width` for sharp NFTs on retina phones. */
+const EXPORT_POSTER_MAX_PX = 3200;
+const EXPORT_POSTER_MIN_MULT = 2.25;
 
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
@@ -723,6 +726,90 @@ function drawablePixels(source) {
   return { w, h };
 }
 
+/** True `object-fit: cover` draw into export canvas (uses full-res `Image` / `ImageBitmap`, not DOM resampling). */
+function drawDrawableCoverInRectForExport(octx, drawable, rect) {
+  const { w: srcW, h: srcH } = drawablePixels(drawable);
+  if (!srcW || !srcH || rect.width < 1 || rect.height < 1) return;
+  const { dx, dy, dw, dh } = objectFitCover(srcW, srcH, rect.width, rect.height);
+  octx.save();
+  octx.beginPath();
+  octx.rect(rect.x, rect.y, rect.width, rect.height);
+  octx.clip();
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = "high";
+  try {
+    octx.drawImage(drawable, 0, 0, srcW, srcH, rect.x + dx, rect.y + dy, dw, dh);
+  } catch (_) {
+    /* ignore */
+  }
+  octx.restore();
+}
+
+/**
+ * Lossless-style PNG for poster layouts: scale `#canvas` up, paint tiles from bitmap sources + DOM slot rects.
+ * Fixes soft NFT exports from html2canvas on iOS.
+ */
+async function buildHighResPosterDataUrl() {
+  if (!canvas?.width || !canvas.height) return null;
+  if (!frameMultiOverlay || frameMultiOverlay.classList.contains("hidden")) return null;
+
+  const dpr = Math.max(1, Number(window.devicePixelRatio) || 2);
+  const mult = Math.min(4, Math.max(EXPORT_POSTER_MIN_MULT, dpr * 1.35));
+  const outW = Math.min(EXPORT_POSTER_MAX_PX, Math.round(canvas.width * mult));
+  const outH = Math.max(1, Math.round((outW * canvas.height) / canvas.width));
+
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  const octx = out.getContext("2d", { alpha: true });
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = "high";
+
+  octx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, outW, outH);
+
+  const canvasR = canvas.getBoundingClientRect();
+  if (canvasR.width < 2 || canvasR.height < 2) return null;
+
+  const [logoImg, revealImg] = await Promise.all([
+    safeLoadOptional(ASSETS.ddgGridLogo),
+    safeLoadOptional(ASSETS.ddgReveal),
+  ]);
+
+  const cells = frameMultiOverlay.querySelectorAll(".frameMultiCell");
+  for (const cell of cells) {
+    const r = cell.getBoundingClientRect();
+    const rx = ((r.left - canvasR.left) / canvasR.width) * outW;
+    const ry = ((r.top - canvasR.top) / canvasR.height) * outH;
+    const rw = (r.width / canvasR.width) * outW;
+    const rh = (r.height / canvasR.height) * outH;
+    const rect = {
+      x: Math.round(rx),
+      y: Math.round(ry),
+      width: Math.max(1, Math.round(rw)),
+      height: Math.max(1, Math.round(rh)),
+    };
+
+    if (cell.dataset.slotRole === "logo") {
+      if (logoImg) drawDrawableCoverInRectForExport(octx, logoImg, rect);
+    } else if (cell.dataset.slotRole === "reveal") {
+      if (revealImg) drawDrawableCoverInRectForExport(octx, revealImg, rect);
+    } else if (cell.dataset.slotNftIndex != null && cell.dataset.slotNftIndex !== "") {
+      const idx = Number(cell.dataset.slotNftIndex);
+      if (!Number.isFinite(idx)) continue;
+      let drawable = null;
+      if (lastWalletNfts.length) {
+        const nft = lastWalletNfts[idx];
+        if (nft) drawable = walletImageByTokenId.get(String(nft.tokenId));
+      } else if (lastUploadFiles.length) {
+        drawable = uploadImageByIndex.get(String(idx));
+      }
+      if (drawable) drawDrawableCoverInRectForExport(octx, drawable, rect);
+    }
+  }
+
+  return out.toDataURL(EXPORT_MIME);
+}
+
 /**
  * Load a remote NFT image for canvas export. iOS Safari is picky: prefer fetch→blob→blob URL→Image
  * (same-origin pixels, no taint) and await decode. Falls back to crossOrigin Image, then plain Image.
@@ -978,6 +1065,13 @@ async function getExportDataUrl() {
     void exportEl?.offsetWidth;
   } catch (_) {
     /* ignore */
+  }
+
+  try {
+    const posterUrl = await buildHighResPosterDataUrl();
+    if (posterUrl) return posterUrl;
+  } catch (e) {
+    console.warn("[ddg-gorgez] high-res poster export failed, falling back:", e);
   }
 
   const h2c = globalThis.html2canvas;
