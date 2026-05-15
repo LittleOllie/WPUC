@@ -2,15 +2,23 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { WalletProvider } from "./context/WalletContext.jsx";
 import { ProfileProvider } from "./context/ProfileContext.jsx";
 
-createRoot(document.getElementById("root")).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error("TradePort root element not found");
+}
+
+createRoot(rootEl).render(
   <StrictMode>
-    <WalletProvider>
-      <ProfileProvider>
-        <App />
-      </ProfileProvider>
-    </WalletProvider>
+    <ErrorBoundary>
+      <WalletProvider>
+        <ProfileProvider>
+          <App />
+        </ProfileProvider>
+      </WalletProvider>
+    </ErrorBoundary>
   </StrictMode>
 );

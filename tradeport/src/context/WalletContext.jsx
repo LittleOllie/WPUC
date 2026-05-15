@@ -36,9 +36,13 @@ export function WalletProvider({ children }) {
     if (!window.ethereum) return;
     const { ethereum } = window;
 
-    readAccounts(ethereum).then((accounts) => {
-      if (accounts?.[0]) applyAccount(accounts[0]);
-    });
+    readAccounts(ethereum)
+      .then((accounts) => {
+        if (accounts?.[0]) applyAccount(accounts[0]);
+      })
+      .catch(() => {
+        /* wallet locked or denied — app still works without connect */
+      });
 
     const onAccounts = (accounts) => {
       applyAccount(accounts?.[0] || null);
