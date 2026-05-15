@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-family-display: var(--font-display);
+  --color-tp-bg: #0a0a12;
+  --color-tp-surface: #12121f;
+  --color-tp-border: rgba(255, 255, 255, 0.08);
+  --color-tp-muted: #8b8ba3;
+  --color-tp-text: #f0f0f8;
+  --color-tp-accent: #7c5cff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background: var(--color-tp-bg);
+  color: var(--color-tp-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* —— Atmosphere —— */
+@keyframes tp-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12px, -18px) scale(1.05);
+  }
+}
+
+@keyframes tp-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-20px, 14px);
+  }
+}
+
+@keyframes tp-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes tp-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes tp-hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes tp-carousel-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.tp-particle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: tp-float 18s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.tp-particle--slow {
+  animation: tp-drift 24s ease-in-out infinite;
+}
+
+.tp-gradient-text {
+  background: linear-gradient(
+    120deg,
+    #c4b5fd 0%,
+    #e879f9 25%,
+    #67e8f9 50%,
+    #e879f9 75%,
+    #c4b5fd 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tp-shimmer 8s linear infinite;
+}
+
+.tp-hero-glow {
+  animation: tp-glow-pulse 4s ease-in-out infinite;
+}
+
+.tp-hero-card {
+  animation: tp-hero-float 6s ease-in-out infinite;
+}
+
+.tp-btn-primary {
+  position: relative;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.tp-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px rgba(124, 92, 255, 0.45),
+    0 0 24px rgba(232, 121, 249, 0.25);
+}
+
+.tp-btn-primary:active {
+  transform: translateY(0);
+}
+
+.tp-btn-ghost {
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tp-btn-ghost:hover {
+  transform: translateY(-1px);
+}
+
+.tp-card-lift {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.tp-card-lift:hover {
+  transform: translateY(-4px);
+}
+
+.tp-glow-border {
+  position: relative;
+}
+
+.tp-glow-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--glow-a, rgba(124, 92, 255, 0.5)),
+    var(--glow-b, rgba(232, 121, 249, 0.2)),
+    transparent 60%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.tp-glow-border:hover::before {
+  opacity: 1;
+}
+
+.tp-carousel-track {
+  display: flex;
+  width: max-content;
+  animation: tp-carousel-scroll 48s linear infinite;
+}
+
+.tp-carousel-track:hover {
+  animation-play-state: paused;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-particle,
+  .tp-gradient-text,
+  .tp-hero-glow,
+  .tp-hero-card,
+  .tp-carousel-track {
+    animation: none !important;
+  }
+
+  .tp-btn-primary:hover,
+  .tp-card-lift:hover {
+    transform: none;
+  }
+}
