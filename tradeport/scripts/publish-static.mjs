@@ -1,12 +1,22 @@
 /**
  * Copy Vite build output from dist/ to tradeport/ root so the app is served at /tradeport/
  */
-import { cpSync, existsSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const tradeportDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = join(tradeportDir, "dist");
+const assetsDir = join(tradeportDir, "assets");
+
+/** Remove old hashed bundles so deploy only serves the latest build. */
+if (existsSync(assetsDir)) {
+  for (const name of readdirSync(assetsDir)) {
+    if (/^index(\.vite)?-[\w-]+\.(js|css)$/.test(name)) {
+      unlinkSync(join(assetsDir, name));
+    }
+  }
+}
 
 const entries = ["index.html", "404.html", "favicon.svg", "icons.svg", "assets"];
 
