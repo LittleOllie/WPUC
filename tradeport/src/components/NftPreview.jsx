@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import NftImage from "./NftImage";
 import { nftPlaceholderStyle } from "../utils/theme";
 
-export default function NftPreview({ gradient, label, imageUrl, className = "aspect-square w-full" }) {
+export default function NftPreview({
+  gradient,
+  label,
+  imageUrl,
+  imageCandidates = null,
+  className = "aspect-square w-full",
+}) {
   const [imgFailed, setImgFailed] = useState(false);
-  const showImg = imageUrl && !imgFailed;
+  const hasCandidates = imageCandidates?.length || imageUrl;
+  const showImg = hasCandidates && !imgFailed;
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [imageUrl, imageCandidates?.join("|")]);
 
   return (
     <div
@@ -11,12 +23,13 @@ export default function NftPreview({ gradient, label, imageUrl, className = "asp
       style={showImg ? undefined : nftPlaceholderStyle(gradient)}
     >
       {showImg ? (
-        <img
-          src={imageUrl}
+        <NftImage
+          imageUrl={imageUrl}
+          imageCandidates={imageCandidates}
           alt={label || ""}
           className="h-full w-full object-cover"
           loading="lazy"
-          onError={() => setImgFailed(true)}
+          onFailed={() => setImgFailed(true)}
         />
       ) : (
         <div className="absolute inset-0 bg-black/20" />

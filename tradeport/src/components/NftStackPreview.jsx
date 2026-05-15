@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useCollectionSamples } from "../hooks/useCollectionSamples";
+import NftImage from "./NftImage";
 import { nftPlaceholderStyle } from "../utils/theme";
 
 export default function NftStackPreview({ collection, className = "" }) {
@@ -29,9 +30,10 @@ export default function NftStackPreview({ collection, className = "" }) {
             }}
             whileHover={{ y: -6, scale: 1.05, zIndex: 10 }}
           >
-            {tile.imageUrl ? (
-              <img
-                src={tile.imageUrl}
+            {tile.imageUrl || tile.imageCandidates?.length ? (
+              <NftImage
+                imageUrl={tile.imageUrl}
+                imageCandidates={tile.imageCandidates}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
                 loading="eager"

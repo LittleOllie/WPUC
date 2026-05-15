@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { useCollectionSamples } from "../hooks/useCollectionSamples";
+import NftImage from "./NftImage";
 import { nftPlaceholderStyle } from "../utils/theme";
 
 function NftTile({ card, theme, showLabel = true }) {
-  const hasImage = card.imageUrl;
+  const hasImage = card.imageUrl || card.imageCandidates?.length;
 
   return (
     <motion.div
@@ -19,8 +20,9 @@ function NftTile({ card, theme, showLabel = true }) {
         }}
       >
         {hasImage ? (
-          <img
-            src={card.imageUrl}
+          <NftImage
+            imageUrl={card.imageUrl}
+            imageCandidates={card.imageCandidates}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"

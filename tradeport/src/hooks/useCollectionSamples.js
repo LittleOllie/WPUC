@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchCollectionSamples, displayImageUrl } from "../lib/api";
+import { fetchCollectionSamples } from "../lib/api";
 import { mockNftTiles } from "../utils/mockNfts";
+import { buildNftImageCandidates } from "../utils/nftImages";
 
 const REFRESH_MS = 5 * 60 * 1000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -10,13 +11,22 @@ const sampleCache = new Map();
 
 function mapSamples(data, collection, count) {
   const stamp = Date.now();
-  return (data.nfts || []).slice(0, count).map((n, i) => ({
-    id: `${n.contract}-${n.tokenId}-${stamp}`,
-    imageUrl: displayImageUrl(n.imageUrl),
-    gradient: [collection.theme.primary, collection.theme.background],
-    rotate: (i - 1) * 6,
-    z: i,
-  }));
+  return (data.nfts || []).slice(0, count).map((n, i) => {
+    const imageCandidates = buildNftImageCandidates({
+      collectionId: collection.id,
+      tokenId: n.tokenId,
+      imageUrl: n.imageUrl,
+    });
+    return {
+      id: `${n.contract}-${n.tokenId}-${stamp}`,
+      tokenId: n.tokenId,
+      imageUrl: imageCandidates[0] || null,
+      imageCandidates,
+      gradient: [collection.theme.primary, collection.theme.background],
+      rotate: (i - 1) * 6,
+      z: i,
+    };
+  });
 }
 
 export function useCollectionSamples(collection, count = 3) {

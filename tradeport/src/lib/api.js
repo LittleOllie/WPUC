@@ -67,8 +67,12 @@ const DIRECT_IMAGE_HOSTS = [
   "ipfs.io",
   "cloudflare-ipfs.com",
   "nftstorage.link",
+  "w3s.link",
+  "dweb.link",
+  "pinata.cloud",
   "arweave.net",
   "amazonaws.com",
+  "quirkies-images.s3.ap-southeast-2.amazonaws.com",
   "googleusercontent.com",
 ];
 

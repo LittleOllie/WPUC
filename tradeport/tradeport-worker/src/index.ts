@@ -50,28 +50,51 @@ function parseMetadata(raw: unknown): Record<string, unknown> | null {
 	return null;
 }
 
+function resolveMediaUrl(raw: string): string {
+	const s = raw.trim();
+	if (s.startsWith('ipfs://')) {
+		const path = s.slice(7).replace(/^ipfs\//, '').replace(/^\/+/, '');
+		return `https://nftstorage.link/ipfs/${path}`;
+	}
+	if (s.startsWith('ar://')) {
+		return `https://arweave.net/${s.slice(5)}`;
+	}
+	return s;
+}
+
 function pickImageUrl(nft: Record<string, unknown>): string | null {
 	const img = nft.image as Record<string, unknown> | undefined;
-	if (img && typeof img.cachedUrl === 'string' && img.cachedUrl) return img.cachedUrl;
-	if (img && typeof img.originalUrl === 'string' && img.originalUrl) return img.originalUrl;
-	if (img && typeof img.pngUrl === 'string' && img.pngUrl) return img.pngUrl;
+	if (img && typeof img.cachedUrl === 'string' && img.cachedUrl) return resolveMediaUrl(img.cachedUrl);
+	if (img && typeof img.originalUrl === 'string' && img.originalUrl) return resolveMediaUrl(img.originalUrl);
+	if (img && typeof img.pngUrl === 'string' && img.pngUrl) return resolveMediaUrl(img.pngUrl);
 	if (typeof nft.media === 'object' && Array.isArray(nft.media)) {
 		for (const m of nft.media as Record<string, unknown>[]) {
 			const g = m.gateway as string | undefined;
-		 if (g) return g;
+			if (g) return resolveMediaUrl(g);
 			const raw = m.raw as string | undefined;
-			if (raw && raw.startsWith('http')) return raw;
+			if (raw && (raw.startsWith('http') || raw.startsWith('ipfs://'))) return resolveMediaUrl(raw);
 		}
 	}
 	const meta = parseMetadata(nft.rawMetadata ?? nft.metadata);
 	if (meta) {
 		const i = meta.image;
-		if (typeof i === 'string' && i.startsWith('http')) return i;
-		if (typeof i === 'string' && i.startsWith('ipfs://')) return i;
+		if (typeof i === 'string' && (i.startsWith('http') || i.startsWith('ipfs://') || i.startsWith('ar://'))) {
+			return resolveMediaUrl(i);
+		}
 	}
 	const uri = nft.tokenUri as string | undefined;
 	if (uri && uri.startsWith('http')) return uri;
 	return null;
+}
+
+function imageReliabilityScore(imageUrl: string | null): number {
+	if (!imageUrl) return -1;
+	const u = imageUrl.toLowerCase();
+	if (u.includes('quirkies-images.s3')) return 4;
+	if (u.includes('nft-cdn.alchemy.com')) return 3;
+	if (u.includes('nftstorage.link') || u.includes('cloudflare-ipfs.com')) return 2;
+	if (u.includes('ipfs.io') || u.includes('ipfs://')) return 0;
+	return 1;
 }
 
 function normalizeNft(nft: Record<string, unknown>) {
@@ -193,8 +216,11 @@ async function fetchCollectionSamples(
 		const batch = (data.nfts || []) as Record<string, unknown>[];
 		const normalized = batch
 			.map(normalizeNft)
-			.filter((n) => n.imageUrl && n.contract === contractVal);
-		const picked = shufflePick(normalized, limit);
+			.filter((n) => n.imageUrl && n.contract === contractVal)
+			.sort((a, b) => imageReliabilityScore(b.imageUrl) - imageReliabilityScore(a.imageUrl));
+		const reliable = normalized.filter((n) => imageReliabilityScore(n.imageUrl) >= 2);
+		const pool = reliable.length >= limit ? reliable : normalized;
+		const picked = shufflePick(pool, limit);
 		return json(
 			{
 				contract: contractVal,
