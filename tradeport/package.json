@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp dist/index.vite.html dist/index.html && cp dist/index.html dist/404.html && node scripts/publish-static.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
