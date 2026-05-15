@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Little Ollie Flex Grid</title>
+  <script>
+    (function () {
+      try {
+        var next = new URL("site/index.html", window.location.href);
+        next.search = window.location.search;
+        next.hash = window.location.hash;
+        window.location.replace(next.href);
+      } catch (e) {
+        window.location.href = "site/index.html";
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family: system-ui, sans-serif; padding: 24px; max-width: 40em">
+    Opening FlexGrid… If nothing happens, use the full app entry:
+    <a href="site/index.html">site/index.html</a>
+  </p>
+</body>
+</html>
