@@ -236,22 +236,304 @@ export const mockListings = [
     wantEth: null,
     wantTrait: null,
   },
+  {
+    id: "lst-013",
+    trader: { name: "CosmicRider", verified: true, twitter: "@spaceridersxyz", discord: "rider#4201", email: "" },
+    offeringCollectionId: "spaceriders",
+    offeringLabel: "Space Riders #892",
+    offeringTokenId: "892",
+    nftGradient: ["#3b82f6", "#030712"],
+    lookingForCollectionId: "ddg",
+    lookingForLabel: "DDG ritual tier",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    status: "Active",
+    expiresAt: daysFromNow(8),
+    notes: "Riding into DDG — fair 1:1 or small ETH either way.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-014",
+    trader: { name: "OGTripleFan", verified: true, twitter: "@ogtriplemedia", discord: "", email: "" },
+    offeringCollectionId: "ogenies",
+    offeringLabel: "OGenies #144",
+    offeringTokenId: "144",
+    nftGradient: ["#eab308", "#0c0618"],
+    lookingForCollectionId: "quirkies",
+    lookingForLabel: "Quirkies grail",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    status: "Active",
+    expiresAt: daysFromNow(6),
+    notes: "OGenie for Quirkies — colourful / rare eyes preferred.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-015",
+    trader: { name: "SetBuilder_QL", verified: true, twitter: "@quirkiesnft", discord: "sets#2200", email: "" },
+    offeringCollectionId: "quirklings",
+    offeringLabel: "Quirklings #2044",
+    offeringTokenId: "2044",
+    nftGradient: ["#c084fc", "#0f0a1a"],
+    lookingForCollectionId: "quirkies",
+    lookingForLabel: "Matching Quirkies #2044",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    status: "Active",
+    expiresAt: daysFromNow(11),
+    notes: "Completing the pair — need Quirkies #2044 for my set wall.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-016",
+    trader: { name: "GorgezToSpace", verified: false, twitter: "@dedgorgez_fan", discord: "", email: "" },
+    offeringCollectionId: "ddg",
+    offeringLabel: "DDG #3100",
+    offeringTokenId: "3100",
+    nftGradient: ["#e63cb4", "#12051f"],
+    lookingForCollectionId: "spaceriders",
+    lookingForLabel: "Space Riders — open to offers",
+    lookingForType: "nft",
+    tradeType: "Open To Offers",
+    status: "Active",
+    expiresAt: daysFromNow(9),
+    notes: "First Space Riders piece — flexible on traits.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-017",
+    trader: { name: "LostOG", verified: true, twitter: "@lostfound", discord: "lost#9900", email: "" },
+    offeringCollectionId: "longlost",
+    offeringLabel: "Long Lost #777",
+    offeringTokenId: "777",
+    nftGradient: ["#8b3dff", "#07030d"],
+    lookingForCollectionId: "ogenies",
+    lookingForLabel: "OGenies entry",
+    lookingForType: "nft",
+    tradeType: "Community Entry",
+    status: "Active",
+    expiresAt: daysFromNow(7),
+    notes: "Portal lore × genie culture — exploring OGenies community.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-018",
+    trader: { name: "DDGSwapper", verified: true, twitter: "@ddgflip", discord: "swap#1842", email: "" },
+    offeringCollectionId: "ddg",
+    offeringLabel: "DDG #1842",
+    offeringTokenId: "1842",
+    nftGradient: ["#ff66cc", "#e63cb4"],
+    lookingForCollectionId: "ddg",
+    lookingForLabel: "Another DDG — trait upgrade",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(10),
+    notes: "Chasing a different ritual / neon combo. Same collection only — no cross-community.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-019",
+    trader: { name: "QuirkiesFlip", verified: true, twitter: "@quirkiesneon", discord: "flip#902", email: "" },
+    offeringCollectionId: "quirkies",
+    offeringLabel: "Quirkies #902",
+    offeringTokenId: "902",
+    nftGradient: ["#00d4ff", "#ff4fa3"],
+    lookingForCollectionId: "quirkies",
+    lookingForLabel: "Any Quirkies — fair 1:1",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(5),
+    notes: "Refreshing my PFP — open to any Quirkies with arcade / laser vibes.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-020",
+    trader: { name: "RiderSwap", verified: false, twitter: "@spaceridersxyz", discord: "", email: "" },
+    offeringCollectionId: "spaceriders",
+    offeringLabel: "Space Riders #42",
+    offeringTokenId: "42",
+    nftGradient: ["#38bdf8", "#030712"],
+    lookingForCollectionId: "spaceriders",
+    lookingForLabel: "Space Riders — different ship / rider",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(12),
+    notes: "Same collection swap only. Prefer orange / cosmic background traits.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-021",
+    trader: { name: "GenieCollector", verified: true, twitter: "@ogtriplemedia", discord: "genie#0144", email: "" },
+    offeringCollectionId: "ogenies",
+    offeringLabel: "OGenies #88",
+    offeringTokenId: "88",
+    nftGradient: ["#fbbf24", "#a855f7"],
+    lookingForCollectionId: "ogenies",
+    lookingForLabel: "Another OGenie — set building",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "In Talks",
+    expiresAt: daysFromNow(4),
+    notes: "Trading within OGenies only. Building toward a gold-tier set.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-022",
+    trader: { name: "QuirklingHunter", verified: true, twitter: "@quirkiesnft", discord: "ql#4410", email: "" },
+    offeringCollectionId: "quirklings",
+    offeringLabel: "Quirklings #4410",
+    offeringTokenId: "4410",
+    nftGradient: ["#f472b6", "#0f0a1a"],
+    lookingForCollectionId: "quirklings",
+    lookingForLabel: "Quirklings below ID 5000",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(14),
+    notes: "Swapping Quirklings only — prefer low-ID pieces for pairing display.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-023",
+    trader: { name: "PortalFlip", verified: false, twitter: "@longlostportal", discord: "portal#8821", email: "" },
+    offeringCollectionId: "longlost",
+    offeringLabel: "Long Lost #331",
+    offeringTokenId: "331",
+    nftGradient: ["#39ff88", "#8b3dff"],
+    lookingForCollectionId: "longlost",
+    lookingForLabel: "Long Lost — portal / skater traits",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(6),
+    notes: "Staying in Long Lost — hunting portal wall or purple glow traits.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-024",
+    trader: { name: "CrossRider", verified: true, twitter: "@spaceridersxyz", discord: "cross#892", email: "" },
+    offeringCollectionId: "spaceriders",
+    offeringLabel: "Space Riders #1200",
+    offeringTokenId: "1200",
+    nftGradient: ["#f97316", "#3b82f6"],
+    lookingForCollectionId: "quirklings",
+    lookingForLabel: "Quirklings companion piece",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    status: "Active",
+    expiresAt: daysFromNow(8),
+    notes: "Cosmic rider × quirky companion — fair swap.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-025",
+    trader: { name: "OGGorgez", verified: true, twitter: "@ogtriplemedia", discord: "", email: "og@example.com" },
+    offeringCollectionId: "ogenies",
+    offeringLabel: "OGenies #500",
+    offeringTokenId: "500",
+    nftGradient: ["#a855f7", "#0c0618"],
+    lookingForCollectionId: "ddg",
+    lookingForLabel: "DDG skeleton art",
+    lookingForType: "nft",
+    tradeType: "WTT",
+    status: "Pending",
+    expiresAt: daysFromNow(3),
+    notes: "OGenie out, DDG in — serious collectors DM on X.",
+    wantEth: null,
+    wantTrait: null,
+  },
+  {
+    id: "lst-026",
+    trader: { name: "DDGGrailHunter", verified: true, twitter: "@gorgezwhale", discord: "whale#0001", email: "" },
+    offeringCollectionId: "ddg",
+    offeringLabel: "DDG #420",
+    offeringTokenId: "420",
+    nftGradient: ["#64d5df", "#e63cb4"],
+    lookingForCollectionId: "ddg",
+    lookingForLabel: "DDG #1–100 range",
+    lookingForType: "nft",
+    tradeType: "WTB",
+    sameCollectionSwap: true,
+    status: "Active",
+    expiresAt: daysFromNow(7),
+    notes: "WTB low-ID DDG only. Offering mid-tier piece + can add ETH.",
+    wantEth: "0.15",
+    wantTrait: null,
+  },
 ];
+
+/** True when collector wants another NFT from the same community they are offering. */
+export function listingIsSameCollectionSwap(listing) {
+  if (!listing?.offeringCollectionId) return false;
+  if (listing.sameCollectionSwap) return true;
+  if (listing.lookingForCollectionId === listing.offeringCollectionId) return true;
+  if (
+    Array.isArray(listing.lookingForCollectionIds) &&
+    listing.lookingForCollectionIds.length === 1 &&
+    listing.lookingForCollectionIds[0] === listing.offeringCollectionId
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Listing wants a specific community (supports multi-select field). */
+export function listingWantsCollection(listing, collectionId) {
+  if (!listing || !collectionId) return false;
+  if (Array.isArray(listing.lookingForCollectionIds) && listing.lookingForCollectionIds.length > 0) {
+    return listing.lookingForCollectionIds.includes(collectionId);
+  }
+  return listing.lookingForCollectionId === collectionId;
+}
+
+export function listingOffersCollection(listing, collectionId) {
+  return listing?.offeringCollectionId === collectionId;
+}
+
+/** Either side of the trade touches this community. */
+export function listingInvolvesCollection(listing, collectionId) {
+  return listingOffersCollection(listing, collectionId) || listingWantsCollection(listing, collectionId);
+}
 
 export function getListingById(id) {
   return mockListings.find((l) => l.id === id) ?? null;
 }
 
 export function getListingsByCollection(collectionId) {
-  return mockListings.filter(
-    (l) =>
-      l.offeringCollectionId === collectionId ||
-      l.lookingForCollectionId === collectionId
-  );
+  return mockListings.filter((l) => listingInvolvesCollection(l, collectionId));
 }
 
 export function getJoinListingsForCollection(collectionId) {
-  return mockListings.filter((l) => l.lookingForCollectionId === collectionId);
+  return mockListings.filter(
+    (l) => listingWantsCollection(l, collectionId) && !listingIsSameCollectionSwap(l)
+  );
+}
+
+export function getSameCollectionListings(collectionId) {
+  return mockListings.filter(
+    (l) => listingIsSameCollectionSwap(l) && l.offeringCollectionId === collectionId
+  );
 }
 
 export function getTimeRemaining(expiresAt) {

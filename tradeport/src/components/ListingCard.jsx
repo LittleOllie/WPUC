@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getCollectionById } from "../data/collections";
-import { getTimeRemaining } from "../data/listings";
-import NftPreview from "./NftPreview";
+import { getTimeRemaining, listingIsSameCollectionSwap } from "../data/listings";
+import ListingNftPreview from "./ListingNftPreview";
 import TradeTypeBadge from "./TradeTypeBadge";
 import StatusBadge from "./StatusBadge";
 import CollectionLogo from "./CollectionLogo";
@@ -16,6 +16,7 @@ export default function ListingCard({ listing, showInterested = true, accentColo
   const time = getTimeRemaining(listing.expiresAt);
   const glow = accentColor || offering?.theme?.primary || "#7c5cff";
   const traits = listing.traitBadges || (listing.wantTrait ? [listing.wantTrait] : []);
+  const sameCollection = listingIsSameCollectionSwap(listing);
 
   return (
     <motion.article
@@ -29,14 +30,19 @@ export default function ListingCard({ listing, showInterested = true, accentColo
       }}
     >
       <div className="relative aspect-[5/4] overflow-hidden sm:aspect-square">
-        <NftPreview gradient={listing.nftGradient} label={listing.offeringLabel} className="h-full min-h-[180px]" />
+        <ListingNftPreview listing={listing} className="h-full min-h-[180px]" />
         <motion.div
           className="absolute inset-0 bg-gradient-to-t from-tp-bg/90 via-transparent to-transparent opacity-60"
           initial={false}
         />
-        <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
+        <motion.div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
           <TradeTypeBadge type={listing.tradeType} />
-        </div>
+          {sameCollection && (
+            <span className="rounded-md border border-teal-400/35 bg-teal-500/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-100 backdrop-blur-sm">
+              Same collection
+            </span>
+          )}
+        </motion.div>
         <motion.div className="absolute right-2 top-2 flex flex-col items-end gap-1.5">
           <StatusBadge status={listing.status} />
           {listing.trader.verified && <VerifiedBadge compact />}
@@ -66,7 +72,11 @@ export default function ListingCard({ listing, showInterested = true, accentColo
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-tp-muted">I WANT</p>
           <p className="mt-1.5 text-sm leading-snug text-white/90">{listing.lookingForLabel}</p>
-          {looking && <p className="mt-0.5 text-xs text-tp-muted">from {looking.shortName}</p>}
+          {sameCollection && offering ? (
+            <p className="mt-0.5 text-xs text-teal-300/90">within {offering.shortName}</p>
+          ) : (
+            looking && <p className="mt-0.5 text-xs text-tp-muted">from {looking.shortName}</p>
+          )}
         </div>
         <p className="text-sm text-tp-muted">@{listing.trader.name}</p>
         <p className={`text-xs font-medium ${time.expired ? "text-red-400" : "text-tp-muted"}`}>{time.label}</p>

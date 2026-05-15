@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { collections } from "../data/collections";
@@ -33,13 +33,95 @@ export default function CreateTrade() {
   const [walletNfts, setWalletNfts] = useState([]);
   const [nftsLoading, setNftsLoading] = useState(false);
   const [nftsError, setNftsError] = useState(null);
-  const [wantText, setWantText] = useState("");
+  const [wantKind, setWantKind] = useState("collection");
+  const [wantCollectionIds, setWantCollectionIds] = useState([]);
+  const [wantEth, setWantEth] = useState("");
+  const [wantTrait, setWantTrait] = useState("");
+  const [wantDetails, setWantDetails] = useState("");
   const [tradeType, setTradeType] = useState("WTT");
   const [notes, setNotes] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
   const [published, setPublished] = useState(false);
 
   const have = collections.find((c) => c.id === haveCollection);
+  const wantCollections = useMemo(
+    () => collections.filter((c) => wantCollectionIds.includes(c.id)),
+    [wantCollectionIds]
+  );
+
+  const toggleWantCollection = (id) => {
+    setWantCollectionIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const selectSameCollectionSwap = () => {
+    if (!haveCollection) return;
+    setWantKind("collection");
+    setWantCollectionIds([haveCollection]);
+    setWantEth("");
+    setWantTrait("");
+    if (!wantDetails.trim()) {
+      setWantDetails(`Another ${have?.shortName ?? "piece"} from the same collection — open to fair 1:1 swaps`);
+    }
+    if (tradeType === "Community Entry") setTradeType("WTT");
+  };
+
+  const isSameCollectionWant =
+    haveCollection &&
+    wantKind === "collection" &&
+    wantCollectionIds.length === 1 &&
+    wantCollectionIds[0] === haveCollection;
+
+  const selectAllWantCollections = () => {
+    setWantCollectionIds(collections.map((c) => c.id));
+  };
+
+  const clearWantCollections = () => {
+    setWantCollectionIds([]);
+  };
+
+  const wantCollectionsLabel = useMemo(() => {
+    if (!wantCollections.length) return null;
+    if (wantCollections.length === collections.length) return "Any supported community";
+    return wantCollections.map((c) => c.shortName).join(", ");
+  }, [wantCollections]);
+
+  const wantSummary = useMemo(() => {
+    if (isSameCollectionWant && have) {
+      const base = `Another ${have.shortName} (same collection swap)`;
+      return wantDetails.trim() ? `${base} — ${wantDetails.trim()}` : base;
+    }
+    if (wantKind === "collection" && wantCollectionsLabel) {
+      return wantDetails.trim()
+        ? `${wantCollectionsLabel} — ${wantDetails.trim()}`
+        : `${wantCollectionsLabel} (NFT or entry)`;
+    }
+    if (wantKind === "open") {
+      const base = wantCollectionsLabel
+        ? `Open to offers (${wantCollectionsLabel})`
+        : "Open to offers (any community)";
+      return wantDetails.trim() ? `${base} — ${wantDetails.trim()}` : base;
+    }
+    if (wantKind === "eth") {
+      const amount = wantEth.trim();
+      return amount ? `${amount} ETH${wantDetails.trim() ? ` · ${wantDetails.trim()}` : ""}` : "ETH";
+    }
+    if (wantKind === "trait") {
+      const trait = wantTrait.trim();
+      return trait
+        ? `${trait}${wantDetails.trim() ? ` · ${wantDetails.trim()}` : ""}`
+        : wantDetails.trim() || "Specific trait";
+    }
+    return wantDetails.trim() || "Open to offers";
+  }, [wantKind, wantCollectionsLabel, wantEth, wantTrait, wantDetails, isSameCollectionWant, have]);
+
+  const canContinueWant = useMemo(() => {
+    if (wantKind === "collection") return wantCollectionIds.length > 0;
+    if (wantKind === "eth") return Boolean(wantEth.trim());
+    if (wantKind === "trait") return Boolean(wantTrait.trim());
+    return true;
+  }, [wantKind, wantCollectionIds, wantEth, wantTrait]);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -179,15 +261,193 @@ export default function CreateTrade() {
 
           {step === 2 && (
             <div>
-              <label className="block font-semibold">What do you WANT?</label>
-              <textarea
-                value={wantText}
-                onChange={(e) => setWantText(e.target.value)}
-                placeholder="e.g. Long Lost entry, 0.5 ETH, Skull Mask trait…"
-                rows={4}
-                className="mt-3 w-full rounded-xl border border-white/10 bg-tp-bg px-4 py-3"
-              />
-              <button type="button" onClick={next} className="mt-4 rounded-xl bg-violet-500 px-6 py-2.5 font-semibold">
+              <p className="font-semibold">What do you WANT?</p>
+              <p className="mt-1 text-sm text-tp-muted">
+                Pick a category so your listing shows up in the right community filters — then add specifics below.
+              </p>
+
+              {have && (
+                <button
+                  type="button"
+                  onClick={selectSameCollectionSwap}
+                  className={`mt-5 flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                    isSameCollectionWant
+                      ? "border-violet-500 bg-violet-500/15 ring-1 ring-violet-400/40"
+                      : "border-white/15 bg-white/[0.03] hover:border-violet-500/40 hover:bg-violet-500/5"
+                  }`}
+                >
+                  <CollectionLogo collection={have} className="h-12 w-12" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">Swap within {have.shortName}</p>
+                    <p className="mt-0.5 text-sm text-tp-muted">
+                      Trade your {have.shortName} for someone else&apos;s {have.shortName} — trait upgrades, PFP
+                      refreshes, or fair 1:1 swaps.
+                    </p>
+                  </div>
+                  {isSameCollectionWant && (
+                    <span className="shrink-0 rounded-full bg-violet-500/30 px-3 py-1 text-xs font-bold text-violet-200">
+                      Selected
+                    </span>
+                  )}
+                </button>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  { id: "collection", label: "NFT / community" },
+                  { id: "eth", label: "ETH" },
+                  { id: "trait", label: "Trait hunt" },
+                  { id: "open", label: "Open offers" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setWantKind(opt.id)}
+                    className={`rounded-full border px-4 py-2 text-sm ${
+                      wantKind === opt.id ? "border-violet-500 bg-violet-500/20" : "border-white/15"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {(wantKind === "collection" || wantKind === "open") && (
+                <div className="mt-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {wantKind === "open" ? "Communities (optional)" : "Which collections?"}
+                      </p>
+                      <p className="mt-1 text-xs text-tp-muted">
+                        {wantKind === "open"
+                          ? "Select all if you're open to any — or pick specific ones. Same community as your NFT is allowed."
+                          : "Select one or more. This links your listing to those hubs and browse filters."}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllWantCollections}
+                        className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold hover:bg-white/5"
+                      >
+                        Select all
+                      </button>
+                      {wantCollectionIds.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearWantCollections}
+                          className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-tp-muted hover:bg-white/5"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {wantCollectionIds.length > 0 && (
+                    <p className="mt-2 text-xs text-violet-300">
+                      {wantCollectionIds.length} selected
+                      {wantCollectionIds.length === collections.length ? " · shows in all community hubs" : ""}
+                    </p>
+                  )}
+                  <div className="mt-3 grid gap-2">
+                    {collections.map((c) => {
+                      const selected = wantCollectionIds.includes(c.id);
+                      const isSameAsHave = c.id === haveCollection;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleWantCollection(c.id)}
+                          className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                            selected
+                              ? "border-violet-500 bg-violet-500/10"
+                              : "border-white/10 hover:bg-white/5"
+                          }`}
+                        >
+                          <CollectionLogo collection={c} className="h-10 w-10" />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium">{c.name}</span>
+                            {isSameAsHave && (
+                              <span className="ml-2 text-xs text-tp-muted">(your collection)</span>
+                            )}
+                          </div>
+                          <span
+                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-xs ${
+                              selected
+                                ? "border-violet-400 bg-violet-500 text-white"
+                                : "border-white/20 bg-transparent text-transparent"
+                            }`}
+                            aria-hidden
+                          >
+                            ✓
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {wantKind === "eth" && (
+                <div className="mt-5">
+                  <label htmlFor="wantEth" className="text-sm font-semibold">
+                    Amount (ETH)
+                  </label>
+                  <input
+                    id="wantEth"
+                    type="text"
+                    inputMode="decimal"
+                    value={wantEth}
+                    onChange={(e) => setWantEth(e.target.value)}
+                    placeholder="e.g. 0.5"
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-tp-bg px-4 py-3"
+                  />
+                </div>
+              )}
+
+              {wantKind === "trait" && (
+                <div className="mt-5">
+                  <label htmlFor="wantTrait" className="text-sm font-semibold">
+                    Trait name
+                  </label>
+                  <input
+                    id="wantTrait"
+                    type="text"
+                    value={wantTrait}
+                    onChange={(e) => setWantTrait(e.target.value)}
+                    placeholder="e.g. Skull Mask, Laser Eyes"
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-tp-bg px-4 py-3"
+                  />
+                </div>
+              )}
+
+              <div className="mt-5">
+                <label htmlFor="wantDetails" className="text-sm font-semibold">
+                  {wantKind === "open" ? "What are you open to?" : "Extra details (optional)"}
+                </label>
+                <textarea
+                  id="wantDetails"
+                  value={wantDetails}
+                  onChange={(e) => setWantDetails(e.target.value)}
+                  placeholder={
+                    wantKind === "collection"
+                      ? "e.g. entry piece, #331, fair 1:1 + small ETH…"
+                      : wantKind === "trait"
+                        ? "e.g. any collection, prefer DDG or Long Lost…"
+                        : "Anything else collectors should know…"
+                  }
+                  rows={3}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-tp-bg px-4 py-3"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={next}
+                disabled={!canContinueWant}
+                className="mt-4 rounded-xl bg-violet-500 px-6 py-2.5 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 Continue
               </button>
             </div>
@@ -269,8 +529,17 @@ export default function CreateTrade() {
                     <span className="text-tp-muted">I HAVE:</span> {selectedNft.label}
                   </p>
                   <p className="mt-2">
-                    <span className="text-tp-muted">I WANT:</span> {wantText || "—"}
+                    <span className="text-tp-muted">I WANT:</span> {wantSummary}
                   </p>
+                  {(wantKind === "collection" || wantKind === "open") && wantCollections.length > 0 && (
+                    <p className="mt-1 text-xs text-tp-muted">
+                      Linked to{" "}
+                      {wantCollections.length === collections.length
+                        ? "all community hubs"
+                        : `${wantCollections.map((c) => c.shortName).join(", ")} hub${wantCollections.length > 1 ? "s" : ""}`}{" "}
+                      &amp; filters
+                    </p>
+                  )}
                   <p className="mt-2">
                     <span className="text-tp-muted">Type:</span> {tradeType}
                   </p>

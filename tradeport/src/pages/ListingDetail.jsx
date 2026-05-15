@@ -1,8 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-import { getListingById } from "../data/listings";
+import { getListingById, getTimeRemaining, listingIsSameCollectionSwap } from "../data/listings";
 import { getCollectionById } from "../data/collections";
-import { getTimeRemaining } from "../data/listings";
-import NftPreview from "../components/NftPreview";
+import ListingNftPreview from "../components/ListingNftPreview";
 import TradeTypeBadge from "../components/TradeTypeBadge";
 import StatusBadge from "../components/StatusBadge";
 import SafetyNotice from "../components/SafetyNotice";
@@ -28,6 +27,7 @@ export default function ListingDetail() {
     ? getCollectionById(listing.lookingForCollectionId)
     : null;
   const time = getTimeRemaining(listing.expiresAt);
+  const sameCollection = listingIsSameCollectionSwap(listing);
   const t = listing.trader;
 
   return (
@@ -37,10 +37,15 @@ export default function ListingDetail() {
       </Link>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
-        <NftPreview gradient={listing.nftGradient} label={listing.offeringLabel} className="aspect-square" />
+        <ListingNftPreview listing={listing} className="aspect-square" />
         <div>
           <div className="flex flex-wrap gap-2">
             <TradeTypeBadge type={listing.tradeType} />
+            {sameCollection && (
+              <span className="rounded-full border border-teal-400/35 bg-teal-500/20 px-3 py-1 text-xs font-semibold text-teal-200">
+                Same collection swap
+              </span>
+            )}
             <StatusBadge status={listing.status} />
             {listing.trader.verified && (
               <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
@@ -62,7 +67,11 @@ export default function ListingDetail() {
             <div>
               <p className="text-xs font-bold uppercase text-tp-muted">I WANT</p>
               <p className="mt-2 text-lg">{listing.lookingForLabel}</p>
-              {looking && <p className="text-sm text-tp-muted">Community: {looking.name}</p>}
+              {sameCollection && offering ? (
+                <p className="text-sm text-teal-300/90">Swap within {offering.name} only</p>
+              ) : (
+                looking && <p className="text-sm text-tp-muted">Community: {looking.name}</p>
+              )}
             </div>
             {listing.notes && (
               <div>

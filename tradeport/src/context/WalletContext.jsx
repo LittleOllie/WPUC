@@ -1,8 +1,12 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const WalletContext = createContext(null);
 
 const ETH_MAINNET = "0x1";
+
+function readAccounts(ethereum) {
+  return ethereum.request({ method: "eth_accounts" });
+}
 
 export function WalletProvider({ children }) {
   const [address, setAddress] = useState(null);
@@ -11,6 +15,50 @@ export function WalletProvider({ children }) {
   const [error, setError] = useState(null);
 
   const hasProvider = typeof window !== "undefined" && !!window.ethereum;
+
+  const applyAccount = useCallback(async (acc) => {
+    setAddress(acc || null);
+    if (!window.ethereum) return;
+    try {
+      const cid = await window.ethereum.request({ method: "eth_chainId" });
+      setChainId(cid);
+      if (cid && cid !== ETH_MAINNET) {
+        setError("TradePort uses Ethereum Mainnet. Switch network in your wallet.");
+      } else if (acc) {
+        setError(null);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!window.ethereum) return;
+    const { ethereum } = window;
+
+    readAccounts(ethereum).then((accounts) => {
+      if (accounts?.[0]) applyAccount(accounts[0]);
+    });
+
+    const onAccounts = (accounts) => {
+      applyAccount(accounts?.[0] || null);
+    };
+    const onChain = (cid) => {
+      setChainId(cid);
+      if (cid && cid !== ETH_MAINNET) {
+        setError("TradePort uses Ethereum Mainnet. Switch network in your wallet.");
+      } else {
+        setError(null);
+      }
+    };
+
+    ethereum.on?.("accountsChanged", onAccounts);
+    ethereum.on?.("chainChanged", onChain);
+    return () => {
+      ethereum.removeListener?.("accountsChanged", onAccounts);
+      ethereum.removeListener?.("chainChanged", onChain);
+    };
+  }, [applyAccount]);
 
   const connect = useCallback(async () => {
     setError(null);
@@ -22,12 +70,7 @@ export function WalletProvider({ children }) {
     try {
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       const acc = accounts?.[0] || null;
-      const cid = await window.ethereum.request({ method: "eth_chainId" });
-      setAddress(acc);
-      setChainId(cid);
-      if (cid && cid !== ETH_MAINNET) {
-        setError("TradePort uses Ethereum Mainnet. Switch network in your wallet.");
-      }
+      await applyAccount(acc);
       return acc;
     } catch (e) {
       setError(e?.message || "Could not connect wallet");
@@ -35,7 +78,7 @@ export function WalletProvider({ children }) {
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [applyAccount]);
 
   const disconnect = useCallback(() => {
     setAddress(null);

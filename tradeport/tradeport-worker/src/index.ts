@@ -14,6 +14,9 @@ const CONTRACT_TO_COLLECTION: Record<string, string> = {
 	'0x9c51a3cb5094b26aa1dcb380f3dc7e1a7c681c2d': 'ddg',
 	'0x1347a97789cd3aa0b11433e8117f55ab640a0451': 'longlost',
 	'0xd4b7d9bb20fa20ddada9ecef8a7355ca983cccb1': 'quirkies',
+	'0xc9d198089d6c31d0ca5cc5b92c97a57a97bbfde2': 'spaceriders',
+	'0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd': 'ogenies',
+	'0x8f1b132e9fd2b9a2b210baa186bf1ae650adf7ac': 'quirklings',
 };
 
 const CORS_HEADERS: Record<string, string> = {
@@ -22,10 +25,10 @@ const CORS_HEADERS: Record<string, string> = {
 	'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
 	return new Response(JSON.stringify(data), {
 		status,
-		headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+		headers: { 'Content-Type': 'application/json', ...CORS_HEADERS, ...extraHeaders },
 	});
 }
 
@@ -99,6 +102,112 @@ function normalizeNft(nft: Record<string, unknown>) {
 		imageUrl,
 		collectionId: CONTRACT_TO_COLLECTION[contractLower] ?? null,
 	};
+}
+
+function shufflePick<T>(arr: T[], count: number): T[] {
+	const copy = [...arr];
+	for (let i = copy.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[copy[i], copy[j]] = [copy[j], copy[i]];
+	}
+	return copy.slice(0, Math.min(count, copy.length));
+}
+
+/** Random NFT previews for a collection contract (home cards, hub showcase fallback). */
+/** Single NFT metadata by contract + token id (mock listing previews). */
+async function fetchNftMetadata(
+	env: Env,
+	contract: string,
+	tokenId: string
+): Promise<Response> {
+	const apiKey = env.ALCHEMY_API_KEY?.trim();
+	if (!apiKey) {
+		return json({ error: 'Missing ALCHEMY_API_KEY' }, 503);
+	}
+
+	const contractVal = contract.trim().toLowerCase();
+	if (!/^0x[a-f0-9]{40}$/.test(contractVal)) {
+		return json({ error: 'Invalid contract address' }, 400);
+	}
+
+	const tokenVal = tokenId.trim();
+	if (!/^\d+$/.test(tokenVal)) {
+		return json({ error: 'Invalid tokenId' }, 400);
+	}
+
+	const base = `https://${ALCHEMY_HOST}/nft/v3/${apiKey}/getNFTMetadata`;
+	const params = new URLSearchParams({
+		contractAddress: contractVal,
+		tokenId: tokenVal,
+	});
+
+	try {
+		const res = await fetch(`${base}?${params.toString()}`);
+		if (!res.ok) {
+			const t = await res.text();
+			return json({ error: t || `Alchemy ${res.status}` }, 502);
+		}
+		const data = (await res.json()) as Record<string, unknown>;
+		const normalized = normalizeNft(data);
+		return json({
+			contract: contractVal,
+			tokenId: tokenVal,
+			nft: normalized,
+		});
+	} catch (e) {
+		return json({ error: e instanceof Error ? e.message : 'Alchemy request failed' }, 502);
+	}
+}
+
+async function fetchCollectionSamples(
+	env: Env,
+	contract: string,
+	count: number
+): Promise<Response> {
+	const apiKey = env.ALCHEMY_API_KEY?.trim();
+	if (!apiKey) {
+		return json({ error: 'Missing ALCHEMY_API_KEY' }, 503);
+	}
+
+	const contractVal = contract.trim().toLowerCase();
+	if (!/^0x[a-f0-9]{40}$/.test(contractVal)) {
+		return json({ error: 'Invalid contract address' }, 400);
+	}
+
+	const limit = Math.min(Math.max(count, 1), 12);
+	const pageSize = Math.min(Math.max(limit * 6, 24), 48);
+	const base = `https://${ALCHEMY_HOST}/nft/v3/${apiKey}/getNFTsForContract`;
+
+	try {
+		const params = new URLSearchParams({
+			contractAddress: contractVal,
+			withMetadata: 'true',
+			pageSize: String(pageSize),
+		});
+		const res = await fetch(`${base}?${params.toString()}`);
+		if (!res.ok) {
+			const t = await res.text();
+			return json({ error: t || `Alchemy ${res.status}` }, 502);
+		}
+		const data = (await res.json()) as Record<string, unknown>;
+		const batch = (data.nfts || []) as Record<string, unknown>[];
+		const normalized = batch
+			.map(normalizeNft)
+			.filter((n) => n.imageUrl && n.contract === contractVal);
+		const picked = shufflePick(normalized, limit);
+		return json(
+			{
+				contract: contractVal,
+				collectionId: CONTRACT_TO_COLLECTION[contractVal] ?? null,
+				nfts: picked,
+				count: picked.length,
+			},
+			200,
+			{ 'Cache-Control': 'public, max-age=300' }
+		);
+	} catch (e) {
+		return json({ error: e instanceof Error ? e.message : 'Alchemy request failed' }, 502);
+	}
 }
 
 async function fetchAlchemyNfts(env: Env, owner: string, contractFilter?: string): Promise<Response> {
@@ -200,12 +309,33 @@ export default {
 			return fetchAlchemyNfts(env, owner, contract);
 		}
 
+		if (path === '/api/collection-samples' && request.method === 'GET') {
+			const contract = url.searchParams.get('contract') || '';
+			const count = Number(url.searchParams.get('count') || '3');
+			return fetchCollectionSamples(env, contract, count);
+		}
+
+		if (path === '/api/nft-metadata' && request.method === 'GET') {
+			const contract = url.searchParams.get('contract') || '';
+			const tokenId = url.searchParams.get('tokenId') || '';
+			return fetchNftMetadata(env, contract, tokenId);
+		}
+
 		if (path === '/api/img' && request.method === 'GET') {
 			const target = url.searchParams.get('url');
 			if (!target) return json({ error: 'Missing url param' }, 400);
 			return proxyImage(target);
 		}
 
-		return json({ error: 'Not found', routes: ['/api/health', '/api/nfts?owner=0x…', '/api/img?url=…'] }, 404);
+		return json({
+			error: 'Not found',
+			routes: [
+				'/api/health',
+				'/api/nfts?owner=0x…',
+				'/api/collection-samples?contract=0x…&count=3',
+				'/api/nft-metadata?contract=0x…&tokenId=1',
+				'/api/img?url=…',
+			],
+		}, 404);
 	},
 } satisfies ExportedHandler<Env>;

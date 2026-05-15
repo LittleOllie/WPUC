@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import ConnectWalletButton from "./ConnectWalletButton";
+import { useWallet } from "../context/WalletContext";
 
 const links = [
   { to: "/", label: "Home", end: true },
@@ -31,6 +32,8 @@ function NavItem({ to, label, end, onClick }) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { isConnected } = useWallet();
+  const navLinks = isConnected ? [...links, { to: "/profile", label: "Profile" }] : links;
 
   return (
     <header className="sticky top-0 z-50 border-b border-tp-border bg-tp-bg/80 backdrop-blur-xl">
@@ -45,7 +48,7 @@ export default function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {links.map((l) => (
+          {navLinks.map((l) => (
             <NavItem key={l.to} {...l} />
           ))}
         </nav>
@@ -80,7 +83,7 @@ export default function Navbar() {
             className="overflow-hidden border-t border-tp-border lg:hidden"
           >
             <div className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto px-4 py-4">
-              {links.map((l) => (
+              {navLinks.map((l) => (
                 <NavItem key={l.to} {...l} onClick={() => setOpen(false)} />
               ))}
               <div className="mt-2" onClick={() => setOpen(false)}>

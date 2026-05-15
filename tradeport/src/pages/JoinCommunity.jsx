@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { collections, getCollectionById } from "../data/collections";
 import { getJoinListingsForCollection } from "../data/listings";
 import CollectionCard from "../components/CollectionCard";
-import NftPreview from "../components/NftPreview";
+import ListingNftPreview from "../components/ListingNftPreview";
 import TradeTypeBadge from "../components/TradeTypeBadge";
 import StatusBadge from "../components/StatusBadge";
 import { VerifiedBadge } from "../components/TrustBadge";
@@ -122,9 +122,8 @@ export default function JoinCommunity() {
                       className="tp-card-lift flex flex-col gap-4 overflow-hidden rounded-2xl border border-white/10 bg-tp-surface/90 sm:flex-row"
                       style={{ boxShadow: `0 8px 32px ${selected.theme.primary}18` }}
                     >
-                      <NftPreview
-                        gradient={l.nftGradient}
-                        label={l.offeringLabel}
+                      <ListingNftPreview
+                        listing={l}
                         className="aspect-square w-full shrink-0 sm:w-36 md:w-44"
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-2 p-4 sm:py-5 sm:pr-5">

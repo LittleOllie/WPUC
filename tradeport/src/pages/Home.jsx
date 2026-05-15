@@ -70,7 +70,9 @@ export default function Home() {
 
       <section className="mt-16 sm:mt-20">
         <h2 className="font-display text-2xl font-bold sm:text-3xl">Supported communities</h2>
-        <p className="mt-2 text-tp-muted">Walk into a community — see the art, feel the vibe, find your match.</p>
+        <p className="mt-2 text-tp-muted">
+          Live art from each collection — random pieces refresh automatically via Alchemy.
+        </p>
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {collections.map((c, i) => (
             <motion.div

@@ -20,6 +20,21 @@ const CARD_STYLES = {
     glowA: "rgba(0, 212, 255, 0.45)",
     glowB: "rgba(255, 79, 163, 0.3)",
   },
+  spaceriders: {
+    overlay: "from-blue-500/15 via-transparent to-orange-500/10",
+    glowA: "rgba(59, 130, 246, 0.5)",
+    glowB: "rgba(249, 115, 22, 0.25)",
+  },
+  ogenies: {
+    overlay: "from-amber-400/15 via-transparent to-purple-600/10",
+    glowA: "rgba(234, 179, 8, 0.45)",
+    glowB: "rgba(168, 85, 247, 0.3)",
+  },
+  quirklings: {
+    overlay: "from-purple-400/15 via-transparent to-emerald-400/10",
+    glowA: "rgba(192, 132, 252, 0.45)",
+    glowB: "rgba(52, 211, 153, 0.25)",
+  },
 };
 
 export default function CollectionCard({ collection, large = false, selected = false }) {
@@ -52,19 +67,26 @@ export default function CollectionCard({ collection, large = false, selected = f
       />
 
       <div className="relative flex flex-col gap-4">
-        <NftStackPreview collection={collection} />
-
-        <div className="flex items-start gap-4">
-          <CollectionLogo collection={collection} className={large ? "h-14 w-14" : "h-12 w-12"} />
-          <div className="min-w-0 flex-1">
-            <h3 className="font-display text-xl font-bold sm:text-2xl">{collection.name}</h3>
-            <p className="mt-0.5 text-sm text-white/55">{collection.chain}</p>
+        <div className="flex flex-col items-center text-center">
+          <div
+            className="relative flex items-center justify-center rounded-2xl p-2"
+            style={{ boxShadow: `0 0 40px ${theme.primary}44` }}
+          >
+            <CollectionLogo
+              collection={collection}
+              className={large ? "h-24 w-24 sm:h-28 sm:w-28" : "h-20 w-20 sm:h-24 sm:w-24"}
+              textClass={large ? "text-3xl" : "text-2xl"}
+            />
           </div>
+          <h3 className="mt-4 font-display text-xl font-bold sm:text-2xl">{collection.name}</h3>
+          <p className="mt-1 text-sm text-white/55">{collection.chain}</p>
         </div>
 
-        <p className="line-clamp-2 text-sm text-white/70">{collection.description}</p>
+        <NftStackPreview collection={collection} className="mx-auto max-w-[280px]" />
 
-        <div className="flex flex-wrap gap-2 text-sm">
+        <p className="line-clamp-2 text-center text-sm text-white/70">{collection.description}</p>
+
+        <div className="flex flex-wrap justify-center gap-2 text-sm">
           <span className="rounded-lg border border-white/10 bg-black/20 px-3 py-1 backdrop-blur-sm">
             <strong className="text-white">{collection.activeTrades}</strong>{" "}
             <span className="text-white/60">active</span>
@@ -75,7 +97,7 @@ export default function CollectionCard({ collection, large = false, selected = f
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap justify-center gap-2 pt-1">
           <Link
             to={`/collection/${collection.id}`}
             className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:opacity-95"
@@ -84,7 +106,7 @@ export default function CollectionCard({ collection, large = false, selected = f
             View Hub
           </Link>
           <Link
-            to={`/trades?collection=${collection.id}`}
+            to={`/trades?involves=${collection.id}`}
             className="tp-btn-ghost rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white"
           >
             Browse Trades

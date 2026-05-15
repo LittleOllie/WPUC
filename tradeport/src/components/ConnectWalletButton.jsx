@@ -1,14 +1,24 @@
+import { Link } from "react-router-dom";
 import { useWallet } from "../context/WalletContext";
+import { useProfile } from "../context/ProfileContext";
 
 export default function ConnectWalletButton({ className = "" }) {
   const { isConnected, shortAddress, isConnecting, connect, disconnect, error } = useWallet();
+  const { needsSetup } = useProfile();
 
   if (isConnected) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <span className="hidden rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 sm:inline">
-          {shortAddress}
-        </span>
+        <Link
+          to="/profile"
+          className={`hidden rounded-lg border px-3 py-2 text-xs font-semibold sm:inline ${
+            needsSetup
+              ? "border-amber-500/40 bg-amber-500/15 text-amber-200"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+          }`}
+        >
+          {needsSetup ? "Set up profile" : shortAddress}
+        </Link>
         <button
           type="button"
           onClick={disconnect}
