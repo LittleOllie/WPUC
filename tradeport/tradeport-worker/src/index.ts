@@ -327,6 +327,24 @@ export default {
 			return proxyImage(target);
 		}
 
+		if (path === '/' || path === '') {
+			const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TradePort API</title>
+<style>body{font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1.5rem;line-height:1.5;color:#e8e8f0;background:#0a0a12}
+a{color:#a78bfa}code{background:#1a1a28;padding:.15rem .4rem;border-radius:.25rem;font-size:.9em}</style></head>
+<body>
+<h1>TradePort API</h1>
+<p>This is the <strong>backend</strong> for TradePort — not the website.</p>
+<p>Open the app: <a href="https://littleollielabs.com/tradeport/">littleollielabs.com/tradeport</a></p>
+<p>Status check: <a href="/api/health"><code>/api/health</code></a></p>
+</body></html>`;
+			return new Response(html, {
+				status: 200,
+				headers: { 'Content-Type': 'text/html; charset=utf-8', ...CORS_HEADERS },
+			});
+		}
+
 		return json({
 			error: 'Not found',
 			routes: [

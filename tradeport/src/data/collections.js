@@ -1,3 +1,5 @@
+import { assetUrl } from "../utils/paths";
+
 export const collections = [
   {
     id: "ddg",
@@ -9,7 +11,7 @@ export const collections = [
     twitter: "https://x.com/DedGorgez",
     discord: "https://discord.gg/u4C6r7d4e6",
     website: "http://DedGorgez.com",
-    logo: "/assets/collections/ddg/DDGLogo.png",
+    logo: assetUrl("assets/collections/ddg/DDGLogo.png"),
     theme: {
       primary: "#e63cb4",
       secondary: "#64d5df",
@@ -41,7 +43,7 @@ export const collections = [
     twitter: "https://x.com/LongLostNFT",
     discord: "",
     website: "https://longlostnft.com",
-    logo: "/assets/collections/longlost/LLLogo.png",
+    logo: assetUrl("assets/collections/longlost/LLLogo.png"),
     theme: {
       primary: "#8b3dff",
       secondary: "#39ff88",
@@ -73,7 +75,7 @@ export const collections = [
     twitter: "https://x.com/quirkiesnft",
     discord: "",
     website: "https://Quirkies.io",
-    logo: "/assets/collections/quirkies/QuirkiesLogo.png",
+    logo: assetUrl("assets/collections/quirkies/QuirkiesLogo.png"),
     theme: {
       primary: "#00d4ff",
       secondary: "#ff4fa3",
@@ -105,7 +107,7 @@ export const collections = [
     twitter: "https://x.com/SpaceRidersXYZ",
     discord: "",
     website: "https://spaceriders.xyz/links",
-    logo: "/assets/collections/spaceriders/SpaceRidersLogo.png",
+    logo: assetUrl("assets/collections/spaceriders/SpaceRidersLogo.png"),
     theme: {
       primary: "#3b82f6",
       secondary: "#f97316",
@@ -137,7 +139,7 @@ export const collections = [
     twitter: "https://x.com/OGTripleMedia",
     discord: "",
     website: "https://linktr.ee/ogtriplemedia",
-    logo: "/assets/collections/ogenies/OGeniesLogo.png",
+    logo: assetUrl("assets/collections/ogenies/OGeniesLogo.png"),
     theme: {
       primary: "#eab308",
       secondary: "#a855f7",
@@ -169,7 +171,7 @@ export const collections = [
     twitter: "https://x.com/quirkiesnft",
     discord: "",
     website: "https://Quirkies.io",
-    logo: "/assets/collections/quirklings/QuirklingsLogo.png",
+    logo: assetUrl("assets/collections/quirklings/QuirklingsLogo.png"),
     theme: {
       primary: "#c084fc",
       secondary: "#34d399",
