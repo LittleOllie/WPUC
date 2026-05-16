@@ -34,6 +34,13 @@
         <h2 class="visually-hidden" id="scan-heading">Scan collection</h2>
 
         <label class="bs-field">
+          <span class="bs-field__label">Quick pick collection</span>
+          <select id="collectionPicker" class="bs-select">
+            <option value="">— Choose a known collection —</option>
+          </select>
+        </label>
+
+        <label class="bs-field">
           <span class="bs-field__label">Collection URL or contract</span>
           <input
             type="text"
@@ -109,6 +116,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="collections.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

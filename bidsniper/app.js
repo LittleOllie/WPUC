@@ -12,6 +12,7 @@
   };
 
   var collectionInput = $("collectionInput");
+  var collectionPicker = $("collectionPicker");
   var scanAmount = $("scanAmount");
   var scanAmountOut = $("scanAmountOut");
   var scanBtn = $("scanBtn");
@@ -39,6 +40,7 @@
   function setScanning(on) {
     scanBtn.disabled = on;
     collectionInput.disabled = on;
+    if (collectionPicker) collectionPicker.disabled = on;
     scanAmount.disabled = on;
     document.querySelectorAll(".bs-chip").forEach(function (btn) {
       btn.disabled = on;
@@ -206,6 +208,69 @@
     requestAnimationFrame(nextBatch);
   }
 
+  function populateCollectionPicker() {
+    if (!collectionPicker || !window.BIDSNIPER_COLLECTIONS) return;
+    var list = window.BIDSNIPER_COLLECTIONS.list || [];
+    list.forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c.contract;
+      opt.textContent = c.name + (c.shortName && c.shortName !== c.name ? " (" + c.shortName + ")" : "");
+      opt.dataset.openSea = c.openSea || "";
+      opt.dataset.chain = c.chain || "eth";
+      collectionPicker.appendChild(opt);
+    });
+  }
+
+  function applyPickerSelection() {
+    if (!collectionPicker) return;
+    var contract = (collectionPicker.value || "").trim();
+    if (!contract) return;
+    collectionInput.value = contract;
+    var chain = collectionPicker.selectedOptions[0]?.dataset?.chain;
+    if (chain === "eth" || chain === "base") {
+      selectedChain = chain;
+      document.querySelectorAll(".bs-chip").forEach(function (btn) {
+        var active = (btn.getAttribute("data-chain") || "") === chain;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+    setHint("");
+  }
+
+  function syncPickerFromInput() {
+    if (!collectionPicker || !window.BIDSNIPER_COLLECTIONS) return;
+    var raw = (collectionInput.value || "").trim();
+    if (!raw) {
+      collectionPicker.value = "";
+      return;
+    }
+    var match = window.BIDSNIPER_COLLECTIONS.getByContract(raw);
+    if (match) {
+      collectionPicker.value = match.contract;
+      return;
+    }
+    try {
+      var url = new URL(raw);
+      if (/opensea\.io/i.test(url.hostname)) {
+        var parts = url.pathname.split("/").filter(Boolean);
+        if (parts[0] === "collection" && parts[1]) {
+          var slug = decodeURIComponent(parts[1]).toLowerCase();
+          var bySlug = window.BIDSNIPER_COLLECTIONS.list.find(function (c) {
+            return (c.openSea || "").toLowerCase().indexOf("/collection/" + slug) !== -1;
+          });
+          if (bySlug) {
+            collectionPicker.value = bySlug.contract;
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      /* not a URL */
+    }
+    collectionPicker.value = "";
+  }
+
   function bindChips() {
     document.querySelectorAll(".bs-chip").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -316,7 +381,12 @@
   collectionInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") runScan();
   });
+  collectionInput.addEventListener("input", syncPickerFromInput);
+  if (collectionPicker) {
+    collectionPicker.addEventListener("change", applyPickerSelection);
+  }
 
+  populateCollectionPicker();
   bindChips();
   showEmpty("No snipes yet", "Run a scan to discover listings below active offers.");
 })();

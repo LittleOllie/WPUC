@@ -1,0 +1,110 @@
+/**
+ * Known on-chain collections across LO Labs apps (TradePort, Web3House).
+ * Merged by contract address — used for BidSniper quick-pick dropdown only.
+ */
+(function (global) {
+  "use strict";
+
+  /** @type {Array<{id:string,name:string,shortName:string,chain:string,contract:string,openSea:string}>} */
+  var COLLECTIONS = [
+    {
+      id: "akidcalledbeast",
+      name: "A Kid Called Beast",
+      shortName: "AKCB",
+      chain: "eth",
+      contract: "0x77372a4cc66063575b05b44481f059be356964a4",
+      openSea: "https://opensea.io/collection/akidcalledbeast",
+    },
+    {
+      id: "call-of-the-stars",
+      name: "Call of the Stars",
+      shortName: "COTS",
+      chain: "eth",
+      contract: "0x11ad9906f148c6b452f9617b350ce5c98660ab1c",
+      openSea: "https://opensea.io/collection/call-of-the-stars",
+    },
+    {
+      id: "ddg",
+      name: "Drop Dead Gorgeous",
+      shortName: "DDG",
+      chain: "eth",
+      contract: "0x9c51a3cb5094b26aa1dcb380f3dc7e1a7c681c2d",
+      openSea: "https://opensea.io/collection/gorgez",
+    },
+    {
+      id: "killabears",
+      name: "Killabears",
+      shortName: "KB",
+      chain: "eth",
+      contract: "0xc99c679c50033bbc5321eb88752e89a93e9e83c5",
+      openSea: "https://opensea.io/collection/killabears",
+    },
+    {
+      id: "longlost",
+      name: "The Long Lost",
+      shortName: "Long Lost",
+      chain: "eth",
+      contract: "0x1347a97789cd3aa0b11433e8117f55ab640a0451",
+      openSea: "https://opensea.io/collection/the-long-lost",
+    },
+    {
+      id: "ogenies",
+      name: "OGenies",
+      shortName: "OGenies",
+      chain: "eth",
+      contract: "0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd",
+      openSea: "https://opensea.io/collection/ogenienft",
+    },
+    {
+      id: "quirklings",
+      name: "Quirklings",
+      shortName: "Quirklings",
+      chain: "eth",
+      contract: "0x8f1b132e9fd2b9a2b210baa186bf1ae650adf7ac",
+      openSea: "https://opensea.io/collection/quirklings",
+    },
+    {
+      id: "quirkies",
+      name: "Quirkies",
+      shortName: "Quirkies",
+      chain: "eth",
+      contract: "0xd4b7d9bb20fa20ddada9ecef8a7355ca983cccb1",
+      openSea: "https://opensea.io/collection/quirkiesoriginals",
+    },
+    {
+      id: "spaceriders",
+      name: "Space Riders",
+      shortName: "Space Riders",
+      chain: "eth",
+      contract: "0xc9d198089d6c31d0ca5cc5b92c97a57a97bbfde2",
+      openSea: "https://opensea.io/collection/spaceriders",
+    },
+  ];
+
+  COLLECTIONS.sort(function (a, b) {
+    return a.name.localeCompare(b.name);
+  });
+
+  function getById(id) {
+    return COLLECTIONS.find(function (c) {
+      return c.id === id;
+    }) || null;
+  }
+
+  function getByContract(contract) {
+    var key = String(contract || "")
+      .trim()
+      .toLowerCase();
+    return (
+      COLLECTIONS.find(function (c) {
+        return c.contract.toLowerCase() === key;
+      }) || null
+    );
+  }
+
+  global.BIDSNIPER_COLLECTIONS = {
+    list: COLLECTIONS,
+    getById: getById,
+    getByContract: getByContract,
+  };
+})(window);

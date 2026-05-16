@@ -192,6 +192,34 @@ body::before {
   box-shadow: var(--lo-shadow-input-focus);
 }
 
+.bs-select {
+  width: 100%;
+  padding: 0.85rem 2.25rem 0.85rem 1rem;
+  font: inherit;
+  font-size: var(--lo-text-body);
+  color: var(--bs-text);
+  background: var(--bs-bg-elevated);
+  border: 3px solid var(--bs-border);
+  border-radius: var(--lo-radius-md);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236de0ff' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  transition: border-color 0.2s var(--bs-ease), box-shadow 0.2s var(--bs-ease);
+}
+
+.bs-select:focus {
+  border-color: var(--lo-yellow);
+  box-shadow: var(--lo-shadow-input-focus);
+}
+
+.bs-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .bs-row {
   display: flex;
   flex-wrap: wrap;

@@ -213,7 +213,7 @@
       parts.push(
         '<a class="showcase-btn showcase-btn--hero showcase-btn--hero-secondary" href="' +
           esc(c.twitter) +
-          '" target="_blank" rel="noopener noreferrer">X / Twitter</a>'
+          '" target="_blank" rel="noopener noreferrer" title="X / Twitter">X</a>'
       );
     }
     if (c.openSea) {
@@ -371,18 +371,11 @@
     };
   }
 
-  function renderBadges(c, stats) {
-    var badges = [];
-    if (stats.chain && stats.chain !== "—") {
-      badges.push('<span class="showcase-badge">' + esc(stats.chain) + "</span>");
-    }
-    if (stats.founded) {
-      badges.push('<span class="showcase-badge">Est. ' + esc(stats.founded) + "</span>");
-    }
-    if (c.studio) {
-      badges.push('<span class="showcase-badge showcase-badge--soft">' + esc(c.studio) + "</span>");
-    }
-    return badges.join("");
+  function renderBadges(c) {
+    if (!c.studio) return "";
+    return (
+      '<span class="showcase-badge showcase-badge--soft">' + esc(c.studio) + "</span>"
+    );
   }
 
   function renderSnapshot(stats) {
@@ -595,7 +588,15 @@
     }
 
     var badgesEl = panel.querySelector("#detailHeroBadges");
-    if (badgesEl) badgesEl.innerHTML = renderBadges(c, stats);
+    var heroInner = panel.querySelector(".detail__hero-inner");
+    if (badgesEl) {
+      var badgeHtml = renderBadges(c);
+      badgesEl.innerHTML = badgeHtml;
+      badgesEl.hidden = !badgeHtml;
+      if (heroInner) {
+        heroInner.classList.toggle("detail__hero-inner--no-badges", !badgeHtml);
+      }
+    }
 
     var actionsEl = panel.querySelector("#detailHeroActions");
     if (actionsEl) actionsEl.innerHTML = renderHeroActions(c, ensureHttps);

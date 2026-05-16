@@ -623,8 +623,7 @@ body.w3h-theme-afterhours .community-card:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hub-atmosphere__particles,
-  .entry__lantern {
+  .hub-atmosphere__particles {
     animation: none;
   }
 

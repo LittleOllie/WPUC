@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="detail-showcase.css" />
   <link rel="stylesheet" href="atmosphere.css" />
+  <link rel="stylesheet" href="entry.css" />
 </head>
 <body class="w3h-theme-clubhouse w3h-time-day">
   <div class="hub-atmosphere" aria-hidden="true">
@@ -33,35 +34,48 @@
 
   <!-- Entry / clubhouse door -->
   <header class="entry" id="entry">
-    <div class="entry__sky" aria-hidden="true"></div>
-    <div class="entry__glow entry__glow--left" aria-hidden="true"></div>
-    <div class="entry__glow entry__glow--right" aria-hidden="true"></div>
+    <div class="entry__atmosphere" aria-hidden="true">
+      <div class="entry__gradient"></div>
+      <div class="entry__noise"></div>
+      <div class="entry__orb entry__orb--a"></div>
+      <div class="entry__orb entry__orb--b"></div>
+      <div class="entry__particles"></div>
+      <div class="entry__stars"></div>
+    </div>
+
+    <div class="entry__orbit" id="entryOrbit" aria-hidden="true">
+      <div class="entry__orbit-track" id="entryOrbitTrack"></div>
+    </div>
 
     <div class="entry__inner">
       <p class="entry__eyebrow">Little Ollie Labs presents</p>
 
-      <div class="entry__logo">
+      <div class="entry__logo entry__logo--float">
         <img
           class="entry__logo-img"
           src="assets/logos/Web3HouseLogo.png"
-          alt="Web3House"
+          alt=""
           width="360"
           height="120"
           fetchpriority="high"
         />
-        <h1 class="entry__title visually-hidden">Web3House</h1>
       </div>
 
-      <p class="entry__tagline">Discover communities worth exploring.</p>
+      <h1 class="entry__headline">
+        <span class="visually-hidden">Web3House — </span>Step inside the clubhouse.
+      </h1>
+      <p class="entry__tagline">A curated home for Web3 communities.</p>
       <p class="entry__intro">
-        Step inside a digital clubhouse built by Little Ollie Labs — a calm, curated place to explore NFT
-        communities we genuinely believe in. No hype feeds. Just framed exhibits, real links, and room to
-        wander.
+        Discover the people shaping internet culture — beyond the floor price. Explore communities we
+        genuinely believe in, with verified links and room to wander at your own pace.
       </p>
 
-      <button type="button" class="btn btn--primary btn--enter" id="enterBtn">
-        Enter Web3House
-      </button>
+      <div class="entry__cta-wrap">
+        <button type="button" class="btn btn--primary btn--enter" id="enterBtn">
+          Enter Web3House
+        </button>
+        <p class="entry__hint">No wallet required to browse</p>
+      </div>
 
       <p class="entry__fine">
         <a href="../links/" class="entry__back">← Little Ollie Labs</a>
@@ -248,7 +262,9 @@
         <section class="showcase-section" id="showcase-voices" aria-labelledby="showcaseVoicesHeading">
           <h3 class="showcase-section__title" id="showcaseVoicesHeading">Community voices</h3>
           <p class="showcase-section__lead">Real members. Real stories. No hype scripts.</p>
-          <div class="showcase-voices" id="detailVoicesTrack" role="list"></div>
+          <div class="showcase-voices-outer">
+            <div class="showcase-voices" id="detailVoicesTrack" role="list"></div>
+          </div>
         </section>
 
         <section class="showcase-section" id="showcase-stay" aria-labelledby="showcaseStayHeading">
@@ -274,16 +290,16 @@
           <div class="showcase-connected-row" id="detailConnectedRow" role="list"></div>
         </section>
 
+        <section class="detail__nft-footer-wrap" id="showcase-art" aria-label="Collection artwork">
+          <div class="detail__gallery-grid detail__gallery-grid--footer" id="detailNftFooter"></div>
+        </section>
+
         <section class="showcase-section showcase-section--web3" id="showcase-web3" aria-labelledby="showcaseWeb3Heading">
           <h3 class="showcase-section__title" id="showcaseWeb3Heading">New to Web3?</h3>
           <p class="showcase-section__lead">
             Friendly basics — no jargon, no pressure. Explore at your own pace.
           </p>
           <div class="showcase-web3" id="detailWeb3Accordion"></div>
-        </section>
-
-        <section class="detail__nft-footer-wrap" id="showcase-art" aria-label="Collection artwork">
-          <div class="detail__gallery-grid detail__gallery-grid--footer" id="detailNftFooter"></div>
         </section>
 
         <footer class="detail__footer">

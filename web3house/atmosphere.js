@@ -243,11 +243,74 @@
     }).join("");
   }
 
+  function initEntryOrbit(communities) {
+    var track = document.getElementById("entryOrbitTrack");
+    if (!track || !communities || !communities.length) return;
+
+    var pool = communities
+      .filter(function (c) {
+        return c.id !== "little-ollie";
+      })
+      .slice();
+
+    pool.sort(function (a, b) {
+      return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+    });
+
+    var items = pool.slice(0, 8);
+    if (!items.length) return;
+
+    var step = 360 / items.length;
+    track.innerHTML = items
+      .map(function (c, i) {
+        var angle = i * step;
+        var logo = c.logo
+          ? '<img src="' + esc(c.logo) + '" alt="" loading="lazy" decoding="async" />'
+          : '<span class="entry__orbit-ph">' + esc(c.logoInitials || c.name.charAt(0)) + "</span>";
+        return (
+          '<div class="entry__orbit-item" style="--orbit-angle:' +
+          angle +
+          "deg;--orbit-delay:" +
+          i * 0.35 +
+          "s;--spin-duration:" +
+          (18 + (i % 4) * 4) +
+          's">' +
+          '<div class="entry__orbit-item__inner">' +
+          logo +
+          "</div></div>"
+        );
+      })
+      .join("");
+  }
+
+  function initEntryParallax() {
+    var entry = document.getElementById("entry");
+    if (!entry) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(max-width: 900px)").matches) return;
+
+    entry.addEventListener(
+      "mousemove",
+      function (e) {
+        var x = ((e.clientX / window.innerWidth) - 0.5) * 14;
+        var y = ((e.clientY / window.innerHeight) - 0.5) * 10;
+        entry.style.setProperty("--entry-parallax-x", x + "px");
+        entry.style.setProperty("--entry-parallax-y", y + "px");
+      },
+      { passive: true }
+    );
+  }
+
   function init(ctx) {
     document.body.classList.add("w3h-theme-clubhouse");
     applyTimeOfDay();
     initTheme();
     setInterval(applyTimeOfDay, 60000);
+
+    if (ctx && ctx.communities) {
+      initEntryOrbit(ctx.communities);
+    }
+    initEntryParallax();
 
     var themeBtn = document.getElementById("themeToggleBtn");
     if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
