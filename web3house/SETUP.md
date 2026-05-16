@@ -13,8 +13,16 @@ Web3House uses the **same Cloudflare Worker as TradePort** for random collection
 Endpoints used:
 
 - `GET /api/collection-samples?contract=0x…&count=6` — random NFTs per collection
+- `GET /api/collection-brand?contract=0x…` — collection logo from OpenSea (no local image file)
 - `GET /api/img?url=…` — image proxy when needed
 - `GET /api/health` — optional status check
+
+For auto-logos (Killabears, A Kid Called Beast, Call of the Stars), set `OPENSEA_API_KEY` on the worker:
+
+```bash
+cd tradeport/tradeport-worker
+wrangler secret put OPENSEA_API_KEY
+```
 
 ## Local dev
 

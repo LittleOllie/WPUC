@@ -184,7 +184,77 @@
       openSea: "https://opensea.io/collection/quirklings",
       hiddenGem: true,
     },
+    {
+      id: "killabears",
+      collectionId: "killabears",
+      contract: "0xc99c679c50033bbc5321eb88752e89a93e9e83c5",
+      theme: { primary: "#ef4444", background: "#0a0508" },
+      name: "Killabears",
+      tagline: "Cute bears. Sharp claws.",
+      description:
+        "Killabears is a bold PFP collection with playful bear art, strong holder culture, and a community that leans into character and lore.",
+      tags: ["PFP", "Art", "Ethereum"],
+      why: [
+        "Distinctive bear characters with memorable traits and display culture.",
+        "Active community across official X and link hubs.",
+        "Easy to verify on OpenSea before you engage.",
+      ],
+      logo: "assets/logos/KBLogo.png",
+      logoInitials: "KB",
+      banner: "linear-gradient(135deg, #ef4444, #1a0a0f)",
+      website: "https://killabears.com/links",
+      twitter: "https://x.com/killabearsnft",
+      openSea: "https://opensea.io/collection/killabears",
+      communityPick: true,
+    },
+    {
+      id: "akidcalledbeast",
+      collectionId: "akidcalledbeast",
+      contract: "0x77372a4cc66063575b05b44481f059be356964a4",
+      theme: { primary: "#f97316", background: "#0c0806" },
+      name: "A Kid Called Beast",
+      tagline: "Beast mode. Collector pride.",
+      description:
+        "A Kid Called Beast is a high-energy NFT community built around expressive beast art, lifestyle culture, and collectors who show up for the brand.",
+      tags: ["Lifestyle", "PFP", "Ethereum"],
+      why: [
+        "Recognizable beast characters with a cohesive visual world.",
+        "Official site and socials for drops, updates, and holder culture.",
+        "Strong crossover energy with collectors exploring new communities.",
+      ],
+      logo: "assets/logos/AKCBLogo.png",
+      logoInitials: "AKCB",
+      banner: "linear-gradient(135deg, #f97316, #0c0806)",
+      website: "https://akidcalledbeast.com",
+      twitter: "https://x.com/akidcalledbeast",
+      openSea: "https://opensea.io/collection/akidcalledbeast",
+      communityPick: true,
+    },
+    {
+      id: "call-of-the-stars",
+      collectionId: "call-of-the-stars",
+      contract: "0x11ad9906f148c6b452f9617b350ce5c98660ab1c",
+      theme: { primary: "#38bdf8", background: "#030712" },
+      name: "Call of the Stars",
+      tagline: "Answer the call.",
+      description:
+        "Call of the Stars is a cosmic NFT collection with stellar art, explorer energy, and a community drawn to space-themed identity and lore.",
+      tags: ["Sci-fi", "Cosmic", "Ethereum"],
+      why: [
+        "Cohesive starfield aesthetic with clear collection identity.",
+        "Holder updates and culture on official X.",
+        "Worth a closer look if you love cosmic PFP worlds.",
+      ],
+      logo: "assets/logos/COTSLogo.png",
+      logoInitials: "COTS",
+      banner: "linear-gradient(135deg, #38bdf8, #030712)",
+      twitter: "https://x.com/CallOfTheStarsX",
+      openSea: "https://opensea.io/collection/call-of-the-stars",
+      hiddenGem: true,
+    },
   ];
+
+  const brandCache = {};
 
   const $ = (sel, root) => (root || document).querySelector(sel);
 
@@ -194,6 +264,81 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function ensureHttps(url) {
+    if (!url) return null;
+    const s = String(url).trim();
+    if (/^https?:\/\//i.test(s)) return s;
+    return "https://" + s.replace(/^\/+/, "");
+  }
+
+  function applyCardLogo(cardEl, c, logoSrc) {
+    const wrap = cardEl?.querySelector(".community-card__logo-wrap");
+    if (!wrap || !logoSrc) return;
+    let img = wrap.querySelector("img.community-card__logo");
+    if (!img) {
+      img = document.createElement("img");
+      img.className = "community-card__logo";
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      const ph = wrap.querySelector(".community-card__logo--placeholder");
+      if (ph) ph.replaceWith(img);
+      else wrap.prepend(img);
+    }
+    img.src = logoSrc;
+    img.alt = c.name;
+    img.onerror = () => {
+      const ph = document.createElement("span");
+      ph.className = "community-card__logo community-card__logo--placeholder";
+      ph.textContent = c.logoInitials || c.name.charAt(0);
+      img.replaceWith(ph);
+    };
+  }
+
+  function applyDetailLogo(c, logoSrc) {
+    const logoEl = $("#detailLogo");
+    if (!logoEl || !logoSrc) return;
+    logoEl.src = logoSrc;
+    logoEl.alt = c.name;
+    logoEl.hidden = false;
+    logoEl.onerror = () => {
+      logoEl.hidden = true;
+    };
+  }
+
+  function hydrateCommunityBrand(c, cardEl) {
+    if (c.logo || !c.contract || !window.Web3HouseApi?.fetchCollectionBrand) {
+      return Promise.resolve();
+    }
+    const key = c.contract.toLowerCase();
+    if (brandCache[key]) {
+      c.logo = brandCache[key];
+      if (cardEl) applyCardLogo(cardEl, c, brandCache[key]);
+      if (currentCommunity?.id === c.id) applyDetailLogo(c, brandCache[key]);
+      return Promise.resolve();
+    }
+    return window.Web3HouseApi.fetchCollectionBrand(c.contract)
+      .then((data) => {
+        const raw = data.imageUrl;
+        if (!raw) return;
+        const url = window.Web3HouseApi.displayImageUrl(raw);
+        if (!url) return;
+        brandCache[key] = url;
+        c.logo = url;
+        if (cardEl) applyCardLogo(cardEl, c, url);
+        if (currentCommunity?.id === c.id) applyDetailLogo(c, url);
+      })
+      .catch(() => {
+        /* keep initials placeholder */
+      });
+  }
+
+  function prefetchCollectionBrands() {
+    COMMUNITIES.filter((c) => c.contract && !c.logo).forEach((c) => {
+      hydrateCommunityBrand(c, null);
+    });
   }
 
   function renderCard(c) {
@@ -241,6 +386,8 @@
     if (window.Web3HouseSamples && (c.contract || c.staticArt)) {
       window.Web3HouseSamples.hydrateCardStrip(el, c);
     }
+
+    hydrateCommunityBrand(c, el);
 
     el.querySelector(".community-card__explore").addEventListener("click", () => openDetail(c.id));
     return el;
@@ -295,11 +442,14 @@
     $("#detailDesc").textContent = c.description;
     $("#detailWhy").innerHTML = c.why.map((item) => `<li>${esc(item)}</li>`).join("");
 
+    hydrateCommunityBrand(c, null);
+
     const linkItems = [];
-    if (c.website) {
+    const websiteHref = ensureHttps(c.website);
+    if (websiteHref) {
       linkItems.push({
         label: c.studio ? c.studio + " links" : "Website",
-        href: c.website,
+        href: websiteHref,
       });
     }
     if (c.twitter) linkItems.push({ label: "X / Twitter", href: c.twitter });
@@ -369,6 +519,7 @@
     if (window.Web3HouseSamples) {
       window.Web3HouseSamples.prefetchAll(COMMUNITIES);
     }
+    prefetchCollectionBrands();
   }
 
   function toggleRecommend(show) {

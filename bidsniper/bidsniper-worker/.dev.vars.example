@@ -1,2 +1,0 @@
-# Copy to .dev.vars (never commit). Get key from https://docs.opensea.io/reference/api-keys
-OPENSEA_API_KEY=your_opensea_api_key_here

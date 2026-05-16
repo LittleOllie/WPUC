@@ -21,6 +21,29 @@
     return base + p;
   }
 
+  function fetchCollectionBrand(contract) {
+    var url = apiUrl(
+      "/api/collection-brand?" +
+        new URLSearchParams({
+          contract: contract,
+        }).toString()
+    );
+    if (!url) {
+      return Promise.reject(new Error("Web3House API not configured"));
+    }
+    return fetch(url)
+      .then(function (res) {
+        return res.json().catch(function () {
+          return {};
+        }).then(function (data) {
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to load collection brand (" + res.status + ")");
+          }
+          return data;
+        });
+      });
+  }
+
   function fetchCollectionSamples(contract, count) {
     var url = apiUrl(
       "/api/collection-samples?" +
@@ -99,6 +122,7 @@
   global.Web3HouseApi = {
     apiUrl: apiUrl,
     getBase: getBase,
+    fetchCollectionBrand: fetchCollectionBrand,
     fetchCollectionSamples: fetchCollectionSamples,
     checkApiHealth: checkApiHealth,
     proxiedImageUrl: proxiedImageUrl,

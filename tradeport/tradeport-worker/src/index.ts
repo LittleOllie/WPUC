@@ -5,7 +5,10 @@
 
 export interface Env {
 	ALCHEMY_API_KEY: string;
+	OPENSEA_API_KEY?: string;
 }
+
+const OPENSEA_BASE = 'https://api.opensea.io/api/v2';
 
 const ALCHEMY_HOST = 'eth-mainnet.g.alchemy.com';
 
@@ -287,6 +290,68 @@ async function fetchAlchemyNfts(env: Env, owner: string, contractFilter?: string
 	return json({ owner: ownerVal, nfts, count: nfts.length });
 }
 
+/** Collection logo + banner from OpenSea (contract → slug → collection metadata). */
+async function fetchCollectionBrand(env: Env, contract: string): Promise<Response> {
+	const contractVal = contract.trim().toLowerCase();
+	if (!/^0x[a-f0-9]{40}$/.test(contractVal)) {
+		return json({ error: 'Invalid contract address' }, 400);
+	}
+
+	const headers: Record<string, string> = { Accept: 'application/json' };
+	const apiKey = env.OPENSEA_API_KEY?.trim();
+	if (apiKey) headers['X-API-KEY'] = apiKey;
+
+	try {
+		const contractRes = await fetch(
+			`${OPENSEA_BASE}/chain/ethereum/contract/${contractVal}`,
+			{ headers }
+		);
+		if (!contractRes.ok) {
+			const t = await contractRes.text();
+			return json(
+				{ error: t || `OpenSea contract lookup ${contractRes.status}` },
+				contractRes.status === 404 ? 404 : 502
+			);
+		}
+		const contractData = (await contractRes.json()) as Record<string, unknown>;
+		const slug =
+			typeof contractData.collection === 'string' ? contractData.collection.trim() : '';
+		if (!slug) {
+			return json({ error: 'No OpenSea collection slug for this contract' }, 404);
+		}
+
+		const collRes = await fetch(`${OPENSEA_BASE}/collections/${encodeURIComponent(slug)}`, {
+			headers,
+		});
+		if (!collRes.ok) {
+			const t = await collRes.text();
+			return json({ error: t || `OpenSea collection ${collRes.status}` }, 502);
+		}
+		const coll = (await collRes.json()) as Record<string, unknown>;
+		const imageUrl = typeof coll.image_url === 'string' ? coll.image_url : null;
+		const bannerImageUrl =
+			typeof coll.banner_image_url === 'string' ? coll.banner_image_url : null;
+		const name =
+			(typeof coll.name === 'string' && coll.name) ||
+			(typeof contractData.name === 'string' && contractData.name) ||
+			slug;
+
+		return json(
+			{
+				contract: contractVal,
+				slug,
+				name,
+				imageUrl,
+				bannerImageUrl,
+			},
+			200,
+			{ 'Cache-Control': 'public, max-age=86400' }
+		);
+	} catch (e) {
+		return json({ error: e instanceof Error ? e.message : 'OpenSea request failed' }, 502);
+	}
+}
+
 async function proxyImage(url: string): Promise<Response> {
 	const u = url.trim();
 	if (!u.startsWith('http://') && !u.startsWith('https://')) {
@@ -326,6 +391,7 @@ export default {
 				ok: true,
 				service: 'tradeport-api',
 				alchemy: !!env.ALCHEMY_API_KEY?.trim(),
+				opensea: !!env.OPENSEA_API_KEY?.trim(),
 			});
 		}
 
@@ -339,6 +405,11 @@ export default {
 			const contract = url.searchParams.get('contract') || '';
 			const count = Number(url.searchParams.get('count') || '3');
 			return fetchCollectionSamples(env, contract, count);
+		}
+
+		if (path === '/api/collection-brand' && request.method === 'GET') {
+			const contract = url.searchParams.get('contract') || '';
+			return fetchCollectionBrand(env, contract);
 		}
 
 		if (path === '/api/nft-metadata' && request.method === 'GET') {
@@ -377,6 +448,7 @@ a{color:#a78bfa}code{background:#1a1a28;padding:.15rem .4rem;border-radius:.25re
 				'/api/health',
 				'/api/nfts?owner=0x…',
 				'/api/collection-samples?contract=0x…&count=3',
+				'/api/collection-brand?contract=0x…',
 				'/api/nft-metadata?contract=0x…&tokenId=1',
 				'/api/img?url=…',
 			],
