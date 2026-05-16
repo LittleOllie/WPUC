@@ -29,7 +29,13 @@
       website: "https://littleollielabs.com/links/",
       twitter: "https://x.com/LittleOllieNFT",
       featured: true,
-      /* Studio brand — no on-chain collection */
+      /* Studio brand — no on-chain collection; use local character art */
+      staticArt: [
+        { tokenId: "11", name: "Little Ollie #11", imageUrl: "assets/logos/LO11.png" },
+        { tokenId: "22", name: "Little Ollie #22", imageUrl: "assets/logos/LO22.png" },
+        { tokenId: "33", name: "Little Ollie #33", imageUrl: "assets/logos/LO33.png" },
+        { tokenId: "44", name: "Little Ollie #44", imageUrl: "assets/logos/LO44.png" },
+      ],
     },
     {
       id: "ogenies",
@@ -232,7 +238,7 @@
       });
     }
 
-    if (window.Web3HouseSamples && c.contract) {
+    if (window.Web3HouseSamples && (c.contract || c.staticArt)) {
       window.Web3HouseSamples.hydrateCardStrip(el, c);
     }
 

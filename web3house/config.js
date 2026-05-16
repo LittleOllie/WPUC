@@ -9,9 +9,12 @@
   "use strict";
 
   var TRADEPORT_WORKER_PROD = "https://tradeport-worker.hermanft-eth.workers.dev";
+  var host = typeof location !== "undefined" ? location.hostname : "";
+  var isLocal = host === "localhost" || host === "127.0.0.1";
 
   global.WEB3HOUSE_CONFIG = {
-    /** Cloudflare Worker base URL (no trailing slash) */
+    /** Cloudflare Worker base URL (no trailing slash) — required on GitHub Pages */
     API_BASE_URL: TRADEPORT_WORKER_PROD,
+    isLocal: isLocal,
   };
 })(window);
