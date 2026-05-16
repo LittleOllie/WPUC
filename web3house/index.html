@@ -20,8 +20,15 @@
   />
   <link rel="stylesheet" href="../styles/site-brand.css" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="detail-showcase.css" />
+  <link rel="stylesheet" href="atmosphere.css" />
 </head>
-<body>
+<body class="w3h-theme-clubhouse w3h-time-day">
+  <div class="hub-atmosphere" aria-hidden="true">
+    <div class="hub-atmosphere__veil"></div>
+    <div class="hub-atmosphere__particles"></div>
+    <div class="hub-atmosphere__stars"></div>
+  </div>
   <a class="skip-link" href="#hub">Skip to communities</a>
 
   <!-- Entry / clubhouse door -->
@@ -69,64 +76,73 @@
 
   <!-- Main hub -->
   <main class="hub" id="hub" tabindex="-1">
-    <div class="hub-sticky" id="hubSticky">
-      <div class="hub__top">
-        <a href="#entry" class="hub__brand" id="hubBrand">
-          <img
-            class="hub__brand-logo"
-            src="assets/logos/Web3HouseLogo.png"
-            alt="Web3House"
-            width="140"
-            height="48"
-          />
-        </a>
-        <p class="hub__byline">by Little Ollie Labs</p>
+    <header class="hub-hero" id="hubHero">
+      <div class="hub-hero__bg" aria-hidden="true">
+        <div class="hub-hero__bg-glow hub-hero__bg-glow--a"></div>
+        <div class="hub-hero__bg-glow hub-hero__bg-glow--b"></div>
       </div>
-
-      <nav class="hub-nav" id="hubNav" aria-label="Jump to section">
-        <ul class="hub-nav__list">
-          <li><a class="hub-nav__link" href="#featured">Featured</a></li>
-          <li><a class="hub-nav__link" href="#discover">Discover</a></li>
-          <li><a class="hub-nav__link" href="#community">Community</a></li>
-          <li><a class="hub-nav__link" href="#gems">Hidden Gems</a></li>
-          <li><a class="hub-nav__link" href="#recommend">Recommend</a></li>
-        </ul>
-      </nav>
-    </div>
-
-    <section class="hub-section" id="featured" aria-labelledby="featuredHeading">
-      <div class="section-head">
-        <h2 id="featuredHeading" class="section-head__title">Featured Communities</h2>
-        <p class="section-head__sub">Curated picks from the clubhouse — communities we visit often.</p>
+      <div class="hub-hero__inner">
+        <div class="hub-hero__row">
+          <div class="hub-hero__brand-block">
+            <a href="#entry" class="hub__brand" id="hubBrand">
+              <img
+                class="hub__brand-logo"
+                src="assets/logos/Web3HouseLogo.png"
+                alt="Web3House"
+                width="140"
+                height="48"
+              />
+            </a>
+            <p class="hub__byline">by Little Ollie Labs</p>
+            <h2 class="hub-hero__welcome">Welcome to Web3House</h2>
+            <p class="hub-hero__tagline">Discover the communities shaping Web3 culture.</p>
+          </div>
+          <div class="hub-hero__actions">
+            <button type="button" class="theme-toggle" id="themeToggleBtn" aria-pressed="false">
+              🌙 After Hours
+            </button>
+          </div>
+        </div>
+        <nav class="hub-nav hub-nav--hero" id="hubNav" aria-label="Jump to section">
+          <ul class="hub-nav__list">
+            <li><a class="hub-nav__link" href="#spotlight">Featured</a></li>
+            <li><a class="hub-nav__link" href="#discover">Explore</a></li>
+            <li><a class="hub-nav__link" href="#new-to-web3">New to Web3</a></li>
+          </ul>
+        </nav>
       </div>
-      <div class="card-row" id="featuredRow" role="list"></div>
+    </header>
+
+    <section class="hub-section hub-section--spotlight" id="spotlight" aria-labelledby="spotlightHeading">
+      <h2 id="spotlightHeading" class="visually-hidden">Featured community</h2>
+      <div class="spotlight-wrap">
+        <div class="spotlight" id="spotlightRoot" role="region" aria-live="polite" aria-label="Featured community spotlight"></div>
+        <div class="spotlight__dots" id="spotlightDots" role="tablist" aria-label="Choose featured community"></div>
+      </div>
     </section>
 
-    <section class="hub-section" id="discover" aria-labelledby="discoverHeading">
+    <section class="hub-section hub-section--explore" id="discover" aria-labelledby="discoverHeading">
       <div class="section-head">
-        <h2 id="discoverHeading" class="section-head__title">Discover Communities</h2>
-        <p class="section-head__sub">Browse the full exhibit wall — tap Explore for details.</p>
+        <h2 id="discoverHeading" class="section-head__title">Explore the clubhouse</h2>
+        <p class="section-head__sub">
+          A small, hand-picked wall of communities we genuinely love — quality over quantity.
+        </p>
       </div>
+      <p class="hub-curate-note">Ten curated rooms. One calm place to wander.</p>
       <div class="card-grid" id="discoverGrid" role="list"></div>
     </section>
 
-    <section class="hub-section" id="community" aria-labelledby="communityHeading">
+    <section class="hub-section hub-section--web3" id="new-to-web3" aria-labelledby="web3Heading">
       <div class="section-head">
-        <h2 id="communityHeading" class="section-head__title">Recommended by the Community</h2>
-        <p class="section-head__sub">Spaces collectors keep pointing us toward.</p>
+        <h2 id="web3Heading" class="section-head__title">New to Web3?</h2>
+        <p class="section-head__sub">
+          Friendly basics — no jargon, no pressure. Explore at your own pace.
+        </p>
       </div>
-      <div class="card-grid card-grid--compact" id="communityGrid" role="list"></div>
+      <div class="hub-web3-grid" id="hubWeb3Grid"></div>
     </section>
 
-    <section class="hub-section" id="gems" aria-labelledby="gemsHeading">
-      <div class="section-head">
-        <h2 id="gemsHeading" class="section-head__title">Hidden Gems</h2>
-        <p class="section-head__sub">Smaller lights with strong culture — worth a closer look.</p>
-      </div>
-      <div class="card-grid card-grid--compact" id="gemsGrid" role="list"></div>
-    </section>
-
-    <section class="hub-section hub-section--cta" id="recommend" aria-labelledby="recommendHeading">
+    <section class="hub-section hub-section--cta hub-section--hidden" id="recommend" aria-labelledby="recommendHeading" hidden>
       <div class="recommend-panel">
         <h2 id="recommendHeading" class="recommend-panel__title">Recommend a Community</h2>
         <p class="recommend-panel__text">
@@ -136,7 +152,6 @@
           Open recommendation form
         </button>
       </div>
-
       <form class="recommend-form" id="recommendForm" hidden>
         <div class="recommend-form__grid">
           <label class="field">
@@ -169,53 +184,150 @@
         or provide financial advice. Always DYOR and use safe marketplace methods where possible.
       </p>
       <p class="hub-footer__copy">© Little Ollie Labs · Web3House</p>
+      <p class="hub-footer__recommend">
+        <a href="#" id="footerRecommendLink">Suggest a community</a> — we read every note.
+      </p>
       <a href="../links/" class="hub-footer__link">← Back to LO Labs</a>
     </footer>
   </main>
 
   <dialog class="detail-modal" id="detailModal" aria-labelledby="detailTitle">
     <article class="detail" id="detailPanel">
-      <header class="detail__banner" id="detailBanner">
+      <div class="detail__ambient" aria-hidden="true">
+        <div class="detail__watermark" id="detailWatermark"></div>
+        <div class="detail__particles"></div>
+        <div class="detail__glow detail__glow--a"></div>
+        <div class="detail__glow detail__glow--b"></div>
+      </div>
+
+      <header class="detail__hero" id="showcase-hero">
         <button type="button" class="detail__close" id="detailClose" aria-label="Close community details">
           ×
         </button>
-        <div class="detail__hero">
+        <nav class="detail-showcase-nav" aria-label="Community page sections">
+          <ul class="detail-showcase-nav__list">
+            <li><a class="detail-showcase-nav__link" href="#showcase-about">About</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-founder">Founder</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-voices">Voices</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-stay">Culture</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-snapshot">Snapshot</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-connected">Related</a></li>
+            <li><a class="detail-showcase-nav__link" href="#showcase-web3">New?</a></li>
+          </ul>
+        </nav>
+        <div class="detail__hero-inner">
           <div class="detail__logo-wrap">
-            <img class="detail__logo" id="detailLogo" src="" alt="" width="96" height="96" />
+            <img class="detail__logo" id="detailLogo" src="" alt="" width="112" height="112" />
           </div>
           <div class="detail__hero-text">
+            <div class="detail__hero-badges" id="detailHeroBadges"></div>
             <h2 class="detail__title" id="detailTitle"></h2>
             <p class="detail__tagline" id="detailTagline"></p>
+            <div class="detail__hero-actions" id="detailHeroActions"></div>
           </div>
         </div>
       </header>
-      <div class="detail__body">
-        <p class="detail__desc" id="detailDesc"></p>
 
-        <section class="detail__block">
-          <h3 class="detail__heading">Why we like this community</h3>
-          <ul class="detail__list" id="detailWhy"></ul>
-        </section>
-
-        <div class="detail__links" id="detailLinks"></div>
-
-        <section class="detail__block detail__gallery">
-          <div class="detail__gallery-head">
-            <h3 class="detail__heading">Gallery</h3>
-            <button type="button" class="btn btn--ghost btn--sm" id="galleryRefreshBtn" hidden>
-              Refresh art
-            </button>
-          </div>
-          <p class="detail__gallery-note" id="detailGalleryNote">
-            Random pieces from the collection load here when you explore a community.
-          </p>
-          <div class="detail__gallery-grid" id="detailGallery"></div>
-        </section>
-
-        <button type="button" class="btn btn--primary detail__back" id="detailBackBtn">
-          ← Back to hub
-        </button>
+      <div class="detail__nft-band" id="detailNftBand" aria-label="Collection art preview">
+        <div class="detail__nft-band-track" id="detailNftCarousel"></div>
       </div>
+
+      <div class="detail__scroll" id="detailScroll">
+        <section class="showcase-section" id="showcase-about" aria-labelledby="showcaseAboutHeading">
+          <h3 class="showcase-section__title" id="showcaseAboutHeading">About the community</h3>
+          <p class="showcase-section__lead">Culture, identity, and what makes this space worth exploring.</p>
+          <div class="showcase-prose" id="detailAboutContent"></div>
+        </section>
+
+        <section class="showcase-section" id="showcase-founder" aria-labelledby="showcaseFounderHeading">
+          <h3 class="showcase-section__title" id="showcaseFounderHeading">Message from the founder</h3>
+          <p class="showcase-section__lead">A warm welcome — whether you're new or already part of the family.</p>
+          <div class="showcase-founder" id="detailFounderCard"></div>
+        </section>
+
+        <section class="showcase-section" id="showcase-voices" aria-labelledby="showcaseVoicesHeading">
+          <h3 class="showcase-section__title" id="showcaseVoicesHeading">Community voices</h3>
+          <p class="showcase-section__lead">Real members. Real stories. No hype scripts.</p>
+          <div class="showcase-voices" id="detailVoicesTrack" role="list"></div>
+        </section>
+
+        <section class="showcase-section" id="showcase-stay" aria-labelledby="showcaseStayHeading">
+          <h3 class="showcase-section__title" id="showcaseStayHeading">Why people stay</h3>
+          <p class="showcase-section__lead">Friendships, creativity, and culture — not charts.</p>
+          <div class="showcase-stay-grid" id="detailStayGrid"></div>
+        </section>
+
+        <section class="showcase-section showcase-section--join" id="showcase-join" aria-labelledby="showcaseJoinHeading" hidden>
+          <h3 class="visually-hidden" id="showcaseJoinHeading">Join the community</h3>
+          <div class="showcase-join" id="detailJoinCta"></div>
+        </section>
+
+        <section class="showcase-section showcase-section--muted" id="showcase-snapshot" aria-labelledby="showcaseSnapshotHeading">
+          <h3 class="showcase-section__title" id="showcaseSnapshotHeading">Quick snapshot</h3>
+          <p class="showcase-section__lead">Helpful context — secondary to the community story.</p>
+          <div class="showcase-stats" id="detailSnapshotGrid"></div>
+        </section>
+
+        <section class="showcase-section" id="showcase-connected" aria-labelledby="showcaseConnectedHeading">
+          <h3 class="showcase-section__title" id="showcaseConnectedHeading">Connected communities</h3>
+          <p class="showcase-section__lead">Aligned vibes and overlapping culture you may also enjoy.</p>
+          <div class="showcase-connected-row" id="detailConnectedRow" role="list"></div>
+        </section>
+
+        <section class="showcase-section showcase-section--web3" id="showcase-web3" aria-labelledby="showcaseWeb3Heading">
+          <h3 class="showcase-section__title" id="showcaseWeb3Heading">New to Web3?</h3>
+          <p class="showcase-section__lead">
+            Friendly basics — no jargon, no pressure. Explore at your own pace.
+          </p>
+          <div class="showcase-web3" id="detailWeb3Accordion"></div>
+        </section>
+
+        <section class="detail__nft-footer-wrap" id="showcase-art" aria-label="Collection artwork">
+          <div class="detail__gallery-grid detail__gallery-grid--footer" id="detailNftFooter"></div>
+        </section>
+
+        <footer class="detail__footer">
+          <button type="button" class="showcase-btn showcase-btn--primary detail__back" id="detailBackBtn">
+            ← Back to hub
+          </button>
+          <p class="detail__footer-note">
+            Web3House is a curated discovery hub — not a marketplace or financial advice.
+          </p>
+        </footer>
+      </div>
+    </article>
+  </dialog>
+
+  <dialog class="join-community-modal" id="joinCommunityModal" aria-labelledby="joinCommunityTitle">
+    <article class="join-community-modal__panel">
+      <button type="button" class="join-community-modal__close" id="joinCommunityClose" aria-label="Close verified links">
+        ×
+      </button>
+      <header class="join-community-modal__hero" id="joinCommunityHero">
+        <div class="join-community-modal__glow" aria-hidden="true"></div>
+        <div class="join-community-modal__logo-wrap" id="joinCommunityLogo">
+          <img
+            class="join-community-modal__logo"
+            id="joinCommunityLogoImg"
+            src=""
+            alt=""
+            width="80"
+            height="80"
+            hidden
+          />
+          <span class="join-community-modal__logo-ph" id="joinCommunityLogoPh" hidden aria-hidden="true"></span>
+        </div>
+        <p class="join-community-modal__verified">
+          <span class="join-community-modal__verified-icon" aria-hidden="true">✓</span>
+          Verified links
+        </p>
+        <h3 class="join-community-modal__title" id="joinCommunityTitle">Join community</h3>
+        <p class="join-community-modal__tagline" id="joinCommunityTagline" hidden></p>
+        <p class="join-community-modal__lead" id="joinCommunityLead">
+          Official channels only — bookmark these for a safe, welcoming start.
+        </p>
+      </header>
+      <nav class="join-community-modal__links" id="joinCommunityLinks" aria-label="Official community links"></nav>
     </article>
   </dialog>
 
@@ -223,6 +335,8 @@
   <script src="api.js"></script>
   <script src="nft-images.js"></script>
   <script src="nft-samples.js"></script>
+  <script src="collection-showcase.js"></script>
+  <script src="atmosphere.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

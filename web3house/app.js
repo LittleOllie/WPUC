@@ -25,6 +25,8 @@
         "Partners with OG Triple Media, Drop Dead Gorgeous, and communities we proudly showcase here.",
       ],
       logo: "assets/logos/little-ollie.webp",
+      logoInitials: "LO",
+      theme: { primary: "#6de0ff", background: "#0a1020" },
       banner: "linear-gradient(135deg, #6de0ff, #4c6fff)",
       website: "https://littleollielabs.com/links/",
       twitter: "https://x.com/LittleOllieNFT",
@@ -273,9 +275,23 @@
     return "https://" + s.replace(/^\/+/, "");
   }
 
+  function applyCardWatermark(cardEl, logoSrc) {
+    const wm = cardEl?.querySelector(".community-card__watermark");
+    if (!wm) return;
+    if (logoSrc) {
+      wm.style.backgroundImage =
+        'url("' + String(logoSrc).replace(/"/g, "%22") + '")';
+      wm.classList.add("is-visible");
+    } else {
+      wm.style.backgroundImage = "";
+      wm.classList.remove("is-visible");
+    }
+  }
+
   function applyCardLogo(cardEl, c, logoSrc) {
     const wrap = cardEl?.querySelector(".community-card__logo-wrap");
     if (!wrap || !logoSrc) return;
+    applyCardWatermark(cardEl, logoSrc);
     let img = wrap.querySelector("img.community-card__logo");
     if (!img) {
       img = document.createElement("img");
@@ -306,6 +322,9 @@
     logoEl.onerror = () => {
       logoEl.hidden = true;
     };
+    if (window.Web3HouseShowcase) {
+      window.Web3HouseShowcase.setWatermark($("#detailWatermark"), logoSrc);
+    }
   }
 
   function hydrateCommunityBrand(c, cardEl) {
@@ -315,7 +334,10 @@
     const key = c.contract.toLowerCase();
     if (brandCache[key]) {
       c.logo = brandCache[key];
-      if (cardEl) applyCardLogo(cardEl, c, brandCache[key]);
+      if (cardEl) {
+        applyCardLogo(cardEl, c, brandCache[key]);
+        applyCardWatermark(cardEl, brandCache[key]);
+      }
       if (currentCommunity?.id === c.id) applyDetailLogo(c, brandCache[key]);
       return Promise.resolve();
     }
@@ -327,7 +349,10 @@
         if (!url) return;
         brandCache[key] = url;
         c.logo = url;
-        if (cardEl) applyCardLogo(cardEl, c, url);
+        if (cardEl) {
+          applyCardLogo(cardEl, c, url);
+          applyCardWatermark(cardEl, url);
+        }
         if (currentCommunity?.id === c.id) applyDetailLogo(c, url);
       })
       .catch(() => {
@@ -352,6 +377,7 @@
     el.className = "community-card";
     el.setAttribute("role", "listitem");
     el.innerHTML = `
+      <div class="community-card__watermark" aria-hidden="true"></div>
       <div class="community-card__frame">
         <div class="community-card__logo-wrap">${logo}</div>
         <h3 class="community-card__name">${esc(c.name)}</h3>
@@ -380,8 +406,11 @@
         ph.className = "community-card__logo community-card__logo--placeholder";
         ph.textContent = c.logoInitials || c.name.charAt(0);
         img.replaceWith(ph);
+        applyCardWatermark(el, null);
       });
     }
+
+    if (c.logo) applyCardWatermark(el, c.logo);
 
     if (window.Web3HouseSamples && (c.contract || c.staticArt)) {
       window.Web3HouseSamples.hydrateCardStrip(el, c);
@@ -394,111 +423,86 @@
   }
 
   function mountCards() {
-    const featuredRow = $("#featuredRow");
     const discoverGrid = $("#discoverGrid");
-    const communityGrid = $("#communityGrid");
-    const gemsGrid = $("#gemsGrid");
-
-    COMMUNITIES.filter((c) => c.featured).forEach((c) => featuredRow.appendChild(renderCard(c)));
+    if (!discoverGrid) return;
+    discoverGrid.innerHTML = "";
     COMMUNITIES.forEach((c) => discoverGrid.appendChild(renderCard(c)));
-    COMMUNITIES.filter((c) => c.communityPick).forEach((c) => communityGrid.appendChild(renderCard(c)));
-    COMMUNITIES.filter((c) => c.hiddenGem).forEach((c) => gemsGrid.appendChild(renderCard(c)));
+  }
+
+  function openRecommendMailto() {
+    const subject = encodeURIComponent("Web3House community recommendation");
+    const body = encodeURIComponent(
+      "Hi Little Ollie Labs,\n\nI'd like to recommend a community for Web3House:\n\nName:\nLink:\nWhy:\n\nThanks!"
+    );
+    window.location.href = "mailto:" + MAILTO + "?subject=" + subject + "&body=" + body;
   }
 
   var currentCommunity = null;
 
+  function scrollDetailToTop() {
+    const scrollRoot = $("#detailScroll");
+    if (!scrollRoot) return;
+    scrollRoot.scrollTop = 0;
+    scrollRoot.scrollLeft = 0;
+    requestAnimationFrame(() => {
+      scrollRoot.scrollTop = 0;
+      requestAnimationFrame(() => {
+        scrollRoot.scrollTop = 0;
+      });
+    });
+  }
+
+  function loadDetailArt(c) {
+    if (!window.Web3HouseSamples) return;
+    window.Web3HouseSamples.loadCarousel(
+      c,
+      $("#detailNftCarousel"),
+      $("#detailNftBand")
+    );
+    window.Web3HouseSamples.loadFooterGallery(c, $("#detailNftFooter"));
+  }
+
   function openDetail(id) {
     const c = COMMUNITIES.find((x) => x.id === id);
     const detailModal = $("#detailModal");
-    if (!c || !detailModal) return;
+    const panel = $("#detailPanel");
+    if (!c || !detailModal || !panel) return;
+
+    const wasOpen = detailModal.open || detailModal.hasAttribute("open");
     currentCommunity = c;
 
-    const banner = $("#detailBanner");
-    if (banner) banner.style.background = c.banner;
+    scrollDetailToTop();
 
-    const logoEl = $("#detailLogo");
-    if (logoEl) {
-      if (c.logo) {
-        logoEl.src = c.logo;
-        logoEl.alt = c.name;
-        logoEl.hidden = false;
-        logoEl.onerror = () => {
-          logoEl.hidden = true;
-        };
+    if (window.Web3HouseShowcase) {
+      window.Web3HouseShowcase.populate({
+        community: c,
+        panel: panel,
+        allCommunities: COMMUNITIES,
+        ensureHttps: ensureHttps,
+        onExplore: openDetail,
+      });
+    }
+
+    hydrateCommunityBrand(c, null);
+    loadDetailArt(c);
+
+    scrollDetailToTop();
+
+    if (!wasOpen) {
+      if (typeof detailModal.showModal === "function") {
+        detailModal.showModal();
       } else {
-        logoEl.hidden = true;
+        detailModal.setAttribute("open", "");
       }
     }
 
-    $("#detailTitle").textContent = c.name;
-
-    const tagline = $("#detailTagline");
-    const taglineParts = [];
-    if (c.studio) taglineParts.push("Collection from " + c.studio);
-    if (c.tagline) taglineParts.push(c.tagline);
-    tagline.textContent = taglineParts.join(" · ");
-    tagline.hidden = !taglineParts.length;
-
-    $("#detailDesc").textContent = c.description;
-    $("#detailWhy").innerHTML = c.why.map((item) => `<li>${esc(item)}</li>`).join("");
-
-    hydrateCommunityBrand(c, null);
-
-    const linkItems = [];
-    const websiteHref = ensureHttps(c.website);
-    if (websiteHref) {
-      linkItems.push({
-        label: c.studio ? c.studio + " links" : "Website",
-        href: websiteHref,
-      });
-    }
-    if (c.twitter) linkItems.push({ label: "X / Twitter", href: c.twitter });
-    if (c.discord) linkItems.push({ label: "Discord", href: c.discord });
-    if (c.openSea) linkItems.push({ label: "OpenSea", href: c.openSea });
-    if (c.magicEden) linkItems.push({ label: "Magic Eden", href: c.magicEden });
-
-    $("#detailLinks").innerHTML = linkItems
-      .map(
-        (l) =>
-          `<a class="detail__link" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}</a>`
-      )
-      .join("");
-
-    var galleryRefreshBtn = $("#galleryRefreshBtn");
-    if (window.Web3HouseSamples) {
-      window.Web3HouseSamples.loadGallery(
-        c,
-        $("#detailGallery"),
-        $("#detailGalleryNote"),
-        galleryRefreshBtn
-      );
-    }
-
-    if (galleryRefreshBtn && !galleryRefreshBtn.dataset.bound) {
-      galleryRefreshBtn.dataset.bound = "1";
-      galleryRefreshBtn.addEventListener("click", function () {
-        galleryRefreshBtn.dataset.force = "1";
-        if (window.Web3HouseSamples && currentCommunity) {
-          window.Web3HouseSamples.loadGallery(
-            currentCommunity,
-            $("#detailGallery"),
-            $("#detailGalleryNote"),
-            galleryRefreshBtn
-          );
-        }
-      });
-    }
-
-    if (typeof detailModal.showModal === "function") {
-      detailModal.showModal();
-    } else {
-      detailModal.setAttribute("open", "");
-    }
+    scrollDetailToTop();
 
     history.replaceState(null, "", "#community-" + c.id);
   }
 
   function closeDetail() {
+    window.Web3HouseShowcase?.closeJoinModal?.();
     const detailModal = $("#detailModal");
     if (!detailModal) return;
     if (typeof detailModal.close === "function") {
@@ -633,11 +637,12 @@
     $("#recommendForm")?.addEventListener("submit", handleRecommendSubmit);
 
     const hash = location.hash;
-    const hubSectionHashes = ["#hub", "#featured", "#discover", "#community", "#gems", "#recommend"];
+    const hubSectionHashes = ["#hub", "#spotlight", "#discover", "#new-to-web3", "#featured"];
     if (hubSectionHashes.includes(hash) || hash.startsWith("#community-")) {
       document.body.classList.add("hub-visible", "hub-active");
       if (hash !== "#hub" && hubSectionHashes.includes(hash)) {
-        requestAnimationFrame(() => scrollToSection(hash));
+        const scrollTarget = hash === "#featured" ? "#spotlight" : hash;
+        requestAnimationFrame(() => scrollToSection(scrollTarget));
       }
       const id = hash.replace("#community-", "");
       if (id && COMMUNITIES.some((c) => c.id === id)) {
@@ -649,5 +654,12 @@
   document.addEventListener("DOMContentLoaded", () => {
     mountCards();
     bindEvents();
+    if (window.Web3HouseAtmosphere) {
+      window.Web3HouseAtmosphere.init({
+        communities: COMMUNITIES,
+        openDetail: openDetail,
+        openRecommend: openRecommendMailto,
+      });
+    }
   });
 })();

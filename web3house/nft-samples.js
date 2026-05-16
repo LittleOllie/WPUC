@@ -15,6 +15,35 @@
     return contract.toLowerCase() + ":" + count;
   }
 
+  var OPENSEA_CHAIN = "ethereum";
+
+  function buildNftOpenSeaUrl(community, item) {
+    if (!community || !item) return null;
+    var tokenId = item.tokenId != null ? String(item.tokenId).trim() : "";
+    if (!tokenId) return null;
+    var contract = (item.contract || community.contract || "").toLowerCase();
+    if (!/^0x[a-f0-9]{40}$/.test(contract)) return null;
+    return (
+      "https://opensea.io/assets/" + OPENSEA_CHAIN + "/" + contract + "/" + encodeURIComponent(tokenId)
+    );
+  }
+
+  function maybeWrapOpenSea(el, community, item) {
+    var url = buildNftOpenSeaUrl(community, item);
+    if (!url) return el;
+    var link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "w3h-nft-opensea-link";
+    link.setAttribute(
+      "aria-label",
+      "View " + (item.name || "this NFT") + " on OpenSea"
+    );
+    link.appendChild(el);
+    return link;
+  }
+
   function mapNft(nft, community) {
     var candidates = Img.buildNftImageCandidates({
       collectionId: community.collectionId,
@@ -22,6 +51,7 @@
       imageUrl: nft.imageUrl,
     });
     return {
+      contract: nft.contract || community.contract || null,
       tokenId: nft.tokenId,
       name: nft.name || "#" + nft.tokenId,
       imageUrl: candidates[0] || null,
@@ -67,15 +97,25 @@
       .map(mapStaticArtItem);
   }
 
-  function renderStripItems(strip, items) {
+  function renderStripItems(strip, items, community) {
     strip.innerHTML = "";
     if (!items.length) {
       fillStripPlaceholders(strip);
       return;
     }
     items.forEach(function (item) {
-      var cell = document.createElement("div");
-      cell.className = "community-card__nft-cell";
+      var url = buildNftOpenSeaUrl(community, item);
+      var cell = document.createElement(url ? "a" : "div");
+      cell.className = "community-card__nft-cell" + (url ? " w3h-nft-opensea-link" : "");
+      if (url) {
+        cell.href = url;
+        cell.target = "_blank";
+        cell.rel = "noopener noreferrer";
+        cell.setAttribute(
+          "aria-label",
+          "View " + (item.name || "this NFT") + " on OpenSea"
+        );
+      }
       if (item.imageUrl || (item.imageCandidates && item.imageCandidates.length)) {
         var img = Img.createNftImage({
           imageUrl: item.imageUrl,
@@ -159,7 +199,7 @@
     if (!strip) return;
 
     if (community.staticArt && community.staticArt.length) {
-      renderStripItems(strip, staticArtSamples(community, 3));
+      renderStripItems(strip, staticArtSamples(community, 3), community);
       return;
     }
 
@@ -171,11 +211,140 @@
     strip.innerHTML = '<span class="community-card__nft-loading">Loading art…</span>';
 
     fetchSamples(community, 3).then(function (items) {
-      renderStripItems(strip, items);
+      renderStripItems(strip, items, community);
     });
   }
 
-  /** Detail modal gallery (6 NFTs) */
+  function createGalleryTile(item, community) {
+    var tile = document.createElement("figure");
+    tile.className = "detail__gallery-tile detail__gallery-tile--live";
+
+    if (item.imageUrl || (item.imageCandidates && item.imageCandidates.length)) {
+      var img = Img.createNftImage({
+        imageUrl: item.imageUrl,
+        imageCandidates: item.imageCandidates,
+        alt: item.name,
+        className: "detail__gallery-img",
+        loading: "lazy",
+        onFailed: function () {
+          tile.classList.add("detail__gallery-tile--empty");
+        },
+      });
+      tile.appendChild(img);
+    } else {
+      tile.classList.add("detail__gallery-tile--empty");
+    }
+
+    var cap = document.createElement("figcaption");
+    cap.className = "detail__gallery-cap";
+    cap.textContent = item.name;
+    tile.appendChild(cap);
+    return maybeWrapOpenSea(tile, community, item);
+  }
+
+  function createCarouselSlide(item, community) {
+    var slide = document.createElement("figure");
+    slide.className = "detail__nft-band-slide";
+    if (item.imageUrl || (item.imageCandidates && item.imageCandidates.length)) {
+      var img = Img.createNftImage({
+        imageUrl: item.imageUrl,
+        imageCandidates: item.imageCandidates,
+        alt: item.name,
+        className: "detail__nft-band-img",
+        loading: "lazy",
+        onFailed: function () {
+          slide.classList.add("detail__nft-band-slide--empty");
+        },
+      });
+      slide.appendChild(img);
+    } else {
+      slide.classList.add("detail__nft-band-slide--empty");
+    }
+    return maybeWrapOpenSea(slide, community, item);
+  }
+
+  /** Slow auto-scroll band below hero */
+  function loadCarousel(community, trackEl, bandEl) {
+    if (!trackEl) return;
+
+    trackEl.innerHTML = "";
+    trackEl.style.animation = "none";
+    if (bandEl) bandEl.classList.add("detail__nft-band--loading");
+
+    var count = 10;
+    if (community.staticArt && community.staticArt.length) {
+      count = Math.max(community.staticArt.length, 8);
+    }
+
+    fetchSamples(community, count).then(function (items) {
+      trackEl.innerHTML = "";
+      if (bandEl) bandEl.classList.remove("detail__nft-band--loading");
+
+      if (!items.length) {
+        if (bandEl) bandEl.hidden = true;
+        return;
+      }
+      if (bandEl) bandEl.hidden = false;
+
+      var row = document.createElement("div");
+      row.className = "detail__nft-band-row";
+      var bandItems = items.slice();
+      while (bandItems.length < 8 && items.length) {
+        bandItems = bandItems.concat(items);
+      }
+      bandItems.forEach(function (item) {
+        row.appendChild(createCarouselSlide(item, community));
+      });
+      var clone = row.cloneNode(true);
+      clone.setAttribute("aria-hidden", "true");
+      trackEl.appendChild(row);
+      trackEl.appendChild(clone);
+
+      requestAnimationFrame(function () {
+        trackEl.style.animation = "";
+      });
+    });
+  }
+
+  /** NFT grid at bottom of detail modal */
+  function loadFooterGallery(community, gridEl) {
+    if (!gridEl) return;
+
+    var count = 6;
+    gridEl.innerHTML = "";
+
+    if (community.staticArt && community.staticArt.length) {
+      staticArtSamples(community, Math.min(count, community.staticArt.length)).forEach(function (item) {
+        gridEl.appendChild(createGalleryTile(item, community));
+      });
+      return;
+    }
+
+    if (!community.contract) {
+      gridEl.hidden = true;
+      return;
+    }
+
+    gridEl.hidden = false;
+    for (var i = 0; i < count; i++) {
+      var sk = document.createElement("div");
+      sk.className = "detail__gallery-tile detail__gallery-tile--loading";
+      gridEl.appendChild(sk);
+    }
+
+    fetchSamples(community, count).then(function (items) {
+      gridEl.innerHTML = "";
+      if (!items.length) {
+        gridEl.hidden = true;
+        return;
+      }
+      items.forEach(function (item) {
+        gridEl.appendChild(createGalleryTile(item, community));
+      });
+    });
+  }
+
+  /** Detail modal gallery (6 NFTs) — legacy */
   function loadGallery(community, gridEl, noteEl, refreshBtn) {
     if (!gridEl) return;
 
@@ -190,24 +359,7 @@
       }
       if (refreshBtn) refreshBtn.hidden = false;
       staticItems.forEach(function (item) {
-        var tile = document.createElement("figure");
-        tile.className = "detail__gallery-tile detail__gallery-tile--live";
-        var img = Img.createNftImage({
-          imageUrl: item.imageUrl,
-          imageCandidates: item.imageCandidates,
-          alt: item.name,
-          className: "detail__gallery-img",
-          loading: "lazy",
-          onFailed: function () {
-            tile.classList.add("detail__gallery-tile--empty");
-          },
-        });
-        tile.appendChild(img);
-        var cap = document.createElement("figcaption");
-        cap.className = "detail__gallery-cap";
-        cap.textContent = item.name;
-        tile.appendChild(cap);
-        gridEl.appendChild(tile);
+        gridEl.appendChild(createGalleryTile(item, community));
       });
       return;
     }
@@ -255,30 +407,7 @@
         noteEl.textContent = "Random pieces from the collection — refreshes when you reopen or tap Refresh.";
       }
       items.forEach(function (item) {
-        var tile = document.createElement("figure");
-        tile.className = "detail__gallery-tile detail__gallery-tile--live";
-
-        if (item.imageUrl || (item.imageCandidates && item.imageCandidates.length)) {
-          var img = Img.createNftImage({
-            imageUrl: item.imageUrl,
-            imageCandidates: item.imageCandidates,
-            alt: item.name,
-            className: "detail__gallery-img",
-            loading: "lazy",
-            onFailed: function () {
-              tile.classList.add("detail__gallery-tile--empty");
-            },
-          });
-          tile.appendChild(img);
-        } else {
-          tile.classList.add("detail__gallery-tile--empty");
-        }
-
-        var cap = document.createElement("figcaption");
-        cap.className = "detail__gallery-cap";
-        cap.textContent = item.name;
-        tile.appendChild(cap);
-        gridEl.appendChild(tile);
+        gridEl.appendChild(createGalleryTile(item, community));
       });
     });
   }
@@ -294,6 +423,8 @@
   global.Web3HouseSamples = {
     fetchSamples: fetchSamples,
     hydrateCardStrip: hydrateCardStrip,
+    loadCarousel: loadCarousel,
+    loadFooterGallery: loadFooterGallery,
     loadGallery: loadGallery,
     prefetchAll: prefetchAll,
     clearCache: function (contract, count) {
