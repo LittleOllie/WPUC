@@ -4,44 +4,6 @@
 (function (global) {
   "use strict";
 
-  var NEW_TO_WEB3_TOPICS = [
-    {
-      title: "What is an NFT?",
-      body:
-        "Think of NFTs like digital collectibles that can unlock communities, art, games, events, and friendships online. Each one is unique — like a concert ticket or trading card, but digital.",
-    },
-    {
-      title: "What is a wallet?",
-      body:
-        "A wallet is your personal keyring for the internet. It holds the keys to your digital items — not a bank account. You choose when to connect and what to share.",
-    },
-    {
-      title: "Staying safe online",
-      body:
-        "Never share your secret recovery phrase with anyone — ever. Real teams will never DM you first asking for money or passwords. When in doubt, pause and ask a friend.",
-    },
-    {
-      title: "Avoiding scams",
-      body:
-        "If a link feels rushed, too good to be true, or comes from a random account, slow down. Scammers copy official pages. Bookmark the real site yourself.",
-    },
-    {
-      title: "Official links only",
-      body:
-        "Use the buttons on this page — website, X, Discord — as your source of truth. Avoid random Google results or reply-chain links during hype moments.",
-    },
-    {
-      title: "What is minting?",
-      body:
-        "Minting means claiming a brand-new digital collectible when a project first releases. It's like picking up a fresh print at opening night — exciting, but always verify the official mint page.",
-    },
-    {
-      title: "How to join communities",
-      body:
-        "Start by following official socials, reading announcements, and introducing yourself in Discord when you're ready. Great communities welcome curious newcomers — no expert status required.",
-    },
-  ];
-
   function esc(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -470,20 +432,14 @@
   }
 
   function renderWeb3Accordion() {
-    return NEW_TO_WEB3_TOPICS.map(function (topic, i) {
-      return (
-        '<details class="showcase-web3-item"' +
-        (i === 0 ? " open" : "") +
-        ">" +
-        '<summary class="showcase-web3-item__summary">' +
-        esc(topic.title) +
-        "</summary>" +
-        '<p class="showcase-web3-item__body">' +
-        esc(topic.body) +
-        "</p>" +
-        "</details>"
-      );
-    }).join("");
+    if (global.Web3HouseNewToWeb3 && global.Web3HouseNewToWeb3.renderAccordionHtml) {
+      return global.Web3HouseNewToWeb3.renderAccordionHtml({
+        prefix: "showcase-web3",
+        openFirst: true,
+        showIcon: false,
+      });
+    }
+    return "";
   }
 
   var navObserver = null;
@@ -668,7 +624,10 @@
     }
 
     var web3El = panel.querySelector("#detailWeb3Accordion");
-    if (web3El) web3El.innerHTML = renderWeb3Accordion();
+    if (web3El) {
+      web3El.innerHTML = renderWeb3Accordion();
+      global.Web3HouseNewToWeb3?.bindExclusiveAccordion?.(web3El);
+    }
 
     var scrollRoot = panel.querySelector("#detailScroll");
     bindShowcaseNav(scrollRoot);

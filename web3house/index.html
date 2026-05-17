@@ -74,17 +74,36 @@
       <h1 class="entry__headline entry__ui">
         <span class="visually-hidden">Web3House — </span>Step inside the clubhouse.
       </h1>
-      <p class="entry__tagline entry__ui">A curated home for Web3 communities.</p>
+      <p class="entry__tagline entry__ui">Discover communities worth belonging to.</p>
       <p class="entry__intro entry__ui">
-        Discover the people shaping internet culture — beyond the floor price. Explore communities we
-        genuinely believe in, with verified links and room to wander at your own pace.
+        Explore verified Web3 projects, discover their stories, and connect with the culture behind
+        them.
       </p>
+
+      <div
+        class="entry__rotator entry__ui"
+        id="entryRotator"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span class="visually-hidden">Highlights: </span>
+        <span class="entry__rotator-track">
+          <span class="entry__rotator-line entry__rotator-line--a" id="entryRotatorA"></span>
+          <span class="entry__rotator-line entry__rotator-line--b" id="entryRotatorB" aria-hidden="true"></span>
+        </span>
+      </div>
 
       <div class="entry__cta-wrap entry__ui">
         <button type="button" class="btn btn--primary btn--enter" id="enterBtn">
           Enter Web3House
         </button>
-        <p class="entry__hint entry__ui">No wallet required to browse</p>
+        <ul class="entry__trust entry__ui" aria-label="Why explore here">
+          <li class="entry__trust-chip">Verified Communities</li>
+          <li class="entry__trust-chip">Founder Links</li>
+          <li class="entry__trust-chip">No Wallet Required</li>
+          <li class="entry__trust-chip">Explore Safely</li>
+          <li class="entry__trust-chip">Curated Projects</li>
+        </ul>
       </div>
 
       <p class="entry__fine entry__ui">
@@ -112,18 +131,24 @@
       <div class="hub-hero__inner">
         <div class="hub-hero__row">
           <div class="hub-hero__brand-block">
-            <a href="#entry" class="hub__brand" id="hubBrand">
-              <img
-                class="hub__brand-logo"
-                src="assets/logos/Web3HouseLogo.png"
-                alt="Web3House"
-                width="140"
-                height="48"
-              />
-            </a>
-            <p class="hub__byline">by Little Ollie Labs</p>
-            <h2 class="hub-hero__welcome">Welcome to Web3House</h2>
-            <p class="hub-hero__tagline">Discover the communities shaping Web3 culture.</p>
+            <div class="hub-hero__title-row">
+              <a href="#entry" class="hub-hero__logo-wrap hub__brand" id="hubBrand">
+                <img
+                  class="hub__brand-logo"
+                  src="assets/logos/Web3HouseLogo.png"
+                  alt=""
+                  width="108"
+                  height="108"
+                />
+              </a>
+              <div class="hub-hero__title-text">
+                <h2 class="hub-hero__welcome">
+                  <span class="visually-hidden">Web3House — </span>Welcome to Web3House
+                </h2>
+                <p class="hub-hero__tagline">Discover the communities shaping Web3 culture.</p>
+              </div>
+            </div>
+            <p class="hub__byline hub-hero__byline">by Little Ollie Labs</p>
           </div>
           <div class="hub-hero__actions">
             <button type="button" class="theme-toggle" id="themeToggleBtn" aria-pressed="false">
@@ -167,7 +192,7 @@
           Friendly basics — no jargon, no pressure. Explore at your own pace.
         </p>
       </div>
-      <div class="hub-web3-grid" id="hubWeb3Grid"></div>
+      <div class="hub-web3-accordion" id="hubWeb3Accordion" role="region" aria-label="Web3 basics for beginners"></div>
     </section>
 
     <section class="hub-section hub-section--cta hub-section--hidden" id="recommend" aria-labelledby="recommendHeading" hidden>
@@ -366,8 +391,10 @@
   <script src="nft-images.js"></script>
   <script src="nft-samples.js"></script>
   <script src="collection-showcase.js"></script>
+  <script src="new-to-web3-topics.js"></script>
   <script src="atmosphere.js"></script>
   <script src="entry-transition.js"></script>
+  <script src="entry-hero.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

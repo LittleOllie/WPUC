@@ -25,7 +25,7 @@
     },
     {
       id: "ddg",
-      name: "Drop Dead Gorgeous",
+      name: "DropDed Gorgez",
       shortName: "DDG",
       chain: "eth",
       contract: "0x9c51a3cb5094b26aa1dcb380f3dc7e1a7c681c2d",

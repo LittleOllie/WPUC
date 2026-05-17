@@ -22,7 +22,7 @@
       why: [
         "Authentic, family-powered storytelling — not manufactured hype.",
         "Games and collectibles designed for parents and kids to enjoy side by side.",
-        "Partners with OG Triple Media, Drop Dead Gorgeous, and communities we proudly showcase here.",
+        "Partners with OG Triple Media, DropDed Gorgez, and communities we proudly showcase here.",
       ],
       logo: "assets/logos/little-ollie.webp",
       logoInitials: "LO",
@@ -120,10 +120,10 @@
       collectionId: "ddg",
       contract: "0x9c51a3cb5094b26aa1dcb380f3dc7e1a7c681c2d",
       theme: { primary: "#e63cb4", background: "#12051f" },
-      name: "Drop Dead Gorgeous",
+      name: "DropDed Gorgez",
       tagline: "Beauty fades. Legends don't.",
       description:
-        "Drop Dead Gorgeous (DedGorgez) is a bold collector community built around striking skeleton art, ritual aesthetics, and premium Web3 identity — partnered with OG Triple Media and Little Ollie Labs.",
+        "DropDed Gorgez is a bold collector community built around striking skeleton art, ritual aesthetics, and premium Web3 identity — partnered with OG Triple Media and Little Ollie Labs.",
       tags: ["Art", "Partners", "Ethereum"],
       why: [
         "Memorable visual identity with real collector pride.",
@@ -531,10 +531,15 @@
 
   function enterHub(opts) {
     const instant = opts && opts.instant;
+    const afterTransition = opts && opts.afterTransition;
     document.body.classList.add("hub-visible", "hub-active");
     const hub = $("#hub");
     if (hub) {
-      hub.scrollIntoView({ behavior: instant ? "auto" : "smooth", block: "start" });
+      if (afterTransition) {
+        window.Web3HouseEntry?.scrollPageToTop?.();
+      } else {
+        hub.scrollIntoView({ behavior: instant ? "auto" : "smooth", block: "start" });
+      }
       hub.focus({ preventScroll: true });
     }
     history.replaceState(null, "", "#hub");
@@ -556,7 +561,7 @@
 
     btn.disabled = true;
 
-    entryApi.playEnterTransition(() => enterHub({ instant: true }), { cinematic: true });
+    entryApi.playEnterTransition(() => enterHub({ afterTransition: true }), { cinematic: true });
   }
 
   function toggleRecommend(show) {
@@ -687,6 +692,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     window.Web3HouseEntry?.init?.();
+    window.Web3HouseEntryHero?.init?.();
     mountCards();
     bindEvents();
     if (window.Web3HouseAtmosphere) {

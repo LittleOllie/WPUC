@@ -1092,9 +1092,48 @@
 .showcase-web3-item__body {
   margin: 0;
   padding: 0 1rem 1rem;
+  border-top: 1px solid var(--showcase-border);
   font-size: var(--lo-text-sm);
   line-height: 1.6;
   color: var(--showcase-muted);
+}
+
+.showcase-web3-item__intro {
+  margin: 0.75rem 0 0.65rem;
+  line-height: 1.62;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.showcase-web3-item__subhead {
+  margin: 0.75rem 0 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--showcase-primary);
+}
+
+.showcase-web3-item__sections p {
+  margin: 0 0 0.6rem;
+  line-height: 1.62;
+}
+
+.showcase-web3-item__tips-label {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.showcase-web3-item__tips {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.showcase-web3-item__tips li {
+  margin-bottom: 0.3rem;
 }
 
 .detail__footer {

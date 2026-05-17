@@ -9,34 +9,6 @@
   var spotlightIndex = 0;
   var spotlightList = [];
 
-  var HUB_WEB3_TOPICS = [
-    {
-      icon: "✨",
-      title: "What is an NFT?",
-      body: "Digital collectibles that can unlock art, games, events, and friendships online — like a trading card, but on the internet.",
-    },
-    {
-      icon: "🔑",
-      title: "What is a wallet?",
-      body: "Your personal keyring for Web3. You choose when to connect — it is not a bank account.",
-    },
-    {
-      icon: "🛡️",
-      title: "Staying safe",
-      body: "Never share your secret phrase. Real teams will not DM you first asking for money.",
-    },
-    {
-      icon: "🔗",
-      title: "Official links only",
-      body: "Use buttons on community pages as your source of truth — bookmark sites yourself.",
-    },
-    {
-      icon: "🌱",
-      title: "Joining communities",
-      body: "Follow official socials, read announcements, and say hello when you are ready. No expert badge required.",
-    },
-  ];
-
   function esc(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -118,6 +90,7 @@
     var logo = c.logo
       ? '<img class="spotlight__logo" src="' + esc(c.logo) + '" alt="" />'
       : '<span class="spotlight__logo-ph">' + esc(c.logoInitials || c.name.charAt(0)) + "</span>";
+    var edgeCls = c.logoEdgeFill ? " spotlight__visual--edge" : "";
     var wm = c.logo
       ? ' style="background-image:url(\'' + String(c.logo).replace(/'/g, "%27") + "')\""
       : "";
@@ -129,7 +102,9 @@
       wm +
       "></div>" +
       '<div class="spotlight__inner">' +
-      '<div class="spotlight__visual">' +
+      '<div class="spotlight__visual' +
+      edgeCls +
+      '">' +
       logo +
       "</div>" +
       '<div class="spotlight__copy">' +
@@ -223,26 +198,6 @@
     resetSpotlightTimer();
   }
 
-  function renderHubWeb3() {
-    var grid = document.getElementById("hubWeb3Grid");
-    if (!grid) return;
-    grid.innerHTML = HUB_WEB3_TOPICS.map(function (topic) {
-      return (
-        '<article class="hub-web3-card">' +
-        '<span class="hub-web3-card__icon" aria-hidden="true">' +
-        topic.icon +
-        "</span>" +
-        "<h3>" +
-        esc(topic.title) +
-        "</h3>" +
-        "<p>" +
-        esc(topic.body) +
-        "</p>" +
-        "</article>"
-      );
-    }).join("");
-  }
-
   function initEntryOrbit(communities) {
     var track = document.getElementById("entryOrbitTrack");
     if (!track || !communities || !communities.length) return;
@@ -315,7 +270,7 @@
     var themeBtn = document.getElementById("themeToggleBtn");
     if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
 
-    renderHubWeb3();
+    global.Web3HouseNewToWeb3?.mountHubAccordion?.();
 
     if (ctx && ctx.communities && ctx.openDetail) {
       initSpotlight(ctx.communities, ctx.openDetail);

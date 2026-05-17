@@ -38,6 +38,12 @@
     return t * t * t;
   }
 
+  function scrollPageToTop() {
+    window.scrollTo(0, 0);
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }
+
   function cancelZoom() {
     if (zoomRaf) {
       cancelAnimationFrame(zoomRaf);
@@ -130,8 +136,11 @@
     }
     entry.classList.add("entry--exiting");
     document.body.classList.add("entry-done");
+    scrollPageToTop();
 
     setTimeout(function () {
+      scrollPageToTop();
+      requestAnimationFrame(scrollPageToTop);
       resetEntry(entry);
       document.body.classList.remove("entry-transition-active");
       transitioning = false;
@@ -156,6 +165,7 @@
       markVisited();
       document.body.classList.add("hub-visible", "hub-active", "entry-done");
       if (onRevealHub) onRevealHub();
+      scrollPageToTop();
       return Promise.resolve();
     }
 
@@ -172,6 +182,9 @@
 
     transitioning = true;
     markVisited();
+    if (global.Web3HouseEntryHero && global.Web3HouseEntryHero.stop) {
+      global.Web3HouseEntryHero.stop();
+    }
 
     document.body.classList.add("entry-transition-active");
     resetEntry(entry);
@@ -274,6 +287,7 @@
   global.Web3HouseEntry = {
     init: init,
     playEnterTransition: playEnterTransition,
+    scrollPageToTop: scrollPageToTop,
     markVisited: markVisited,
     prefersReducedMotion: prefersReducedMotion,
   };
