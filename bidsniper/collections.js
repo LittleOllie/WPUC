@@ -32,6 +32,22 @@
       openSea: "https://opensea.io/collection/gorgez",
     },
     {
+      id: "ghost-lab",
+      name: "Ghost Labs",
+      shortName: "Ghost Labs",
+      chain: "eth",
+      contract: "0x375dfbe7ebdf082276fc0cb9447932dc1bb6e306",
+      openSea: "https://opensea.io/collection/ghost-lab-collection",
+    },
+    {
+      id: "lessthanthree",
+      name: "Less Than Three",
+      shortName: "LT3",
+      chain: "eth",
+      contract: "0x4ef6f6a7ee7d1cf7f1f7bfad2ba56baab868de48",
+      openSea: "https://opensea.io/collection/lessthanthree",
+    },
+    {
       id: "killabears",
       name: "Killabears",
       shortName: "KB",
@@ -62,6 +78,14 @@
       chain: "eth",
       contract: "0x8f1b132e9fd2b9a2b210baa186bf1ae650adf7ac",
       openSea: "https://opensea.io/collection/quirklings",
+    },
+    {
+      id: "officialrugdollz",
+      name: "Rug Dollz",
+      shortName: "Rug Dollz",
+      chain: "eth",
+      contract: "0x291ac379af66e25bd8488b3154f076b27b9f9e36",
+      openSea: "https://opensea.io/collection/officialrugdollz",
     },
     {
       id: "quirkies",
