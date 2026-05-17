@@ -260,6 +260,90 @@
       openSea: "https://opensea.io/collection/call-of-the-stars",
       hiddenGem: true,
     },
+    {
+      id: "ghost-labs",
+      collectionId: "ghost-lab",
+      logoEdgeFill: true,
+      contract: "0x375dfbe7ebdf082276fc0cb9447932dc1bb6e306",
+      theme: { primary: "#a5b4fc", background: "#0a0c12" },
+      name: "Ghost Labs",
+      tagline: "Pixel ghosts. Tools & lore.",
+      description:
+        "Ghost Labs is a verified Ethereum collection of pixelated ghosts — empowering the community with useful tools, creative lore, and holder-first culture.",
+      tags: ["Pixel art", "Tools", "Ethereum"],
+      why: [
+        "Distinctive pixel ghost art with a cohesive lab identity.",
+        "Community-built tools and lore — utility with personality.",
+        "Verified collection — confirm links on ghost-lab.xyz, X, and Discord before you engage.",
+        "A welcoming room for newcomers who like retro art and creative communities.",
+      ],
+      logo: "assets/logos/GLLogo.png",
+      logoInitials: "GL",
+      banner: "linear-gradient(135deg, #c4b5fd, #6366f1 42%, #0a0c12)",
+      website: "https://ghost-lab.xyz/",
+      twitter: "https://x.com/GhostLabNFT",
+      discord: "https://discord.gg/QeCMSE6HfE",
+      openSea: "https://opensea.io/collection/ghost-lab-collection",
+      featured: true,
+      communityPick: true,
+      showcase: {
+        stats: {
+          founded: "2021",
+          chain: "Ethereum",
+          collectionSize: "8,201",
+          holders: "1,150+",
+        },
+        founder: {
+          name: "Ghost Lab Team",
+          title: "Founders · Ghost Labs",
+          avatarInitials: "GL",
+          message:
+            "We built Ghost Labs for collectors who want more than PFPs — useful tools, creative lore, and a community that actually shows up. Whether you're brand new to Web3 or you've been collecting for years, you're welcome to haunt the lab with us.",
+        },
+      },
+    },
+    {
+      id: "less-than-three",
+      collectionId: "lessthanthree",
+      logoEdgeFill: true,
+      contract: "0x4ef6f6a7ee7d1cf7f1f7bfad2ba56baab868de48",
+      theme: { primary: "#f472b6", background: "#1a0a14" },
+      name: "Less Than Three",
+      tagline: "Stories for every heart.",
+      description:
+        "Less Than Three expresses the human condition through 5,555 characters — a verified Ethereum collection rooted in growth, community, and a brand building across Web3 and beyond.",
+      tags: ["Story", "Art", "Ethereum"],
+      why: [
+        "Character-driven art with a clear emotional, story-first identity.",
+        "Active community across official Linktree, X, and Discord.",
+        "Verified collection — easy to confirm before you mint or join chats.",
+        "Strong crossover appeal if you love culture, creativity, and long-term brand building.",
+      ],
+      logo: "assets/logos/LT3Logo.png",
+      logoInitials: "LT3",
+      banner: "linear-gradient(135deg, #f472b6, #fb7185 40%, #1a0a14)",
+      website: "https://linktr.ee/lt3nft",
+      twitter: "https://x.com/LT3NFT",
+      discord: "https://discord.gg/LT3NFT",
+      openSea: "https://opensea.io/collection/lessthanthree",
+      featured: true,
+      communityPick: true,
+      showcase: {
+        stats: {
+          founded: "2022",
+          chain: "Ethereum",
+          collectionSize: "5,555",
+          holders: "2,000+",
+        },
+        founder: {
+          name: "LT3 Team",
+          title: "Founders · Less Than Three",
+          avatarInitials: "LT3",
+          message:
+            "Less Than Three is built on supporting each heart's path — art, community, and real-world storytelling woven together. Whether you're new to Web3 or you've been here for years, we invite you to grow with us.",
+        },
+      },
+    },
   ];
 
   const brandCache = {};

@@ -212,7 +212,7 @@
       return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
     });
 
-    var items = pool.slice(0, 8);
+    var items = pool.slice(0, 10);
     if (!items.length) return;
 
     var step = 360 / items.length;

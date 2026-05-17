@@ -224,8 +224,14 @@ body.w3h-time-night .entry__particles {
 
 .entry__logo {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   margin: 0 0 0.85rem;
+}
+
+.entry__house.entry__logo {
+  position: relative;
 }
 
 .entry__logo--float {
@@ -234,18 +240,34 @@ body.w3h-time-night .entry__particles {
 
 .entry__logo-img {
   display: block;
-  width: min(17.5rem, 78vw);
+  width: min(21rem, 88vw);
   height: auto;
   filter: drop-shadow(0 12px 32px rgba(76, 111, 255, 0.18));
 }
 
+.entry__logo-slogan {
+  position: relative;
+  z-index: 3;
+  margin: 0.55rem 0 0;
+  max-width: 18rem;
+  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.45;
+  color: var(--lo-ink-muted, #6b6b80);
+  text-align: center;
+}
+
 .entry__headline {
   margin: 0 0 0.5rem;
-  font-size: clamp(1.65rem, 5.5vw, 2.35rem);
+  font-size: clamp(1.5rem, 5vw, 2.15rem);
   font-weight: 800;
   line-height: 1.12;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--lo-ink, #1a1a2e);
+  text-wrap: balance;
 }
 
 .entry__tagline {
@@ -486,7 +508,8 @@ body.w3h-time-night .entry__lantern {
   padding: 0.95rem 1.85rem;
   font-size: 1.0625rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   animation: entry-cta-glow 4s ease-in-out infinite;
   transition:
     transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
@@ -627,7 +650,12 @@ body.w3h-time-night .entry__lantern {
   }
 
   .entry__logo-img {
-    width: min(14rem, 68vw);
+    width: min(18rem, 86vw);
+  }
+
+  .entry__logo-slogan {
+    max-width: 16rem;
+    font-size: 0.68rem;
   }
 
   .entry__headline {
