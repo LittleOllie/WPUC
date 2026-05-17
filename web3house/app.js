@@ -344,6 +344,48 @@
         },
       },
     },
+    {
+      id: "rug-dollz",
+      collectionId: "officialrugdollz",
+      logoEdgeFill: true,
+      contract: "0x291ac379af66e25bd8488b3154f076b27b9f9e36",
+      theme: { primary: "#f9a8d4", background: "#1a1020" },
+      name: "Rug Dollz",
+      tagline: "Every stitch starts with imagination.",
+      description:
+        "Rug Dollz is the original stitched-companion collection that sparked the Dollz culture — 5,555 characters, cozy lore, and a community that grew into games, staking, and the wider Dollz World ecosystem.",
+      tags: ["Art", "Community", "Ethereum"],
+      why: [
+        "The founding drop of the Dollz universe — lore and culture that kept growing.",
+        "Distinct stitched-companion art with a warm, collectible identity.",
+        "Verified collection — use official Linktree, X, and Discord before you engage.",
+        "Great entry point if you love creative communities with games and world-building.",
+      ],
+      logo: "assets/logos/RDLogo.png",
+      logoInitials: "RD",
+      banner: "linear-gradient(135deg, #f9a8d4, #c084fc 42%, #1a1020)",
+      website: "https://linktr.ee/RugDollzOfficial",
+      twitter: "https://x.com/RugDollzNFT",
+      discord: "https://discord.gg/gDbKRcfewN",
+      openSea: "https://opensea.io/collection/officialrugdollz",
+      featured: true,
+      communityPick: true,
+      showcase: {
+        stats: {
+          founded: "2021",
+          chain: "Ethereum",
+          collectionSize: "5,555",
+          holders: "900+",
+        },
+        founder: {
+          name: "Rug Dollz Team",
+          title: "Founders · Rug Dollz",
+          avatarInitials: "RD",
+          message:
+            "Rug Dollz was our very first collection — the spark that started Dollz culture. Whether you're brand new to Web3 or you've been collecting for years, you're welcome to stitch your story into the clubhouse with us.",
+        },
+      },
+    },
   ];
 
   const brandCache = {};
