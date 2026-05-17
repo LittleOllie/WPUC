@@ -140,23 +140,13 @@ export default function LayeredGrass({
       const layerEls = [];
       const allTiles = [];
 
-      /* DOM order: back → middle → front (front paints on top). */
-      GRASS_LAYER_CONFIG.forEach((cfg) => {
-        const layerEl = document.createElement("div");
-        layerEl.className = `grass-layer grass-layer--${cfg.id}`;
-        layerEl.setAttribute("aria-hidden", "true");
-        layerEl.dataset.layer = cfg.id;
-        layerEl.style.opacity = String(cfg.opacity);
-        layerEl.style.setProperty("--tile-count", String(tiles));
-
-        const layerTiles = [];
-
-        for (let t = 0; t < tiles; t++) {
+      const appendGrassTiles = (parent, count, src, layerTiles) => {
+        for (let t = 0; t < count; t++) {
           const tile = document.createElement("div");
           tile.className = "grass-tile";
 
           const img = document.createElement("img");
-          img.src = cfg.src;
+          img.src = src;
           img.alt = "";
           img.draggable = false;
           img.className = "grass-tile__img pog-touch-guard";
@@ -164,8 +154,34 @@ export default function LayeredGrass({
           img.loading = "eager";
 
           tile.appendChild(img);
-          layerEl.appendChild(tile);
+          parent.appendChild(tile);
           layerTiles.push(tile);
+        }
+      };
+
+      /* DOM order: back → middle → front (front paints on top). */
+      GRASS_LAYER_CONFIG.forEach((cfg) => {
+        const layerEl = document.createElement("div");
+        layerEl.className = `grass-layer grass-layer--${cfg.id}`;
+        layerEl.setAttribute("aria-hidden", "true");
+        layerEl.dataset.layer = cfg.id;
+        layerEl.style.opacity = String(cfg.opacity);
+
+        const layerTiles = [];
+        const rowCount = cfg.rows ?? 1;
+
+        if (rowCount > 1) {
+          for (let r = 0; r < rowCount; r++) {
+            const rowEl = document.createElement("div");
+            rowEl.className = `grass-back-row grass-back-row--${r}`;
+            rowEl.dataset.row = String(r);
+            rowEl.style.setProperty("--tile-count", String(tiles));
+            appendGrassTiles(rowEl, tiles, cfg.src, layerTiles);
+            layerEl.appendChild(rowEl);
+          }
+        } else {
+          layerEl.style.setProperty("--tile-count", String(tiles));
+          appendGrassTiles(layerEl, tiles, cfg.src, layerTiles);
         }
 
         zone.appendChild(layerEl);
