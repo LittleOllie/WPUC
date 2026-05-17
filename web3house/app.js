@@ -610,14 +610,14 @@
   }
 
   function updateHubNavActive(activeId) {
-    document.querySelectorAll(".hub-nav__link").forEach((link) => {
+    document.querySelectorAll('a.hub-nav__link[href^="#"]').forEach((link) => {
       const href = link.getAttribute("href");
       link.classList.toggle("is-active", href === activeId);
     });
   }
 
   function bindHubNav() {
-    const links = document.querySelectorAll(".hub-nav__link");
+    const links = document.querySelectorAll('a.hub-nav__link[href^="#"]');
     const sectionIds = Array.from(links)
       .map((a) => a.getAttribute("href"))
       .filter(Boolean);
@@ -702,5 +702,9 @@
         openRecommend: openRecommendMailto,
       });
     }
+    window.Web3HouseQuiz?.init?.({
+      communities: COMMUNITIES,
+      onEnterHub: handleEnterClick,
+    });
   });
 })();

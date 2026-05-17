@@ -224,6 +224,40 @@ body:not(.hub-visible) .hub-sticky {
   outline-offset: 2px;
 }
 
+button.hub-nav__link {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.hub-nav__link--quiz {
+  color: var(--lo-blue, #4c6fff);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(232, 240, 255, 0.9) 100%
+  );
+  border-color: rgba(76, 111, 255, 0.35);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.85) inset,
+    0 4px 14px rgba(76, 111, 255, 0.15);
+}
+
+.hub-nav__link--quiz:hover {
+  color: var(--lo-ink, #1a1a2e);
+  border-color: var(--lo-blue, #4c6fff);
+  background: linear-gradient(145deg, #fff 0%, rgba(232, 240, 255, 1) 100%);
+}
+
+body.w3h-theme-afterhours .hub-nav__link--quiz {
+  color: #c4d0ff;
+  background: linear-gradient(145deg, rgba(40, 48, 72, 0.95) 0%, rgba(26, 31, 50, 0.9) 100%);
+  border-color: rgba(139, 156, 255, 0.35);
+}
+
+body.w3h-theme-afterhours .hub-nav__link--quiz:hover {
+  color: #fff;
+}
+
 .hub__brand {
   display: inline-flex;
   align-items: center;
@@ -273,6 +307,8 @@ body:not(.hub-visible) .hub-sticky {
   font-size: var(--lo-text-section);
   font-weight: 800;
   color: var(--w3h-ink, var(--lo-ink));
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .section-head__sub {
@@ -582,6 +618,8 @@ a.community-card__nft-cell.w3h-nft-opensea-link:focus-visible {
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .recommend-panel__text {
@@ -660,13 +698,40 @@ a.community-card__nft-cell.w3h-nft-opensea-link:focus-visible {
 }
 
 .hub-footer__safety {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   font-size: var(--lo-text-xs);
   line-height: 1.5;
   color: var(--w3h-ink-muted, var(--lo-ink-muted));
   max-width: 40rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+.hub-footer__quiz {
+  margin: 0 0 1rem;
+  font-size: var(--lo-text-sm);
+  line-height: 1.5;
+  color: var(--w3h-ink-muted, var(--lo-ink-muted));
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hub-footer__quiz-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 800;
+  color: var(--w3h-accent, var(--lo-blue));
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.hub-footer__quiz-link:hover {
+  color: var(--lo-ink, #1a1a2e);
 }
 
 .hub-footer__copy {

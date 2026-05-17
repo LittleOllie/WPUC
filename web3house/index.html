@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="atmosphere.css" />
   <link rel="stylesheet" href="entry.css" />
   <link rel="stylesheet" href="entry-transition.css" />
+  <link rel="stylesheet" href="onboarding-quiz.css" />
 </head>
 <body class="w3h-theme-clubhouse w3h-time-day">
   <div class="hub-atmosphere" aria-hidden="true">
@@ -161,6 +162,11 @@
             <li><a class="hub-nav__link" href="#spotlight">Featured</a></li>
             <li><a class="hub-nav__link" href="#discover">Explore</a></li>
             <li><a class="hub-nav__link" href="#new-to-web3">New to Web3</a></li>
+            <li>
+              <button type="button" class="hub-nav__link hub-nav__link--quiz js-quiz-open">
+                Take The Quiz
+              </button>
+            </li>
           </ul>
         </nav>
       </div>
@@ -193,6 +199,15 @@
         </p>
       </div>
       <div class="hub-web3-accordion" id="hubWeb3Accordion" role="region" aria-label="Web3 basics for beginners"></div>
+      <aside class="hub-web3-quiz" aria-labelledby="hubWeb3QuizHeading">
+        <h3 id="hubWeb3QuizHeading" class="hub-web3-quiz__title">Find your Web3 vibe</h3>
+        <p class="hub-web3-quiz__text">
+          A quick, cozy quiz — discover your style, learn safety basics, and see which communities might feel like home.
+        </p>
+        <button type="button" class="btn--quiz btn--quiz-section js-quiz-open">
+          ✨ Take The Quiz
+        </button>
+      </aside>
     </section>
 
     <section class="hub-section hub-section--cta hub-section--hidden" id="recommend" aria-labelledby="recommendHeading" hidden>
@@ -235,6 +250,10 @@
       <p class="hub-footer__safety">
         Web3House is a discovery and connection hub. We do not custody assets, facilitate trades directly,
         or provide financial advice. Always DYOR and use safe marketplace methods where possible.
+      </p>
+      <p class="hub-footer__quiz">
+        <button type="button" class="hub-footer__quiz-link js-quiz-open">✨ Take The Quiz</button>
+        — find your Web3 vibe and learn safety basics in ~2 minutes.
       </p>
       <p class="hub-footer__copy">© Little Ollie Labs · Web3House</p>
       <p class="hub-footer__recommend">
@@ -386,6 +405,8 @@
     </article>
   </dialog>
 
+  <dialog class="quiz-flow" id="quizFlow" aria-modal="true" aria-labelledby="quizFlowTitle"></dialog>
+
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="nft-images.js"></script>
@@ -395,6 +416,8 @@
   <script src="atmosphere.js"></script>
   <script src="entry-transition.js"></script>
   <script src="entry-hero.js"></script>
+  <script src="quiz-data.js"></script>
+  <script src="onboarding-quiz.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>
