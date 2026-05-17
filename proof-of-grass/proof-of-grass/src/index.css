@@ -507,13 +507,13 @@ button {
   -webkit-touch-callout: none;
 }
 
-/* ── Mobile / iPhone: larger grass targets + taller lawn for thumbs ── */
+/* ── Mobile / iPhone: +10% grass, wider row spacing, taller lawn for thumbs ── */
 @media (max-width: 767px) and (pointer: coarse) {
   :root {
     --pog-grass-height: clamp(
-      240px,
-      calc(35.7dvh + env(safe-area-inset-bottom, 0px)),
-      420px
+      252px,
+      calc(38dvh + env(safe-area-inset-bottom, 0px)),
+      440px
     );
     --pog-fence-drop: 0.35rem;
   }
@@ -523,42 +523,43 @@ button {
     box-sizing: content-box;
   }
 
-  /* +5% touch area on every grass PNG */
+  /* +10% touch area on every grass PNG */
   .grass-tile__img {
-    min-width: 124%;
-    transform: scale(1.05);
+    min-width: 130%;
+    transform: scale(1.1);
     transform-origin: bottom center;
   }
 
   .grass-back-row {
-    height: 145%;
+    height: 152%;
   }
 
+  /* Rearmost row highest; rows spaced ~36–40px apart (vs ~28px desktop) */
   .grass-back-row--0 {
-    bottom: 174px;
-    height: 160%;
-    transform: scale(1.155);
+    bottom: 192px;
+    height: 167%;
+    transform: scale(1.21);
   }
 
   .grass-back-row--1 {
-    bottom: 128px;
+    bottom: 150px;
   }
 
   .grass-back-row--2 {
-    bottom: 99px;
+    bottom: 112px;
   }
 
   .grass-back-row--3 {
-    bottom: 69px;
+    bottom: 72px;
   }
 
   .grass-layer--middle {
-    height: 113%;
-    bottom: 19px;
+    height: 119%;
+    bottom: 22px;
   }
 
   .grass-layer--front {
-    height: 105%;
+    height: 110%;
   }
 
   .pog-llama {
