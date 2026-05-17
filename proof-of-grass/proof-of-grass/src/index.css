@@ -507,6 +507,25 @@ button {
   -webkit-touch-callout: none;
 }
 
+/* Stacked duplicate lawn (iPhone) — upper copy lifted by half zone height */
+.grass-stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.grass-stack--upper {
+  transform: translateY(calc(-1 * var(--pog-grass-stack-lift, 0px)));
+  z-index: 5;
+}
+
+.grass-zone--doubled {
+  overflow: visible;
+  --pog-grass-stack-lift: calc(var(--pog-grass-height) * 0.5);
+  height: calc(var(--pog-grass-height) + var(--pog-grass-stack-lift));
+}
+
 /* ── Mobile / iPhone: +10% grass, wider row spacing, taller lawn for thumbs ── */
 @media (max-width: 767px) and (pointer: coarse) {
   :root {

@@ -34,6 +34,10 @@ function isPointerInViewport(clientX, clientY) {
   );
 }
 
+function isPhoneGrassDouble() {
+  return window.matchMedia("(max-width: 767px) and (pointer: coarse)").matches;
+}
+
 export default function LayeredGrass({
   wind: windMultiplier = 1,
   onGrassMovingChange,
@@ -43,7 +47,9 @@ export default function LayeredGrass({
   const lastMovingNotifyRef = useRef(false);
   const particlesRef = useRef(null);
   const layerElsRef = useRef([]);
+  const mirrorLayerElsRef = useRef([]);
   const tileElsRef = useRef([]);
+  const mirrorTileElsRef = useRef([]);
   const simRef = useRef(null);
   const windRef = useRef(createWindState());
   const particlesSimRef = useRef(createParticleField());
@@ -110,10 +116,15 @@ export default function LayeredGrass({
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
 
-      const hovered =
+      let hovered =
         tileNodes?.length && masks?.length
           ? findHoveredGrassTile(clientX, clientY, tileNodes, masks)
           : null;
+
+      const cols = simRef.current?.[0]?.cols;
+      if (hovered && cols && hovered.tile >= cols) {
+        hovered = { layer: hovered.layer, tile: hovered.tile % cols };
+      }
 
       const x = clamp((clientX - rect.left) / rect.width, 0, 1);
       const vx = hovered ? x - prevPointerXRef.current : p.vx * 0.82;
@@ -135,10 +146,15 @@ export default function LayeredGrass({
       if (width < 8 || height < 8) return false;
 
       const tiles = tileCountForWidth(width);
-      zone.querySelectorAll(".grass-layer").forEach((el) => el.remove());
+      const doubled = isPhoneGrassDouble();
+
+      zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
+      zone.classList.toggle("grass-zone--doubled", doubled);
 
       const layerEls = [];
+      const mirrorLayerEls = [];
       const allTiles = [];
+      const mirrorAllTiles = [];
 
       const appendGrassTiles = (parent, count, src, layerTiles) => {
         for (let t = 0; t < count; t++) {
@@ -159,8 +175,7 @@ export default function LayeredGrass({
         }
       };
 
-      /* DOM order: back → middle → front (front paints on top). */
-      GRASS_LAYER_CONFIG.forEach((cfg) => {
+      const buildLayer = (cfg, stackEl) => {
         const layerEl = document.createElement("div");
         layerEl.className = `grass-layer grass-layer--${cfg.id}`;
         layerEl.setAttribute("aria-hidden", "true");
@@ -184,9 +199,31 @@ export default function LayeredGrass({
           appendGrassTiles(layerEl, tiles, cfg.src, layerTiles);
         }
 
-        zone.appendChild(layerEl);
-        layerEls.push(layerEl);
-        allTiles.push(layerTiles);
+        stackEl.appendChild(layerEl);
+        return { layerEl, layerTiles };
+      };
+
+      const lowerStack = document.createElement("div");
+      lowerStack.className = "grass-stack grass-stack--lower";
+      zone.appendChild(lowerStack);
+
+      let upperStack = null;
+      if (doubled) {
+        upperStack = document.createElement("div");
+        upperStack.className = "grass-stack grass-stack--upper";
+        zone.appendChild(upperStack);
+      }
+
+      GRASS_LAYER_CONFIG.forEach((cfg) => {
+        const primary = buildLayer(cfg, lowerStack);
+        layerEls.push(primary.layerEl);
+        allTiles.push(primary.layerTiles);
+
+        if (upperStack) {
+          const mirror = buildLayer(cfg, upperStack);
+          mirrorLayerEls.push(mirror.layerEl);
+          mirrorAllTiles.push(mirror.layerTiles);
+        }
       });
 
       if (!particlesRef.current) {
@@ -195,10 +232,19 @@ export default function LayeredGrass({
         particlesContainer.setAttribute("aria-hidden", "true");
         zone.appendChild(particlesContainer);
         particlesRef.current = particlesContainer;
+      } else {
+        zone.appendChild(particlesRef.current);
       }
 
       layerElsRef.current = layerEls;
-      tileElsRef.current = allTiles;
+      mirrorLayerElsRef.current = mirrorLayerEls;
+      tileElsRef.current = doubled
+        ? allTiles.map((layerTiles, i) => [
+            ...mirrorAllTiles[i],
+            ...layerTiles,
+          ])
+        : allTiles;
+      mirrorTileElsRef.current = mirrorAllTiles;
       simRef.current = GRASS_LAYER_CONFIG.map((cfg) =>
         createLayerState(cfg, tiles)
       );
@@ -219,6 +265,13 @@ export default function LayeredGrass({
       );
     });
 
+    const phoneMq = window.matchMedia("(max-width: 767px) and (pointer: coarse)");
+    const onPhoneLayoutChange = () => {
+      cancelAnimationFrame(resizeRafRef.current);
+      resizeRafRef.current = requestAnimationFrame(() => build());
+    };
+    phoneMq.addEventListener("change", onPhoneLayoutChange);
+
     const ro = new ResizeObserver(() => {
       cancelAnimationFrame(resizeRafRef.current);
       resizeRafRef.current = requestAnimationFrame(() => {
@@ -236,6 +289,8 @@ export default function LayeredGrass({
       const sim = simRef.current;
       const tileNodes = tileElsRef.current;
       const layerNodes = layerElsRef.current;
+      const mirrorLayerNodes = mirrorLayerElsRef.current;
+      const mirrorTileNodes = mirrorTileElsRef.current;
       const reduced = reducedMotionRef.current;
 
       if (sim?.length && tileNodes?.length && layerNodes?.length) {
@@ -250,21 +305,34 @@ export default function LayeredGrass({
         for (let li = 0; li < sim.length; li++) {
           const layer = sim[li];
           const cfg = layer.config;
-          const tiles = tileNodes[li];
+          const primaryTiles =
+            mirrorTileNodes[li]?.length > 0
+              ? tileNodes[li]?.slice(-layer.cols) ?? []
+              : tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
+          const mirrorEl = mirrorLayerNodes[li];
+          const mirrorTiles = mirrorTileNodes[li];
 
+          let layerTransform;
           if (!reduced) {
-            layerEl.style.transform = `translate3d(${layer.layerTx.toFixed(2)}px, ${(cfg.offsetY + layer.layerTy).toFixed(2)}px, 0) scale(${cfg.scale}) rotate(${layer.layerAngle.toFixed(3)}deg)`;
+            layerTransform = `translate3d(${layer.layerTx.toFixed(2)}px, ${(cfg.offsetY + layer.layerTy).toFixed(2)}px, 0) scale(${cfg.scale}) rotate(${layer.layerAngle.toFixed(3)}deg)`;
+            layerEl.style.transform = layerTransform;
+            if (mirrorEl) mirrorEl.style.transform = layerTransform;
 
             for (let i = 0; i < layer.cols; i++) {
               const angle = layer.angles[i];
               const tx = layer.translates[i];
-              tiles[i].style.transform = `translate3d(${tx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
+              const tileTransform = `translate3d(${tx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
+              if (primaryTiles[i]) primaryTiles[i].style.transform = tileTransform;
+              if (mirrorTiles?.[i]) mirrorTiles[i].style.transform = tileTransform;
             }
           } else {
-            layerEl.style.transform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
+            layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
+            layerEl.style.transform = layerTransform;
+            if (mirrorEl) mirrorEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
-              tiles[i].style.transform = "translate3d(0, 0, 0)";
+              if (primaryTiles[i]) primaryTiles[i].style.transform = "translate3d(0, 0, 0)";
+              if (mirrorTiles?.[i]) mirrorTiles[i].style.transform = "translate3d(0, 0, 0)";
             }
           }
         }
@@ -330,6 +398,7 @@ export default function LayeredGrass({
       cancelAnimationFrame(resizeRafRef.current);
       ro.disconnect();
       motionMq.removeEventListener("change", onMotionChange);
+      phoneMq.removeEventListener("change", onPhoneLayoutChange);
       zone.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointermove", onPointerMove);
       document.removeEventListener("pointerout", onPointerLeaveWindow);
