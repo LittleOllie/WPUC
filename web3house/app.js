@@ -382,7 +382,7 @@
           title: "Founders · Rug Dollz",
           avatarInitials: "RD",
           message:
-            "Rug Dollz was our very first collection — the spark that started Dollz culture. Whether you're brand new to Web3 or you've been collecting for years, you're welcome to stitch your story into the clubhouse with us.",
+            "Rug Dollz was our very first collection — the spark that started Dollz culture. Whether you're brand new to Web3 or you've been collecting for years, you're welcome to stitch your story into our community with us.",
         },
       },
     },

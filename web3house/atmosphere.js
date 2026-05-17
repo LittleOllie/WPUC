@@ -51,8 +51,8 @@
     var btn = document.getElementById("themeToggleBtn");
     if (btn) {
       btn.setAttribute("aria-pressed", afterHours ? "true" : "false");
-      btn.textContent = afterHours ? "☀️ Clubhouse" : "🌙 After Hours";
-      btn.title = afterHours ? "Switch to daytime clubhouse" : "Switch to after-hours lounge";
+      btn.textContent = afterHours ? "☀️ Daytime" : "🌙 After Hours";
+      btn.title = afterHours ? "Switch to daytime Web3House" : "Switch to after-hours lounge";
     }
   }
 
@@ -198,9 +198,42 @@
     resetSpotlightTimer();
   }
 
+  function renderOrbitTrack(track, items, tier, angleOffset, spinBase) {
+    if (!track || !items.length) return;
+    var step = 360 / items.length;
+    track.innerHTML = items
+      .map(function (c, i) {
+        var angle = angleOffset + i * step;
+        var glow = c.featured ? " entry__orbit-item--glow" : "";
+        var logo = c.logo
+          ? '<img src="' + esc(c.logo) + '" alt="" loading="lazy" decoding="async" />'
+          : '<span class="entry__orbit-ph">' + esc(c.logoInitials || c.name.charAt(0)) + "</span>";
+        return (
+          '<div class="entry__orbit-item entry__orbit-item--' +
+          tier +
+          glow +
+          '" style="--orbit-angle:' +
+          angle +
+          "deg;--orbit-delay:" +
+          i * 0.55 +
+          "s;--spin-duration:" +
+          (spinBase + (i % 3) * 6) +
+          "s;--orbit-drift:" +
+          (i % 2 ? -1 : 1) * (4 + (i % 3)) +
+          'px">' +
+          '<div class="entry__orbit-item__inner">' +
+          logo +
+          "</div></div>"
+        );
+      })
+      .join("");
+  }
+
   function initEntryOrbit(communities) {
-    var track = document.getElementById("entryOrbitTrack");
-    if (!track || !communities || !communities.length) return;
+    var outer = document.getElementById("entryOrbitOuter");
+    var mid = document.getElementById("entryOrbitMid");
+    var inner = document.getElementById("entryOrbitInner");
+    if ((!outer && !mid && !inner) || !communities || !communities.length) return;
 
     var pool = communities
       .filter(function (c) {
@@ -212,48 +245,65 @@
       return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
     });
 
-    var items = pool.slice(0, 10);
-    if (!items.length) return;
+    var picked = pool.slice(0, 12);
+    if (!picked.length) return;
 
-    var step = 360 / items.length;
-    track.innerHTML = items
-      .map(function (c, i) {
-        var angle = i * step;
-        var logo = c.logo
-          ? '<img src="' + esc(c.logo) + '" alt="" loading="lazy" decoding="async" />'
-          : '<span class="entry__orbit-ph">' + esc(c.logoInitials || c.name.charAt(0)) + "</span>";
-        return (
-          '<div class="entry__orbit-item" style="--orbit-angle:' +
-          angle +
-          "deg;--orbit-delay:" +
-          i * 0.35 +
-          "s;--spin-duration:" +
-          (18 + (i % 4) * 4) +
-          's">' +
-          '<div class="entry__orbit-item__inner">' +
-          logo +
-          "</div></div>"
-        );
-      })
-      .join("");
+    var n = picked.length;
+    var farN = Math.max(2, Math.ceil(n * 0.35));
+    var nearN = Math.max(2, Math.ceil(n * 0.3));
+    var midN = Math.max(1, n - farN - nearN);
+    if (midN < 1) midN = 1;
+
+    var farItems = picked.slice(0, farN);
+    var midItems = picked.slice(farN, farN + midN);
+    var nearItems = picked.slice(farN + midN);
+    if (!nearItems.length) nearItems = midItems.splice(0, Math.min(2, midItems.length));
+
+    renderOrbitTrack(outer, farItems, "far", 0, 32);
+    renderOrbitTrack(mid, midItems.length ? midItems : farItems.slice(0, 2), "mid", 18, 24);
+    renderOrbitTrack(inner, nearItems, "near", 8, 18);
   }
 
   function initEntryParallax() {
     var entry = document.getElementById("entry");
+    var orbit = document.getElementById("entryOrbit");
     if (!entry) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (window.matchMedia("(max-width: 900px)").matches) return;
+
+    function applyParallax(px, py) {
+      entry.style.setProperty("--entry-parallax-x", px + "px");
+      entry.style.setProperty("--entry-parallax-y", py + "px");
+      if (!orbit) return;
+      var rings = orbit.querySelectorAll(".entry__orbit-ring[data-parallax]");
+      rings.forEach(function (ring) {
+        var depth = parseFloat(ring.getAttribute("data-parallax")) || 0.5;
+        ring.style.transform =
+          "translate3d(" + px * depth + "px," + py * depth + "px,0)";
+      });
+    }
 
     entry.addEventListener(
       "mousemove",
       function (e) {
-        var x = ((e.clientX / window.innerWidth) - 0.5) * 14;
-        var y = ((e.clientY / window.innerHeight) - 0.5) * 10;
-        entry.style.setProperty("--entry-parallax-x", x + "px");
-        entry.style.setProperty("--entry-parallax-y", y + "px");
+        var px = ((e.clientX / window.innerWidth) - 0.5) * 16;
+        var py = ((e.clientY / window.innerHeight) - 0.5) * 11;
+        applyParallax(px, py);
       },
       { passive: true }
     );
+
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener(
+        "deviceorientation",
+        function (e) {
+          if (!e.gamma && !e.beta) return;
+          var px = Math.max(-12, Math.min(12, (e.gamma || 0) * 0.35));
+          var py = Math.max(-8, Math.min(8, ((e.beta || 0) - 45) * 0.12));
+          applyParallax(px, py);
+        },
+        { passive: true }
+      );
+    }
   }
 
   function init(ctx) {

@@ -6,7 +6,7 @@
   <title>Web3House — Little Ollie Labs</title>
   <meta
     name="description"
-    content="Web3House by Little Ollie Labs — a premium digital clubhouse for discovering NFT communities worth exploring."
+    content="Web3House by Little Ollie Labs — a welcoming home for discovering NFT communities, culture, and stories worth exploring."
   />
   <link rel="canonical" href="https://littleollielabs.com/web3house/" />
   <link rel="icon" href="assets/logos/Web3HouseLogo.png" type="image/png" sizes="any" />
@@ -34,15 +34,17 @@
   </div>
   <a class="skip-link" href="#hub">Skip to communities</a>
 
-  <!-- Entry / clubhouse door -->
+  <!-- Entry — Web3House welcome world -->
   <header class="entry" id="entry">
     <div class="entry__atmosphere" aria-hidden="true">
       <div class="entry__gradient"></div>
       <div class="entry__noise"></div>
+      <div class="entry__rays" aria-hidden="true"></div>
       <div class="entry__orb entry__orb--a"></div>
       <div class="entry__orb entry__orb--b"></div>
       <div class="entry__particles"></div>
-      <div class="entry__stars"></div>
+      <div class="entry__stars entry__stars--alive"></div>
+      <div class="entry__sparkles" id="entrySparkles" aria-hidden="true"></div>
       <div class="entry__fireflies" id="entryFireflies"></div>
     </div>
 
@@ -50,59 +52,59 @@
     <div class="entry__passage" id="entryPassage" aria-hidden="true"></div>
 
     <div class="entry__orbit" id="entryOrbit" aria-hidden="true">
-      <div class="entry__orbit-track" id="entryOrbitTrack"></div>
+      <div class="entry__orbit-ring entry__orbit-ring--far" data-parallax="0.35">
+        <div class="entry__orbit-track" id="entryOrbitOuter"></div>
+      </div>
+      <div class="entry__orbit-ring entry__orbit-ring--mid" data-parallax="0.55">
+        <div class="entry__orbit-track" id="entryOrbitMid"></div>
+      </div>
+      <div class="entry__orbit-ring entry__orbit-ring--near" data-parallax="0.75">
+        <div class="entry__orbit-track" id="entryOrbitInner"></div>
+      </div>
     </div>
 
     <div class="entry__inner">
-      <p class="entry__eyebrow entry__ui">Little Ollie Labs presents</p>
-
       <div class="entry__zoom-target" id="entryZoomTarget">
-        <div class="entry__house entry__logo entry__logo--float">
+        <div class="entry__house entry__logo entry__logo--float entry__logo--pulse">
+          <div class="entry__logo-rays" aria-hidden="true"></div>
+          <div class="entry__portal" aria-hidden="true">
+            <span class="entry__portal-ring entry__portal-ring--1"></span>
+            <span class="entry__portal-ring entry__portal-ring--2"></span>
+          </div>
           <div class="entry__door-glow" aria-hidden="true"></div>
           <div class="entry__window-glow" aria-hidden="true"></div>
           <div class="entry__window-glow entry__window-glow--b" aria-hidden="true"></div>
           <img
             class="entry__logo-img"
             src="assets/logos/Web3HouseLogo.png"
-            alt=""
+            alt="Web3House"
             width="420"
             height="140"
             fetchpriority="high"
           />
-          <p class="entry__logo-slogan entry__ui">Curated communities · Safe to explore · No wallet needed</p>
         </div>
       </div>
 
       <h1 class="entry__headline entry__ui">
-        <span class="visually-hidden">Web3House — </span>Step inside the clubhouse
+        <span class="visually-hidden">Web3House — </span>Find Your Place in Web3
       </h1>
-      <p class="entry__tagline entry__ui">Discover communities worth belonging to.</p>
-      <p class="entry__intro entry__ui">
-        Explore verified Web3 projects, discover their stories, and connect with the culture behind
-        them.
+      <p class="entry__subtext entry__ui">
+        Discover communities, creators, and projects shaping the future of Web3.
       </p>
-
-      <div
-        class="entry__rotator entry__ui"
-        id="entryRotator"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <span class="visually-hidden">Highlights: </span>
-        <span class="entry__rotator-track">
-          <span class="entry__rotator-line entry__rotator-line--a" id="entryRotatorA"></span>
-          <span class="entry__rotator-line entry__rotator-line--b" id="entryRotatorB" aria-hidden="true"></span>
-        </span>
-      </div>
+      <p class="entry__support entry__ui">
+        Featuring current communities exploring Web3House — with more being discovered over time.
+      </p>
 
       <div class="entry__cta-wrap entry__ui">
         <button type="button" class="btn btn--primary btn--enter" id="enterBtn">
-          Enter Web3House
+          <span class="btn--enter__glow" aria-hidden="true"></span>
+          <span class="btn--enter__label">Enter Web3House</span>
         </button>
       </div>
 
       <p class="entry__fine entry__ui">
-        <a href="../links/" class="entry__back">← Little Ollie Labs</a>
+        <span class="entry__brand">Little Ollie Labs</span>
+        <a href="../links/" class="entry__back">Explore our world →</a>
       </p>
     </div>
 
@@ -178,12 +180,12 @@
 
     <section class="hub-section hub-section--explore" id="discover" aria-labelledby="discoverHeading">
       <div class="section-head">
-        <h2 id="discoverHeading" class="section-head__title">Explore the clubhouse</h2>
+        <h2 id="discoverHeading" class="section-head__title">Explore communities</h2>
         <p class="section-head__sub">
           A small, hand-picked wall of communities we genuinely love — quality over quantity.
         </p>
       </div>
-      <p class="hub-curate-note">Thirteen curated rooms. One calm place to wander.</p>
+      <p class="hub-curate-note">Curated communities. One calm place to wander.</p>
       <div class="card-grid" id="discoverGrid" role="list"></div>
     </section>
 
@@ -411,7 +413,6 @@
   <script src="new-to-web3-topics.js"></script>
   <script src="atmosphere.js"></script>
   <script src="entry-transition.js"></script>
-  <script src="entry-hero.js"></script>
   <script src="quiz-data.js"></script>
   <script src="onboarding-quiz.js"></script>
   <script src="app.js" defer></script>

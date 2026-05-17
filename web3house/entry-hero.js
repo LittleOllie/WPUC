@@ -5,6 +5,8 @@
   "use strict";
 
   var ROTATOR_LINES = [
+    "Communities we hold in high regard.",
+    "Supportive spaces, shared with care.",
     "Discover hand-picked Web3 communities.",
     "Find your next favorite project.",
     "Explore the culture behind the NFTs.",

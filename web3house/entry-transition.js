@@ -368,6 +368,21 @@
     }
   }
 
+  function initSparkles() {
+    var host = document.getElementById("entrySparkles");
+    if (!host || prefersReducedMotion()) return;
+    for (var i = 0; i < 10; i++) {
+      var dot = document.createElement("span");
+      dot.className = "entry__sparkle";
+      dot.style.setProperty("--x", Math.round(6 + Math.random() * 88) + "%");
+      dot.style.setProperty("--y", Math.round(8 + Math.random() * 84) + "%");
+      dot.style.setProperty("--size", 2 + Math.round(Math.random() * 2) + "px");
+      dot.style.setProperty("--dur", 3 + Math.random() * 4 + "s");
+      dot.style.setProperty("--delay", Math.random() * 5 + "s");
+      host.appendChild(dot);
+    }
+  }
+
   function initParallax() {
     if (prefersReducedMotion() || isTouchDevice()) return;
     var inner = document.querySelector(".entry__inner");
@@ -396,6 +411,7 @@
 
   function init() {
     initFireflies();
+    initSparkles();
     initParallax();
     var enterBtn = document.getElementById("enterBtn");
     if (enterBtn) {

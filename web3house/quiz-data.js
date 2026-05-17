@@ -137,7 +137,7 @@
       id: "curious-explorer",
       title: "Curious Explorer",
       badge: "🧭",
-      tagline: "You belong in the discovery wing of the clubhouse.",
+      tagline: "You belong in the discovery wing of Web3House.",
       description:
         "You enjoy discovering communities, learning the culture behind Web3, and exploring safely at your own pace.",
       guidance: [
@@ -153,7 +153,7 @@
       id: "cozy-collector",
       title: "Cozy Collector",
       badge: "🛋️",
-      tagline: "You belong by the warm side of the clubhouse fireplace.",
+      tagline: "You belong by the warm hearth of the Web3House community.",
       description:
         "You prefer chill vibes, friendly spaces, and collecting art that feels like home — without the pressure.",
       guidance: [
@@ -185,7 +185,7 @@
       id: "creative-builder",
       title: "Creative Builder",
       badge: "🛠️",
-      tagline: "You belong in the studio corner of the clubhouse.",
+      tagline: "You belong in the creative studio corner of Web3House.",
       description:
         "You see Web3 as a canvas — art, experiments, and building things that outlast the hype cycle.",
       guidance: [
@@ -217,7 +217,7 @@
       id: "safe-explorer",
       title: "Safe Explorer",
       badge: "🛡️",
-      tagline: "You belong on the smart path through the clubhouse doors.",
+      tagline: "You belong on the smart, safe path through the Web3House doors.",
       description:
         "You're curious but careful — exactly the energy Web3 needs more of. You learn first, then explore with confidence.",
       guidance: [

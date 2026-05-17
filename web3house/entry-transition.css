@@ -187,6 +187,19 @@ body.entry-transition-active {
   transform: translate(-50%, -50%) scale(2.5);
 }
 
+.entry--entering .entry__portal-ring {
+  opacity: 1;
+  border-color: rgba(255, 248, 200, 0.65);
+  box-shadow:
+    0 0 28px rgba(255, 221, 85, 0.55),
+    inset 0 0 32px rgba(255, 255, 255, 0.35);
+}
+
+.entry--entering .entry__logo-rays {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.35);
+}
+
 .entry--exiting {
   pointer-events: none;
   opacity: 0;
@@ -296,8 +309,11 @@ body.hub-active.entry-done .entry {
 
 @media (prefers-reduced-motion: reduce) {
   .entry__firefly,
+  .entry__sparkle,
   .entry__door-glow,
   .entry__window-glow,
+  .entry__portal-ring,
+  .entry__logo-rays,
   .entry__logo--float {
     animation: none !important;
   }

@@ -80,7 +80,7 @@
   function renderWelcome() {
     return (
       '<div class="quiz-flow__panel is-active" data-panel="welcome">' +
-      '<p class="quiz-flow__eyebrow">Clubhouse onboarding</p>' +
+      '<p class="quiz-flow__eyebrow">Web3House onboarding</p>' +
       '<h2 class="quiz-flow__title" id="quizFlowTitle">Find your Web3 vibe</h2>' +
       '<p class="quiz-flow__lead">A quick, cozy journey — no wallet, no grades. Discover your style, pick up safety tips, and see which communities might feel like home.</p>' +
       '<div class="quiz-flow__actions">' +

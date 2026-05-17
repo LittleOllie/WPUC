@@ -1,5 +1,5 @@
 /**
- * Web3House — clubhouse atmosphere, themes, hub hero
+ * Web3House — atmosphere, themes, hub hero
  */
 
 /* ——— Theme tokens ——— */
@@ -149,7 +149,7 @@ body.w3h-theme-afterhours .hub-nav__link.is-active {
     0 6px 18px rgba(139, 156, 255, 0.25);
 }
 
-/* Time-of-day overlay (subtle, works in clubhouse mode) */
+/* Time-of-day overlay (subtle, works in daytime mode) */
 body.w3h-time-night.w3h-theme-clubhouse {
   --w3h-hero-bg: linear-gradient(
     165deg,
