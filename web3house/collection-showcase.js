@@ -435,7 +435,6 @@
     if (global.Web3HouseNewToWeb3 && global.Web3HouseNewToWeb3.renderAccordionHtml) {
       return global.Web3HouseNewToWeb3.renderAccordionHtml({
         prefix: "showcase-web3",
-        openFirst: true,
         showIcon: false,
       });
     }

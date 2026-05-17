@@ -273,7 +273,7 @@
    */
   function renderAccordionHtml(opts) {
     var prefix = (opts && opts.prefix) || "hub-web3";
-    var openFirst = !opts || opts.openFirst !== false;
+    var openFirst = !!(opts && opts.openFirst);
     var showIcon = opts && opts.showIcon;
 
     return NEW_TO_WEB3_TOPICS.map(function (topic, i) {
@@ -319,7 +319,7 @@
   function mountHubAccordion() {
     var root = document.getElementById("hubWeb3Accordion");
     if (!root) return;
-    root.innerHTML = renderAccordionHtml({ prefix: "hub-web3", openFirst: true, showIcon: true });
+    root.innerHTML = renderAccordionHtml({ prefix: "hub-web3", showIcon: true });
     bindExclusiveAccordion(root);
   }
 
