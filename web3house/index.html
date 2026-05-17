@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="detail-showcase.css" />
   <link rel="stylesheet" href="atmosphere.css" />
   <link rel="stylesheet" href="entry.css" />
+  <link rel="stylesheet" href="entry-transition.css" />
 </head>
 <body class="w3h-theme-clubhouse w3h-time-day">
   <div class="hub-atmosphere" aria-hidden="true">
@@ -41,43 +42,52 @@
       <div class="entry__orb entry__orb--b"></div>
       <div class="entry__particles"></div>
       <div class="entry__stars"></div>
+      <div class="entry__fireflies" id="entryFireflies"></div>
     </div>
+
+    <div class="entry__vignette" aria-hidden="true"></div>
+    <div class="entry__passage" id="entryPassage" aria-hidden="true"></div>
 
     <div class="entry__orbit" id="entryOrbit" aria-hidden="true">
       <div class="entry__orbit-track" id="entryOrbitTrack"></div>
     </div>
 
     <div class="entry__inner">
-      <p class="entry__eyebrow">Little Ollie Labs presents</p>
+      <p class="entry__eyebrow entry__ui">Little Ollie Labs presents</p>
 
-      <div class="entry__logo entry__logo--float">
-        <img
-          class="entry__logo-img"
-          src="assets/logos/Web3HouseLogo.png"
-          alt=""
-          width="360"
-          height="120"
-          fetchpriority="high"
-        />
+      <div class="entry__zoom-target" id="entryZoomTarget">
+        <div class="entry__house entry__logo entry__logo--float">
+          <div class="entry__door-glow" aria-hidden="true"></div>
+          <div class="entry__window-glow" aria-hidden="true"></div>
+          <div class="entry__window-glow entry__window-glow--b" aria-hidden="true"></div>
+          <img
+            class="entry__logo-img"
+            src="assets/logos/Web3HouseLogo.png"
+            alt=""
+            width="360"
+            height="120"
+            fetchpriority="high"
+          />
+        </div>
       </div>
 
-      <h1 class="entry__headline">
+      <h1 class="entry__headline entry__ui">
         <span class="visually-hidden">Web3House — </span>Step inside the clubhouse.
       </h1>
-      <p class="entry__tagline">A curated home for Web3 communities.</p>
-      <p class="entry__intro">
+      <p class="entry__tagline entry__ui">A curated home for Web3 communities.</p>
+      <p class="entry__intro entry__ui">
         Discover the people shaping internet culture — beyond the floor price. Explore communities we
         genuinely believe in, with verified links and room to wander at your own pace.
       </p>
 
-      <div class="entry__cta-wrap">
+      <div class="entry__cta-wrap entry__ui">
         <button type="button" class="btn btn--primary btn--enter" id="enterBtn">
           Enter Web3House
         </button>
-        <p class="entry__hint">No wallet required to browse</p>
+        <p class="entry__hint entry__ui">No wallet required to browse</p>
       </div>
 
-      <p class="entry__fine">
+      <p class="entry__fine entry__ui">
         <a href="../links/" class="entry__back">← Little Ollie Labs</a>
       </p>
     </div>
@@ -86,6 +96,10 @@
       <span class="entry__lantern"></span>
       <span class="entry__lantern entry__lantern--delay"></span>
     </div>
+
+    <!-- Optional ambience (muted by default; set src + unmute to enable) -->
+    <audio id="entryDoorSound" preload="none" muted aria-hidden="true"></audio>
+    <audio id="entryAmbientSound" preload="none" muted aria-hidden="true" loop></audio>
   </header>
 
   <!-- Main hub -->
@@ -353,6 +367,7 @@
   <script src="nft-samples.js"></script>
   <script src="collection-showcase.js"></script>
   <script src="atmosphere.js"></script>
+  <script src="entry-transition.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>

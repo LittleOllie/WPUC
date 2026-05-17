@@ -270,6 +270,8 @@
     var taglineEl = document.getElementById("joinCommunityTagline");
     if (!logoWrap || !logoImg || !logoPh) return;
 
+    logoWrap.classList.toggle("join-community-modal__logo-wrap--edge", Boolean(c.logoEdgeFill));
+
     var logoUrl = c.logo;
     if (!logoUrl) {
       var detailLogo = document.getElementById("detailLogo");
@@ -448,11 +450,14 @@
         var logo = c.logo
           ? '<img src="' + esc(c.logo) + '" alt="" loading="lazy" decoding="async" />'
           : '<span class="showcase-connected__ph">' + esc(c.logoInitials || c.name.charAt(0)) + "</span>";
+        var edgeCls = c.logoEdgeFill ? " showcase-connected__logo--edge" : "";
         return (
           '<button type="button" class="showcase-connected" data-connected-id="' +
           esc(c.id) +
           '">' +
-          '<span class="showcase-connected__logo">' +
+          '<span class="showcase-connected__logo' +
+          edgeCls +
+          '">' +
           logo +
           "</span>" +
           "<span class=\"showcase-connected__name\">" +
@@ -562,6 +567,11 @@
 
     var watermark = panel.querySelector("#detailWatermark");
     setWatermark(watermark, c.logo || null);
+
+    var logoWrap = panel.querySelector(".detail__logo-wrap");
+    if (logoWrap) {
+      logoWrap.classList.toggle("detail__logo-wrap--edge", Boolean(c.logoEdgeFill));
+    }
 
     var logoEl = panel.querySelector("#detailLogo");
     if (logoEl) {

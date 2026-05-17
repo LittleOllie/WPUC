@@ -243,6 +243,13 @@
   padding: 0.35rem;
 }
 
+.detail__logo-wrap--edge .detail__logo {
+  padding: 0;
+  object-fit: cover;
+  transform: scale(1.12);
+  transform-origin: center center;
+}
+
 .detail__title {
   grid-area: title;
   margin: 0;
@@ -1013,6 +1020,24 @@
   padding: 0.2rem;
 }
 
+.showcase-connected__logo--edge img {
+  padding: 0;
+  object-fit: cover;
+  transform: scale(1.12);
+  transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail__logo-wrap--edge .detail__logo,
+  .showcase-connected__logo--edge img,
+  .join-community-modal__logo-wrap--edge .join-community-modal__logo {
+    transform: none;
+    width: 112%;
+    height: 112%;
+    margin: -6%;
+  }
+}
+
 .showcase-connected__ph {
   font-weight: 800;
   font-size: 0.9rem;
@@ -1284,6 +1309,18 @@
   object-fit: contain;
   display: block;
   border-radius: 0.75rem;
+}
+
+.join-community-modal__logo-wrap--edge {
+  padding: 0;
+  overflow: hidden;
+}
+
+.join-community-modal__logo-wrap--edge .join-community-modal__logo {
+  object-fit: cover;
+  transform: scale(1.12);
+  transform-origin: center center;
+  border-radius: 1.1rem;
 }
 
 .join-community-modal__logo-ph {

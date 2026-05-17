@@ -1,0 +1,271 @@
+/**
+ * Web3House — entry transition (zoom driven by entry-transition.js)
+ */
+
+.entry__fireflies {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.entry__firefly {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 221, 85, 0.85);
+  box-shadow: 0 0 8px rgba(255, 221, 85, 0.55);
+  opacity: 0;
+  animation: entry-firefly-drift var(--dur, 6s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.entry__house {
+  position: relative;
+  display: inline-block;
+}
+
+.entry__door-glow {
+  position: absolute;
+  left: 50%;
+  top: 35.5%;
+  z-index: 1;
+  width: 22%;
+  height: 28%;
+  transform: translate(-50%, -50%);
+  border-radius: 48% 48% 42% 42%;
+  background: radial-gradient(
+    ellipse at center 42%,
+    rgba(255, 248, 210, 0.95) 0%,
+    rgba(255, 221, 85, 0.75) 40%,
+    transparent 78%
+  );
+  opacity: 0.55;
+  filter: blur(6px);
+  animation: entry-door-flicker 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.entry__window-glow {
+  position: absolute;
+  left: 18%;
+  top: 32%;
+  width: 22%;
+  height: 22%;
+  border-radius: 40%;
+  background: radial-gradient(circle, rgba(109, 224, 255, 0.35), transparent 70%);
+  filter: blur(6px);
+  opacity: 0.35;
+  animation: entry-window-flicker 5.5s ease-in-out infinite;
+  animation-delay: 1.2s;
+  pointer-events: none;
+}
+
+.entry__window-glow--b {
+  left: auto;
+  right: 16%;
+  top: 34%;
+  animation-delay: 2.4s;
+}
+
+.entry__logo--float {
+  animation:
+    entry-logo-float 6s ease-in-out infinite,
+    entry-logo-breathe 5s ease-in-out infinite;
+}
+
+.entry__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 50% 42% at var(--entry-passage-x, 50%) var(--entry-passage-y, 38%),
+    transparent 0%,
+    rgba(26, 26, 46, 0.7) 100%
+  );
+  transition: opacity 0.35s ease;
+}
+
+/* Full-screen yellow wash — through the door */
+.entry__passage {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  background: #ffdd55;
+}
+
+.entry__passage--on {
+  opacity: 1;
+  transition: opacity 0.45s ease-in;
+  background: radial-gradient(
+    circle at var(--entry-passage-x, 50%) var(--entry-passage-y, 38%),
+    #fffef5 0%,
+    #ffe9a0 35%,
+    #ffdd55 55%,
+    #f5c842 100%
+  );
+}
+
+.entry__passage--fade {
+  opacity: 0 !important;
+  transition: opacity 0.55s ease-out !important;
+  background: #ffdd55 !important;
+}
+
+.entry__zoom-target {
+  position: relative;
+  z-index: 2;
+  will-change: transform, filter;
+}
+
+.entry__zoom-target.entry__zoom-running {
+  z-index: 50;
+}
+
+.entry__inner {
+  transition: transform 0.35s ease-out;
+}
+
+.entry__ui {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.btn--enter:active:not(:disabled),
+.entry--entering .btn--enter {
+  transform: scale(0.96) translateY(2px);
+}
+
+.btn--enter:disabled {
+  cursor: wait;
+  opacity: 0.92;
+}
+
+/* ——— Enter sequence ——— */
+body.entry-transition-active {
+  overflow: hidden;
+}
+
+.entry.entry--entering {
+  overflow: visible;
+  z-index: 10;
+}
+
+.entry--entering .entry__orbit,
+.entry--entering .entry__ui,
+.entry--entering .entry__porch,
+.entry--entering .entry__atmosphere {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.entry--entering .entry__logo--float {
+  animation: none;
+}
+
+.entry--entering .entry__vignette {
+  opacity: 1;
+}
+
+.entry--entering .entry__door-glow {
+  opacity: 1;
+  filter: blur(10px);
+  transform: translate(-50%, -50%) scale(2.5);
+}
+
+.entry--exiting {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+/* Hub reveal */
+body.entry-transition-active .hub {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+body.entry-transition-active.hub-visible .hub {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+
+body.entry-transition-active .hub-atmosphere {
+  opacity: 0;
+}
+
+body.entry-transition-active.hub-visible .hub-atmosphere {
+  opacity: 1;
+  transition: opacity 0.5s ease 0.1s;
+}
+
+body.hub-active.entry-done .entry {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+@keyframes entry-firefly-drift {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate3d(10px, -24px, 0) scale(1);
+  }
+}
+
+@keyframes entry-door-flicker {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+@keyframes entry-window-flicker {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes entry-logo-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.015);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry__firefly,
+  .entry__door-glow,
+  .entry__window-glow,
+  .entry__logo--float {
+    animation: none !important;
+  }
+}

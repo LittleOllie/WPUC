@@ -42,6 +42,7 @@
     {
       id: "ogenies",
       collectionId: "ogenies",
+      logoEdgeFill: true,
       contract: "0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd",
       theme: { primary: "#eab308", background: "#0c0618" },
       name: "OGenies",
@@ -142,6 +143,7 @@
     {
       id: "space-riders",
       collectionId: "spaceriders",
+      logoEdgeFill: true,
       contract: "0xc9d198089d6c31d0ca5cc5b92c97a57a97bbfde2",
       theme: { primary: "#3b82f6", background: "#030712" },
       name: "Space Riders",
@@ -166,6 +168,7 @@
     {
       id: "quirklings",
       collectionId: "quirklings",
+      logoEdgeFill: true,
       contract: "0x8f1b132e9fd2b9a2b210baa186bf1ae650adf7ac",
       theme: { primary: "#c084fc", background: "#0f0a1a" },
       name: "Quirklings",
@@ -189,6 +192,7 @@
     {
       id: "killabears",
       collectionId: "killabears",
+      logoEdgeFill: true,
       contract: "0xc99c679c50033bbc5321eb88752e89a93e9e83c5",
       theme: { primary: "#ef4444", background: "#0a0508" },
       name: "Killabears",
@@ -212,6 +216,7 @@
     {
       id: "akidcalledbeast",
       collectionId: "akidcalledbeast",
+      logoEdgeFill: true,
       contract: "0x77372a4cc66063575b05b44481f059be356964a4",
       theme: { primary: "#f97316", background: "#0c0806" },
       name: "A Kid Called Beast",
@@ -235,6 +240,7 @@
     {
       id: "call-of-the-stars",
       collectionId: "call-of-the-stars",
+      logoEdgeFill: true,
       contract: "0x11ad9906f148c6b452f9617b350ce5c98660ab1c",
       theme: { primary: "#38bdf8", background: "#030712" },
       name: "Call of the Stars",
@@ -288,9 +294,14 @@
     }
   }
 
+  function usesLogoEdgeFill(c) {
+    return Boolean(c?.logoEdgeFill);
+  }
+
   function applyCardLogo(cardEl, c, logoSrc) {
     const wrap = cardEl?.querySelector(".community-card__logo-wrap");
     if (!wrap || !logoSrc) return;
+    wrap.classList.toggle("community-card__logo-wrap--edge", usesLogoEdgeFill(c));
     applyCardWatermark(cardEl, logoSrc);
     let img = wrap.querySelector("img.community-card__logo");
     if (!img) {
@@ -315,6 +326,8 @@
 
   function applyDetailLogo(c, logoSrc) {
     const logoEl = $("#detailLogo");
+    const logoWrap = document.querySelector(".detail__logo-wrap");
+    if (logoWrap) logoWrap.classList.toggle("detail__logo-wrap--edge", usesLogoEdgeFill(c));
     if (!logoEl || !logoSrc) return;
     logoEl.src = logoSrc;
     logoEl.alt = c.name;
@@ -369,6 +382,7 @@
   function renderCard(c) {
     const gem = c.hiddenGem ? '<span class="tag tag--gem">Hidden gem</span>' : "";
     const tags = c.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
+    const edgeWrap = usesLogoEdgeFill(c) ? " community-card__logo-wrap--edge" : "";
     const logo = c.logo
       ? `<img class="community-card__logo" src="${esc(c.logo)}" alt="" loading="lazy" decoding="async" />`
       : `<span class="community-card__logo community-card__logo--placeholder">${esc(c.logoInitials || c.name.charAt(0))}</span>`;
@@ -379,7 +393,7 @@
     el.innerHTML = `
       <div class="community-card__watermark" aria-hidden="true"></div>
       <div class="community-card__frame">
-        <div class="community-card__logo-wrap">${logo}</div>
+        <div class="community-card__logo-wrap${edgeWrap}">${logo}</div>
         <h3 class="community-card__name">${esc(c.name)}</h3>
         ${
           c.studio
@@ -515,15 +529,34 @@
     }
   }
 
-  function enterHub() {
+  function enterHub(opts) {
+    const instant = opts && opts.instant;
     document.body.classList.add("hub-visible", "hub-active");
-    $("#hub").scrollIntoView({ behavior: "smooth", block: "start" });
-    $("#hub").focus({ preventScroll: true });
+    const hub = $("#hub");
+    if (hub) {
+      hub.scrollIntoView({ behavior: instant ? "auto" : "smooth", block: "start" });
+      hub.focus({ preventScroll: true });
+    }
     history.replaceState(null, "", "#hub");
     if (window.Web3HouseSamples) {
       window.Web3HouseSamples.prefetchAll(COMMUNITIES);
     }
     prefetchCollectionBrands();
+  }
+
+  function handleEnterClick() {
+    const btn = $("#enterBtn");
+    if (btn?.disabled) return;
+
+    const entryApi = window.Web3HouseEntry;
+    if (!entryApi?.playEnterTransition) {
+      enterHub();
+      return;
+    }
+
+    btn.disabled = true;
+
+    entryApi.playEnterTransition(() => enterHub({ instant: true }), { cinematic: true });
   }
 
   function toggleRecommend(show) {
@@ -619,7 +652,7 @@
 
   function bindEvents() {
     bindHubNav();
-    $("#enterBtn")?.addEventListener("click", enterHub);
+    $("#enterBtn")?.addEventListener("click", handleEnterClick);
     $("#detailClose")?.addEventListener("click", closeDetail);
     $("#detailBackBtn")?.addEventListener("click", closeDetail);
 
@@ -639,7 +672,8 @@
     const hash = location.hash;
     const hubSectionHashes = ["#hub", "#spotlight", "#discover", "#new-to-web3", "#featured"];
     if (hubSectionHashes.includes(hash) || hash.startsWith("#community-")) {
-      document.body.classList.add("hub-visible", "hub-active");
+      document.body.classList.add("hub-visible", "hub-active", "entry-done");
+      window.Web3HouseEntry?.markVisited?.();
       if (hash !== "#hub" && hubSectionHashes.includes(hash)) {
         const scrollTarget = hash === "#featured" ? "#spotlight" : hash;
         requestAnimationFrame(() => scrollToSection(scrollTarget));
@@ -652,6 +686,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    window.Web3HouseEntry?.init?.();
     mountCards();
     bindEvents();
     if (window.Web3HouseAtmosphere) {
