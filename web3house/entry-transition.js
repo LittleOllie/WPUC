@@ -1,5 +1,6 @@
 /**
  * Web3House — cinematic entry: zoom into logo door → yellow wash → hub
+ * iOS-safe: CSS zoom + timeline failsafe (heavy JS scale/blur can freeze Safari timers)
  */
 (function (global) {
   "use strict";
@@ -7,22 +8,28 @@
   var SESSION_KEY = "w3h-entered-v1";
   var PERSIST_KEY = "w3h-entered-persist-v1";
 
-  /** Total timeline (ms) */
   var ZOOM_MS = 1800;
   var YELLOW_AT = 1400;
-  var HUB_AT = 2000;
-  var DONE_AT = 2600;
-
-  var MAX_SCALE = 85;
+  var HUB_AT = 1900;
+  var FADE_AT = 2400;
+  var FAILSAFE_AT = 3600;
 
   var DOOR_U = 0.5;
   var DOOR_V = 0.355;
 
   var transitioning = false;
-  var zoomRaf = 0;
+  var timelineTimers = [];
+  var hubRevealed = false;
 
   function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function isTouchDevice() {
+    return (
+      window.matchMedia("(pointer: coarse)").matches ||
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "")
+    );
   }
 
   function markVisited() {
@@ -34,26 +41,34 @@
     }
   }
 
-  function easeInCubic(t) {
-    return t * t * t;
+  function clearTimeline() {
+    timelineTimers.forEach(function (id) {
+      clearTimeout(id);
+    });
+    timelineTimers = [];
+  }
+
+  function schedule(fn, ms) {
+    timelineTimers.push(
+      setTimeout(function () {
+        if (!transitioning) return;
+        fn();
+      }, ms)
+    );
   }
 
   function scrollPageToTop() {
-    window.scrollTo(0, 0);
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } catch (e) {
+      window.scrollTo(0, 0);
+    }
     if (document.documentElement) document.documentElement.scrollTop = 0;
     if (document.body) document.body.scrollTop = 0;
   }
 
-  function cancelZoom() {
-    if (zoomRaf) {
-      cancelAnimationFrame(zoomRaf);
-      zoomRaf = 0;
-    }
-  }
-
   function resetEntry(entry) {
     if (!entry) return;
-    cancelZoom();
     entry.classList.remove("entry--entering", "entry--passage", "entry--exiting");
     entry.style.removeProperty("--entry-passage-x");
     entry.style.removeProperty("--entry-passage-y");
@@ -69,8 +84,10 @@
     var passage = document.getElementById("entryPassage");
     if (passage) {
       passage.classList.remove("entry__passage--on", "entry__passage--fade");
-      passage.style.removeProperty("opacity");
-      passage.style.removeProperty("transition");
+      passage.style.opacity = "";
+      passage.style.visibility = "";
+      passage.style.pointerEvents = "";
+      passage.style.transition = "";
     }
   }
 
@@ -97,61 +114,84 @@
     return zoom;
   }
 
-  function runZoom(zoom) {
-    cancelZoom();
-    var start = 0;
+  function hidePassage() {
+    var passage = document.getElementById("entryPassage");
+    if (!passage) return;
+    passage.classList.remove("entry__passage--on");
+    passage.classList.add("entry__passage--fade");
+    passage.style.opacity = "0";
+    passage.style.visibility = "hidden";
+    passage.style.pointerEvents = "none";
+  }
 
-    function frame(ts) {
-      if (!start) start = ts;
-      var t = Math.min(1, (ts - start) / ZOOM_MS);
-      var eased = easeInCubic(t);
-      var scale = 1 + eased * (MAX_SCALE - 1);
-      var blur = eased * 10;
-      var bright = 1 + eased * 0.45;
+  function revealHub(onRevealHub) {
+    if (hubRevealed) return;
+    hubRevealed = true;
+    document.body.classList.add("hub-visible", "hub-active");
 
-      zoom.style.transform = "scale(" + scale.toFixed(3) + ")";
-      zoom.style.filter = "blur(" + blur.toFixed(2) + "px) brightness(" + bright.toFixed(3) + ")";
-
-      if (t < 1) {
-        zoomRaf = requestAnimationFrame(frame);
-      } else {
-        zoomRaf = 0;
-      }
+    var hub = document.getElementById("hub");
+    var atmosphere = document.querySelector(".hub-atmosphere");
+    if (hub) {
+      hub.style.opacity = "1";
+      hub.style.transform = "translate3d(0, 0, 0)";
+    }
+    if (atmosphere) {
+      atmosphere.style.opacity = "1";
     }
 
-    zoomRaf = requestAnimationFrame(frame);
+    if (onRevealHub) onRevealHub();
+    scrollPageToTop();
+  }
+
+  function finishTransition(entry, onRevealHub, resolve) {
+    if (!transitioning) {
+      if (resolve) resolve();
+      return;
+    }
+
+    clearTimeline();
+    hidePassage();
+    revealHub(onRevealHub);
+
+    if (entry) {
+      entry.classList.add("entry--exiting");
+    }
+    document.body.classList.add("entry-done");
+    scrollPageToTop();
+
+    requestAnimationFrame(function () {
+      resetEntry(entry);
+      document.body.classList.remove("entry-transition-active");
+
+      var hub = document.getElementById("hub");
+      var atmosphere = document.querySelector(".hub-atmosphere");
+      if (hub) {
+        hub.style.removeProperty("opacity");
+        hub.style.removeProperty("transform");
+      }
+      if (atmosphere) {
+        atmosphere.style.removeProperty("opacity");
+      }
+
+      transitioning = false;
+      hubRevealed = false;
+
+      var enterBtn = document.getElementById("enterBtn");
+      if (enterBtn) enterBtn.disabled = false;
+
+      if (resolve) resolve();
+    });
   }
 
   function showYellowWash(entry) {
     var passage = document.getElementById("entryPassage");
     if (!passage) return;
     entry.classList.add("entry--passage");
+    passage.style.opacity = "";
+    passage.style.visibility = "";
     passage.classList.add("entry__passage--on");
   }
 
-  function fadeYellowAndExit(entry, onDone) {
-    var passage = document.getElementById("entryPassage");
-    if (passage) {
-      passage.classList.add("entry__passage--fade");
-    }
-    entry.classList.add("entry--exiting");
-    document.body.classList.add("entry-done");
-    scrollPageToTop();
-
-    setTimeout(function () {
-      scrollPageToTop();
-      requestAnimationFrame(scrollPageToTop);
-      resetEntry(entry);
-      document.body.classList.remove("entry-transition-active");
-      transitioning = false;
-      if (onDone) onDone();
-    }, 550);
-  }
-
-  /**
-   * @param {function} onRevealHub
-   * @param {{ cinematic?: boolean }} opts — cinematic:true = always full zoom (button click)
-   */
   function playEnterTransition(onRevealHub, opts) {
     var entry = document.getElementById("entry");
     var cinematic = !opts || opts.cinematic !== false;
@@ -169,11 +209,11 @@
       return Promise.resolve();
     }
 
-    /* Non-cinematic only for programmatic shortcuts; button always sends cinematic */
     if (!cinematic) {
       markVisited();
       document.body.classList.add("entry-transition-active", "hub-visible", "hub-active", "entry-done");
       if (onRevealHub) onRevealHub();
+      scrollPageToTop();
       setTimeout(function () {
         document.body.classList.remove("entry-transition-active");
       }, 300);
@@ -181,7 +221,10 @@
     }
 
     transitioning = true;
+    hubRevealed = false;
     markVisited();
+    clearTimeline();
+
     if (global.Web3HouseEntryHero && global.Web3HouseEntryHero.stop) {
       global.Web3HouseEntryHero.stop();
     }
@@ -194,30 +237,32 @@
 
     var zoom = setDoorFocus(entry);
     if (!zoom) {
-      transitioning = false;
-      if (onRevealHub) onRevealHub();
-      document.body.classList.add("hub-visible", "hub-active", "entry-done");
+      finishTransition(entry, onRevealHub);
       return Promise.resolve();
     }
 
     entry.classList.add("entry--entering");
+    if (isTouchDevice()) {
+      entry.classList.add("entry--entering-touch");
+    }
     zoom.classList.add("entry__zoom-running");
 
-    runZoom(zoom);
-
     return new Promise(function (resolve) {
-      setTimeout(function () {
+      schedule(function () {
         showYellowWash(entry);
       }, YELLOW_AT);
 
-      setTimeout(function () {
-        if (onRevealHub) onRevealHub();
-        document.body.classList.add("hub-visible", "hub-active");
+      schedule(function () {
+        revealHub(onRevealHub);
       }, HUB_AT);
 
-      setTimeout(function () {
-        fadeYellowAndExit(entry, resolve);
-      }, DONE_AT);
+      schedule(function () {
+        finishTransition(entry, onRevealHub, resolve);
+      }, FADE_AT);
+
+      schedule(function () {
+        finishTransition(entry, onRevealHub, resolve);
+      }, FAILSAFE_AT);
     });
   }
 
@@ -248,7 +293,7 @@
   }
 
   function initParallax() {
-    if (prefersReducedMotion() || window.matchMedia("(pointer: coarse)").matches) return;
+    if (prefersReducedMotion() || isTouchDevice()) return;
     var inner = document.querySelector(".entry__inner");
     if (!inner) return;
     var raf = 0;

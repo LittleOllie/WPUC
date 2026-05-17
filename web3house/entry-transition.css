@@ -116,18 +116,25 @@
 
 .entry__passage--fade {
   opacity: 0 !important;
-  transition: opacity 0.55s ease-out !important;
+  visibility: hidden !important;
+  transition: opacity 0.4s ease-out, visibility 0s linear 0.4s !important;
   background: #ffdd55 !important;
 }
 
 .entry__zoom-target {
   position: relative;
   z-index: 2;
-  will-change: transform, filter;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .entry__zoom-target.entry__zoom-running {
   z-index: 50;
+  animation: entry-zoom-door 1.8s cubic-bezier(0.32, 0.02, 0.82, 0.38) forwards;
+}
+
+.entry--entering-touch .entry__zoom-target.entry__zoom-running {
+  animation: entry-zoom-door-touch 1.8s cubic-bezier(0.32, 0.02, 0.82, 0.38) forwards;
 }
 
 .entry__inner {
@@ -194,10 +201,12 @@ body.entry-transition-active .hub {
 
 body.entry-transition-active.hub-visible .hub {
   opacity: 1;
-  transform: none;
+  transform: translate3d(0, 0, 0);
   transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
+    opacity 0.5s ease,
+    transform 0.5s ease;
+  position: relative;
+  z-index: 1;
 }
 
 body.entry-transition-active .hub-atmosphere {
@@ -217,6 +226,28 @@ body.hub-active.entry-done .entry {
   min-height: 0;
   overflow: hidden;
   opacity: 0;
+}
+
+@keyframes entry-zoom-door {
+  0% {
+    transform: scale(1);
+    filter: none;
+  }
+  100% {
+    transform: scale(42);
+    filter: blur(8px) brightness(1.35);
+  }
+}
+
+@keyframes entry-zoom-door-touch {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+    filter: brightness(1);
+  }
+  100% {
+    transform: scale(28) translate3d(0, 0, 0);
+    filter: brightness(1.3);
+  }
 }
 
 @keyframes entry-firefly-drift {
