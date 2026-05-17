@@ -4,7 +4,7 @@ import CloudLayer from "./CloudLayer.jsx";
 
 /**
  * Layer stack (back → front):
- * SkyBG → weather tint → clouds → fence → lawn
+ * SkyBG → weather tint → clouds → llama (over clouds) → fence → lawn
  */
 export default function SceneBackdrop({ weather }) {
   const tint =
@@ -43,6 +43,16 @@ export default function SceneBackdrop({ weather }) {
       )}
 
       <CloudLayer weather={weather} />
+
+      {/* Llama — center, behind fence, feet line up with fence bottom */}
+      <motion.div className="pog-llama-wrap">
+        <img
+          src={ASSETS.llama}
+          alt=""
+          className="pog-llama"
+          draggable={false}
+        />
+      </motion.div>
 
       {/* Fence — full width, bottom meets grass line */}
       <div className="pog-fence-wrap">

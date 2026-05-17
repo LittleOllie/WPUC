@@ -34,33 +34,6 @@ function isPointerInViewport(clientX, clientY) {
   );
 }
 
-/** Bottom of page → top of tallest (back) grass layer. */
-function getGrassBandRect(zone, layerNodes) {
-  const zoneRect = zone.getBoundingClientRect();
-  let top = zoneRect.top;
-
-  const backLayer = layerNodes?.[0];
-  if (backLayer) {
-    top = Math.min(top, backLayer.getBoundingClientRect().top);
-  }
-
-  return {
-    left: zoneRect.left,
-    right: zoneRect.right,
-    top,
-    bottom: window.innerHeight,
-  };
-}
-
-function isInGrassBand(clientX, clientY, band) {
-  return (
-    clientX >= band.left &&
-    clientX <= band.right &&
-    clientY >= band.top &&
-    clientY <= band.bottom
-  );
-}
-
 export default function LayeredGrass({
   wind: windMultiplier = 1,
   onGrassMovingChange,
@@ -135,11 +108,7 @@ export default function LayeredGrass({
 
       const p = pointerRef.current;
       const tileNodes = tileElsRef.current;
-      const layerNodes = layerElsRef.current;
       const masks = layerMasksRef.current;
-
-      const band = getGrassBandRect(zone, layerNodes);
-      const inBand = isInGrassBand(clientX, clientY, band);
 
       const hovered =
         tileNodes?.length && masks?.length
@@ -152,7 +121,7 @@ export default function LayeredGrass({
 
       pointerRef.current = {
         ...p,
-        timerActive: inBand,
+        timerActive: hovered != null,
         hoverLayer: hovered?.layer ?? -1,
         hoverTile: hovered?.tile ?? -1,
         vx: clamp(vx, -0.1, 0.1),

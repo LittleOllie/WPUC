@@ -13,9 +13,7 @@ export default function GrassTimer({ formatted, moving }) {
     >
       <p className="lo-timer__label">Grass time</p>
       <p className="lo-timer__value tabular-nums">{formatted}</p>
-      <p className="lo-timer__hint">
-        {moving ? "in the grass zone…" : "move into the lawn"}
-      </p>
+      <p className="lo-timer__hint">Touch grass. Be happy.</p>
     </motion.div>
   );
 }

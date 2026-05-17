@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { formatTouchTimer } from "../lib/formatTime.js";
 
 /**
- * Counts up only while the pointer is in the grass band (bottom → top of lawn).
+ * Counts up only while the pointer is on a grass PNG (touch or hover on blades).
  */
 export function useGrassMoveTimer() {
   const [ms, setMs] = useState(0);

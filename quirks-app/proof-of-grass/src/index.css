@@ -63,9 +63,9 @@ button {
   }
 }
 
-/* In front of sky, behind fence / grass / UI */
+/* Drifting clouds — behind llama and fence */
 .pog-cloud-layer {
-  z-index: 38;
+  z-index: 30;
   pointer-events: none;
 }
 
@@ -196,6 +196,32 @@ button {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* Llama — centered, in front of clouds, behind fence */
+.pog-llama-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: var(--pog-fence-bottom);
+  z-index: 44;
+  line-height: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pog-llama {
+  display: block;
+  height: min(52vh, 560px);
+  width: auto;
+  max-width: min(78vw, 540px);
+  object-fit: contain;
+  object-position: bottom center;
+  transform: translateY(var(--pog-fence-drop)) scale(2);
+  transform-origin: bottom center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 6px 18px rgba(26, 46, 31, 0.12));
 }
 
 /* Fence — edge-to-edge, pinned near bottom of the page */
