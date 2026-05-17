@@ -15,22 +15,27 @@
     {
       id: "little-ollie",
       name: "Little Ollie",
-      tagline: "Games, stories & family-friendly collectibles.",
+      tagline:
+        "Building stories, characters, apps, and friendships — one little adventure at a time.",
       description:
-        "The heart of Little Ollie Labs — playful characters, arcade games, and a growing universe built for families who create together.",
-      tags: ["Family", "Games", "LO Labs"],
+        "Little Ollie is a creative Web3 world built around stories, characters, games, apps, collectibles, and community. What started as a small father-and-son idea slowly evolved into an ongoing builder journey focused on creativity, experimentation, fun, and genuine connection.",
+      tags: ["Art", "Community", "Builders", "Storytelling", "Gaming", "Family", "Creativity", "Web3"],
       why: [
-        "Authentic, family-powered storytelling — not manufactured hype.",
-        "Games and collectibles designed for parents and kids to enjoy side by side.",
-        "Partners with OG Triple Media, DropDed Gorgez, and communities we proudly showcase here.",
+        "A welcoming community focused on creativity and good vibes.",
+        "Ongoing games, tools, experiments, and fun Web3 apps.",
+        "A growing world of original Little Ollie characters and stories.",
+        "A genuine builder journey shared openly with the community.",
+        "Strong focus on collaboration and supporting other communities.",
       ],
-      logo: "assets/logos/little-ollie.webp",
+      logo: "assets/logos/LOLogo.png",
       logoInitials: "LO",
-      theme: { primary: "#6de0ff", background: "#0a1020" },
-      banner: "linear-gradient(135deg, #6de0ff, #4c6fff)",
+      theme: { primary: "#6de0ff", background: "#14121c" },
+      banner:
+        "linear-gradient(155deg, rgba(255, 221, 85, 0.32) 0%, rgba(109, 224, 255, 0.22) 38%, #14121c 72%)",
       website: "https://littleollielabs.com/links/",
       twitter: "https://x.com/LittleOllieNFT",
       featured: true,
+      communityPick: true,
       /* Studio brand — no on-chain collection; use local character art */
       staticArt: [
         { tokenId: "11", name: "Little Ollie #11", imageUrl: "assets/logos/LO11.png" },
@@ -38,6 +43,58 @@
         { tokenId: "33", name: "Little Ollie #33", imageUrl: "assets/logos/LO33.png" },
         { tokenId: "44", name: "Little Ollie #44", imageUrl: "assets/logos/LO44.png" },
       ],
+      showcase: {
+        connectedIds: ["ogenies", "space-riders", "quirkies", "ddg"],
+        stats: {
+          founded: "2020",
+          chain: "Web3",
+          collectionSize: "Growing universe",
+          holders: "Community-first",
+          twitterFollowing: "Active on X/Twitter",
+          discordMembers: "—",
+        },
+        about: {
+          paragraphs: [
+            "Little Ollie is a creative Web3 world built around stories, characters, games, apps, collectibles, and community. What started as a small father-and-son idea slowly evolved into an ongoing builder journey focused on creativity, experimentation, fun, and genuine connection.",
+            "This is a builder-led space — not the loudest project in Web3, but one that genuinely loves creating, learning, and sharing the journey with kind people along the way.",
+          ],
+          quote: {
+            text:
+              "Building stories, characters, apps, and friendships — one little adventure at a time.",
+            attribution: "— Little Ollie",
+          },
+        },
+        founder: {
+          name: "Little Ollie Labs",
+          title: "Creators · Little Ollie",
+          avatarInitials: "LO",
+          paragraphs: [
+            "Hey everyone 👋",
+            "Welcome to Little Ollie.",
+            "What started as a small father-and-son idea slowly grew into a creative little world full of stories, characters, games, experiments, apps, collectibles, and amazing people. We've never really tried to be the loudest project in Web3 — we just genuinely love building, learning, creating, and having fun with good people around us.",
+            "Our community is made up of artists, collectors, builders, parents, gamers, and genuinely kind humans who enjoy creativity and supporting each other. Whether you're completely new to Web3 or have been around for years, we just want this to feel like a relaxed place where you can hang out, explore, and be part of the journey.",
+            "We're still learning every day, still experimenting, and still building things together. Thanks for being here 💛",
+          ],
+        },
+        whyStay: [
+          {
+            title: "Creativity",
+            text: "There's always a new idea, story, character, app, or experiment being built and shared with the community.",
+          },
+          {
+            title: "Friendships",
+            text: "People genuinely connect here beyond NFTs and support each other through both Web3 and real life.",
+          },
+          {
+            title: "Fun",
+            text: "Little Ollie has always focused on keeping things enjoyable, playful, and welcoming instead of overly serious.",
+          },
+          {
+            title: "Building Together",
+            text: "The community gets to watch ideas evolve in real time and often helps shape what gets created next.",
+          },
+        ],
+      },
     },
     {
       id: "ogenies",
@@ -515,6 +572,7 @@
 
     const el = document.createElement("article");
     el.className = "community-card";
+    el.dataset.communityId = c.id;
     el.setAttribute("role", "listitem");
     el.innerHTML = `
       <div class="community-card__watermark" aria-hidden="true"></div>

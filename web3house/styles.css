@@ -433,6 +433,40 @@ body.w3h-theme-afterhours .hub-nav__link--quiz:hover {
     0 0 24px var(--w3h-glow-blue);
 }
 
+/* Little Ollie — warm flagship card on the hub */
+.community-card[data-community-id="little-ollie"] {
+  background: linear-gradient(148deg, #fffdf8 0%, #fff8ec 52%, #f2f6ff 100%);
+  border-color: rgba(255, 221, 85, 0.35);
+}
+
+.community-card[data-community-id="little-ollie"]::before {
+  border-style: solid;
+  border-color: rgba(109, 224, 255, 0.14);
+}
+
+.community-card[data-community-id="little-ollie"] .community-card__logo-wrap {
+  border-radius: 1rem;
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.05),
+    0 0 20px rgba(255, 221, 85, 0.12);
+}
+
+.community-card[data-community-id="little-ollie"] .community-card__logo {
+  object-fit: contain;
+  object-position: center center;
+  padding: 0.35rem;
+  transform: none;
+  width: 100%;
+  height: 100%;
+}
+
+.community-card[data-community-id="little-ollie"]:hover {
+  box-shadow:
+    0 6px 0 var(--w3h-wood-dark),
+    0 20px 40px rgba(76, 111, 255, 0.1),
+    0 0 28px rgba(255, 221, 85, 0.22);
+}
+
 .community-card__frame {
   position: relative;
   z-index: 2;

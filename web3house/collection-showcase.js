@@ -133,6 +133,7 @@
       c.banner || "linear-gradient(160deg, " + primary + "22 0%, " + bg + " 55%, #050508 100%)"
     );
     panel.dataset.communityId = c.id;
+    panel.classList.toggle("detail--little-ollie", c.id === "little-ollie");
   }
 
   function setWatermark(watermarkEl, logoUrl) {
@@ -153,7 +154,7 @@
       links.push({ label: "Official Website", href: web, kind: "website" });
     }
     if (c.twitter) {
-      links.push({ label: "Official X / Twitter", href: c.twitter, kind: "twitter" });
+      links.push({ label: "Official X/Twitter", href: c.twitter, kind: "twitter" });
     }
     if (c.discord) {
       links.push({ label: "Official Discord", href: c.discord, kind: "discord" });
@@ -175,7 +176,7 @@
       parts.push(
         '<a class="showcase-btn showcase-btn--hero showcase-btn--hero-secondary" href="' +
           esc(c.twitter) +
-          '" target="_blank" rel="noopener noreferrer" title="X / Twitter">X</a>'
+          '" target="_blank" rel="noopener noreferrer" title="X/Twitter">X/Twitter</a>'
       );
     }
     if (c.openSea) {
@@ -348,7 +349,7 @@
       { label: "Blockchain", value: stats.chain },
       { label: "Collection size", value: stats.collectionSize },
       { label: "Holders", value: stats.holders },
-      { label: "X following", value: stats.twitterFollowing },
+      { label: "X/Twitter following", value: stats.twitterFollowing },
       { label: "Discord members", value: stats.discordMembers },
     ];
     return items
@@ -583,6 +584,16 @@
 
     var founderEl = panel.querySelector("#detailFounderCard");
     if (founderEl) {
+      var messageHtml = "";
+      if (founder.paragraphs && founder.paragraphs.length) {
+        messageHtml = founder.paragraphs
+          .map(function (p) {
+            return "<p>" + esc(p) + "</p>";
+          })
+          .join("");
+      } else {
+        messageHtml = "<p>" + esc(founder.message || "") + "</p>";
+      }
       founderEl.innerHTML =
         '<div class="showcase-founder__avatar" aria-hidden="true">' +
         esc(founder.avatarInitials) +
@@ -598,9 +609,7 @@
         '<div class="showcase-founder__message" data-media="' +
         esc(founder.mediaType || "text") +
         '">' +
-        "<p>" +
-        esc(founder.message) +
-        "</p>" +
+        messageHtml +
         "</div>";
     }
 

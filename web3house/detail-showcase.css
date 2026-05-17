@@ -679,6 +679,10 @@
   color: var(--showcase-muted);
 }
 
+.showcase-founder__message p + p {
+  margin-top: 0.75rem;
+}
+
 #showcase-voices {
   overflow: visible;
 }
@@ -1514,5 +1518,135 @@
   .join-community-link:hover,
   .showcase-voice:hover {
     transform: none;
+  }
+
+  .detail.detail--little-ollie::before,
+  .detail.detail--little-ollie .detail__particles,
+  .detail.detail--little-ollie .detail__hero-inner::after {
+    animation: none;
+  }
+}
+
+/* ——— Little Ollie — flagship community personality ——— */
+.detail.detail--little-ollie {
+  --showcase-primary: #6de0ff;
+  --showcase-bg: #14121c;
+}
+
+.detail.detail--little-ollie::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 40% at 8% 12%, rgba(255, 221, 85, 0.12), transparent 58%),
+    radial-gradient(ellipse 45% 35% at 92% 18%, rgba(109, 224, 255, 0.1), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 85% 88%, rgba(76, 111, 255, 0.08), transparent 50%);
+}
+
+.detail.detail--little-ollie .detail__particles {
+  opacity: 0.65;
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(255, 221, 85, 0.14) 0 2px, transparent 2px),
+    radial-gradient(circle at 72% 38%, rgba(109, 224, 255, 0.12) 0 1.5px, transparent 1.5px),
+    radial-gradient(circle at 44% 78%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px);
+  background-size: 140px 140px, 200px 200px, 160px 160px;
+  animation-duration: 56s;
+}
+
+.detail.detail--little-ollie .detail__hero {
+  position: relative;
+}
+
+.detail.detail--little-ollie .detail__hero-inner::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(14rem, 55vw);
+  height: min(8rem, 32vw);
+  transform: translate(-50%, -48%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 221, 85, 0.22) 0%,
+    rgba(109, 224, 255, 0.12) 45%,
+    transparent 72%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+  z-index: 0;
+  animation: lo-detail-glow 7s ease-in-out infinite;
+}
+
+.detail.detail--little-ollie .detail__logo-wrap {
+  position: relative;
+  z-index: 1;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 1.1rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 221, 85, 0.15),
+    0 12px 32px rgba(109, 224, 255, 0.12);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease;
+}
+
+.detail.detail--little-ollie .detail__logo,
+.detail.detail--little-ollie .detail__logo-wrap--edge .detail__logo {
+  object-fit: contain;
+  object-position: center center;
+  padding: 0.4rem;
+  transform: none;
+  width: 100%;
+  height: 100%;
+}
+
+.detail.detail--little-ollie .detail__logo-wrap:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(255, 221, 85, 0.28),
+    0 16px 40px rgba(109, 224, 255, 0.2);
+}
+
+.detail.detail--little-ollie .showcase-quote {
+  border-color: rgba(255, 221, 85, 0.22);
+  background: rgba(255, 221, 85, 0.06);
+}
+
+.detail.detail--little-ollie .showcase-stay-card {
+  border-radius: 1rem;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.detail.detail--little-ollie .showcase-stay-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 221, 85, 0.28);
+  box-shadow: 0 10px 28px rgba(109, 224, 255, 0.1);
+}
+
+.detail.detail--little-ollie .showcase-connected {
+  border-radius: 0.95rem;
+}
+
+.detail.detail--little-ollie .showcase-connected:hover {
+  border-color: rgba(255, 221, 85, 0.35);
+  box-shadow: 0 8px 24px rgba(109, 224, 255, 0.12);
+}
+
+@keyframes lo-detail-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -48%) scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -48%) scale(1.06);
   }
 }

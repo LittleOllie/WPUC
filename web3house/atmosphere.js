@@ -75,9 +75,14 @@
   }
 
   function founderSnippet(c) {
-    if (c.showcase && c.showcase.founder && c.showcase.founder.message) {
-      var m = c.showcase.founder.message;
-      return m.slice(0, 140) + (m.length > 140 ? "…" : "");
+    if (c.showcase && c.showcase.founder) {
+      var f = c.showcase.founder;
+      var m =
+        f.message ||
+        (f.paragraphs && f.paragraphs.length ? f.paragraphs[0] : "");
+      if (m) {
+        return m.slice(0, 140) + (m.length > 140 ? "…" : "");
+      }
     }
     return (
       "Whether you are brand new or a longtime collector — " +

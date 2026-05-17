@@ -582,6 +582,14 @@ body.w3h-theme-afterhours .spotlight__visual {
   color: var(--w3h-accent);
 }
 
+.spotlight__slide[data-id="little-ollie"] .spotlight__logo,
+.spotlight__slide[data-id="little-ollie"] .spotlight__visual--edge .spotlight__logo {
+  object-fit: contain;
+  object-position: center center;
+  padding: 0.35rem;
+  transform: none;
+}
+
 .spotlight__copy {
   flex: 1;
   min-width: min(100%, 16rem);

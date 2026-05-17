@@ -58,7 +58,7 @@ API_BASE_URL: "http://127.0.0.1:8787",
 
 ## Collections with live art
 
-All Ethereum collections include `contract` + `collectionId` (TradePort ids). **Little Ollie** has no contract — card strip and gallery use local `staticArt` (`LO11.png`–`LO44.png` in `assets/logos/`).
+All Ethereum collections include `contract` + `collectionId` (TradePort ids). **Little Ollie** has no contract — community logo is `LOLogo.png`; card strip and gallery use local `staticArt` (`LO11.png`–`LO44.png` in `assets/logos/`).
 
 Deploy worker once (`npm run deploy` in `tradeport-worker`); both TradePort and Web3House share it.
 

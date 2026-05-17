@@ -126,7 +126,7 @@
         {
           heading: "What to trust on Web3House",
           text:
-            "Each community page lists verified website, X (Twitter), Discord, and OpenSea buttons we have checked. Use those as your starting point instead of typing the project name into Google during a busy drop.",
+            "Each community page lists verified website, X/Twitter, Discord, and OpenSea buttons we have checked. Use those as your starting point instead of typing the project name into Google during a busy drop.",
         },
         {
           heading: "Building your own bookmark habit",
