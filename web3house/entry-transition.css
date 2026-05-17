@@ -218,7 +218,9 @@ body.entry-transition-active.hub-visible .hub-atmosphere {
   transition: opacity 0.5s ease 0.1s;
 }
 
+body.hub-visible.hub-active .entry,
 body.hub-active.entry-done .entry {
+  display: none !important;
   position: absolute;
   visibility: hidden;
   pointer-events: none;

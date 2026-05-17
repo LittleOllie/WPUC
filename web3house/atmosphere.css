@@ -24,6 +24,7 @@ body.w3h-theme-clubhouse {
   --w3h-btn-bg: var(--lo-gradient-blue);
   --w3h-btn-color: #fff;
   --w3h-btn-shadow: 0 4px 0 var(--lo-blue-dark), 0 10px 22px rgba(76, 111, 255, 0.35);
+  --w3h-spotlight-bg: #fff8ec;
 }
 
 body.w3h-theme-afterhours {
@@ -51,6 +52,7 @@ body.w3h-theme-afterhours {
   --w3h-btn-bg: linear-gradient(135deg, #c4b5fd 0%, #8b9cff 48%, #7c6fe0 100%);
   --w3h-btn-color: #0f1220;
   --w3h-btn-shadow: 0 4px 0 #2e2850, 0 10px 28px rgba(139, 156, 255, 0.45);
+  --w3h-spotlight-bg: #141828;
 }
 
 body.w3h-theme-clubhouse,
@@ -404,6 +406,7 @@ body.w3h-theme-afterhours .theme-toggle {
   border-radius: var(--lo-radius-card);
   overflow: hidden;
   border: 2px solid var(--w3h-frame);
+  background: var(--w3h-spotlight-bg, var(--w3h-surface-deep, #f5ecd8));
   box-shadow:
     0 6px 0 var(--w3h-wood),
     0 20px 48px rgba(26, 26, 46, 0.1);
@@ -433,11 +436,23 @@ body.w3h-theme-afterhours .spotlight {
   position: absolute;
   inset: 0;
   background-repeat: no-repeat;
-  background-position: right center;
-  background-size: auto 115%;
-  opacity: 0.06;
-  filter: blur(1px);
+  background-position: 108% center;
+  background-size: min(52vw, 20rem) auto;
+  opacity: 0.07;
+  filter: blur(10px);
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    transparent 68%
+  );
+  mask-image: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.15) 35%,
+    transparent 68%
+  );
 }
 
 .spotlight__inner {
@@ -448,21 +463,7 @@ body.w3h-theme-afterhours .spotlight {
   align-items: center;
   gap: 1.5rem 2rem;
   padding: clamp(1.35rem, 4vw, 2rem);
-  background: linear-gradient(
-    105deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 248, 236, 0.88) 55%,
-    rgba(255, 255, 255, 0.75) 100%
-  );
-}
-
-body.w3h-theme-afterhours .spotlight__inner {
-  background: linear-gradient(
-    105deg,
-    rgba(20, 24, 40, 0.95) 0%,
-    rgba(26, 21, 48, 0.9) 55%,
-    rgba(15, 18, 32, 0.85) 100%
-  );
+  background: transparent;
 }
 
 .spotlight__visual {

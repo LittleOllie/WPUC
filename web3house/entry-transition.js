@@ -1,6 +1,6 @@
 /**
  * Web3House — cinematic entry: zoom into logo door → yellow wash → hub
- * iOS-safe: CSS zoom + timeline failsafe (heavy JS scale/blur can freeze Safari timers)
+ * iOS-safe: animationend + rAF failsafe (setTimeout can stall during heavy CSS zoom)
  */
 (function (global) {
   "use strict";
@@ -9,17 +9,18 @@
   var PERSIST_KEY = "w3h-entered-persist-v1";
 
   var ZOOM_MS = 1800;
-  var YELLOW_AT = 1400;
-  var HUB_AT = 1900;
-  var FADE_AT = 2400;
-  var FAILSAFE_AT = 3600;
+  var YELLOW_MS_TOUCH = 320;
+  var YELLOW_MS_DESKTOP = 480;
+  var FAILSAFE_MS_TOUCH = 2600;
+  var FAILSAFE_MS_DESKTOP = 3600;
 
   var DOOR_U = 0.5;
   var DOOR_V = 0.355;
 
   var transitioning = false;
-  var timelineTimers = [];
+  var transitionDone = false;
   var hubRevealed = false;
+  var failsafeRaf = 0;
 
   function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -41,20 +42,11 @@
     }
   }
 
-  function clearTimeline() {
-    timelineTimers.forEach(function (id) {
-      clearTimeout(id);
-    });
-    timelineTimers = [];
-  }
-
-  function schedule(fn, ms) {
-    timelineTimers.push(
-      setTimeout(function () {
-        if (!transitioning) return;
-        fn();
-      }, ms)
-    );
+  function cancelFailsafe() {
+    if (failsafeRaf) {
+      cancelAnimationFrame(failsafeRaf);
+      failsafeRaf = 0;
+    }
   }
 
   function scrollPageToTop() {
@@ -69,7 +61,14 @@
 
   function resetEntry(entry) {
     if (!entry) return;
-    entry.classList.remove("entry--entering", "entry--passage", "entry--exiting");
+    entry.classList.remove(
+      "entry--entering",
+      "entry--entering-touch",
+      "entry--passage",
+      "entry--exiting"
+    );
+    entry.style.removeProperty("display");
+    entry.removeAttribute("aria-hidden");
     entry.style.removeProperty("--entry-passage-x");
     entry.style.removeProperty("--entry-passage-y");
 
@@ -84,10 +83,11 @@
     var passage = document.getElementById("entryPassage");
     if (passage) {
       passage.classList.remove("entry__passage--on", "entry__passage--fade");
-      passage.style.opacity = "";
-      passage.style.visibility = "";
-      passage.style.pointerEvents = "";
-      passage.style.transition = "";
+      passage.style.removeProperty("opacity");
+      passage.style.removeProperty("visibility");
+      passage.style.removeProperty("pointer-events");
+      passage.style.removeProperty("transition");
+      passage.style.removeProperty("display");
     }
   }
 
@@ -122,6 +122,14 @@
     passage.style.opacity = "0";
     passage.style.visibility = "hidden";
     passage.style.pointerEvents = "none";
+    passage.style.display = "none";
+  }
+
+  function hideEntry(entry) {
+    if (!entry) return;
+    entry.classList.add("entry--exiting");
+    entry.style.display = "none";
+    entry.setAttribute("aria-hidden", "true");
   }
 
   function revealHub(onRevealHub) {
@@ -137,31 +145,39 @@
     }
     if (atmosphere) {
       atmosphere.style.opacity = "1";
+      atmosphere.style.display = "";
     }
 
-    if (onRevealHub) onRevealHub();
     scrollPageToTop();
+
+    if (onRevealHub) {
+      try {
+        onRevealHub();
+      } catch (err) {
+        console.error("[Web3House] enterHub failed:", err);
+      }
+    }
   }
 
-  function finishTransition(entry, onRevealHub, resolve) {
-    if (!transitioning) {
+  function completeToHub(entry, onRevealHub, resolve) {
+    if (transitionDone) {
       if (resolve) resolve();
       return;
     }
+    transitionDone = true;
+    transitioning = false;
+    cancelFailsafe();
 
-    clearTimeline();
     hidePassage();
+    hideEntry(entry);
     revealHub(onRevealHub);
 
-    if (entry) {
-      entry.classList.add("entry--exiting");
-    }
     document.body.classList.add("entry-done");
+    document.body.classList.remove("entry-transition-active");
     scrollPageToTop();
 
     requestAnimationFrame(function () {
       resetEntry(entry);
-      document.body.classList.remove("entry-transition-active");
 
       var hub = document.getElementById("hub");
       var atmosphere = document.querySelector(".hub-atmosphere");
@@ -171,9 +187,9 @@
       }
       if (atmosphere) {
         atmosphere.style.removeProperty("opacity");
+        atmosphere.style.removeProperty("display");
       }
 
-      transitioning = false;
       hubRevealed = false;
 
       var enterBtn = document.getElementById("enterBtn");
@@ -187,9 +203,59 @@
     var passage = document.getElementById("entryPassage");
     if (!passage) return;
     entry.classList.add("entry--passage");
+    passage.style.removeProperty("display");
     passage.style.opacity = "";
     passage.style.visibility = "";
     passage.classList.add("entry__passage--on");
+  }
+
+  function startFailsafe(entry, onRevealHub, resolve, ms) {
+    var started = performance.now();
+
+    function tick() {
+      if (transitionDone) return;
+      if (performance.now() - started >= ms) {
+        completeToHub(entry, onRevealHub, resolve);
+        return;
+      }
+      failsafeRaf = requestAnimationFrame(tick);
+    }
+
+    failsafeRaf = requestAnimationFrame(tick);
+  }
+
+  function bindZoomEnd(entry, zoom, onRevealHub, resolve) {
+    var touch = isTouchDevice();
+    var yellowMs = touch ? YELLOW_MS_TOUCH : YELLOW_MS_DESKTOP;
+    var yellowTimer = 0;
+    var finished = false;
+
+    function afterYellow() {
+      if (finished) return;
+      finished = true;
+      if (yellowTimer) clearTimeout(yellowTimer);
+      completeToHub(entry, onRevealHub, resolve);
+    }
+
+    function onZoomEnd(ev) {
+      if (ev && ev.target !== zoom) return;
+      zoom.removeEventListener("animationend", onZoomEnd);
+      zoom.removeEventListener("webkitAnimationEnd", onZoomEnd);
+
+      showYellowWash(entry);
+      hideEntry(entry);
+      revealHub(onRevealHub);
+
+      yellowTimer = setTimeout(afterYellow, yellowMs);
+    }
+
+    zoom.addEventListener("animationend", onZoomEnd);
+    zoom.addEventListener("webkitAnimationEnd", onZoomEnd);
+
+    setTimeout(function () {
+      if (finished || transitionDone) return;
+      onZoomEnd(null);
+    }, ZOOM_MS + 120);
   }
 
   function playEnterTransition(onRevealHub, opts) {
@@ -197,14 +263,27 @@
     var cinematic = !opts || opts.cinematic !== false;
 
     if (!entry || transitioning) {
-      if (onRevealHub) onRevealHub();
+      if (onRevealHub) {
+        try {
+          onRevealHub();
+        } catch (e) {
+          /* ignore */
+        }
+      }
       return Promise.resolve();
     }
 
     if (prefersReducedMotion()) {
       markVisited();
       document.body.classList.add("hub-visible", "hub-active", "entry-done");
-      if (onRevealHub) onRevealHub();
+      hideEntry(entry);
+      if (onRevealHub) {
+        try {
+          onRevealHub();
+        } catch (e) {
+          /* ignore */
+        }
+      }
       scrollPageToTop();
       return Promise.resolve();
     }
@@ -212,7 +291,14 @@
     if (!cinematic) {
       markVisited();
       document.body.classList.add("entry-transition-active", "hub-visible", "hub-active", "entry-done");
-      if (onRevealHub) onRevealHub();
+      hideEntry(entry);
+      if (onRevealHub) {
+        try {
+          onRevealHub();
+        } catch (e) {
+          /* ignore */
+        }
+      }
       scrollPageToTop();
       setTimeout(function () {
         document.body.classList.remove("entry-transition-active");
@@ -221,9 +307,10 @@
     }
 
     transitioning = true;
+    transitionDone = false;
     hubRevealed = false;
     markVisited();
-    clearTimeline();
+    cancelFailsafe();
 
     if (global.Web3HouseEntryHero && global.Web3HouseEntryHero.stop) {
       global.Web3HouseEntryHero.stop();
@@ -237,8 +324,9 @@
 
     var zoom = setDoorFocus(entry);
     if (!zoom) {
-      finishTransition(entry, onRevealHub);
-      return Promise.resolve();
+      return new Promise(function (resolve) {
+        completeToHub(entry, onRevealHub, resolve);
+      });
     }
 
     entry.classList.add("entry--entering");
@@ -248,21 +336,9 @@
     zoom.classList.add("entry__zoom-running");
 
     return new Promise(function (resolve) {
-      schedule(function () {
-        showYellowWash(entry);
-      }, YELLOW_AT);
-
-      schedule(function () {
-        revealHub(onRevealHub);
-      }, HUB_AT);
-
-      schedule(function () {
-        finishTransition(entry, onRevealHub, resolve);
-      }, FADE_AT);
-
-      schedule(function () {
-        finishTransition(entry, onRevealHub, resolve);
-      }, FAILSAFE_AT);
+      var failsafeMs = isTouchDevice() ? FAILSAFE_MS_TOUCH : FAILSAFE_MS_DESKTOP;
+      bindZoomEnd(entry, zoom, onRevealHub, resolve);
+      startFailsafe(entry, onRevealHub, resolve, failsafeMs);
     });
   }
 
