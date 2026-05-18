@@ -42,24 +42,6 @@ function frontLayerIndex() {
   return GRASS_LAYER_CONFIG.findIndex((c) => c.id === "front");
 }
 
-/** Mobile lawn ~18dvh vs desktop ~36dvh — scale grass physics to match desktop look */
-const PORTRAIT_LAWN_SCALE = 30 / 36;
-
-const PORTRAIT_FRONT_GRASS_SCALE = 1.5;
-
-function layoutForLayer(cfg, portrait) {
-  if (!portrait) return { scale: cfg.scale, offsetY: cfg.offsetY };
-  let scale = cfg.scale * PORTRAIT_LAWN_SCALE;
-  let offsetY = cfg.offsetY * PORTRAIT_LAWN_SCALE;
-  if (cfg.id === "middle" || cfg.id === "front") {
-    scale *= PORTRAIT_FRONT_GRASS_SCALE;
-    offsetY *= 0.2;
-  } else if (cfg.id === "back") {
-    offsetY *= 0.45;
-  }
-  return { scale, offsetY };
-}
-
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */
 function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
   const pad = rect.height * MOBILE_HIT_PAD_RATIO;
@@ -234,7 +216,7 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount = 1;
+        const rowCount = cfg.id === "back" ? cfg.rows : 1;
 
         if (rowCount > 1) {
           for (let r = 0; r < rowCount; r++) {
@@ -334,14 +316,12 @@ export default function LayeredGrass({
           const cfg = layer.config;
           const layerTiles = tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
-          const layout = layoutForLayer(cfg, portraitMode);
-
           let layerTransform;
           if (!reduced) {
             const tx = layer.layerTx.toFixed(2);
-            const ty = (layout.offsetY + layer.layerTy).toFixed(2);
+            const ty = (cfg.offsetY + layer.layerTy).toFixed(2);
             const rot = layer.layerAngle.toFixed(3);
-            layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${layout.scale}) rotate(${rot}deg)`;
+            layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${cfg.scale}) rotate(${rot}deg)`;
             layerEl.style.transform = layerTransform;
 
             for (let i = 0; i < layer.cols; i++) {
@@ -351,7 +331,7 @@ export default function LayeredGrass({
               if (layerTiles[i]) layerTiles[i].style.transform = tileTransform;
             }
           } else {
-            layerTransform = `translate3d(0, ${layout.offsetY}px, 0) scale(${layout.scale})`;
+            layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
             layerEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
               if (layerTiles[i]) layerTiles[i].style.transform = "translate3d(0, 0, 0)";

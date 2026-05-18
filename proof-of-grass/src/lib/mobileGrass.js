@@ -4,8 +4,8 @@ export const MOBILE_MAX_WIDTH_PX = 767;
 
 export const MOBILE_MEDIA = `(max-width: ${MOBILE_MAX_WIDTH_PX}px)`;
 
-/** Lawn band = ~30% of portrait frame height (25–35% target) */
-export const PORTRAIT_LAWN_CQH = 30;
+/** Lawn band — same 36% share as immersive (36dvh), relative to portrait frame */
+export const PORTRAIT_LAWN_CQH = 36;
 
 export const PORTRAIT_LAWN_FRAC = PORTRAIT_LAWN_CQH / 100;
 
