@@ -1,23 +1,42 @@
 import { motion } from "framer-motion";
 
-export default function DisplayModeToggle({ immersive, onToggle }) {
+export default function DisplayModeToggle({
+  immersive,
+  onSelectPortrait,
+  onSelectImmersive,
+}) {
   return (
-    <motion.button
-      type="button"
-      className="pog-mode-toggle"
-      onClick={onToggle}
-      aria-pressed={immersive}
-      aria-label={
-        immersive
-          ? "Switch to pocket portrait mode"
-          : "Switch to fullscreen desktop mode"
-      }
+    <motion.div
+      className="pog-mode-switch"
+      role="group"
+      aria-label="Display mode"
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.6, duration: 0.45 }}
-      whileTap={{ scale: 0.96 }}
     >
-      {immersive ? "Pocket Mode" : "Ultra Grass Mode 🌱"}
-    </motion.button>
+      <motion.div
+        className="pog-mode-switch__thumb"
+        aria-hidden
+        initial={false}
+        animate={{ x: immersive ? "100%" : "0%" }}
+        transition={{ type: "spring", stiffness: 480, damping: 34 }}
+      />
+      <button
+        type="button"
+        className="pog-mode-switch__option"
+        aria-pressed={!immersive}
+        onClick={onSelectPortrait}
+      >
+        Pocket
+      </button>
+      <button
+        type="button"
+        className="pog-mode-switch__option"
+        aria-pressed={immersive}
+        onClick={onSelectImmersive}
+      >
+        Ultra Grass 🌱
+      </button>
+    </motion.div>
   );
 }

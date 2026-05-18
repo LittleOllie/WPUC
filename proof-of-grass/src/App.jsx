@@ -17,7 +17,7 @@ import { SKY_BLUE } from "./lib/assets.js";
  */
 export default function App() {
   const appRef = useRef(null);
-  const { immersive, portrait, toggle } = useDisplayMode();
+  const { immersive, portrait, setPortrait, setImmersive } = useDisplayMode();
   const { weather } = useDayWeather();
   const wind = weather === "rain" ? 1.15 : weather === "night" ? 0.55 : 0.85;
   const { formatted, moving, setMoving } = useGrassMoveTimer();
@@ -56,7 +56,11 @@ export default function App() {
               <motion.div className="pog-timer-slot">
                 <GrassTimer formatted={formatted} moving={moving} />
               </motion.div>
-              <DisplayModeToggle immersive={immersive} onToggle={toggle} />
+              <DisplayModeToggle
+                immersive={immersive}
+                onSelectPortrait={setPortrait}
+                onSelectImmersive={setImmersive}
+              />
             </motion.div>
           </header>
         </motion.div>

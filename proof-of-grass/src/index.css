@@ -125,34 +125,63 @@
   box-shadow: none;
 }
 
-.pog-mode-toggle {
+/* Split control — sliding thumb shows active mode */
+.pog-mode-switch {
   position: relative;
-  z-index: 1;
-  padding: 0.38rem 0.65rem;
-  font-family: var(--font-pog);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--color-pog-ink);
-  background: linear-gradient(148deg, #fffdf8 0%, #fff8ec 55%, #f2f6ff 100%);
-  border: 2px solid rgba(255, 221, 85, 0.65);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  padding: 3px;
   border-radius: 999px;
+  background: linear-gradient(148deg, #ebe6dc 0%, #e2ddd0 55%, #d8e0ea 100%);
+  border: 2px solid rgba(255, 221, 85, 0.55);
   box-shadow:
+    inset 0 1px 2px rgba(26, 46, 60, 0.08),
     0 2px 0 #c9a66b,
-    0 4px 14px rgba(26, 46, 60, 0.14);
-  cursor: pointer;
+    0 4px 14px rgba(26, 46, 60, 0.12);
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
-  white-space: nowrap;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
-.pog-mode-toggle:hover {
+.pog-mode-switch__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(148deg, #fffdf8 0%, #fff8ec 55%, #f2f6ff 100%);
   box-shadow:
     0 2px 0 #c9a66b,
-    0 6px 18px rgba(76, 111, 255, 0.2);
+    0 4px 12px rgba(26, 46, 60, 0.14);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pog-mode-switch__option {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0.38rem 0.4rem;
+  border: none;
+  background: transparent;
+  font-family: var(--font-pog);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  color: rgba(26, 46, 31, 0.5);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.pog-mode-switch__option[aria-pressed="true"] {
+  color: var(--color-pog-ink);
+}
+
+.pog-mode-switch__option:active {
+  transform: scale(0.98);
 }
 
 .pog-app {
@@ -246,7 +275,7 @@ button {
   pointer-events: none;
 }
 
-.pog-top-bar__stack .pog-mode-toggle {
+.pog-top-bar__stack .pog-mode-switch {
   pointer-events: auto;
 }
 
@@ -293,10 +322,9 @@ button {
 }
 
 .pog-app--immersive .pog-timer-slot .lo-timer,
-.pog-app--immersive .pog-top-bar__stack .pog-mode-toggle {
+.pog-app--immersive .pog-top-bar__stack .pog-mode-switch {
   width: 100%;
   box-sizing: border-box;
-  text-align: center;
 }
 
 .pog-app--immersive .pog-timer-slot .lo-timer {
@@ -345,10 +373,9 @@ button {
 }
 
 .pog-app--portrait .pog-timer-slot .lo-timer,
-.pog-app--portrait .pog-top-bar__stack .pog-mode-toggle {
+.pog-app--portrait .pog-top-bar__stack .pog-mode-switch {
   width: 100%;
   box-sizing: border-box;
-  text-align: center;
 }
 
 .pog-app--portrait .pog-timer-slot .lo-timer {
