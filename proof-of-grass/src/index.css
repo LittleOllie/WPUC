@@ -799,7 +799,8 @@ button {
 
 /* Pocket: behind-stacks for thickness (primary on top) */
 .pog-app--portrait .grass-stack--fill,
-.pog-app--portrait .grass-stack--fill-2 {
+.pog-app--portrait .grass-stack--fill-2,
+.pog-app--portrait .grass-stack--fill-3 {
   position: absolute;
   inset-inline: 0;
   top: 0;
@@ -809,12 +810,17 @@ button {
   transform-origin: bottom center;
 }
 
+.pog-app--portrait .grass-stack--fill-3 {
+  bottom: 17%;
+  transform: scaleX(-1);
+}
+
 .pog-app--portrait .grass-stack--fill-2 {
-  bottom: 11%;
+  bottom: 12%;
 }
 
 .pog-app--portrait .grass-stack--fill {
-  bottom: 4%;
+  bottom: 5%;
   transform: scaleX(-1);
 }
 

@@ -46,10 +46,10 @@ function layerConfigsForMode(portrait) {
   return GRASS_LAYER_CONFIG.filter((c) => c.id !== "back");
 }
 
-/** Behind-stacks for thickness; portrait gets two, Ultra Grass one */
+/** Behind-stacks for thickness; portrait gets three, Ultra Grass one */
 function fillStacksForMode(portrait) {
   if (portrait) {
-    return ["grass-stack--fill-2", "grass-stack--fill"];
+    return ["grass-stack--fill-3", "grass-stack--fill-2", "grass-stack--fill"];
   }
   return ["grass-stack--fill"];
 }
@@ -200,7 +200,7 @@ export default function LayeredGrass({
 
       zone
         .querySelectorAll(
-          ".grass-stack--fill, .grass-stack--fill-2, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-stack--fill-2, .grass-stack--fill-3, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       zone.classList.toggle("grass-zone--portrait", portrait);
@@ -454,7 +454,7 @@ export default function LayeredGrass({
       ro.disconnect();
       zone
         .querySelectorAll(
-          ".grass-stack--fill, .grass-stack--fill-2, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-stack--fill-2, .grass-stack--fill-3, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       layerElsRef.current = [];
