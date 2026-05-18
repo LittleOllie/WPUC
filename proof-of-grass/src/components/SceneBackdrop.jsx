@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 import { ASSETS } from "../lib/assets.js";
 import CloudLayer from "./CloudLayer.jsx";
 
-/** Sky, weather tint, and clouds (characters render in SceneCharacters) */
+/**
+ * Layer stack (back → front):
+ * Sky → weather → clouds → llama → fence (grass is a sibling in App)
+ */
 export default function SceneBackdrop({ weather }) {
   const tint =
     weather === "night"
@@ -17,7 +20,7 @@ export default function SceneBackdrop({ weather }) {
 
   return (
     <motion.div
-      className="pog-scene-visual pointer-events-none absolute inset-0"
+      className="pog-scene-visual pointer-events-none absolute inset-0 z-0"
       aria-hidden
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -40,6 +43,24 @@ export default function SceneBackdrop({ weather }) {
       )}
 
       <CloudLayer weather={weather} />
+
+      <motion.div className="pog-llama-wrap">
+        <img
+          src={ASSETS.llama}
+          alt=""
+          className="pog-llama"
+          draggable={false}
+        />
+      </motion.div>
+
+      <motion.div className="pog-fence-wrap">
+        <img
+          src={ASSETS.fence}
+          alt=""
+          className="pog-fence"
+          draggable={false}
+        />
+      </motion.div>
     </motion.div>
   );
 }

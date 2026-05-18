@@ -4,7 +4,6 @@ import GrassTimer from "./components/GrassTimer.jsx";
 import LayeredGrass from "./components/LayeredGrass.jsx";
 import PogLogo from "./components/PogLogo.jsx";
 import SceneBackdrop from "./components/SceneBackdrop.jsx";
-import SceneCharacters from "./components/SceneCharacters.jsx";
 import { useDayWeather } from "./hooks/useDayWeather.js";
 import { useGrassMoveTimer } from "./hooks/useGrassMoveTimer.js";
 import { useMobileLayout } from "./hooks/useMobileLayout.js";
@@ -26,7 +25,7 @@ export default function App() {
   return (
     <motion.div
       ref={appRef}
-      className={`pog-app relative h-[100dvh] w-full overflow-hidden${mobile ? " pog-app--mobile" : " pog-app--desktop"}`}
+      className={`pog-app${mobile ? " pog-app--mobile" : " pog-app--desktop"}`}
       style={{ backgroundColor: SKY_BLUE }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -35,8 +34,6 @@ export default function App() {
       <SceneBackdrop weather={weather} />
 
       <LayeredGrass wind={wind} onGrassMovingChange={setMoving} mobile={mobile} />
-
-      <SceneCharacters />
 
       <header className="pog-top-bar" aria-label="Proof of Grass">
         <PogLogo />
