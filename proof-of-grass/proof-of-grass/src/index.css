@@ -95,7 +95,7 @@ button {
   isolation: isolate;
 }
 
-/* ── Top bar: mobile = logo left + timer right; desktop = logo corner + centered timer ── */
+/* ── Top bar ── */
 .pog-top-bar {
   position: absolute;
   inset: 0 0 auto 0;
@@ -107,8 +107,17 @@ button {
   pointer-events: none;
 }
 
-/* Proof of Grass logo — quiet corner watermark (desktop) */
 .pog-logo {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 10px rgba(26, 46, 31, 0.1));
+}
+
+/* Desktop: logo corner + centered timer */
+.pog-app--desktop .pog-top-bar {
+  display: block;
+}
+
+.pog-app--desktop .pog-logo {
   position: absolute;
   top: clamp(10px, 2.2dvh, 18px);
   left: clamp(10px, 2.8vw, 20px);
@@ -116,96 +125,88 @@ button {
   width: clamp(192px, 48vw, 296px);
   height: auto;
   opacity: 0.9;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 10px rgba(26, 46, 31, 0.1));
 }
 
-@media (min-width: 768px) {
-  .pog-top-bar {
-    display: block;
-  }
-
-  .pog-timer-slot {
-    display: flex;
-    justify-content: center;
-    padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
-  }
+.pog-app--desktop .pog-timer-slot {
+  display: flex;
+  justify-content: center;
+  padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
 }
 
-@media (max-width: 767px) {
-  .pog-top-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    gap: clamp(6px, 2vw, 12px);
-    width: 100%;
-    box-sizing: border-box;
-    padding:
-      max(10px, env(safe-area-inset-top, 0px))
-      max(10px, env(safe-area-inset-right, 0px))
-      0
-      max(10px, env(safe-area-inset-left, 0px));
-  }
+.pog-app--desktop .pog-timer-slot .lo-timer {
+  min-width: min(92vw, 280px);
+}
 
-  .pog-logo {
-    position: static;
-    justify-self: start;
-    align-self: start;
-    width: clamp(82px, 24vw, 118px);
-    max-width: 42vw;
-    height: auto;
-    opacity: 0.94;
-  }
+/* Mobile: logo top-left, timer top-right */
+.pog-app--mobile .pog-top-bar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(6px, 2vw, 12px);
+  width: 100%;
+  box-sizing: border-box;
+  padding:
+    max(10px, env(safe-area-inset-top, 0px))
+    max(10px, env(safe-area-inset-right, 0px))
+    0
+    max(10px, env(safe-area-inset-left, 0px));
+}
 
-  .pog-timer-slot {
-    justify-self: end;
-    align-self: start;
-    display: flex;
-    justify-content: flex-end;
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-  }
+.pog-app--mobile .pog-logo {
+  position: static !important;
+  justify-self: start;
+  align-self: start;
+  width: clamp(80px, 23vw, 112px) !important;
+  max-width: 40vw;
+  height: auto;
+  opacity: 0.94;
+}
 
-  .pog-timer-slot .lo-timer {
-    min-width: 0;
-    max-width: min(48vw, 188px);
-    width: auto;
-    padding: 0.5rem 0.7rem 0.62rem;
-    border-radius: 16px;
-    border-width: 2px;
-    box-shadow:
-      0 4px 0 #c9a66b,
-      0 0 0 1px rgba(26, 26, 46, 0.05),
-      0 8px 22px rgba(76, 111, 255, 0.12);
-  }
+.pog-app--mobile .pog-timer-slot {
+  justify-self: end;
+  align-self: start;
+  display: flex !important;
+  justify-content: flex-end !important;
+  min-width: 0;
+  width: 100%;
+  padding: 0 !important;
+}
 
-  .pog-timer-slot .lo-timer--active {
-    box-shadow:
-      0 4px 0 #8b6914,
-      0 0 0 1px rgba(61, 143, 79, 0.1),
-      0 10px 24px rgba(61, 143, 79, 0.15);
-  }
+.pog-app--mobile .pog-timer-slot .lo-timer {
+  min-width: 0 !important;
+  max-width: min(46vw, 180px) !important;
+  width: auto !important;
+  padding: 0.48rem 0.65rem 0.58rem;
+  border-radius: 16px;
+  border-width: 2px;
+  box-shadow:
+    0 4px 0 #c9a66b,
+    0 0 0 1px rgba(26, 26, 46, 0.05),
+    0 8px 22px rgba(76, 111, 255, 0.12);
+}
 
-  .pog-timer-slot .lo-timer__label {
-    font-size: 0.62rem;
-    letter-spacing: 0.12em;
-    margin-bottom: 0.15rem;
-  }
+.pog-app--mobile .pog-timer-slot .lo-timer--active {
+  box-shadow:
+    0 4px 0 #8b6914,
+    0 0 0 1px rgba(61, 143, 79, 0.1),
+    0 10px 24px rgba(61, 143, 79, 0.15);
+}
 
-  .pog-timer-slot .lo-timer__value {
-    font-size: clamp(1.45rem, 6.5vw, 1.85rem);
-    margin-top: 0;
-  }
+.pog-app--mobile .pog-timer-slot .lo-timer__label {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.12rem;
+}
 
-  .pog-timer-slot .lo-timer__hint {
-    font-size: 0.62rem;
-    margin-top: 0.22rem;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.pog-app--mobile .pog-timer-slot .lo-timer__value {
+  font-size: clamp(1.4rem, 6.2vw, 1.8rem);
+  margin-top: 0;
+}
+
+.pog-app--mobile .pog-timer-slot .lo-timer__hint {
+  font-size: 0.58rem;
+  margin-top: 0.2rem;
+  line-height: 1.15;
 }
 
 /* ── LO-style grass timer (top center) ── */
@@ -524,14 +525,28 @@ button {
 }
 
 .grass-stack--upper {
+  display: none;
+}
+
+.pog-app--mobile .grass-stack--upper {
+  display: block;
   transform: translateY(calc(-1 * var(--pog-grass-stack-lift, 0px)));
   z-index: 5;
 }
 
-.grass-zone--doubled {
+.pog-app--mobile .grass-zone--doubled {
   overflow: visible;
   --pog-grass-stack-lift: calc(var(--pog-grass-height) * 0.92);
   height: calc(var(--pog-grass-height) + var(--pog-grass-stack-lift));
+}
+
+.pog-app--desktop .grass-zone {
+  overflow: hidden;
+  height: var(--pog-grass-height);
+}
+
+.pog-app--desktop .grass-stack--upper {
+  display: none !important;
 }
 
 /* Invisible touch band above visible blades (mobile only, enabled in JS) */
@@ -545,6 +560,118 @@ button {
 }
 
 /* ── Mobile (<768px): taller lawn, fuller grass, easier thumbs ── */
+.pog-app--mobile .grass-zone {
+  overflow: visible;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: content-box;
+}
+
+.pog-app--mobile .grass-zone--mobile::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -22%;
+  height: 55%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(126, 200, 248, 0) 0%,
+    rgba(72, 150, 95, 0.07) 42%,
+    rgba(45, 107, 58, 0.14) 100%
+  );
+}
+
+.pog-app--mobile .grass-zone__hit-pad {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 34%;
+  z-index: 48;
+  pointer-events: none;
+  touch-action: none;
+  background: transparent;
+}
+
+.pog-app--mobile .grass-touch-shield {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -34%;
+  bottom: 0;
+  z-index: 49;
+  pointer-events: auto;
+  touch-action: none;
+  background: transparent;
+}
+
+.pog-app--mobile .grass-tile__img {
+  pointer-events: none !important;
+  min-width: 130%;
+  transform: scale(1.1);
+  transform-origin: bottom center;
+}
+
+.pog-app--mobile .grass-tile {
+  pointer-events: none;
+}
+
+.pog-app--mobile .grass-back-row {
+  height: 150%;
+}
+
+.pog-app--mobile .grass-back-row--0 {
+  bottom: 188px;
+  height: 165%;
+  transform: scale(1.18);
+}
+
+.pog-app--mobile .grass-back-row--1 {
+  bottom: 146px;
+}
+
+.pog-app--mobile .grass-back-row--2 {
+  bottom: 108px;
+}
+
+.pog-app--mobile .grass-back-row--3 {
+  bottom: 68px;
+}
+
+.pog-app--mobile .grass-layer--middle {
+  height: 117%;
+  bottom: 20px;
+}
+
+.pog-app--mobile .grass-layer--front {
+  height: 108%;
+}
+
+.pog-app--mobile .grass-stack--upper {
+  opacity: 0.94;
+  filter: saturate(0.97);
+}
+
+.pog-app--mobile .pog-llama {
+  height: min(44vh, 460px);
+}
+
+.pog-app--mobile .pog-fence {
+  height: min(57vh, 600px);
+  transform: translateY(var(--pog-fence-drop)) scale(1.5);
+  transform-origin: bottom center;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+
+.pog-app--mobile .pog-fence-wrap {
+  pointer-events: none;
+}
+
 @media (max-width: 767px) {
   :root {
     --pog-grass-height: clamp(
@@ -556,117 +683,34 @@ button {
     --pog-fence-bottom: 14px;
   }
 
-  .grass-zone {
-    overflow: visible;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-sizing: content-box;
-  }
+}
 
-  .grass-zone--mobile::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -22%;
-    height: 55%;
-    z-index: 2;
-    pointer-events: none;
-    background: linear-gradient(
-      to bottom,
-      rgba(126, 200, 248, 0) 0%,
-      rgba(72, 150, 95, 0.07) 42%,
-      rgba(45, 107, 58, 0.14) 100%
-    );
-  }
-
-  .grass-zone__hit-pad {
-    display: block;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100%;
-    height: 34%;
-    z-index: 48;
-    pointer-events: none;
-    touch-action: none;
-    background: transparent;
-  }
-
-  .grass-touch-shield {
-    display: block;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -34%;
-    bottom: 0;
-    z-index: 49;
-    pointer-events: auto;
-    touch-action: none;
-    background: transparent;
-  }
-
-  /* Shields capture touch; blades stay visible underneath */
-  .grass-tile__img {
-    pointer-events: none !important;
-    min-width: 130%;
-    transform: scale(1.1);
+@media (min-width: 768px) {
+  .pog-fence {
+    height: min(44vh, 480px);
+    transform: translateY(var(--pog-fence-drop));
     transform-origin: bottom center;
-  }
-
-  .grass-tile {
-    pointer-events: none;
-  }
-
-  .grass-back-row {
-    height: 150%;
-  }
-
-  .grass-back-row--0 {
-    bottom: 188px;
-    height: 165%;
-    transform: scale(1.18);
-  }
-
-  .grass-back-row--1 {
-    bottom: 146px;
-  }
-
-  .grass-back-row--2 {
-    bottom: 108px;
-  }
-
-  .grass-back-row--3 {
-    bottom: 68px;
-  }
-
-  .grass-layer--middle {
-    height: 117%;
-    bottom: 20px;
-  }
-
-  .grass-layer--front {
-    height: 108%;
-  }
-
-  .grass-stack--upper {
-    opacity: 0.94;
-    filter: saturate(0.97);
   }
 
   .pog-llama {
-    height: min(44vh, 460px);
+    height: min(52vh, 560px);
   }
 
-  .pog-fence {
-    height: min(57vh, 600px);
-    transform: translateY(var(--pog-fence-drop)) scale(1.5);
-    transform-origin: bottom center;
-    pointer-events: none;
-    -webkit-touch-callout: none;
+  .grass-back-row--0 {
+    bottom: 154px;
+    height: 152%;
+    transform: scale(1.1);
   }
 
-  .pog-fence-wrap {
-    pointer-events: none;
+  .grass-back-row--1 {
+    bottom: 122px;
   }
 
+  .grass-back-row--2 {
+    bottom: 94px;
+  }
+
+  .grass-back-row--3 {
+    bottom: 66px;
+  }
 }

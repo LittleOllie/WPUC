@@ -6,6 +6,7 @@ import PogLogo from "./components/PogLogo.jsx";
 import SceneBackdrop from "./components/SceneBackdrop.jsx";
 import { useDayWeather } from "./hooks/useDayWeather.js";
 import { useGrassMoveTimer } from "./hooks/useGrassMoveTimer.js";
+import { useMobileLayout } from "./hooks/useMobileLayout.js";
 import { useSceneTouchGuard } from "./hooks/useSceneTouchGuard.js";
 import { SKY_BLUE } from "./lib/assets.js";
 
@@ -15,6 +16,7 @@ import { SKY_BLUE } from "./lib/assets.js";
  */
 export default function App() {
   const appRef = useRef(null);
+  const mobile = useMobileLayout();
   const { weather } = useDayWeather();
   const wind = weather === "rain" ? 1.15 : weather === "night" ? 0.55 : 0.85;
   const { formatted, moving, setMoving } = useGrassMoveTimer();
@@ -23,7 +25,7 @@ export default function App() {
   return (
     <motion.div
       ref={appRef}
-      className="pog-app relative h-[100dvh] w-full overflow-hidden"
+      className={`pog-app relative h-[100dvh] w-full overflow-hidden${mobile ? " pog-app--mobile" : " pog-app--desktop"}`}
       style={{ backgroundColor: SKY_BLUE }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -31,7 +33,7 @@ export default function App() {
     >
       <SceneBackdrop weather={weather} />
 
-      <LayeredGrass wind={wind} onGrassMovingChange={setMoving} />
+      <LayeredGrass wind={wind} onGrassMovingChange={setMoving} mobile={mobile} />
 
       <header className="pog-top-bar" aria-label="Proof of Grass">
         <PogLogo />

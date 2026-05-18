@@ -70,6 +70,7 @@ function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
 export default function LayeredGrass({
   wind: windMultiplier = 1,
   onGrassMovingChange,
+  mobile: mobileLayout = false,
 }) {
   const zoneRef = useRef(null);
   const onGrassMovingChangeRef = useRef(onGrassMovingChange);
@@ -145,7 +146,7 @@ export default function LayeredGrass({
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
 
-      const mobile = isMobileViewport();
+      const mobile = Boolean(mobileLayout);
       const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
 
       let hovered =
@@ -182,7 +183,7 @@ export default function LayeredGrass({
       if (width < 8 || height < 8) return false;
 
       const tiles = tileCountForWidth(width);
-      const mobile = isMobileViewport();
+      const mobile = Boolean(mobileLayout);
       const doubled = mobile;
 
       zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
@@ -217,7 +218,7 @@ export default function LayeredGrass({
         }
       };
 
-      const buildLayer = (cfg, stackEl) => {
+      const buildLayer = (cfg, parentEl) => {
         const layerEl = document.createElement("div");
         layerEl.className = `grass-layer grass-layer--${cfg.id}`;
         layerEl.setAttribute("aria-hidden", "true");
@@ -225,7 +226,7 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount = cfg.rows ?? 1;
+        const rowCount = mobile && cfg.rows ? cfg.rows : 1;
 
         if (rowCount > 1) {
           for (let r = 0; r < rowCount; r++) {
@@ -241,32 +242,35 @@ export default function LayeredGrass({
           appendGrassTiles(layerEl, tiles, cfg.src, layerTiles);
         }
 
-        stackEl.appendChild(layerEl);
+        parentEl.appendChild(layerEl);
         return { layerEl, layerTiles };
       };
 
-      const lowerStack = document.createElement("div");
-      lowerStack.className = "grass-stack grass-stack--lower";
-      zone.appendChild(lowerStack);
+      if (mobile) {
+        const lowerStack = document.createElement("div");
+        lowerStack.className = "grass-stack grass-stack--lower";
+        zone.appendChild(lowerStack);
 
-      let upperStack = null;
-      if (doubled) {
-        upperStack = document.createElement("div");
+        const upperStack = document.createElement("div");
         upperStack.className = "grass-stack grass-stack--upper";
         zone.appendChild(upperStack);
-      }
 
-      GRASS_LAYER_CONFIG.forEach((cfg) => {
-        const primary = buildLayer(cfg, lowerStack);
-        layerEls.push(primary.layerEl);
-        allTiles.push(primary.layerTiles);
+        GRASS_LAYER_CONFIG.forEach((cfg) => {
+          const primary = buildLayer(cfg, lowerStack);
+          layerEls.push(primary.layerEl);
+          allTiles.push(primary.layerTiles);
 
-        if (upperStack) {
           const mirror = buildLayer(cfg, upperStack);
           mirrorLayerEls.push(mirror.layerEl);
           mirrorAllTiles.push(mirror.layerTiles);
-        }
-      });
+        });
+      } else {
+        GRASS_LAYER_CONFIG.forEach((cfg) => {
+          const primary = buildLayer(cfg, zone);
+          layerEls.push(primary.layerEl);
+          allTiles.push(primary.layerTiles);
+        });
+      }
 
       if (!particlesRef.current) {
         const particlesContainer = document.createElement("div");
@@ -305,11 +309,7 @@ export default function LayeredGrass({
       return true;
     };
 
-    const ensureBuilt = () => {
-      if (!simRef.current?.length) build();
-    };
-
-    ensureBuilt();
+    build();
 
     preloadGrassMasks(GRASS_LAYER_CONFIG.map((c) => c.src)).then(() => {
       Promise.all(GRASS_LAYER_CONFIG.map((c) => loadGrassMask(c.src))).then(
@@ -318,13 +318,6 @@ export default function LayeredGrass({
         }
       );
     });
-
-    const phoneMq = window.matchMedia(MOBILE_MEDIA);
-    const onPhoneLayoutChange = () => {
-      cancelAnimationFrame(resizeRafRef.current);
-      resizeRafRef.current = requestAnimationFrame(() => build());
-    };
-    phoneMq.addEventListener("change", onPhoneLayoutChange);
 
     const ro = new ResizeObserver(() => {
       cancelAnimationFrame(resizeRafRef.current);
@@ -338,15 +331,13 @@ export default function LayeredGrass({
       const dt = Math.min(now - lastTimeRef.current, 48);
       lastTimeRef.current = now;
 
-      ensureBuilt();
-
       const sim = simRef.current;
       const tileNodes = tileElsRef.current;
       const layerNodes = layerElsRef.current;
       const mirrorLayerNodes = mirrorLayerElsRef.current;
       const mirrorTileNodes = mirrorTileElsRef.current;
       const reduced = reducedMotionRef.current;
-      const mobileEase = isMobileViewport();
+      const mobileEase = Boolean(mobileLayout);
 
       if (sim?.length && tileNodes?.length && layerNodes?.length) {
         const windSample = reduced
@@ -465,7 +456,6 @@ export default function LayeredGrass({
       cancelAnimationFrame(resizeRafRef.current);
       ro.disconnect();
       motionMq.removeEventListener("change", onMotionChange);
-      phoneMq.removeEventListener("change", onPhoneLayoutChange);
       zone.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointermove", onPointerMove);
       document.removeEventListener("pointerout", onPointerLeaveWindow);
@@ -475,7 +465,7 @@ export default function LayeredGrass({
       window.removeEventListener("blur", onWindowBlur);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [windMultiplier, onGrassMovingChange]);
+  }, [windMultiplier, onGrassMovingChange, mobileLayout]);
 
   return (
     <section
