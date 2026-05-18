@@ -12,11 +12,8 @@ import {
 import { GRASS_LAYER_CONFIG } from "../lib/grassLayers.js";
 import { createLayerState, stepGrassLayers } from "../lib/grassPhysics.js";
 import {
-  isMobileViewport,
   MOBILE_DRAG_SENSITIVITY,
   MOBILE_HIT_PAD_RATIO,
-  MOBILE_MEDIA,
-  MOBILE_MIRROR_PARALLAX,
 } from "../lib/mobileGrass.js";
 import { createWindState, stepWind } from "../lib/windSystem.js";
 
@@ -77,9 +74,7 @@ export default function LayeredGrass({
   const lastMovingNotifyRef = useRef(false);
   const particlesRef = useRef(null);
   const layerElsRef = useRef([]);
-  const mirrorLayerElsRef = useRef([]);
   const tileElsRef = useRef([]);
-  const mirrorTileElsRef = useRef([]);
   const simRef = useRef(null);
   const windRef = useRef(createWindState());
   const particlesSimRef = useRef(createParticleField());
@@ -184,19 +179,14 @@ export default function LayeredGrass({
 
       const tiles = tileCountForWidth(width);
       const mobile = Boolean(mobileLayout);
-      const doubled = mobile;
 
-      zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
       zone.querySelectorAll(".grass-zone__hit-pad, .grass-touch-shield").forEach(
         (el) => el.remove()
       );
       zone.classList.toggle("grass-zone--mobile", mobile);
-      zone.classList.toggle("grass-zone--doubled", doubled);
 
       const layerEls = [];
-      const mirrorLayerEls = [];
       const allTiles = [];
-      const mirrorAllTiles = [];
 
       const appendGrassTiles = (parent, count, src, layerTiles) => {
         for (let t = 0; t < count; t++) {
@@ -226,7 +216,10 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount = mobile && cfg.rows ? cfg.rows : 1;
+        const rowCount =
+          mobile && cfg.rows
+            ? cfg.mobileRows ?? cfg.rows
+            : 1;
 
         if (rowCount > 1) {
           for (let r = 0; r < rowCount; r++) {
@@ -246,31 +239,13 @@ export default function LayeredGrass({
         return { layerEl, layerTiles };
       };
 
-      if (mobile) {
-        const lowerStack = document.createElement("div");
-        lowerStack.className = "grass-stack grass-stack--lower";
-        zone.appendChild(lowerStack);
+      zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
 
-        const upperStack = document.createElement("div");
-        upperStack.className = "grass-stack grass-stack--upper";
-        zone.appendChild(upperStack);
-
-        GRASS_LAYER_CONFIG.forEach((cfg) => {
-          const primary = buildLayer(cfg, lowerStack);
-          layerEls.push(primary.layerEl);
-          allTiles.push(primary.layerTiles);
-
-          const mirror = buildLayer(cfg, upperStack);
-          mirrorLayerEls.push(mirror.layerEl);
-          mirrorAllTiles.push(mirror.layerTiles);
-        });
-      } else {
-        GRASS_LAYER_CONFIG.forEach((cfg) => {
-          const primary = buildLayer(cfg, zone);
-          layerEls.push(primary.layerEl);
-          allTiles.push(primary.layerTiles);
-        });
-      }
+      GRASS_LAYER_CONFIG.forEach((cfg) => {
+        const primary = buildLayer(cfg, zone);
+        layerEls.push(primary.layerEl);
+        allTiles.push(primary.layerTiles);
+      });
 
       if (!particlesRef.current) {
         const particlesContainer = document.createElement("div");
@@ -295,14 +270,7 @@ export default function LayeredGrass({
       }
 
       layerElsRef.current = layerEls;
-      mirrorLayerElsRef.current = mirrorLayerEls;
-      tileElsRef.current = doubled
-        ? allTiles.map((layerTiles, i) => [
-            ...mirrorAllTiles[i],
-            ...layerTiles,
-          ])
-        : allTiles;
-      mirrorTileElsRef.current = mirrorAllTiles;
+      tileElsRef.current = allTiles;
       simRef.current = GRASS_LAYER_CONFIG.map((cfg) =>
         createLayerState(cfg, tiles)
       );
@@ -334,8 +302,6 @@ export default function LayeredGrass({
       const sim = simRef.current;
       const tileNodes = tileElsRef.current;
       const layerNodes = layerElsRef.current;
-      const mirrorLayerNodes = mirrorLayerElsRef.current;
-      const mirrorTileNodes = mirrorTileElsRef.current;
       const reduced = reducedMotionRef.current;
       const mobileEase = Boolean(mobileLayout);
 
@@ -351,13 +317,8 @@ export default function LayeredGrass({
         for (let li = 0; li < sim.length; li++) {
           const layer = sim[li];
           const cfg = layer.config;
-          const primaryTiles =
-            mirrorTileNodes[li]?.length > 0
-              ? tileNodes[li]?.slice(-layer.cols) ?? []
-              : tileNodes[li] ?? [];
+          const layerTiles = tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
-          const mirrorEl = mirrorLayerNodes[li];
-          const mirrorTiles = mirrorTileNodes[li];
 
           let layerTransform;
           if (!reduced) {
@@ -367,30 +328,17 @@ export default function LayeredGrass({
             layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${cfg.scale}) rotate(${rot}deg)`;
             layerEl.style.transform = layerTransform;
 
-            if (mirrorEl) {
-              const mx = (layer.layerTx * MOBILE_MIRROR_PARALLAX).toFixed(2);
-              const my = (
-                cfg.offsetY +
-                layer.layerTy * MOBILE_MIRROR_PARALLAX
-              ).toFixed(2);
-              const mrot = (layer.layerAngle * MOBILE_MIRROR_PARALLAX).toFixed(3);
-              mirrorEl.style.transform = `translate3d(${mx}px, ${my}px, 0) scale(${cfg.scale}) rotate(${mrot}deg)`;
-            }
-
             for (let i = 0; i < layer.cols; i++) {
               const angle = layer.angles[i];
-              const tx = layer.translates[i];
-              const tileTransform = `translate3d(${tx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
-              if (primaryTiles[i]) primaryTiles[i].style.transform = tileTransform;
-              if (mirrorTiles?.[i]) mirrorTiles[i].style.transform = tileTransform;
+              const tileTx = layer.translates[i];
+              const tileTransform = `translate3d(${tileTx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
+              if (layerTiles[i]) layerTiles[i].style.transform = tileTransform;
             }
           } else {
             layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
             layerEl.style.transform = layerTransform;
-            if (mirrorEl) mirrorEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
-              if (primaryTiles[i]) primaryTiles[i].style.transform = "translate3d(0, 0, 0)";
-              if (mirrorTiles?.[i]) mirrorTiles[i].style.transform = "translate3d(0, 0, 0)";
+              if (layerTiles[i]) layerTiles[i].style.transform = "translate3d(0, 0, 0)";
             }
           }
         }

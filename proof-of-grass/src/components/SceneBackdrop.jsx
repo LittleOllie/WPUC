@@ -20,7 +20,7 @@ export default function SceneBackdrop({ weather }) {
 
   return (
     <motion.div
-      className="pog-scene-visual pointer-events-none absolute inset-0 z-0"
+      className="pog-scene-visual pointer-events-none absolute inset-0"
       aria-hidden
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

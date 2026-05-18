@@ -297,6 +297,14 @@ button {
   filter: contrast(1.04) brightness(1.06);
 }
 
+/* Scene sits above the lawn so characters are never covered by grass */
+.pog-scene-visual {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
 /* Full-viewport sky artwork */
 .pog-sky-bg {
   position: absolute;
@@ -365,7 +373,7 @@ button {
   position: absolute;
   inset-inline: 0;
   bottom: var(--pog-grass-lift);
-  z-index: 40;
+  z-index: 30;
   height: var(--pog-grass-height);
   overflow: hidden;
   touch-action: none;
@@ -515,40 +523,6 @@ button {
   -webkit-touch-callout: none;
 }
 
-/* Stacked duplicate lawn (iPhone) — upper copy lifted by half zone height */
-.grass-stack {
-  position: absolute;
-  inset: 0;
-  z-index: 12;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.grass-stack--upper {
-  display: none;
-}
-
-.pog-app--mobile .grass-stack--upper {
-  display: block;
-  transform: translateY(calc(-1 * var(--pog-grass-stack-lift, 0px)));
-  z-index: 5;
-}
-
-.pog-app--mobile .grass-zone--doubled {
-  overflow: visible;
-  --pog-grass-stack-lift: calc(var(--pog-grass-height) * 0.92);
-  height: calc(var(--pog-grass-height) + var(--pog-grass-stack-lift));
-}
-
-.pog-app--desktop .grass-zone {
-  overflow: hidden;
-  height: var(--pog-grass-height);
-}
-
-.pog-app--desktop .grass-stack--upper {
-  display: none !important;
-}
-
 /* Invisible touch band above visible blades (mobile only, enabled in JS) */
 .grass-zone__hit-pad {
   display: none;
@@ -561,9 +535,8 @@ button {
 
 /* ── Mobile (<768px): taller lawn, fuller grass, easier thumbs ── */
 .pog-app--mobile .grass-zone {
-  overflow: visible;
+  overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-sizing: content-box;
 }
 
 .pog-app--mobile .grass-zone--mobile::before {
@@ -621,25 +594,23 @@ button {
 }
 
 .pog-app--mobile .grass-back-row {
-  height: 150%;
+  height: 142%;
 }
 
+/* Two overlapped back rows — tight depth, no horizontal stripes */
 .pog-app--mobile .grass-back-row--0 {
-  bottom: 188px;
-  height: 165%;
-  transform: scale(1.18);
+  bottom: 78px;
+  height: 148%;
+  transform: scale(1.12);
 }
 
 .pog-app--mobile .grass-back-row--1 {
-  bottom: 146px;
+  bottom: 52px;
 }
 
-.pog-app--mobile .grass-back-row--2 {
-  bottom: 108px;
-}
-
+.pog-app--mobile .grass-back-row--2,
 .pog-app--mobile .grass-back-row--3 {
-  bottom: 68px;
+  display: none;
 }
 
 .pog-app--mobile .grass-layer--middle {
@@ -649,11 +620,6 @@ button {
 
 .pog-app--mobile .grass-layer--front {
   height: 108%;
-}
-
-.pog-app--mobile .grass-stack--upper {
-  opacity: 0.94;
-  filter: saturate(0.97);
 }
 
 .pog-app--mobile .pog-llama {
@@ -675,9 +641,9 @@ button {
 @media (max-width: 767px) {
   :root {
     --pog-grass-height: clamp(
-      260px,
-      calc(34dvh + env(safe-area-inset-bottom, 0px)),
-      500px
+      280px,
+      calc(38dvh + env(safe-area-inset-bottom, 0px)),
+      520px
     );
     --pog-fence-drop: 0.25rem;
     --pog-fence-bottom: 14px;

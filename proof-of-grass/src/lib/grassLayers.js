@@ -21,8 +21,9 @@ export const GRASS_LAYER_CONFIG = [
     id: "back",
     src: grassBack,
     zIndex: 10,
-    /** Four stacked grssback rows — rearmost row is lifted + scaled in CSS */
+    /** Desktop: one row; mobile: two overlapped rows (see mobileRows) */
     rows: 4,
+    mobileRows: 2,
     scale: 1.555,
     offsetY: -36,
     opacity: 0.9,
