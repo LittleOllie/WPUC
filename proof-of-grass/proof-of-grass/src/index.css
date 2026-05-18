@@ -29,14 +29,166 @@
   --pog-fence-drop: 0.5rem;
 }
 
-/* Full viewport — works in browser tab and Cursor preview */
-.pog-app {
+/* ── Shell: portrait frame on all devices; immersive fills viewport ── */
+.pog-shell {
   position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 100dvh;
+  background: linear-gradient(165deg, #6aabda 0%, #4a88b8 48%, #3d739f 100%);
+}
+
+.pog-shell__backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 45%,
+    rgba(126, 200, 248, 0.35) 0%,
+    rgba(58, 108, 148, 0.55) 100%
+  );
+  backdrop-filter: blur(10px);
+}
+
+.pog-shell--immersive {
+  background: #a8dcff;
+}
+
+.pog-shell--immersive .pog-shell__backdrop,
+.pog-shell--immersive .pog-shell-ambience {
+  display: none;
+}
+
+.pog-shell-ambience {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.45;
+  filter: blur(1px);
+}
+
+.pog-shell-cloud {
+  position: absolute;
+  left: 0;
+  width: min(320px, 42vw);
+  animation: pog-cloud-drift linear infinite;
+  will-change: transform;
+}
+
+.pog-shell-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0.85;
+}
+
+.pog-shell-cloud--b {
+  width: min(280px, 36vw);
+}
+
+.pog-frame {
+  position: relative;
+  container-type: size;
+  container-name: pog-frame;
+  width: min(100vw, 480px);
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  border-radius: clamp(14px, 3vw, 22px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 24px 80px rgba(26, 46, 60, 0.45),
+    0 8px 32px rgba(26, 46, 60, 0.28);
+  z-index: 2;
+}
+
+@media (max-width: 520px) {
+  .pog-shell:not(.pog-shell--immersive) .pog-frame {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.pog-shell--immersive .pog-frame {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Split control — sliding thumb shows active mode */
+.pog-mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  padding: 3px;
+  border-radius: 999px;
+  background: linear-gradient(148deg, #ebe6dc 0%, #e2ddd0 55%, #d8e0ea 100%);
+  border: 2px solid rgba(255, 221, 85, 0.55);
+  box-shadow:
+    inset 0 1px 2px rgba(26, 46, 60, 0.08),
+    0 2px 0 #c9a66b,
+    0 4px 14px rgba(26, 46, 60, 0.12);
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pog-mode-switch__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: linear-gradient(148deg, #fffdf8 0%, #fff8ec 55%, #f2f6ff 100%);
+  box-shadow:
+    0 2px 0 #c9a66b,
+    0 4px 12px rgba(26, 46, 60, 0.14);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pog-mode-switch__option {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0.38rem 0.4rem;
+  border: none;
+  background: transparent;
+  font-family: var(--font-pog);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  color: rgba(26, 46, 31, 0.5);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.pog-mode-switch__option[aria-pressed="true"] {
+  color: var(--color-pog-ink);
+}
+
+.pog-mode-switch__option:active {
+  transform: scale(0.98);
+}
+
+.pog-app {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -48,6 +200,7 @@ html,
 body,
 #root {
   height: 100%;
+  min-height: 100dvh;
   margin: 0;
 }
 
@@ -114,6 +267,18 @@ button {
   pointer-events: none;
 }
 
+.pog-top-bar__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.pog-top-bar__stack .pog-mode-switch {
+  pointer-events: auto;
+}
+
 .pog-timer-slot {
   pointer-events: none;
 }
@@ -123,12 +288,12 @@ button {
   filter: drop-shadow(0 2px 10px rgba(26, 46, 31, 0.1));
 }
 
-/* Desktop: logo corner + centered timer (original layout) */
-.pog-app--desktop .pog-top-bar {
+/* Ultra Grass: logo top-left, timer + toggle top-right */
+.pog-app--immersive .pog-top-bar {
   display: block;
 }
 
-.pog-app--desktop .pog-logo {
+.pog-app--immersive .pog-logo {
   position: absolute;
   top: clamp(10px, 2.2dvh, 18px);
   left: clamp(10px, 2.8vw, 20px);
@@ -138,18 +303,37 @@ button {
   opacity: 0.9;
 }
 
-.pog-app--desktop .pog-timer-slot {
-  display: flex;
-  justify-content: center;
-  padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
+.pog-app--immersive .pog-top-bar__stack {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  z-index: 60;
+  width: min(32vw, 280px);
+  align-items: stretch;
+  padding: 0;
+  gap: 0.5rem;
 }
 
-.pog-app--desktop .pog-timer-slot .lo-timer {
-  min-width: min(92vw, 280px);
+.pog-app--immersive .pog-timer-slot {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding: 0;
+}
+
+.pog-app--immersive .pog-timer-slot .lo-timer,
+.pog-app--immersive .pog-top-bar__stack .pog-mode-switch {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pog-app--immersive .pog-timer-slot .lo-timer {
+  min-width: 0;
+  max-width: none;
 }
 
 /* Mobile: logo top-left, timer top-right */
-.pog-app--mobile .pog-top-bar {
+.pog-app--portrait .pog-top-bar {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
@@ -163,30 +347,40 @@ button {
     max(10px, env(safe-area-inset-left, 0px));
 }
 
-.pog-app--mobile .pog-logo {
+.pog-app--portrait .pog-logo {
   position: static !important;
   justify-self: start;
   align-self: start;
-  width: clamp(80px, 23vw, 112px) !important;
-  max-width: 40vw;
+  width: clamp(72px, 38%, 120px) !important;
+  max-width: 46%;
   height: auto;
   opacity: 0.94;
 }
 
-.pog-app--mobile .pog-timer-slot {
+.pog-app--portrait .pog-top-bar__stack {
+  grid-column: 2;
   justify-self: end;
   align-self: start;
+  width: min(52cqw, 200px);
+  align-items: stretch;
+}
+
+.pog-app--portrait .pog-timer-slot {
   display: flex !important;
-  justify-content: flex-end !important;
-  min-width: 0;
+  justify-content: stretch !important;
   width: 100%;
   padding: 0 !important;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer {
+.pog-app--portrait .pog-timer-slot .lo-timer,
+.pog-app--portrait .pog-top-bar__stack .pog-mode-switch {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pog-app--portrait .pog-timer-slot .lo-timer {
   min-width: 0 !important;
-  max-width: min(46vw, 180px) !important;
-  width: auto !important;
+  max-width: none !important;
   padding: 0.48rem 0.65rem 0.58rem;
   border-radius: 16px;
   border-width: 2px;
@@ -196,25 +390,25 @@ button {
     0 8px 22px rgba(76, 111, 255, 0.12);
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer--active {
+.pog-app--portrait .pog-timer-slot .lo-timer--active {
   box-shadow:
     0 4px 0 #8b6914,
     0 0 0 1px rgba(61, 143, 79, 0.1),
     0 10px 24px rgba(61, 143, 79, 0.15);
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__label {
+.pog-app--portrait .pog-timer-slot .lo-timer__label {
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   margin-bottom: 0.12rem;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__value {
+.pog-app--portrait .pog-timer-slot .lo-timer__value {
   font-size: clamp(1.4rem, 6.2vw, 1.8rem);
   margin-top: 0;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__hint {
+.pog-app--portrait .pog-timer-slot .lo-timer__hint {
   font-size: 0.58rem;
   margin-top: 0.2rem;
   line-height: 1.15;
@@ -306,6 +500,11 @@ button {
   /* Crisp opaque clouds — webp alpha was picking up sky blue */
   mix-blend-mode: normal;
   filter: contrast(1.04) brightness(1.06);
+}
+
+/* Scene wrapper must not create a stacking context below grass (no z-0) */
+.pog-scene-visual {
+  z-index: auto;
 }
 
 /* Full-viewport sky artwork */
@@ -536,22 +735,23 @@ button {
 }
 
 /*
- * ── Mobile: proportional stack (dvh — same ratios on every phone) ──
- * Bottom → top: lawn band (~18dvh) → fence (under grass) → llama → sky
+ * ── Portrait mode (default everywhere): one layout, frame-relative sizing ──
  */
-.pog-app--mobile {
+.pog-app--portrait {
   touch-action: manipulation;
   -webkit-touch-callout: none;
-  --pog-lawn-h: calc(18dvh + env(safe-area-inset-bottom, 0px));
+  /* All scene measures = % of portrait frame (cqh/cqw), not viewport */
+  --pog-lawn-h: 36cqh;
   --pog-grass-height: var(--pog-lawn-h);
   --pog-grass-lift: 0px;
-  --pog-fence-h: 22dvh;
+  --pog-fence-h: 40cqh;
   --pog-fence-bottom: 0px;
   --pog-fence-drop: 0;
-  --pog-llama-anchor: calc(var(--pog-lawn-h) + 1.5dvh);
+  --pog-fence-lift: 4cqh;
+  --pog-llama-anchor: 0;
 }
 
-.pog-app--mobile .grass-zone {
+.pog-app--portrait .grass-zone {
   z-index: 50;
   overflow: hidden;
   padding-bottom: 0;
@@ -559,61 +759,70 @@ button {
 }
 
 
-.pog-app--mobile .pog-scene-visual img,
-.pog-app--mobile .pog-cloud {
+.pog-app--portrait .pog-scene-visual img,
+.pog-app--portrait .pog-cloud {
   pointer-events: none !important;
   -webkit-touch-callout: none !important;
   -webkit-user-drag: none !important;
   user-select: none !important;
 }
 
-.pog-app--mobile .pog-fence-wrap {
+.pog-app--portrait .pog-fence-wrap {
   bottom: var(--pog-fence-bottom);
-  z-index: 38;
+  left: 0;
+  right: 0;
+  z-index: 44;
   pointer-events: none;
+  overflow: visible;
 }
 
-.pog-app--mobile .pog-fence {
+.pog-app--portrait .pog-fence {
+  display: block;
+  width: 112%;
+  max-width: none;
+  margin-left: -6%;
   height: var(--pog-fence-h);
-  transform: none;
+  transform: translateY(calc(-1 * var(--pog-fence-lift))) scale(1.12);
   transform-origin: bottom center;
+  object-fit: cover;
+  object-position: bottom center;
   pointer-events: none !important;
   -webkit-touch-callout: none !important;
 }
 
-.pog-app--mobile .pog-llama-wrap {
+.pog-app--portrait .pog-llama-wrap {
   bottom: var(--pog-llama-anchor);
-  z-index: 42;
+  z-index: 36;
 }
 
-.pog-app--mobile .pog-llama {
-  height: 46dvh;
-  max-height: calc(100dvh - var(--pog-llama-anchor) - 10dvh);
-  max-width: min(88vw, 420px);
-  transform: translateY(0) scale(1.22);
+.pog-app--portrait .pog-llama {
+  height: 52cqh;
+  max-height: calc(100cqh - var(--pog-fence-h) - 10cqh);
+  max-width: 94cqw;
+  transform: translateY(calc(-1 * var(--pog-fence-lift))) scale(1.15);
   transform-origin: bottom center;
 }
 
-.pog-app--mobile .grass-zone__hit-pad {
+.pog-app--portrait .grass-zone__hit-pad {
   display: block;
   position: absolute;
   left: 0;
   right: 0;
   bottom: 100%;
-  height: calc(var(--pog-fence-h) * 0.22);
+  height: 18cqh;
   z-index: 48;
   pointer-events: auto;
   touch-action: none;
   background: transparent;
 }
 
-.pog-app--mobile .grass-touch-shield {
+.pog-app--portrait .grass-touch-shield {
   display: block;
   position: absolute;
   left: 0;
   right: 0;
   top: auto;
-  height: calc(var(--pog-fence-h) * 0.22);
+  height: 20cqh;
   bottom: 0;
   z-index: 49;
   pointer-events: auto;
@@ -622,99 +831,107 @@ button {
   background: transparent;
 }
 
-.pog-app--mobile .grass-tile__img {
-  pointer-events: none !important;
-}
-
-.pog-app--mobile .grass-tile {
+.pog-app--portrait .grass-tile {
   pointer-events: none;
 }
 
-/*
- * Mobile grass stacking = desktop ratios, but % of lawn band so size
- * changes never push layers up (desktop uses px tuned for ~36dvh band).
- * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
- */
-.pog-app--mobile .grass-back-row--0 {
-  bottom: 43%;
-  height: 152%;
-  transform: scale(1.1);
-}
-
-.pog-app--mobile .grass-layer--middle {
+/* Pocket: front + middle only (no stacked back rows into the scene) */
+.pog-app--portrait .grass-layer--middle {
   bottom: 5%;
-  height: 108%;
 }
 
-.pog-app--mobile .grass-layer--front {
+.pog-app--portrait .grass-layer--front {
   bottom: 0;
-  height: 100%;
+}
+
+.pog-app--portrait .grass-tile__img {
+  pointer-events: none !important;
+}
+
+/* Pocket: behind-stacks for thickness (primary on top) */
+.pog-app--portrait .grass-stack--fill,
+.pog-app--portrait .grass-stack--fill-2,
+.pog-app--portrait .grass-stack--fill-3 {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+  transform-origin: bottom center;
+}
+
+.pog-app--portrait .grass-stack--fill-3 {
+  bottom: 17%;
+  transform: scaleX(-1);
+}
+
+.pog-app--portrait .grass-stack--fill-2 {
+  bottom: 12%;
+}
+
+.pog-app--portrait .grass-stack--fill {
+  bottom: 5%;
+  transform: scaleX(-1);
 }
 
 /*
- * ── Desktop: locked layout (do not use dvh for scene — stays as-is) ──
+ * ── Immersive / Desktop Mode: fullscreen widescreen (optional toggle) ──
  */
-.pog-app--desktop {
+.pog-app--immersive {
   --pog-grass-height: clamp(190px, 36dvh, 430px);
   --pog-grass-lift: 0px;
   --pog-fence-bottom: 10px;
   --pog-fence-drop: 0.5rem;
 }
 
-.pog-app--desktop .grass-zone {
-  z-index: 40;
+.pog-app--immersive .grass-zone {
+  z-index: 50;
 }
 
-.pog-app--desktop .pog-fence-wrap {
+/* Ultra Grass: duplicate lawn stack ~10% higher for thickness (visual only) */
+.pog-app--immersive .grass-stack--fill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 10%;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.pog-app--immersive .pog-fence-wrap {
   z-index: 45;
 }
 
-.pog-app--desktop .pog-llama-wrap {
+.pog-app--immersive .pog-llama-wrap {
   z-index: 44;
 }
 
-.pog-app--desktop .pog-fence {
+.pog-app--immersive .pog-fence {
   height: min(44vh, 480px);
   transform: translateY(var(--pog-fence-drop));
   transform-origin: bottom center;
 }
 
-.pog-app--desktop .pog-llama {
+.pog-app--immersive .pog-llama {
   height: min(44vh, 476px);
   max-width: min(67vw, 459px);
   transform: translateY(var(--pog-fence-drop)) scale(1.7);
 }
 
-.pog-app--desktop .grass-back-row--0 {
-  bottom: 154px;
-  height: 152%;
-  transform: scale(1.1);
-}
-
-.pog-app--desktop .grass-back-row--1 {
-  bottom: 122px;
-}
-
-.pog-app--desktop .grass-back-row--2 {
-  bottom: 94px;
-}
-
-.pog-app--desktop .grass-back-row--3 {
-  bottom: 66px;
-}
-
 /* Short desktop preview panes only */
 @media (max-height: 520px) {
-  .pog-app--desktop .pog-llama {
+  .pog-app--immersive .pog-llama {
     height: min(33vh, 272px);
     transform: translateY(var(--pog-fence-drop)) scale(1.15);
   }
 
-  .pog-app--desktop .pog-fence {
+  .pog-app--immersive .pog-fence {
     height: min(32vh, 280px);
   }
 
-  .pog-app--desktop {
+  .pog-app--immersive {
     --pog-grass-height: clamp(120px, 28dvh, 220px);
   }
 }

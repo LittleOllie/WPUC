@@ -6,7 +6,7 @@ import CloudLayer from "./CloudLayer.jsx";
  * Layer stack (back → front):
  * Sky → weather → clouds → llama → fence (grass is a sibling in App)
  */
-export default function SceneBackdrop({ weather }) {
+export default function SceneBackdrop({ weather, portrait = true }) {
   const tint =
     weather === "night"
       ? "rgba(30, 60, 100, 0.22)"
@@ -20,7 +20,7 @@ export default function SceneBackdrop({ weather }) {
 
   return (
     <motion.div
-      className="pog-scene-visual pointer-events-none absolute inset-0 z-0"
+      className="pog-scene-visual pointer-events-none absolute inset-0"
       aria-hidden
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -43,7 +43,7 @@ export default function SceneBackdrop({ weather }) {
         />
       )}
 
-      <CloudLayer weather={weather} />
+      <CloudLayer weather={weather} portrait={portrait} />
 
       <motion.div className="pog-llama-wrap">
         <img

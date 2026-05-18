@@ -1,20 +1,26 @@
 import { useEffect } from "react";
-import { MOBILE_LAWN_FRAC } from "../lib/mobileGrass.js";
+import { PORTRAIT_LAWN_FRAC } from "../lib/mobileGrass.js";
 
 const GRASS_GUARD_SELECTOR =
   ".grass-zone, .grass-zone__hit-pad, .grass-touch-shield, .grass-tile, .grass-tile__img, .pog-touch-guard";
 
-/** Bottom lawn band — matches --pog-lawn-h on mobile */
-function isMobileLawnTouch(clientY) {
-  const cutoff = window.innerHeight * (1 - MOBILE_LAWN_FRAC - 0.08);
+/** Bottom lawn band — matches portrait frame */
+function isPortraitLawnTouch(clientY, root) {
+  const frame = root?.querySelector(".pog-frame");
+  const rect = frame?.getBoundingClientRect();
+  if (rect && rect.height > 0) {
+    const cutoff = rect.bottom - rect.height * PORTRAIT_LAWN_FRAC;
+    return clientY >= cutoff;
+  }
+  const cutoff = window.innerHeight * (1 - PORTRAIT_LAWN_FRAC - 0.08);
   return clientY >= cutoff;
 }
 
 /**
  * Block iOS/Android long-press "Save Image" on the lawn.
- * Grass physics still use document pointer events (imgs use pointer-events: none on mobile).
+ * Grass physics still use document pointer events (imgs use pointer-events: none on portrait).
  */
-export function useSceneTouchGuard(rootRef, mobile = false) {
+export function useSceneTouchGuard(rootRef, portrait = true) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -22,12 +28,12 @@ export function useSceneTouchGuard(rootRef, mobile = false) {
     const isGuarded = (target) =>
       target instanceof Element && Boolean(target.closest(GRASS_GUARD_SELECTOR));
 
-    const touchInLawn = (clientY) => mobile && isMobileLawnTouch(clientY);
+    const touchInLawn = (clientY) => portrait && isPortraitLawnTouch(clientY, root);
 
     let lawnTouchActive = false;
 
     const shouldBlockTouch = (target, clientY) => {
-      if (!mobile) return isGuarded(target);
+      if (!portrait) return isGuarded(target);
       if (isGuarded(target)) return true;
       if (target instanceof HTMLImageElement && root.contains(target)) return true;
       if (target instanceof Element && target.closest(".pog-scene-visual") && touchInLawn(clientY)) {
@@ -92,16 +98,16 @@ export function useSceneTouchGuard(rootRef, mobile = false) {
     root.addEventListener("touchcancel", onTouchEnd, capture);
 
     const onDocContextMenu = (e) => {
-      if (!mobile) return;
+      if (!portrait) return;
       blockEvent(e);
     };
 
     const onDocTouchStart = (e) => {
-      if (!mobile) return;
+      if (!portrait) return;
       onTouchStart(e);
     };
 
-    if (mobile) {
+    if (portrait) {
       document.addEventListener("contextmenu", onDocContextMenu, capture);
       document.addEventListener("touchstart", onDocTouchStart, touchOpts);
     }
@@ -117,10 +123,10 @@ export function useSceneTouchGuard(rootRef, mobile = false) {
       root.removeEventListener("touchmove", onTouchMove, touchOpts);
       root.removeEventListener("touchend", onTouchEnd, capture);
       root.removeEventListener("touchcancel", onTouchEnd, capture);
-      if (mobile) {
+      if (portrait) {
         document.removeEventListener("contextmenu", onDocContextMenu, capture);
         document.removeEventListener("touchstart", onDocTouchStart, touchOpts);
       }
     };
-  }, [rootRef, mobile]);
+  }, [rootRef, portrait]);
 }
