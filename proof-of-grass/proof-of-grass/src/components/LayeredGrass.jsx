@@ -42,10 +42,14 @@ function frontLayerIndex() {
   return GRASS_LAYER_CONFIG.findIndex((c) => c.id === "front");
 }
 
+/** Mobile lawn ~18dvh vs desktop ~36dvh — scale grass physics to match desktop look */
+const MOBILE_LAWN_TO_DESKTOP = 18 / 36;
+
 function layoutForLayer(cfg, mobile) {
+  if (!mobile) return { scale: cfg.scale, offsetY: cfg.offsetY };
   return {
-    scale: mobile && cfg.mobileScale != null ? cfg.mobileScale : cfg.scale,
-    offsetY: mobile && cfg.mobileOffsetY != null ? cfg.mobileOffsetY : cfg.offsetY,
+    scale: cfg.scale * MOBILE_LAWN_TO_DESKTOP,
+    offsetY: cfg.offsetY * MOBILE_LAWN_TO_DESKTOP,
   };
 }
 
@@ -223,10 +227,7 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount =
-          mobile && cfg.rows
-            ? cfg.mobileRows ?? cfg.rows
-            : 1;
+        const rowCount = 1;
 
         if (rowCount > 1) {
           for (let r = 0; r < rowCount; r++) {

@@ -558,23 +558,6 @@ button {
   touch-action: none;
 }
 
-.pog-app--mobile .grass-zone--mobile::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: auto;
-  bottom: 0;
-  height: calc(var(--pog-fence-h) * 0.2);
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(126, 200, 248, 0) 0%,
-    rgba(72, 150, 95, 0.1) 55%,
-    rgba(45, 107, 58, 0.18) 100%
-  );
-}
 
 .pog-app--mobile .pog-scene-visual img,
 .pog-app--mobile .pog-cloud {
@@ -641,9 +624,6 @@ button {
 
 .pog-app--mobile .grass-tile__img {
   pointer-events: none !important;
-  min-width: 122%;
-  transform: scale(1);
-  transform-origin: bottom center;
 }
 
 .pog-app--mobile .grass-tile {
@@ -651,41 +631,24 @@ button {
 }
 
 /*
- * Grass layers packed to the bottom of the lawn band.
- * Blade tips reach ~15–20% of fence height (see --pog-fence-h).
+ * Mobile grass stacking = desktop ratios, but % of lawn band so size
+ * changes never push layers up (desktop uses px tuned for ~36dvh band).
+ * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
  */
-.pog-app--mobile .grass-back-row {
-  height: 78%;
-}
-
 .pog-app--mobile .grass-back-row--0 {
-  bottom: 12%;
-  height: 82%;
-  transform: scale(1.04);
-}
-
-.pog-app--mobile .grass-back-row--1 {
-  bottom: 7%;
-  height: 80%;
-}
-
-.pog-app--mobile .grass-back-row--2 {
-  bottom: 2%;
-  height: 76%;
-}
-
-.pog-app--mobile .grass-back-row--3 {
-  display: none;
+  bottom: 43%;
+  height: 152%;
+  transform: scale(1.1);
 }
 
 .pog-app--mobile .grass-layer--middle {
-  height: 72%;
-  bottom: 0;
+  bottom: 5%;
+  height: 108%;
 }
 
 .pog-app--mobile .grass-layer--front {
-  height: 66%;
   bottom: 0;
+  height: 100%;
 }
 
 /*
