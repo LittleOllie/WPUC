@@ -797,6 +797,17 @@ button {
   pointer-events: none !important;
 }
 
+/* Pocket: duplicate lawn stack ~10% higher for thickness (visual only) */
+.pog-app--portrait .grass-stack--fill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 10%;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+
 /*
  * ── Immersive / Desktop Mode: fullscreen widescreen (optional toggle) ──
  */

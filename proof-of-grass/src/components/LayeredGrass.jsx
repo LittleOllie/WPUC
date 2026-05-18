@@ -248,17 +248,15 @@ export default function LayeredGrass({
       const fillLayerEls = [];
       const fillTileEls = [];
 
-      if (!portrait) {
-        const fillStack = document.createElement("div");
-        fillStack.className = "grass-stack--fill";
-        fillStack.setAttribute("aria-hidden", "true");
-        layerConfigs.forEach((cfg) => {
-          const fill = buildLayer(cfg, fillStack);
-          fillLayerEls.push(fill.layerEl);
-          fillTileEls.push(fill.layerTiles);
-        });
-        zone.appendChild(fillStack);
-      }
+      const fillStack = document.createElement("div");
+      fillStack.className = "grass-stack--fill";
+      fillStack.setAttribute("aria-hidden", "true");
+      layerConfigs.forEach((cfg) => {
+        const fill = buildLayer(cfg, fillStack);
+        fillLayerEls.push(fill.layerEl);
+        fillTileEls.push(fill.layerTiles);
+      });
+      zone.appendChild(fillStack);
 
       layerConfigs.forEach((cfg) => {
         const primary = buildLayer(cfg, zone);
