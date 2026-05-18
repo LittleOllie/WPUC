@@ -665,13 +665,15 @@ button {
 .pog-app--portrait {
   touch-action: manipulation;
   -webkit-touch-callout: none;
+  /* All scene measures = % of portrait frame (cqh/cqw), not viewport */
   --pog-lawn-h: 30cqh;
   --pog-grass-height: var(--pog-lawn-h);
   --pog-grass-lift: 0px;
-  --pog-fence-h: 22dvh;
+  --pog-fence-h: 40cqh;
   --pog-fence-bottom: 0px;
   --pog-fence-drop: 0;
-  --pog-llama-anchor: calc(var(--pog-lawn-h) + 1.5dvh);
+  --pog-fence-lift: 4cqh;
+  --pog-llama-anchor: var(--pog-lawn-h);
 }
 
 .pog-app--portrait .grass-zone {
@@ -692,14 +694,23 @@ button {
 
 .pog-app--portrait .pog-fence-wrap {
   bottom: var(--pog-fence-bottom);
+  left: 0;
+  right: 0;
   z-index: 38;
   pointer-events: none;
+  overflow: visible;
 }
 
 .pog-app--portrait .pog-fence {
+  display: block;
+  width: 112%;
+  max-width: none;
+  margin-left: -6%;
   height: var(--pog-fence-h);
-  transform: none;
+  transform: translateY(calc(-1 * var(--pog-fence-lift))) scale(1.12);
   transform-origin: bottom center;
+  object-fit: cover;
+  object-position: bottom center;
   pointer-events: none !important;
   -webkit-touch-callout: none !important;
 }
@@ -710,10 +721,10 @@ button {
 }
 
 .pog-app--portrait .pog-llama {
-  height: 46dvh;
-  max-height: calc(100dvh - var(--pog-llama-anchor) - 10dvh);
-  max-width: min(88vw, 420px);
-  transform: translateY(0) scale(1.22);
+  height: 54cqh;
+  max-height: calc(100cqh - var(--pog-lawn-h) - 12cqh);
+  max-width: 94cqw;
+  transform: translateY(-1cqh) scale(1.18);
   transform-origin: bottom center;
 }
 
@@ -723,7 +734,7 @@ button {
   left: 0;
   right: 0;
   bottom: 100%;
-  height: calc(var(--pog-fence-h) * 0.22);
+  height: 18cqh;
   z-index: 48;
   pointer-events: auto;
   touch-action: none;
@@ -736,7 +747,7 @@ button {
   left: 0;
   right: 0;
   top: auto;
-  height: calc(var(--pog-fence-h) * 0.22);
+  height: 20cqh;
   bottom: 0;
   z-index: 49;
   pointer-events: auto;
