@@ -51,9 +51,6 @@ function fillStacksForMode(portrait) {
   return ["grass-stack--fill"];
 }
 
-const LAWN_HIT_SELECTORS =
-  ".grass-layer, .grass-stack--fill, .grass-stack--fill-2, .grass-stack--fill-3, .grass-tile__img";
-
 function pointerInRect(clientX, clientY, rect) {
   return (
     clientX >= rect.left &&
@@ -63,33 +60,20 @@ function pointerInRect(clientX, clientY, rect) {
   );
 }
 
-/** Union of all grass layer boxes — the interactive “lawn border” */
+/**
+ * Lawn hit border = grass-zone box (bottom band on screen).
+ * Layer/img getBoundingClientRect() includes transparent PNG sky — too tall.
+ */
 function measureLawnHitRect(zone) {
-  const nodes = zone.querySelectorAll(LAWN_HIT_SELECTORS);
-  if (!nodes.length) return null;
-
-  let top = Infinity;
-  let left = Infinity;
-  let right = -Infinity;
-  let bottom = -Infinity;
-
-  for (const el of nodes) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) continue;
-    top = Math.min(top, r.top);
-    left = Math.min(left, r.left);
-    right = Math.max(right, r.right);
-    bottom = Math.max(bottom, r.bottom);
-  }
-
-  if (!Number.isFinite(top)) return null;
+  const r = zone.getBoundingClientRect();
+  if (r.width < 1 || r.height < 1) return null;
   return {
-    top,
-    left,
-    right,
-    bottom,
-    width: right - left,
-    height: bottom - top,
+    top: r.top,
+    left: r.left,
+    right: r.right,
+    bottom: r.bottom,
+    width: r.width,
+    height: r.height,
   };
 }
 
