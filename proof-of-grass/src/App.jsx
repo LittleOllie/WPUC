@@ -51,14 +51,15 @@ export default function App() {
 
           <header className="pog-top-bar" aria-label="Proof of Grass">
             <PogLogo />
-            <motion.div className="pog-timer-slot">
-              <GrassTimer formatted={formatted} moving={moving} />
+            <motion.div className="pog-top-bar__stack">
+              <motion.div className="pog-timer-slot">
+                <GrassTimer formatted={formatted} moving={moving} />
+              </motion.div>
+              <DisplayModeToggle immersive={immersive} onToggle={toggle} />
             </motion.div>
           </header>
         </motion.div>
       </div>
-
-      <DisplayModeToggle immersive={immersive} onToggle={toggle} />
     </div>
   );
 }

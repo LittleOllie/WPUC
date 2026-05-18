@@ -116,13 +116,11 @@
 }
 
 .pog-mode-toggle {
-  position: fixed;
-  z-index: 100;
-  right: max(12px, env(safe-area-inset-right, 0px));
-  bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  padding: 0.5rem 0.85rem;
+  position: relative;
+  z-index: 1;
+  padding: 0.38rem 0.65rem;
   font-family: var(--font-pog);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--color-pog-ink);
@@ -130,11 +128,12 @@
   border: 2px solid rgba(255, 221, 85, 0.65);
   border-radius: 999px;
   box-shadow:
-    0 3px 0 #c9a66b,
-    0 6px 20px rgba(26, 46, 60, 0.2);
+    0 2px 0 #c9a66b,
+    0 4px 14px rgba(26, 46, 60, 0.14);
   cursor: pointer;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
@@ -142,18 +141,8 @@
 
 .pog-mode-toggle:hover {
   box-shadow:
-    0 3px 0 #c9a66b,
-    0 8px 26px rgba(76, 111, 255, 0.22);
-}
-
-.pog-shell:not(.pog-shell--immersive) .pog-mode-toggle {
-  bottom: max(14px, env(safe-area-inset-bottom, 0px));
-}
-
-@media (min-width: 520px) {
-  .pog-shell:not(.pog-shell--immersive) .pog-mode-toggle {
-    right: max(18px, calc((100vw - 480px) / 2 + 12px));
-  }
+    0 2px 0 #c9a66b,
+    0 6px 18px rgba(76, 111, 255, 0.2);
 }
 
 .pog-app {
@@ -238,6 +227,18 @@ button {
   pointer-events: none;
 }
 
+.pog-top-bar__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.pog-top-bar__stack .pog-mode-toggle {
+  pointer-events: auto;
+}
+
 .pog-timer-slot {
   pointer-events: none;
 }
@@ -262,10 +263,17 @@ button {
   opacity: 0.9;
 }
 
+.pog-app--immersive .pog-top-bar__stack {
+  align-items: center;
+  width: 100%;
+  padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
+  gap: 0.5rem;
+}
+
 .pog-app--immersive .pog-timer-slot {
   display: flex;
   justify-content: center;
-  padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
+  padding: 0;
 }
 
 .pog-app--immersive .pog-timer-slot .lo-timer {
@@ -297,9 +305,15 @@ button {
   opacity: 0.94;
 }
 
-.pog-app--portrait .pog-timer-slot {
+.pog-app--portrait .pog-top-bar__stack {
+  grid-column: 2;
   justify-self: end;
   align-self: start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pog-app--portrait .pog-timer-slot {
   display: flex !important;
   justify-content: flex-end !important;
   min-width: 0;
@@ -681,13 +695,6 @@ button {
   overflow: hidden;
   padding-bottom: 0;
   touch-action: none;
-  background: linear-gradient(
-    to top,
-    #2a6338 0%,
-    #327442 22%,
-    rgba(50, 110, 65, 0.92) 42%,
-    transparent 62%
-  );
 }
 
 
@@ -768,25 +775,28 @@ button {
 }
 
 /*
- * Portrait grass stacking — % of lawn band
- * changes never push layers up (desktop uses px tuned for ~36dvh band).
- * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
+ * Portrait grass depth — lower on screen = in front (higher z-index).
+ * Stepped bottoms match desktop ratios (18/360 ≈ 5%, 154/360 ≈ 43%).
  */
-/* All rows anchored to lawn bottom — overlap removes visible gaps */
+.pog-app--portrait .grass-layer--back,
 .pog-app--portrait .grass-back-row--0 {
-  bottom: 0;
+  bottom: 12.5cqh;
   height: 168%;
+  z-index: 10;
   transform: scale(1.14);
+  transform-origin: bottom center;
 }
 
 .pog-app--portrait .grass-layer--middle {
-  bottom: 0;
+  bottom: 1.5cqh;
   height: 142%;
+  z-index: 20;
 }
 
 .pog-app--portrait .grass-layer--front {
   bottom: 0;
   height: 132%;
+  z-index: 30;
 }
 
 .pog-app--portrait .grass-tile__img {
