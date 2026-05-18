@@ -1,11 +1,10 @@
 import { useEffect } from "react";
 
-const GUARD_SELECTOR =
-  ".grass-zone, .grass-tile__img, .pog-scene-visual, .pog-sky-bg, .pog-llama, .pog-fence, .pog-cloud";
+const GRASS_GUARD_SELECTOR =
+  ".grass-zone, .grass-zone__hit-pad, .grass-touch-shield, .grass-tile, .grass-tile__img";
 
 /**
- * Block iOS long-press / save-image / selection on the scene without affecting
- * document scrolling (this app uses overflow:hidden on body).
+ * Block iOS/Android long-press save-image menus on the lawn only.
  */
 export function useSceneTouchGuard(rootRef) {
   useEffect(() => {
@@ -13,16 +12,43 @@ export function useSceneTouchGuard(rootRef) {
     if (!root) return;
 
     const isGuarded = (target) =>
-      target instanceof Element && Boolean(target.closest(GUARD_SELECTOR));
+      target instanceof Element && Boolean(target.closest(GRASS_GUARD_SELECTOR));
+
+    let touchOnGrass = false;
 
     const blockIfGuarded = (e) => {
       if (!isGuarded(e.target)) return;
       e.preventDefault();
+      e.stopPropagation();
     };
 
     const onTouchStart = (e) => {
+      if (!isGuarded(e.target)) {
+        touchOnGrass = false;
+        return;
+      }
+      touchOnGrass = true;
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (!touchOnGrass && !isGuarded(e.target)) return;
+      if (isGuarded(e.target)) touchOnGrass = true;
+      if (touchOnGrass) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    const onTouchEnd = () => {
+      touchOnGrass = false;
+    };
+
+    const onGesture = (e) => {
       if (!isGuarded(e.target)) return;
-      if (e.touches.length > 1) return;
       e.preventDefault();
     };
 
@@ -32,13 +58,25 @@ export function useSceneTouchGuard(rootRef) {
     root.addEventListener("contextmenu", blockIfGuarded, capture);
     root.addEventListener("selectstart", blockIfGuarded, capture);
     root.addEventListener("dragstart", blockIfGuarded, capture);
+    root.addEventListener("gesturestart", onGesture, touchOpts);
+    root.addEventListener("gesturechange", onGesture, touchOpts);
+    root.addEventListener("gestureend", onGesture, touchOpts);
     root.addEventListener("touchstart", onTouchStart, touchOpts);
+    root.addEventListener("touchmove", onTouchMove, touchOpts);
+    root.addEventListener("touchend", onTouchEnd, capture);
+    root.addEventListener("touchcancel", onTouchEnd, capture);
 
     return () => {
       root.removeEventListener("contextmenu", blockIfGuarded, capture);
       root.removeEventListener("selectstart", blockIfGuarded, capture);
       root.removeEventListener("dragstart", blockIfGuarded, capture);
+      root.removeEventListener("gesturestart", onGesture, touchOpts);
+      root.removeEventListener("gesturechange", onGesture, touchOpts);
+      root.removeEventListener("gestureend", onGesture, touchOpts);
       root.removeEventListener("touchstart", onTouchStart, touchOpts);
+      root.removeEventListener("touchmove", onTouchMove, touchOpts);
+      root.removeEventListener("touchend", onTouchEnd, capture);
+      root.removeEventListener("touchcancel", onTouchEnd, capture);
     };
   }, [rootRef]);
 }

@@ -28,7 +28,10 @@ export function createLayerState(config, cols) {
  * @param {number} time ms
  * @param {{ dirX: number, dirY: number, strength: number, gust: number, ripple: number, pulse: number }} wind
  */
-export function stepGrassLayers(layers, pointer, time, wind) {
+export function stepGrassLayers(layers, pointer, time, wind, options = {}) {
+  const mobileEase = Boolean(options.mobileEase);
+  const dragMult = mobileEase ? 5 : 8;
+  const translateClamp = mobileEase ? 11 : 14;
   const globalSway =
     (Math.sin(time * 0.0005) * 0.52 + Math.sin(time * 0.00031 + 1.8) * 0.32) *
     wind.strength;
@@ -92,7 +95,7 @@ export function stepGrassLayers(layers, pointer, time, wind) {
 
         const dragBoost =
           Math.abs(pointer.vx) > 0.0006
-            ? Math.sign(pointer.vx) * Math.abs(pointer.vx) * cfg.maxBend * 8
+            ? Math.sign(pointer.vx) * Math.abs(pointer.vx) * cfg.maxBend * dragMult
             : 0;
 
         target += sway + dragBoost;
@@ -111,7 +114,7 @@ export function stepGrassLayers(layers, pointer, time, wind) {
       layer.translateVel[i] += (targetTx - layer.translates[i]) * stiff * 1.2;
       layer.translateVel[i] *= cfg.damping;
       layer.translates[i] += layer.translateVel[i];
-      layer.translates[i] = clamp(layer.translates[i], -14, 14);
+      layer.translates[i] = clamp(layer.translates[i], -translateClamp, translateClamp);
     }
   }
 }
