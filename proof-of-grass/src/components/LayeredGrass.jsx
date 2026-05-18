@@ -50,13 +50,14 @@ const PORTRAIT_FRONT_GRASS_SCALE = 1.5;
 function layoutForLayer(cfg, portrait) {
   if (!portrait) return { scale: cfg.scale, offsetY: cfg.offsetY };
   let scale = cfg.scale * PORTRAIT_LAWN_SCALE;
+  let offsetY = cfg.offsetY * PORTRAIT_LAWN_SCALE;
   if (cfg.id === "middle" || cfg.id === "front") {
     scale *= PORTRAIT_FRONT_GRASS_SCALE;
+    offsetY *= 0.2;
+  } else if (cfg.id === "back") {
+    offsetY *= 0.45;
   }
-  return {
-    scale,
-    offsetY: cfg.offsetY * PORTRAIT_LAWN_SCALE,
-  };
+  return { scale, offsetY };
 }
 
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */

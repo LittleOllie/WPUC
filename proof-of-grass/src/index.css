@@ -673,7 +673,7 @@ button {
   --pog-fence-bottom: 0px;
   --pog-fence-drop: 0;
   --pog-fence-lift: 4cqh;
-  --pog-llama-anchor: var(--pog-lawn-h);
+  --pog-llama-anchor: 0;
 }
 
 .pog-app--portrait .grass-zone {
@@ -681,6 +681,13 @@ button {
   overflow: hidden;
   padding-bottom: 0;
   touch-action: none;
+  background: linear-gradient(
+    to top,
+    #2a6338 0%,
+    #327442 22%,
+    rgba(50, 110, 65, 0.92) 42%,
+    transparent 62%
+  );
 }
 
 
@@ -721,10 +728,10 @@ button {
 }
 
 .pog-app--portrait .pog-llama {
-  height: 54cqh;
-  max-height: calc(100cqh - var(--pog-lawn-h) - 12cqh);
+  height: 52cqh;
+  max-height: calc(100cqh - var(--pog-fence-h) - 10cqh);
   max-width: 94cqw;
-  transform: translateY(-1cqh) scale(1.18);
+  transform: translateY(calc(-1 * var(--pog-fence-lift))) scale(1.15);
   transform-origin: bottom center;
 }
 
@@ -765,25 +772,26 @@ button {
  * changes never push layers up (desktop uses px tuned for ~36dvh band).
  * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
  */
+/* All rows anchored to lawn bottom — overlap removes visible gaps */
 .pog-app--portrait .grass-back-row--0 {
-  bottom: 43%;
-  height: 152%;
-  transform: scale(1.1);
+  bottom: 0;
+  height: 168%;
+  transform: scale(1.14);
 }
 
 .pog-app--portrait .grass-layer--middle {
-  bottom: 2%;
-  height: 118%;
+  bottom: 0;
+  height: 142%;
 }
 
 .pog-app--portrait .grass-layer--front {
   bottom: 0;
-  height: 112%;
+  height: 132%;
 }
 
 .pog-app--portrait .grass-tile__img {
   pointer-events: none !important;
-  min-width: 125%;
+  min-width: 132%;
 }
 
 /*
