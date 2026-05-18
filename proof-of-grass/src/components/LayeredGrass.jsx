@@ -78,6 +78,8 @@ export default function LayeredGrass({
   const particlesRef = useRef(null);
   const layerElsRef = useRef([]);
   const tileElsRef = useRef([]);
+  const fillLayerElsRef = useRef([]);
+  const fillTileElsRef = useRef([]);
   const simRef = useRef(null);
   const windRef = useRef(createWindState());
   const particlesSimRef = useRef(createParticleField());
@@ -190,7 +192,7 @@ export default function LayeredGrass({
 
       zone
         .querySelectorAll(
-          ".grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       zone.classList.toggle("grass-zone--portrait", portrait);
@@ -243,6 +245,20 @@ export default function LayeredGrass({
       };
 
       const layerConfigs = layerConfigsForMode(portrait);
+      const fillLayerEls = [];
+      const fillTileEls = [];
+
+      if (!portrait) {
+        const fillStack = document.createElement("div");
+        fillStack.className = "grass-stack--fill";
+        fillStack.setAttribute("aria-hidden", "true");
+        layerConfigs.forEach((cfg) => {
+          const fill = buildLayer(cfg, fillStack);
+          fillLayerEls.push(fill.layerEl);
+          fillTileEls.push(fill.layerTiles);
+        });
+        zone.appendChild(fillStack);
+      }
 
       layerConfigs.forEach((cfg) => {
         const primary = buildLayer(cfg, zone);
@@ -274,6 +290,8 @@ export default function LayeredGrass({
 
       layerElsRef.current = layerEls;
       tileElsRef.current = allTiles;
+      fillLayerElsRef.current = fillLayerEls;
+      fillTileElsRef.current = fillTileEls;
       simRef.current = layerConfigs.map((cfg) =>
         createLayerState(cfg, tiles)
       );
@@ -305,6 +323,8 @@ export default function LayeredGrass({
       const sim = simRef.current;
       const tileNodes = tileElsRef.current;
       const layerNodes = layerElsRef.current;
+      const fillLayerNodes = fillLayerElsRef.current;
+      const fillTileNodes = fillTileElsRef.current;
       const reduced = reducedMotionRef.current;
       const mobileEase = Boolean(portraitMode);
 
@@ -337,14 +357,21 @@ export default function LayeredGrass({
               const tileTx = layer.translates[i];
               const tileTransform = `translate3d(${tileTx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
               if (layerTiles[i]) layerTiles[i].style.transform = tileTransform;
+              const fillTiles = fillTileNodes[li];
+              if (fillTiles?.[i]) fillTiles[i].style.transform = tileTransform;
             }
           } else {
             layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
             layerEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
               if (layerTiles[i]) layerTiles[i].style.transform = "translate3d(0, 0, 0)";
+              const fillTiles = fillTileNodes[li];
+              if (fillTiles?.[i]) fillTiles[i].style.transform = "translate3d(0, 0, 0)";
             }
           }
+
+          const fillEl = fillLayerNodes[li];
+          if (fillEl) fillEl.style.transform = layerTransform;
         }
 
         const particlesEl = particlesRef.current;
@@ -409,11 +436,13 @@ export default function LayeredGrass({
       ro.disconnect();
       zone
         .querySelectorAll(
-          ".grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       layerElsRef.current = [];
       tileElsRef.current = [];
+      fillLayerElsRef.current = [];
+      fillTileElsRef.current = [];
       simRef.current = null;
       motionMq.removeEventListener("change", onMotionChange);
       zone.removeEventListener("pointerdown", onPointerDown);
