@@ -186,16 +186,11 @@ export default function LayeredGrass({
       const doubled = mobile;
 
       zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
-      zone.querySelectorAll(".grass-zone__hit-pad").forEach((el) => el.remove());
+      zone.querySelectorAll(".grass-zone__hit-pad, .grass-touch-shield").forEach(
+        (el) => el.remove()
+      );
       zone.classList.toggle("grass-zone--mobile", mobile);
       zone.classList.toggle("grass-zone--doubled", doubled);
-
-      if (mobile) {
-        const hitPad = document.createElement("div");
-        hitPad.className = "grass-zone__hit-pad pog-touch-guard";
-        hitPad.setAttribute("aria-hidden", "true");
-        zone.appendChild(hitPad);
-      }
 
       const layerEls = [];
       const mirrorLayerEls = [];
@@ -281,6 +276,18 @@ export default function LayeredGrass({
         particlesRef.current = particlesContainer;
       } else {
         zone.appendChild(particlesRef.current);
+      }
+
+      if (mobile) {
+        const hitPad = document.createElement("div");
+        hitPad.className = "grass-zone__hit-pad pog-touch-guard";
+        hitPad.setAttribute("aria-hidden", "true");
+        zone.appendChild(hitPad);
+
+        const touchShield = document.createElement("div");
+        touchShield.className = "grass-touch-shield pog-touch-guard";
+        touchShield.setAttribute("aria-hidden", "true");
+        zone.appendChild(touchShield);
       }
 
       layerElsRef.current = layerEls;

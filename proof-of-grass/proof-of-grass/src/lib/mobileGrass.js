@@ -8,10 +8,13 @@ export const MOBILE_MEDIA = `(max-width: ${MOBILE_MAX_WIDTH_PX}px)`;
 export const MOBILE_HIT_PAD_RATIO = 0.34;
 
 /** Target share of viewport for the grass band (25–35%) */
-export const MOBILE_GRASS_DVH = 32;
+export const MOBILE_GRASS_DVH = 34;
 
-/** Upper duplicate stack lift as fraction of band height */
-export const MOBILE_STACK_LIFT_RATIO = 0.48;
+/** Upper duplicate stack lift — ~92% of band ≈ almost double total lawn height */
+export const MOBILE_STACK_LIFT_RATIO = 0.92;
+
+/** Fence scale on mobile */
+export const MOBILE_FENCE_SCALE = 1.5;
 
 /** Softer finger drag → wobble (0–1) */
 export const MOBILE_DRAG_SENSITIVITY = 0.62;
