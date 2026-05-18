@@ -59,18 +59,12 @@ export function useSceneTouchGuard(rootRef, portrait = true) {
         return;
       }
       lawnTouchActive = true;
-      if (e.touches.length === 1) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
     };
 
     const onTouchMove = (e) => {
       const y = e.touches[0]?.clientY ?? 0;
       if (!lawnTouchActive && !shouldBlockTouch(e.target, y)) return;
       lawnTouchActive = true;
-      e.preventDefault();
-      e.stopPropagation();
     };
 
     const onTouchEnd = () => {
@@ -102,14 +96,8 @@ export function useSceneTouchGuard(rootRef, portrait = true) {
       blockEvent(e);
     };
 
-    const onDocTouchStart = (e) => {
-      if (!portrait) return;
-      onTouchStart(e);
-    };
-
     if (portrait) {
       document.addEventListener("contextmenu", onDocContextMenu, capture);
-      document.addEventListener("touchstart", onDocTouchStart, touchOpts);
     }
 
     return () => {
@@ -125,7 +113,6 @@ export function useSceneTouchGuard(rootRef, portrait = true) {
       root.removeEventListener("touchcancel", onTouchEnd, capture);
       if (portrait) {
         document.removeEventListener("contextmenu", onDocContextMenu, capture);
-        document.removeEventListener("touchstart", onDocTouchStart, touchOpts);
       }
     };
   }, [rootRef, portrait]);
