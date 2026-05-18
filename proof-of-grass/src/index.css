@@ -797,15 +797,17 @@ button {
   pointer-events: none !important;
 }
 
-/* Pocket: duplicate lawn stack ~10% higher for thickness (visual only) */
+/* Pocket: duplicate lawn behind primary — lower + mirrored so tiles don’t line up */
 .pog-app--portrait .grass-stack--fill {
   position: absolute;
   inset-inline: 0;
-  bottom: 10%;
+  bottom: 4%;
   top: 0;
   z-index: 1;
   pointer-events: none;
   overflow: visible;
+  transform: scaleX(-1);
+  transform-origin: bottom center;
 }
 
 /*
