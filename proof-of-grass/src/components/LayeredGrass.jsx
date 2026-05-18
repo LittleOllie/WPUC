@@ -224,17 +224,13 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount = cfg.id === "back" ? cfg.rows : 1;
-
-        if (rowCount > 1) {
-          for (let r = 0; r < rowCount; r++) {
-            const rowEl = document.createElement("div");
-            rowEl.className = `grass-back-row grass-back-row--${r}`;
-            rowEl.dataset.row = String(r);
-            rowEl.style.setProperty("--tile-count", String(tiles));
-            appendGrassTiles(rowEl, tiles, cfg.src, layerTiles);
-            layerEl.appendChild(rowEl);
-          }
+        if (cfg.id === "back") {
+          const rowEl = document.createElement("div");
+          rowEl.className = "grass-back-row grass-back-row--3";
+          rowEl.dataset.row = "3";
+          rowEl.style.setProperty("--tile-count", String(tiles));
+          appendGrassTiles(rowEl, tiles, cfg.src, layerTiles);
+          layerEl.appendChild(rowEl);
         } else {
           layerEl.style.setProperty("--tile-count", String(tiles));
           appendGrassTiles(layerEl, tiles, cfg.src, layerTiles);

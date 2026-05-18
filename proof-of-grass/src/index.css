@@ -451,6 +451,11 @@ button {
   filter: contrast(1.04) brightness(1.06);
 }
 
+/* Scene wrapper must not create a stacking context below grass (no z-0) */
+.pog-scene-visual {
+  z-index: auto;
+}
+
 /* Full-viewport sky artwork */
 .pog-sky-bg {
   position: absolute;
@@ -824,20 +829,6 @@ button {
   height: min(44vh, 476px);
   max-width: min(67vw, 459px);
   transform: translateY(var(--pog-fence-drop)) scale(1.7);
-}
-
-.pog-app--immersive .grass-back-row--0 {
-  bottom: 154px;
-  height: 152%;
-  transform: scale(1.1);
-}
-
-.pog-app--immersive .grass-back-row--1 {
-  bottom: 122px;
-}
-
-.pog-app--immersive .grass-back-row--2 {
-  bottom: 94px;
 }
 
 .pog-app--immersive .grass-back-row--3 {
