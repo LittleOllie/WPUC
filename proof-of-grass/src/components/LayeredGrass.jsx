@@ -39,9 +39,11 @@ function isPointerInViewport(clientX, clientY) {
 }
 
 function layerConfigsForMode(portrait) {
-  return portrait
-    ? GRASS_LAYER_CONFIG.filter((c) => c.id !== "back")
-    : GRASS_LAYER_CONFIG;
+  if (portrait) {
+    return GRASS_LAYER_CONFIG.filter((c) => c.id !== "back");
+  }
+  /* Ultra Grass: front + middle only — back row sits too high on screen */
+  return GRASS_LAYER_CONFIG.filter((c) => c.id !== "back");
 }
 
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */

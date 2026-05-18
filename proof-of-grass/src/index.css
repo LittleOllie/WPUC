@@ -808,7 +808,7 @@ button {
 }
 
 .pog-app--immersive .grass-zone {
-  z-index: 40;
+  z-index: 50;
 }
 
 .pog-app--immersive .pog-fence-wrap {
@@ -829,10 +829,6 @@ button {
   height: min(44vh, 476px);
   max-width: min(67vw, 459px);
   transform: translateY(var(--pog-fence-drop)) scale(1.7);
-}
-
-.pog-app--immersive .grass-back-row--3 {
-  bottom: 66px;
 }
 
 /* Short desktop preview panes only */
