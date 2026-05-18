@@ -696,7 +696,7 @@ button {
   bottom: var(--pog-fence-bottom);
   left: 0;
   right: 0;
-  z-index: 38;
+  z-index: 44;
   pointer-events: none;
   overflow: visible;
 }
@@ -717,7 +717,7 @@ button {
 
 .pog-app--portrait .pog-llama-wrap {
   bottom: var(--pog-llama-anchor);
-  z-index: 42;
+  z-index: 36;
 }
 
 .pog-app--portrait .pog-llama {
@@ -756,16 +756,12 @@ button {
   background: transparent;
 }
 
-.pog-app--portrait .grass-tile__img {
-  pointer-events: none !important;
-}
-
 .pog-app--portrait .grass-tile {
   pointer-events: none;
 }
 
 /*
- * Mobile grass stacking = desktop ratios, but % of lawn band so size
+ * Portrait grass stacking — % of lawn band
  * changes never push layers up (desktop uses px tuned for ~36dvh band).
  * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
  */
@@ -776,13 +772,18 @@ button {
 }
 
 .pog-app--portrait .grass-layer--middle {
-  bottom: 5%;
-  height: 108%;
+  bottom: 2%;
+  height: 118%;
 }
 
 .pog-app--portrait .grass-layer--front {
   bottom: 0;
-  height: 100%;
+  height: 112%;
+}
+
+.pog-app--portrait .grass-tile__img {
+  pointer-events: none !important;
+  min-width: 125%;
 }
 
 /*

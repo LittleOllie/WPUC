@@ -45,10 +45,16 @@ function frontLayerIndex() {
 /** Mobile lawn ~18dvh vs desktop ~36dvh — scale grass physics to match desktop look */
 const PORTRAIT_LAWN_SCALE = 30 / 36;
 
+const PORTRAIT_FRONT_GRASS_SCALE = 1.5;
+
 function layoutForLayer(cfg, portrait) {
   if (!portrait) return { scale: cfg.scale, offsetY: cfg.offsetY };
+  let scale = cfg.scale * PORTRAIT_LAWN_SCALE;
+  if (cfg.id === "middle" || cfg.id === "front") {
+    scale *= PORTRAIT_FRONT_GRASS_SCALE;
+  }
   return {
-    scale: cfg.scale * PORTRAIT_LAWN_SCALE,
+    scale,
     offsetY: cfg.offsetY * PORTRAIT_LAWN_SCALE,
   };
 }
