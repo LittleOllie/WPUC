@@ -563,15 +563,16 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: -30%;
-  height: 65%;
+  top: auto;
+  bottom: 0;
+  height: calc(var(--pog-fence-h) * 0.2);
   z-index: 2;
   pointer-events: none;
   background: linear-gradient(
     to bottom,
     rgba(126, 200, 248, 0) 0%,
-    rgba(72, 150, 95, 0.08) 45%,
-    rgba(45, 107, 58, 0.16) 100%
+    rgba(72, 150, 95, 0.1) 55%,
+    rgba(45, 107, 58, 0.18) 100%
   );
 }
 
@@ -616,7 +617,7 @@ button {
   left: 0;
   right: 0;
   bottom: 100%;
-  height: 55%;
+  height: calc(var(--pog-fence-h) * 0.22);
   z-index: 48;
   pointer-events: auto;
   touch-action: none;
@@ -628,7 +629,8 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: -55%;
+  top: auto;
+  height: calc(var(--pog-fence-h) * 0.22);
   bottom: 0;
   z-index: 49;
   pointer-events: auto;
@@ -639,8 +641,8 @@ button {
 
 .pog-app--mobile .grass-tile__img {
   pointer-events: none !important;
-  min-width: 128%;
-  transform: scale(1.08);
+  min-width: 122%;
+  transform: scale(1);
   transform-origin: bottom center;
 }
 
@@ -648,25 +650,28 @@ button {
   pointer-events: none;
 }
 
-/* Grass depth — % of lawn band (scales with screen, not px) */
+/*
+ * Grass layers packed to the bottom of the lawn band.
+ * Blade tips reach ~15–20% of fence height (see --pog-fence-h).
+ */
 .pog-app--mobile .grass-back-row {
-  height: 158%;
+  height: 78%;
 }
 
 .pog-app--mobile .grass-back-row--0 {
-  bottom: 68%;
-  height: 168%;
-  transform: scale(1.1);
+  bottom: 12%;
+  height: 82%;
+  transform: scale(1.04);
 }
 
 .pog-app--mobile .grass-back-row--1 {
-  bottom: 44%;
-  height: 155%;
+  bottom: 7%;
+  height: 80%;
 }
 
 .pog-app--mobile .grass-back-row--2 {
-  bottom: 20%;
-  height: 148%;
+  bottom: 2%;
+  height: 76%;
 }
 
 .pog-app--mobile .grass-back-row--3 {
@@ -674,12 +679,12 @@ button {
 }
 
 .pog-app--mobile .grass-layer--middle {
-  height: 122%;
-  bottom: 6%;
+  height: 72%;
+  bottom: 0;
 }
 
 .pog-app--mobile .grass-layer--front {
-  height: 112%;
+  height: 66%;
   bottom: 0;
 }
 
