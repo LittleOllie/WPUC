@@ -134,37 +134,45 @@ button {
 
 @media (max-width: 767px) {
   .pog-top-bar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: clamp(8px, 2.5vw, 14px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(6px, 2vw, 12px);
+    width: 100%;
+    box-sizing: border-box;
     padding:
       max(10px, env(safe-area-inset-top, 0px))
-      max(12px, env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-right, 0px))
       0
-      max(12px, env(safe-area-inset-left, 0px));
+      max(10px, env(safe-area-inset-left, 0px));
   }
 
   .pog-logo {
     position: static;
-    flex: 0 0 auto;
-    width: clamp(104px, 30vw, 152px);
-    opacity: 0.92;
+    justify-self: start;
+    align-self: start;
+    width: clamp(82px, 24vw, 118px);
+    max-width: 42vw;
+    height: auto;
+    opacity: 0.94;
   }
 
   .pog-timer-slot {
-    flex: 1 1 auto;
+    justify-self: end;
+    align-self: start;
     display: flex;
     justify-content: flex-end;
     min-width: 0;
-    max-width: min(58vw, 220px);
+    max-width: 100%;
+    width: 100%;
   }
 
   .pog-timer-slot .lo-timer {
     min-width: 0;
-    width: 100%;
-    padding: 0.55rem 0.85rem 0.7rem;
-    border-radius: 18px;
+    max-width: min(48vw, 188px);
+    width: auto;
+    padding: 0.5rem 0.7rem 0.62rem;
+    border-radius: 16px;
     border-width: 2px;
     box-shadow:
       0 4px 0 #c9a66b,
@@ -186,14 +194,17 @@ button {
   }
 
   .pog-timer-slot .lo-timer__value {
-    font-size: clamp(1.65rem, 7.5vw, 2.15rem);
+    font-size: clamp(1.45rem, 6.5vw, 1.85rem);
     margin-top: 0;
   }
 
   .pog-timer-slot .lo-timer__hint {
-    font-size: 0.68rem;
-    margin-top: 0.3rem;
-    line-height: 1.25;
+    font-size: 0.62rem;
+    margin-top: 0.22rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -658,7 +669,4 @@ button {
     pointer-events: none;
   }
 
-  .pog-top-bar {
-    max-height: 22vh;
-  }
 }
