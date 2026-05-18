@@ -4,7 +4,7 @@ import CloudLayer from "./CloudLayer.jsx";
 
 /**
  * Layer stack (back → front):
- * SkyBG → weather tint → clouds → llama (over clouds) → fence → lawn
+ * Sky → weather → clouds → llama → fence (grass is a sibling in App)
  */
 export default function SceneBackdrop({ weather }) {
   const tint =
@@ -29,8 +29,9 @@ export default function SceneBackdrop({ weather }) {
       <img
         src={ASSETS.skyBg}
         alt=""
-        className="pog-sky-bg"
+        className="pog-sky-bg pog-touch-guard"
         draggable={false}
+        onContextMenu={(e) => e.preventDefault()}
       />
 
       {tint !== "transparent" && (
@@ -44,26 +45,25 @@ export default function SceneBackdrop({ weather }) {
 
       <CloudLayer weather={weather} />
 
-      {/* Llama — center, behind fence, feet line up with fence bottom */}
       <motion.div className="pog-llama-wrap">
         <img
           src={ASSETS.llama}
           alt=""
-          className="pog-llama"
+          className="pog-llama pog-touch-guard"
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </motion.div>
 
-      {/* Fence — full width, bottom meets grass line */}
-      <div className="pog-fence-wrap">
+      <motion.div className="pog-fence-wrap">
         <img
           src={ASSETS.fence}
           alt=""
-          className="pog-fence"
+          className="pog-fence pog-touch-guard"
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
-      </div>
-
+      </motion.div>
     </motion.div>
   );
 }

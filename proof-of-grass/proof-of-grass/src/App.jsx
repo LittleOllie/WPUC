@@ -20,12 +20,12 @@ export default function App() {
   const { weather } = useDayWeather();
   const wind = weather === "rain" ? 1.15 : weather === "night" ? 0.55 : 0.85;
   const { formatted, moving, setMoving } = useGrassMoveTimer();
-  useSceneTouchGuard(appRef);
+  useSceneTouchGuard(appRef, mobile);
 
   return (
     <motion.div
       ref={appRef}
-      className={`pog-app relative h-[100dvh] w-full overflow-hidden${mobile ? " pog-app--mobile" : " pog-app--desktop"}`}
+      className={`pog-app${mobile ? " pog-app--mobile" : " pog-app--desktop"}`}
       style={{ backgroundColor: SKY_BLUE }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
