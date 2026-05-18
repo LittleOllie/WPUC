@@ -43,13 +43,13 @@ function frontLayerIndex() {
 }
 
 /** Mobile lawn ~18dvh vs desktop ~36dvh — scale grass physics to match desktop look */
-const MOBILE_LAWN_TO_DESKTOP = 18 / 36;
+const PORTRAIT_LAWN_SCALE = 30 / 36;
 
-function layoutForLayer(cfg, mobile) {
-  if (!mobile) return { scale: cfg.scale, offsetY: cfg.offsetY };
+function layoutForLayer(cfg, portrait) {
+  if (!portrait) return { scale: cfg.scale, offsetY: cfg.offsetY };
   return {
-    scale: cfg.scale * MOBILE_LAWN_TO_DESKTOP,
-    offsetY: cfg.offsetY * MOBILE_LAWN_TO_DESKTOP,
+    scale: cfg.scale * PORTRAIT_LAWN_SCALE,
+    offsetY: cfg.offsetY * PORTRAIT_LAWN_SCALE,
   };
 }
 
@@ -78,7 +78,7 @@ function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
 export default function LayeredGrass({
   wind: windMultiplier = 1,
   onGrassMovingChange,
-  mobile: mobileLayout = false,
+  portrait: portraitMode = true,
 }) {
   const zoneRef = useRef(null);
   const onGrassMovingChangeRef = useRef(onGrassMovingChange);
@@ -152,7 +152,7 @@ export default function LayeredGrass({
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
 
-      const mobile = Boolean(mobileLayout);
+      const portrait = Boolean(portraitMode);
       const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
 
       let hovered =
@@ -164,13 +164,13 @@ export default function LayeredGrass({
         hovered = { layer: hovered.layer, tile: hovered.tile % cols };
       }
 
-      if (!hovered && mobile && tileNodes?.length) {
+      if (!hovered && portrait && tileNodes?.length) {
         hovered = resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols);
       }
 
       const x = clamp((clientX - rect.left) / rect.width, 0, 1);
       const vxRaw = hovered ? x - prevPointerXRef.current : p.vx * 0.82;
-      const vx = mobile && hovered ? vxRaw * MOBILE_DRAG_SENSITIVITY : vxRaw;
+      const vx = portrait && hovered ? vxRaw * MOBILE_DRAG_SENSITIVITY : vxRaw;
       if (hovered) prevPointerXRef.current = x;
 
       pointerRef.current = {
@@ -189,12 +189,12 @@ export default function LayeredGrass({
       if (width < 8 || height < 8) return false;
 
       const tiles = tileCountForWidth(width);
-      const mobile = Boolean(mobileLayout);
+      const portrait = Boolean(portraitMode);
 
       zone.querySelectorAll(".grass-zone__hit-pad, .grass-touch-shield").forEach(
         (el) => el.remove()
       );
-      zone.classList.toggle("grass-zone--mobile", mobile);
+      zone.classList.toggle("grass-zone--portrait", portrait);
 
       const layerEls = [];
       const allTiles = [];
@@ -265,7 +265,7 @@ export default function LayeredGrass({
         zone.appendChild(particlesRef.current);
       }
 
-      if (mobile) {
+      if (portrait) {
         const hitPad = document.createElement("div");
         hitPad.className = "grass-zone__hit-pad pog-touch-guard";
         hitPad.setAttribute("aria-hidden", "true");
@@ -311,7 +311,7 @@ export default function LayeredGrass({
       const tileNodes = tileElsRef.current;
       const layerNodes = layerElsRef.current;
       const reduced = reducedMotionRef.current;
-      const mobileEase = Boolean(mobileLayout);
+      const mobileEase = Boolean(portraitMode);
 
       if (sim?.length && tileNodes?.length && layerNodes?.length) {
         const windSample = reduced
@@ -327,7 +327,7 @@ export default function LayeredGrass({
           const cfg = layer.config;
           const layerTiles = tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
-          const layout = layoutForLayer(cfg, mobileLayout);
+          const layout = layoutForLayer(cfg, portraitMode);
 
           let layerTransform;
           if (!reduced) {
@@ -422,7 +422,7 @@ export default function LayeredGrass({
       window.removeEventListener("blur", onWindowBlur);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [windMultiplier, onGrassMovingChange, mobileLayout]);
+  }, [windMultiplier, onGrassMovingChange, portraitMode]);
 
   return (
     <section

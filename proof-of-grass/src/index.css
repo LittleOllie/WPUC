@@ -29,14 +29,138 @@
   --pog-fence-drop: 0.5rem;
 }
 
-/* Full viewport — works in browser tab and Cursor preview */
-.pog-app {
+/* ── Shell: portrait frame on all devices; immersive fills viewport ── */
+.pog-shell {
   position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(165deg, #6aabda 0%, #4a88b8 48%, #3d739f 100%);
+}
+
+.pog-shell__backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 45%,
+    rgba(126, 200, 248, 0.35) 0%,
+    rgba(58, 108, 148, 0.55) 100%
+  );
+  backdrop-filter: blur(10px);
+}
+
+.pog-shell--immersive {
+  background: #a8dcff;
+}
+
+.pog-shell--immersive .pog-shell__backdrop,
+.pog-shell--immersive .pog-shell-ambience {
+  display: none;
+}
+
+.pog-shell-ambience {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.45;
+  filter: blur(1px);
+}
+
+.pog-shell-cloud {
+  position: absolute;
+  left: 0;
+  width: min(320px, 42vw);
+  animation: pog-cloud-drift linear infinite;
+  will-change: transform;
+}
+
+.pog-shell-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+  opacity: 0.85;
+}
+
+.pog-shell-cloud--b {
+  width: min(280px, 36vw);
+}
+
+.pog-frame {
+  position: relative;
+  container-type: size;
+  container-name: pog-frame;
+  width: min(100vw, 480px);
+  height: min(100dvh, calc(min(100vw, 480px) * 16 / 9));
+  max-height: 100dvh;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: clamp(14px, 3vw, 22px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 24px 80px rgba(26, 46, 60, 0.45),
+    0 8px 32px rgba(26, 46, 60, 0.28);
+  z-index: 2;
+}
+
+.pog-shell--immersive .pog-frame {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.pog-mode-toggle {
+  position: fixed;
+  z-index: 100;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  padding: 0.5rem 0.85rem;
+  font-family: var(--font-pog);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-pog-ink);
+  background: linear-gradient(148deg, #fffdf8 0%, #fff8ec 55%, #f2f6ff 100%);
+  border: 2px solid rgba(255, 221, 85, 0.65);
+  border-radius: 999px;
+  box-shadow:
+    0 3px 0 #c9a66b,
+    0 6px 20px rgba(26, 46, 60, 0.2);
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pog-mode-toggle:hover {
+  box-shadow:
+    0 3px 0 #c9a66b,
+    0 8px 26px rgba(76, 111, 255, 0.22);
+}
+
+.pog-shell:not(.pog-shell--immersive) .pog-mode-toggle {
+  bottom: max(14px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 520px) {
+  .pog-shell:not(.pog-shell--immersive) .pog-mode-toggle {
+    right: max(18px, calc((100vw - 480px) / 2 + 12px));
+  }
+}
+
+.pog-app {
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -124,11 +248,11 @@ button {
 }
 
 /* Desktop: logo corner + centered timer (original layout) */
-.pog-app--desktop .pog-top-bar {
+.pog-app--immersive .pog-top-bar {
   display: block;
 }
 
-.pog-app--desktop .pog-logo {
+.pog-app--immersive .pog-logo {
   position: absolute;
   top: clamp(10px, 2.2dvh, 18px);
   left: clamp(10px, 2.8vw, 20px);
@@ -138,18 +262,18 @@ button {
   opacity: 0.9;
 }
 
-.pog-app--desktop .pog-timer-slot {
+.pog-app--immersive .pog-timer-slot {
   display: flex;
   justify-content: center;
   padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
 }
 
-.pog-app--desktop .pog-timer-slot .lo-timer {
+.pog-app--immersive .pog-timer-slot .lo-timer {
   min-width: min(92vw, 280px);
 }
 
 /* Mobile: logo top-left, timer top-right */
-.pog-app--mobile .pog-top-bar {
+.pog-app--portrait .pog-top-bar {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
@@ -163,17 +287,17 @@ button {
     max(10px, env(safe-area-inset-left, 0px));
 }
 
-.pog-app--mobile .pog-logo {
+.pog-app--portrait .pog-logo {
   position: static !important;
   justify-self: start;
   align-self: start;
-  width: clamp(80px, 23vw, 112px) !important;
-  max-width: 40vw;
+  width: clamp(72px, 38%, 120px) !important;
+  max-width: 46%;
   height: auto;
   opacity: 0.94;
 }
 
-.pog-app--mobile .pog-timer-slot {
+.pog-app--portrait .pog-timer-slot {
   justify-self: end;
   align-self: start;
   display: flex !important;
@@ -183,9 +307,9 @@ button {
   padding: 0 !important;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer {
+.pog-app--portrait .pog-timer-slot .lo-timer {
   min-width: 0 !important;
-  max-width: min(46vw, 180px) !important;
+  max-width: min(46%, 180px) !important;
   width: auto !important;
   padding: 0.48rem 0.65rem 0.58rem;
   border-radius: 16px;
@@ -196,25 +320,25 @@ button {
     0 8px 22px rgba(76, 111, 255, 0.12);
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer--active {
+.pog-app--portrait .pog-timer-slot .lo-timer--active {
   box-shadow:
     0 4px 0 #8b6914,
     0 0 0 1px rgba(61, 143, 79, 0.1),
     0 10px 24px rgba(61, 143, 79, 0.15);
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__label {
+.pog-app--portrait .pog-timer-slot .lo-timer__label {
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   margin-bottom: 0.12rem;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__value {
+.pog-app--portrait .pog-timer-slot .lo-timer__value {
   font-size: clamp(1.4rem, 6.2vw, 1.8rem);
   margin-top: 0;
 }
 
-.pog-app--mobile .pog-timer-slot .lo-timer__hint {
+.pog-app--portrait .pog-timer-slot .lo-timer__hint {
   font-size: 0.58rem;
   margin-top: 0.2rem;
   line-height: 1.15;
@@ -536,13 +660,12 @@ button {
 }
 
 /*
- * ── Mobile: proportional stack (dvh — same ratios on every phone) ──
- * Bottom → top: lawn band (~18dvh) → fence (under grass) → llama → sky
+ * ── Portrait mode (default everywhere): one layout, frame-relative sizing ──
  */
-.pog-app--mobile {
+.pog-app--portrait {
   touch-action: manipulation;
   -webkit-touch-callout: none;
-  --pog-lawn-h: calc(18dvh + env(safe-area-inset-bottom, 0px));
+  --pog-lawn-h: 30cqh;
   --pog-grass-height: var(--pog-lawn-h);
   --pog-grass-lift: 0px;
   --pog-fence-h: 22dvh;
@@ -551,7 +674,7 @@ button {
   --pog-llama-anchor: calc(var(--pog-lawn-h) + 1.5dvh);
 }
 
-.pog-app--mobile .grass-zone {
+.pog-app--portrait .grass-zone {
   z-index: 50;
   overflow: hidden;
   padding-bottom: 0;
@@ -559,21 +682,21 @@ button {
 }
 
 
-.pog-app--mobile .pog-scene-visual img,
-.pog-app--mobile .pog-cloud {
+.pog-app--portrait .pog-scene-visual img,
+.pog-app--portrait .pog-cloud {
   pointer-events: none !important;
   -webkit-touch-callout: none !important;
   -webkit-user-drag: none !important;
   user-select: none !important;
 }
 
-.pog-app--mobile .pog-fence-wrap {
+.pog-app--portrait .pog-fence-wrap {
   bottom: var(--pog-fence-bottom);
   z-index: 38;
   pointer-events: none;
 }
 
-.pog-app--mobile .pog-fence {
+.pog-app--portrait .pog-fence {
   height: var(--pog-fence-h);
   transform: none;
   transform-origin: bottom center;
@@ -581,12 +704,12 @@ button {
   -webkit-touch-callout: none !important;
 }
 
-.pog-app--mobile .pog-llama-wrap {
+.pog-app--portrait .pog-llama-wrap {
   bottom: var(--pog-llama-anchor);
   z-index: 42;
 }
 
-.pog-app--mobile .pog-llama {
+.pog-app--portrait .pog-llama {
   height: 46dvh;
   max-height: calc(100dvh - var(--pog-llama-anchor) - 10dvh);
   max-width: min(88vw, 420px);
@@ -594,7 +717,7 @@ button {
   transform-origin: bottom center;
 }
 
-.pog-app--mobile .grass-zone__hit-pad {
+.pog-app--portrait .grass-zone__hit-pad {
   display: block;
   position: absolute;
   left: 0;
@@ -607,7 +730,7 @@ button {
   background: transparent;
 }
 
-.pog-app--mobile .grass-touch-shield {
+.pog-app--portrait .grass-touch-shield {
   display: block;
   position: absolute;
   left: 0;
@@ -622,11 +745,11 @@ button {
   background: transparent;
 }
 
-.pog-app--mobile .grass-tile__img {
+.pog-app--portrait .grass-tile__img {
   pointer-events: none !important;
 }
 
-.pog-app--mobile .grass-tile {
+.pog-app--portrait .grass-tile {
   pointer-events: none;
 }
 
@@ -635,86 +758,86 @@ button {
  * changes never push layers up (desktop uses px tuned for ~36dvh band).
  * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
  */
-.pog-app--mobile .grass-back-row--0 {
+.pog-app--portrait .grass-back-row--0 {
   bottom: 43%;
   height: 152%;
   transform: scale(1.1);
 }
 
-.pog-app--mobile .grass-layer--middle {
+.pog-app--portrait .grass-layer--middle {
   bottom: 5%;
   height: 108%;
 }
 
-.pog-app--mobile .grass-layer--front {
+.pog-app--portrait .grass-layer--front {
   bottom: 0;
   height: 100%;
 }
 
 /*
- * ── Desktop: locked layout (do not use dvh for scene — stays as-is) ──
+ * ── Immersive / Desktop Mode: fullscreen widescreen (optional toggle) ──
  */
-.pog-app--desktop {
+.pog-app--immersive {
   --pog-grass-height: clamp(190px, 36dvh, 430px);
   --pog-grass-lift: 0px;
   --pog-fence-bottom: 10px;
   --pog-fence-drop: 0.5rem;
 }
 
-.pog-app--desktop .grass-zone {
+.pog-app--immersive .grass-zone {
   z-index: 40;
 }
 
-.pog-app--desktop .pog-fence-wrap {
+.pog-app--immersive .pog-fence-wrap {
   z-index: 45;
 }
 
-.pog-app--desktop .pog-llama-wrap {
+.pog-app--immersive .pog-llama-wrap {
   z-index: 44;
 }
 
-.pog-app--desktop .pog-fence {
+.pog-app--immersive .pog-fence {
   height: min(44vh, 480px);
   transform: translateY(var(--pog-fence-drop));
   transform-origin: bottom center;
 }
 
-.pog-app--desktop .pog-llama {
+.pog-app--immersive .pog-llama {
   height: min(44vh, 476px);
   max-width: min(67vw, 459px);
   transform: translateY(var(--pog-fence-drop)) scale(1.7);
 }
 
-.pog-app--desktop .grass-back-row--0 {
+.pog-app--immersive .grass-back-row--0 {
   bottom: 154px;
   height: 152%;
   transform: scale(1.1);
 }
 
-.pog-app--desktop .grass-back-row--1 {
+.pog-app--immersive .grass-back-row--1 {
   bottom: 122px;
 }
 
-.pog-app--desktop .grass-back-row--2 {
+.pog-app--immersive .grass-back-row--2 {
   bottom: 94px;
 }
 
-.pog-app--desktop .grass-back-row--3 {
+.pog-app--immersive .grass-back-row--3 {
   bottom: 66px;
 }
 
 /* Short desktop preview panes only */
 @media (max-height: 520px) {
-  .pog-app--desktop .pog-llama {
+  .pog-app--immersive .pog-llama {
     height: min(33vh, 272px);
     transform: translateY(var(--pog-fence-drop)) scale(1.15);
   }
 
-  .pog-app--desktop .pog-fence {
+  .pog-app--immersive .pog-fence {
     height: min(32vh, 280px);
   }
 
-  .pog-app--desktop {
+  .pog-app--immersive {
     --pog-grass-height: clamp(120px, 28dvh, 220px);
   }
 }

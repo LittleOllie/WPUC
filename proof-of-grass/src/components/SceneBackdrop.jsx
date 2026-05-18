@@ -6,7 +6,7 @@ import CloudLayer from "./CloudLayer.jsx";
  * Layer stack (back → front):
  * Sky → weather → clouds → llama → fence (grass is a sibling in App)
  */
-export default function SceneBackdrop({ weather }) {
+export default function SceneBackdrop({ weather, portrait = true }) {
   const tint =
     weather === "night"
       ? "rgba(30, 60, 100, 0.22)"
@@ -43,7 +43,7 @@ export default function SceneBackdrop({ weather }) {
         />
       )}
 
-      <CloudLayer weather={weather} />
+      <CloudLayer weather={weather} portrait={portrait} />
 
       <motion.div className="pog-llama-wrap">
         <img
