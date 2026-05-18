@@ -20,7 +20,7 @@ export default function App() {
   const { weather } = useDayWeather();
   const wind = weather === "rain" ? 1.15 : weather === "night" ? 0.55 : 0.85;
   const { formatted, moving, setMoving } = useGrassMoveTimer();
-  useSceneTouchGuard(appRef);
+  useSceneTouchGuard(appRef, mobile);
 
   return (
     <motion.div
