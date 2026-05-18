@@ -23,7 +23,7 @@ export const GRASS_LAYER_CONFIG = [
     zIndex: 10,
     /** Desktop: one row; mobile: two overlapped rows (see mobileRows) */
     rows: 4,
-    mobileRows: 2,
+    mobileRows: 3,
     scale: 1.555,
     offsetY: -36,
     opacity: 0.9,

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
+import { MOBILE_LAWN_FRAC } from "../lib/mobileGrass.js";
 
 const GRASS_GUARD_SELECTOR =
   ".grass-zone, .grass-zone__hit-pad, .grass-touch-shield, .grass-tile, .grass-tile__img, .pog-touch-guard";
 
-/** Bottom ~55% of screen — lawn + fence line (mobile long-press block) */
+/** Bottom lawn band — matches --pog-lawn-h on mobile */
 function isMobileLawnTouch(clientY) {
-  return clientY >= window.innerHeight * 0.42;
+  const cutoff = window.innerHeight * (1 - MOBILE_LAWN_FRAC - 0.08);
+  return clientY >= cutoff;
 }
 
 /**
