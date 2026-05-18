@@ -11,10 +11,7 @@ import {
 } from "../lib/grassHitTest.js";
 import { GRASS_LAYER_CONFIG } from "../lib/grassLayers.js";
 import { createLayerState, stepGrassLayers } from "../lib/grassPhysics.js";
-import {
-  MOBILE_DRAG_SENSITIVITY,
-  MOBILE_HIT_PAD_RATIO,
-} from "../lib/mobileGrass.js";
+import { MOBILE_DRAG_SENSITIVITY } from "../lib/mobileGrass.js";
 import { createWindState, stepWind } from "../lib/windSystem.js";
 
 const TILES_MIN = 4;
@@ -54,25 +51,13 @@ function fillStacksForMode(portrait) {
   return ["grass-stack--fill"];
 }
 
-/** Extended lawn hit when finger is above visible blades (mobile pad band) */
-function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
-  const pad = rect.height * MOBILE_HIT_PAD_RATIO;
-  if (
-    clientY < rect.top - pad ||
-    clientY > rect.bottom ||
-    clientX < rect.left ||
-    clientX > rect.right
-  ) {
-    return null;
-  }
-
-  const layer = tileNodes.length - 1;
-  const tile = clamp(
-    Math.floor(((clientX - rect.left) / rect.width) * cols),
-    0,
-    cols - 1
+function pointerInsideGrassZone(clientX, clientY, rect) {
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
   );
-  return { layer, tile };
 }
 
 export default function LayeredGrass({
@@ -163,16 +148,14 @@ export default function LayeredGrass({
       });
 
       let hovered =
-        tileNodes?.length && activeMasks?.length
+        tileNodes?.length &&
+        activeMasks?.length &&
+        pointerInsideGrassZone(clientX, clientY, rect)
           ? findHoveredGrassTile(clientX, clientY, tileNodes, activeMasks)
           : null;
 
       if (hovered && cols && hovered.tile >= cols) {
         hovered = { layer: hovered.layer, tile: hovered.tile % cols };
-      }
-
-      if (!hovered && portrait && tileNodes?.length) {
-        hovered = resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols);
       }
 
       const x = clamp((clientX - rect.left) / rect.width, 0, 1);
