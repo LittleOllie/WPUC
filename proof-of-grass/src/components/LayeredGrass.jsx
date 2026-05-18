@@ -51,13 +51,62 @@ function fillStacksForMode(portrait) {
   return ["grass-stack--fill"];
 }
 
-function pointerInsideGrassZone(clientX, clientY, rect) {
+const LAWN_HIT_SELECTORS =
+  ".grass-layer, .grass-stack--fill, .grass-stack--fill-2, .grass-stack--fill-3, .grass-tile__img";
+
+function pointerInRect(clientX, clientY, rect) {
   return (
     clientX >= rect.left &&
     clientX <= rect.right &&
     clientY >= rect.top &&
     clientY <= rect.bottom
   );
+}
+
+/** Union of all grass layer boxes — the interactive “lawn border” */
+function measureLawnHitRect(zone) {
+  const nodes = zone.querySelectorAll(LAWN_HIT_SELECTORS);
+  if (!nodes.length) return null;
+
+  let top = Infinity;
+  let left = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+
+  for (const el of nodes) {
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    top = Math.min(top, r.top);
+    left = Math.min(left, r.left);
+    right = Math.max(right, r.right);
+    bottom = Math.max(bottom, r.bottom);
+  }
+
+  if (!Number.isFinite(top)) return null;
+  return {
+    top,
+    left,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+/** Blade under pointer, or front-row column when inside lawn but on transparency */
+function resolveLawnHover(clientX, clientY, tileNodes, masks, lawnRect, cols) {
+  const hit = findHoveredGrassTile(clientX, clientY, tileNodes, masks);
+  if (hit) return hit;
+
+  const frontIdx = tileNodes.length - 1;
+  if (frontIdx < 0 || lawnRect.width < 1) return null;
+
+  const tile = clamp(
+    Math.floor(((clientX - lawnRect.left) / lawnRect.width) * cols),
+    0,
+    cols - 1
+  );
+  return { layer: frontIdx, tile };
 }
 
 export default function LayeredGrass({
@@ -84,6 +133,7 @@ export default function LayeredGrass({
     vx: 0,
   });
   const layerMasksRef = useRef([]);
+  const lawnHitRectRef = useRef(null);
   const prevPointerXRef = useRef(0.5);
   const rafRef = useRef(0);
   const resizeRafRef = useRef(0);
@@ -132,12 +182,13 @@ export default function LayeredGrass({
         return;
       }
 
-      const rect = zone.getBoundingClientRect();
-      if (rect.width < 1 || rect.height < 1) return;
-
       const p = pointerRef.current;
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
+      const lawnRect =
+        lawnHitRectRef.current ?? measureLawnHitRect(zone);
+
+      if (!lawnRect || lawnRect.width < 1 || lawnRect.height < 1) return;
 
       const portrait = Boolean(portraitMode);
       const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
@@ -147,25 +198,35 @@ export default function LayeredGrass({
         return masks[i];
       });
 
+      const inLawn = pointerInRect(clientX, clientY, lawnRect);
+
       let hovered =
-        tileNodes?.length &&
-        activeMasks?.length &&
-        pointerInsideGrassZone(clientX, clientY, rect)
-          ? findHoveredGrassTile(clientX, clientY, tileNodes, activeMasks)
+        inLawn && tileNodes?.length && activeMasks?.length
+          ? resolveLawnHover(
+              clientX,
+              clientY,
+              tileNodes,
+              activeMasks,
+              lawnRect,
+              cols
+            )
           : null;
 
       if (hovered && cols && hovered.tile >= cols) {
         hovered = { layer: hovered.layer, tile: hovered.tile % cols };
       }
 
-      const x = clamp((clientX - rect.left) / rect.width, 0, 1);
-      const vxRaw = hovered ? x - prevPointerXRef.current : p.vx * 0.82;
-      const vx = portrait && hovered ? vxRaw * MOBILE_DRAG_SENSITIVITY : vxRaw;
-      if (hovered) prevPointerXRef.current = x;
+      const x = clamp((clientX - lawnRect.left) / lawnRect.width, 0, 1);
+      const vxRaw = inLawn && hovered ? x - prevPointerXRef.current : p.vx * 0.82;
+      const vx =
+        portrait && inLawn && hovered
+          ? vxRaw * MOBILE_DRAG_SENSITIVITY
+          : vxRaw;
+      if (inLawn && hovered) prevPointerXRef.current = x;
 
       pointerRef.current = {
         ...p,
-        timerActive: hovered != null,
+        timerActive: inLawn,
         hoverLayer: hovered?.layer ?? -1,
         hoverTile: hovered?.tile ?? -1,
         vx: clamp(vx, -0.1, 0.1),
@@ -290,6 +351,12 @@ export default function LayeredGrass({
       simRef.current = layerConfigs.map((cfg) =>
         createLayerState(cfg, tiles)
       );
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          lawnHitRectRef.current = measureLawnHitRect(zone);
+        });
+      });
       return true;
     };
 
@@ -444,6 +511,7 @@ export default function LayeredGrass({
       tileElsRef.current = [];
       fillLayerElsRef.current = [];
       fillTileElsRef.current = [];
+      lawnHitRectRef.current = null;
       simRef.current = null;
       motionMq.removeEventListener("change", onMotionChange);
       zone.removeEventListener("pointerdown", onPointerDown);
