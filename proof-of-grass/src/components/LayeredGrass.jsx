@@ -38,8 +38,10 @@ function isPointerInViewport(clientX, clientY) {
   );
 }
 
-function frontLayerIndex() {
-  return GRASS_LAYER_CONFIG.findIndex((c) => c.id === "front");
+function layerConfigsForMode(portrait) {
+  return portrait
+    ? GRASS_LAYER_CONFIG.filter((c) => c.id !== "back")
+    : GRASS_LAYER_CONFIG;
 }
 
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */
@@ -54,8 +56,7 @@ function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
     return null;
   }
 
-  const frontIdx = frontLayerIndex();
-  const layer = frontIdx >= 0 ? frontIdx : tileNodes.length - 1;
+  const layer = tileNodes.length - 1;
   const tile = clamp(
     Math.floor(((clientX - rect.left) / rect.width) * cols),
     0,
@@ -144,9 +145,13 @@ export default function LayeredGrass({
       const portrait = Boolean(portraitMode);
       const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
 
+      const activeMasks = portrait
+        ? masks.slice(1)
+        : masks;
+
       let hovered =
-        tileNodes?.length && masks?.length
-          ? findHoveredGrassTile(clientX, clientY, tileNodes, masks)
+        tileNodes?.length && activeMasks?.length
+          ? findHoveredGrassTile(clientX, clientY, tileNodes, activeMasks)
           : null;
 
       if (hovered && cols && hovered.tile >= cols) {
@@ -238,7 +243,9 @@ export default function LayeredGrass({
 
       zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
 
-      GRASS_LAYER_CONFIG.forEach((cfg) => {
+      const layerConfigs = layerConfigsForMode(portrait);
+
+      layerConfigs.forEach((cfg) => {
         const primary = buildLayer(cfg, zone);
         layerEls.push(primary.layerEl);
         allTiles.push(primary.layerTiles);
@@ -268,7 +275,7 @@ export default function LayeredGrass({
 
       layerElsRef.current = layerEls;
       tileElsRef.current = allTiles;
-      simRef.current = GRASS_LAYER_CONFIG.map((cfg) =>
+      simRef.current = layerConfigs.map((cfg) =>
         createLayerState(cfg, tiles)
       );
       return true;
@@ -311,11 +318,13 @@ export default function LayeredGrass({
           stepGrassLayers(sim, pointerRef.current, now, windSample, { mobileEase });
         }
 
-        for (let li = 0; li < sim.length; li++) {
+        const layerCount = Math.min(sim.length, layerNodes.length);
+        for (let li = 0; li < layerCount; li++) {
           const layer = sim[li];
           const cfg = layer.config;
           const layerTiles = tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
+          if (!layerEl) continue;
           let layerTransform;
           if (!reduced) {
             const tx = layer.layerTx.toFixed(2);

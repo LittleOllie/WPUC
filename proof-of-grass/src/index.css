@@ -779,28 +779,7 @@ button {
   pointer-events: none;
 }
 
-/*
- * Portrait grass — same stack as immersive; offsets as % of grass band
- * (immersive px values / ~360px reference band).
- */
-.pog-app--portrait .grass-back-row--0 {
-  bottom: 42.78%;
-  height: 152%;
-  transform: scale(1.1);
-}
-
-.pog-app--portrait .grass-back-row--1 {
-  bottom: 33.89%;
-}
-
-.pog-app--portrait .grass-back-row--2 {
-  bottom: 26.11%;
-}
-
-.pog-app--portrait .grass-back-row--3 {
-  bottom: 18.33%;
-}
-
+/* Pocket: front + middle only (no stacked back rows into the scene) */
 .pog-app--portrait .grass-layer--middle {
   bottom: 5%;
 }
