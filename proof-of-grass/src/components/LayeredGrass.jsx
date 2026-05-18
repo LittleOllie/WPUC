@@ -46,6 +46,14 @@ function layerConfigsForMode(portrait) {
   return GRASS_LAYER_CONFIG.filter((c) => c.id !== "back");
 }
 
+/** Behind-stacks for thickness; portrait gets two, Ultra Grass one */
+function fillStacksForMode(portrait) {
+  if (portrait) {
+    return ["grass-stack--fill-2", "grass-stack--fill"];
+  }
+  return ["grass-stack--fill"];
+}
+
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */
 function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
   const pad = rect.height * MOBILE_HIT_PAD_RATIO;
@@ -192,7 +200,7 @@ export default function LayeredGrass({
 
       zone
         .querySelectorAll(
-          ".grass-stack--fill, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-stack--fill-2, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       zone.classList.toggle("grass-zone--portrait", portrait);
@@ -245,18 +253,24 @@ export default function LayeredGrass({
       };
 
       const layerConfigs = layerConfigsForMode(portrait);
-      const fillLayerEls = [];
-      const fillTileEls = [];
+      const allFillLayerEls = [];
+      const allFillTileEls = [];
 
-      const fillStack = document.createElement("div");
-      fillStack.className = "grass-stack--fill";
-      fillStack.setAttribute("aria-hidden", "true");
-      layerConfigs.forEach((cfg) => {
-        const fill = buildLayer(cfg, fillStack);
-        fillLayerEls.push(fill.layerEl);
-        fillTileEls.push(fill.layerTiles);
+      fillStacksForMode(portrait).forEach((stackClass) => {
+        const stackLayerEls = [];
+        const stackTileEls = [];
+        const fillStack = document.createElement("div");
+        fillStack.className = stackClass;
+        fillStack.setAttribute("aria-hidden", "true");
+        layerConfigs.forEach((cfg) => {
+          const fill = buildLayer(cfg, fillStack);
+          stackLayerEls.push(fill.layerEl);
+          stackTileEls.push(fill.layerTiles);
+        });
+        zone.appendChild(fillStack);
+        allFillLayerEls.push(stackLayerEls);
+        allFillTileEls.push(stackTileEls);
       });
-      zone.appendChild(fillStack);
 
       layerConfigs.forEach((cfg) => {
         const primary = buildLayer(cfg, zone);
@@ -288,8 +302,8 @@ export default function LayeredGrass({
 
       layerElsRef.current = layerEls;
       tileElsRef.current = allTiles;
-      fillLayerElsRef.current = fillLayerEls;
-      fillTileElsRef.current = fillTileEls;
+      fillLayerElsRef.current = allFillLayerEls;
+      fillTileElsRef.current = allFillTileEls;
       simRef.current = layerConfigs.map((cfg) =>
         createLayerState(cfg, tiles)
       );
@@ -355,21 +369,27 @@ export default function LayeredGrass({
               const tileTx = layer.translates[i];
               const tileTransform = `translate3d(${tileTx.toFixed(2)}px, 0, 0) rotate(${angle.toFixed(3)}deg)`;
               if (layerTiles[i]) layerTiles[i].style.transform = tileTransform;
-              const fillTiles = fillTileNodes[li];
-              if (fillTiles?.[i]) fillTiles[i].style.transform = tileTransform;
+              for (let si = 0; si < fillTileNodes.length; si++) {
+                const fillTiles = fillTileNodes[si]?.[li];
+                if (fillTiles?.[i]) fillTiles[i].style.transform = tileTransform;
+              }
             }
           } else {
             layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
             layerEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
               if (layerTiles[i]) layerTiles[i].style.transform = "translate3d(0, 0, 0)";
-              const fillTiles = fillTileNodes[li];
-              if (fillTiles?.[i]) fillTiles[i].style.transform = "translate3d(0, 0, 0)";
+              for (let si = 0; si < fillTileNodes.length; si++) {
+                const fillTiles = fillTileNodes[si]?.[li];
+                if (fillTiles?.[i]) fillTiles[i].style.transform = "translate3d(0, 0, 0)";
+              }
             }
           }
 
-          const fillEl = fillLayerNodes[li];
-          if (fillEl) fillEl.style.transform = layerTransform;
+          for (let si = 0; si < fillLayerNodes.length; si++) {
+            const fillEl = fillLayerNodes[si]?.[li];
+            if (fillEl) fillEl.style.transform = layerTransform;
+          }
         }
 
         const particlesEl = particlesRef.current;
@@ -434,7 +454,7 @@ export default function LayeredGrass({
       ro.disconnect();
       zone
         .querySelectorAll(
-          ".grass-stack--fill, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+          ".grass-stack--fill, .grass-stack--fill-2, .grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
         )
         .forEach((el) => el.remove());
       layerElsRef.current = [];
