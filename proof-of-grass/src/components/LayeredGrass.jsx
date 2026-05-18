@@ -42,6 +42,17 @@ function frontLayerIndex() {
   return GRASS_LAYER_CONFIG.findIndex((c) => c.id === "front");
 }
 
+/** Mobile lawn ~18dvh vs desktop ~36dvh — scale grass physics to match desktop look */
+const MOBILE_LAWN_TO_DESKTOP = 18 / 36;
+
+function layoutForLayer(cfg, mobile) {
+  if (!mobile) return { scale: cfg.scale, offsetY: cfg.offsetY };
+  return {
+    scale: cfg.scale * MOBILE_LAWN_TO_DESKTOP,
+    offsetY: cfg.offsetY * MOBILE_LAWN_TO_DESKTOP,
+  };
+}
+
 /** Extended lawn hit when finger is above visible blades (mobile pad band) */
 function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
   const pad = rect.height * MOBILE_HIT_PAD_RATIO;
@@ -216,10 +227,7 @@ export default function LayeredGrass({
         layerEl.style.opacity = String(cfg.opacity);
 
         const layerTiles = [];
-        const rowCount =
-          mobile && cfg.rows
-            ? cfg.mobileRows ?? cfg.rows
-            : 1;
+        const rowCount = 1;
 
         if (rowCount > 1) {
           for (let r = 0; r < rowCount; r++) {
@@ -319,13 +327,14 @@ export default function LayeredGrass({
           const cfg = layer.config;
           const layerTiles = tileNodes[li] ?? [];
           const layerEl = layerNodes[li];
+          const layout = layoutForLayer(cfg, mobileLayout);
 
           let layerTransform;
           if (!reduced) {
             const tx = layer.layerTx.toFixed(2);
-            const ty = (cfg.offsetY + layer.layerTy).toFixed(2);
+            const ty = (layout.offsetY + layer.layerTy).toFixed(2);
             const rot = layer.layerAngle.toFixed(3);
-            layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${cfg.scale}) rotate(${rot}deg)`;
+            layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${layout.scale}) rotate(${rot}deg)`;
             layerEl.style.transform = layerTransform;
 
             for (let i = 0; i < layer.cols; i++) {
@@ -335,7 +344,7 @@ export default function LayeredGrass({
               if (layerTiles[i]) layerTiles[i].style.transform = tileTransform;
             }
           } else {
-            layerTransform = `translate3d(0, ${cfg.offsetY}px, 0) scale(${cfg.scale})`;
+            layerTransform = `translate3d(0, ${layout.offsetY}px, 0) scale(${layout.scale})`;
             layerEl.style.transform = layerTransform;
             for (let i = 0; i < layer.cols; i++) {
               if (layerTiles[i]) layerTiles[i].style.transform = "translate3d(0, 0, 0)";

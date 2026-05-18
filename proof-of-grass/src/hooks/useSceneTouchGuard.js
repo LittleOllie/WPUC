@@ -1,12 +1,20 @@
 import { useEffect } from "react";
+import { MOBILE_LAWN_FRAC } from "../lib/mobileGrass.js";
 
 const GRASS_GUARD_SELECTOR =
-  ".grass-zone, .grass-zone__hit-pad, .grass-touch-shield, .grass-tile, .grass-tile__img";
+  ".grass-zone, .grass-zone__hit-pad, .grass-touch-shield, .grass-tile, .grass-tile__img, .pog-touch-guard";
+
+/** Bottom lawn band — matches --pog-lawn-h on mobile */
+function isMobileLawnTouch(clientY) {
+  const cutoff = window.innerHeight * (1 - MOBILE_LAWN_FRAC - 0.08);
+  return clientY >= cutoff;
+}
 
 /**
- * Block iOS/Android long-press save-image menus on the lawn only.
+ * Block iOS/Android long-press "Save Image" on the lawn.
+ * Grass physics still use document pointer events (imgs use pointer-events: none on mobile).
  */
-export function useSceneTouchGuard(rootRef) {
+export function useSceneTouchGuard(rootRef, mobile = false) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -14,20 +22,37 @@ export function useSceneTouchGuard(rootRef) {
     const isGuarded = (target) =>
       target instanceof Element && Boolean(target.closest(GRASS_GUARD_SELECTOR));
 
-    let touchOnGrass = false;
+    const touchInLawn = (clientY) => mobile && isMobileLawnTouch(clientY);
 
-    const blockIfGuarded = (e) => {
-      if (!isGuarded(e.target)) return;
+    let lawnTouchActive = false;
+
+    const shouldBlockTouch = (target, clientY) => {
+      if (!mobile) return isGuarded(target);
+      if (isGuarded(target)) return true;
+      if (target instanceof HTMLImageElement && root.contains(target)) return true;
+      if (target instanceof Element && target.closest(".pog-scene-visual") && touchInLawn(clientY)) {
+        return true;
+      }
+      return touchInLawn(clientY);
+    };
+
+    const blockEvent = (e) => {
+      const y =
+        e.touches?.[0]?.clientY ??
+        e.changedTouches?.[0]?.clientY ??
+        (e.clientY ?? 0);
+      if (!shouldBlockTouch(e.target, y)) return;
       e.preventDefault();
       e.stopPropagation();
     };
 
     const onTouchStart = (e) => {
-      if (!isGuarded(e.target)) {
-        touchOnGrass = false;
+      const y = e.touches[0]?.clientY ?? 0;
+      if (!shouldBlockTouch(e.target, y)) {
+        lawnTouchActive = false;
         return;
       }
-      touchOnGrass = true;
+      lawnTouchActive = true;
       if (e.touches.length === 1) {
         e.preventDefault();
         e.stopPropagation();
@@ -35,29 +60,29 @@ export function useSceneTouchGuard(rootRef) {
     };
 
     const onTouchMove = (e) => {
-      if (!touchOnGrass && !isGuarded(e.target)) return;
-      if (isGuarded(e.target)) touchOnGrass = true;
-      if (touchOnGrass) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      const y = e.touches[0]?.clientY ?? 0;
+      if (!lawnTouchActive && !shouldBlockTouch(e.target, y)) return;
+      lawnTouchActive = true;
+      e.preventDefault();
+      e.stopPropagation();
     };
 
     const onTouchEnd = () => {
-      touchOnGrass = false;
+      lawnTouchActive = false;
     };
 
     const onGesture = (e) => {
-      if (!isGuarded(e.target)) return;
+      const y = e.clientY ?? 0;
+      if (!shouldBlockTouch(e.target, y)) return;
       e.preventDefault();
     };
 
     const capture = { capture: true };
     const touchOpts = { capture: true, passive: false };
 
-    root.addEventListener("contextmenu", blockIfGuarded, capture);
-    root.addEventListener("selectstart", blockIfGuarded, capture);
-    root.addEventListener("dragstart", blockIfGuarded, capture);
+    root.addEventListener("contextmenu", blockEvent, capture);
+    root.addEventListener("selectstart", blockEvent, capture);
+    root.addEventListener("dragstart", blockEvent, capture);
     root.addEventListener("gesturestart", onGesture, touchOpts);
     root.addEventListener("gesturechange", onGesture, touchOpts);
     root.addEventListener("gestureend", onGesture, touchOpts);
@@ -66,10 +91,25 @@ export function useSceneTouchGuard(rootRef) {
     root.addEventListener("touchend", onTouchEnd, capture);
     root.addEventListener("touchcancel", onTouchEnd, capture);
 
+    const onDocContextMenu = (e) => {
+      if (!mobile) return;
+      blockEvent(e);
+    };
+
+    const onDocTouchStart = (e) => {
+      if (!mobile) return;
+      onTouchStart(e);
+    };
+
+    if (mobile) {
+      document.addEventListener("contextmenu", onDocContextMenu, capture);
+      document.addEventListener("touchstart", onDocTouchStart, touchOpts);
+    }
+
     return () => {
-      root.removeEventListener("contextmenu", blockIfGuarded, capture);
-      root.removeEventListener("selectstart", blockIfGuarded, capture);
-      root.removeEventListener("dragstart", blockIfGuarded, capture);
+      root.removeEventListener("contextmenu", blockEvent, capture);
+      root.removeEventListener("selectstart", blockEvent, capture);
+      root.removeEventListener("dragstart", blockEvent, capture);
       root.removeEventListener("gesturestart", onGesture, touchOpts);
       root.removeEventListener("gesturechange", onGesture, touchOpts);
       root.removeEventListener("gestureend", onGesture, touchOpts);
@@ -77,6 +117,10 @@ export function useSceneTouchGuard(rootRef) {
       root.removeEventListener("touchmove", onTouchMove, touchOpts);
       root.removeEventListener("touchend", onTouchEnd, capture);
       root.removeEventListener("touchcancel", onTouchEnd, capture);
+      if (mobile) {
+        document.removeEventListener("contextmenu", onDocContextMenu, capture);
+        document.removeEventListener("touchstart", onDocTouchStart, touchOpts);
+      }
     };
-  }, [rootRef]);
+  }, [rootRef, mobile]);
 }

@@ -52,7 +52,8 @@ export default function CloudLayer({ weather }) {
             src={CLOUDS[lane.src]}
             alt=""
             draggable={false}
-            className="pog-cloud"
+            className="pog-cloud pog-touch-guard"
+            onContextMenu={(e) => e.preventDefault()}
           />
         </div>
       ))}

@@ -535,27 +535,63 @@ button {
   display: none;
 }
 
-/* ── Mobile (<768px): taller lawn, fuller grass, easier thumbs ── */
-.pog-app--mobile .grass-zone {
-  overflow: hidden;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+/*
+ * ── Mobile: proportional stack (dvh — same ratios on every phone) ──
+ * Bottom → top: lawn band (~18dvh) → fence (under grass) → llama → sky
+ */
+.pog-app--mobile {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  --pog-lawn-h: calc(18dvh + env(safe-area-inset-bottom, 0px));
+  --pog-grass-height: var(--pog-lawn-h);
+  --pog-grass-lift: 0px;
+  --pog-fence-h: 22dvh;
+  --pog-fence-bottom: 0px;
+  --pog-fence-drop: 0;
+  --pog-llama-anchor: calc(var(--pog-lawn-h) + 1.5dvh);
 }
 
-.pog-app--mobile .grass-zone--mobile::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -22%;
-  height: 55%;
-  z-index: 2;
+.pog-app--mobile .grass-zone {
+  z-index: 50;
+  overflow: hidden;
+  padding-bottom: 0;
+  touch-action: none;
+}
+
+
+.pog-app--mobile .pog-scene-visual img,
+.pog-app--mobile .pog-cloud {
+  pointer-events: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-select: none !important;
+}
+
+.pog-app--mobile .pog-fence-wrap {
+  bottom: var(--pog-fence-bottom);
+  z-index: 38;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(126, 200, 248, 0) 0%,
-    rgba(72, 150, 95, 0.07) 42%,
-    rgba(45, 107, 58, 0.14) 100%
-  );
+}
+
+.pog-app--mobile .pog-fence {
+  height: var(--pog-fence-h);
+  transform: none;
+  transform-origin: bottom center;
+  pointer-events: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+.pog-app--mobile .pog-llama-wrap {
+  bottom: var(--pog-llama-anchor);
+  z-index: 42;
+}
+
+.pog-app--mobile .pog-llama {
+  height: 46dvh;
+  max-height: calc(100dvh - var(--pog-llama-anchor) - 10dvh);
+  max-width: min(88vw, 420px);
+  transform: translateY(0) scale(1.22);
+  transform-origin: bottom center;
 }
 
 .pog-app--mobile .grass-zone__hit-pad {
@@ -564,9 +600,9 @@ button {
   left: 0;
   right: 0;
   bottom: 100%;
-  height: 34%;
+  height: calc(var(--pog-fence-h) * 0.22);
   z-index: 48;
-  pointer-events: none;
+  pointer-events: auto;
   touch-action: none;
   background: transparent;
 }
@@ -576,125 +612,109 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: -34%;
+  top: auto;
+  height: calc(var(--pog-fence-h) * 0.22);
   bottom: 0;
   z-index: 49;
   pointer-events: auto;
   touch-action: none;
+  -webkit-touch-callout: none !important;
   background: transparent;
 }
 
 .pog-app--mobile .grass-tile__img {
   pointer-events: none !important;
-  min-width: 130%;
-  transform: scale(1.1);
-  transform-origin: bottom center;
 }
 
 .pog-app--mobile .grass-tile {
   pointer-events: none;
 }
 
-.pog-app--mobile .grass-back-row {
-  height: 142%;
-}
-
-/* Two overlapped back rows — tight depth, no horizontal stripes */
+/*
+ * Mobile grass stacking = desktop ratios, but % of lawn band so size
+ * changes never push layers up (desktop uses px tuned for ~36dvh band).
+ * Reference: 154/360 ≈ 43%, 18/360 = 5%, same heights as desktop.
+ */
 .pog-app--mobile .grass-back-row--0 {
-  bottom: 78px;
-  height: 148%;
-  transform: scale(1.12);
-}
-
-.pog-app--mobile .grass-back-row--1 {
-  bottom: 52px;
-}
-
-.pog-app--mobile .grass-back-row--2,
-.pog-app--mobile .grass-back-row--3 {
-  display: none;
+  bottom: 43%;
+  height: 152%;
+  transform: scale(1.1);
 }
 
 .pog-app--mobile .grass-layer--middle {
-  height: 117%;
-  bottom: 20px;
-}
-
-.pog-app--mobile .grass-layer--front {
+  bottom: 5%;
   height: 108%;
 }
 
-.pog-app--mobile .pog-llama {
-  height: min(44vh, 460px);
+.pog-app--mobile .grass-layer--front {
+  bottom: 0;
+  height: 100%;
 }
 
-.pog-app--mobile .pog-fence {
-  height: min(57vh, 600px);
-  transform: translateY(var(--pog-fence-drop)) scale(1.5);
+/*
+ * ── Desktop: locked layout (do not use dvh for scene — stays as-is) ──
+ */
+.pog-app--desktop {
+  --pog-grass-height: clamp(190px, 36dvh, 430px);
+  --pog-grass-lift: 0px;
+  --pog-fence-bottom: 10px;
+  --pog-fence-drop: 0.5rem;
+}
+
+.pog-app--desktop .grass-zone {
+  z-index: 40;
+}
+
+.pog-app--desktop .pog-fence-wrap {
+  z-index: 45;
+}
+
+.pog-app--desktop .pog-llama-wrap {
+  z-index: 44;
+}
+
+.pog-app--desktop .pog-fence {
+  height: min(44vh, 480px);
+  transform: translateY(var(--pog-fence-drop));
   transform-origin: bottom center;
-  pointer-events: none;
-  -webkit-touch-callout: none;
 }
 
-.pog-app--mobile .pog-fence-wrap {
-  pointer-events: none;
+.pog-app--desktop .pog-llama {
+  height: min(44vh, 476px);
+  max-width: min(67vw, 459px);
+  transform: translateY(var(--pog-fence-drop)) scale(1.7);
 }
 
-@media (max-width: 767px) {
-  :root {
-    --pog-grass-height: clamp(
-      280px,
-      calc(38dvh + env(safe-area-inset-bottom, 0px)),
-      520px
-    );
-    --pog-fence-drop: 0.25rem;
-    --pog-fence-bottom: 14px;
-  }
-
+.pog-app--desktop .grass-back-row--0 {
+  bottom: 154px;
+  height: 152%;
+  transform: scale(1.1);
 }
 
-@media (min-width: 768px) {
-  .pog-fence {
-    height: min(44vh, 480px);
-    transform: translateY(var(--pog-fence-drop));
-    transform-origin: bottom center;
-  }
-
-  .pog-llama {
-    height: min(52vh, 560px);
-  }
-
-  .grass-back-row--0 {
-    bottom: 154px;
-    height: 152%;
-    transform: scale(1.1);
-  }
-
-  .grass-back-row--1 {
-    bottom: 122px;
-  }
-
-  .grass-back-row--2 {
-    bottom: 94px;
-  }
-
-  .grass-back-row--3 {
-    bottom: 66px;
-  }
+.pog-app--desktop .grass-back-row--1 {
+  bottom: 122px;
 }
 
-/* Short preview panes (e.g. Cursor embedded browser) — scale scene to fit */
+.pog-app--desktop .grass-back-row--2 {
+  bottom: 94px;
+}
+
+.pog-app--desktop .grass-back-row--3 {
+  bottom: 66px;
+}
+
+/* Short desktop preview panes only */
 @media (max-height: 520px) {
-  .pog-llama {
-    height: min(38vh, 320px);
-    transform: translateY(var(--pog-fence-drop)) scale(1.35);
+  .pog-app--desktop .pog-llama {
+    height: min(33vh, 272px);
+    transform: translateY(var(--pog-fence-drop)) scale(1.15);
   }
 
-  .pog-fence {
+  .pog-app--desktop .pog-fence {
     height: min(32vh, 280px);
   }
 
-  :root {
+  .pog-app--desktop {
     --pog-grass-height: clamp(120px, 28dvh, 220px);
   }
 }

@@ -29,8 +29,9 @@ export default function SceneBackdrop({ weather }) {
       <img
         src={ASSETS.skyBg}
         alt=""
-        className="pog-sky-bg"
+        className="pog-sky-bg pog-touch-guard"
         draggable={false}
+        onContextMenu={(e) => e.preventDefault()}
       />
 
       {tint !== "transparent" && (
@@ -48,8 +49,9 @@ export default function SceneBackdrop({ weather }) {
         <img
           src={ASSETS.llama}
           alt=""
-          className="pog-llama"
+          className="pog-llama pog-touch-guard"
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </motion.div>
 
@@ -57,8 +59,9 @@ export default function SceneBackdrop({ weather }) {
         <img
           src={ASSETS.fence}
           alt=""
-          className="pog-fence"
+          className="pog-fence pog-touch-guard"
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
         />
       </motion.div>
     </motion.div>
