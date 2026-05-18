@@ -44,6 +44,7 @@ export default function App() {
           <SceneBackdrop weather={weather} portrait={portrait} />
 
           <LayeredGrass
+            key={immersive ? "immersive" : "portrait"}
             wind={wind}
             onGrassMovingChange={setMoving}
             portrait={portrait}

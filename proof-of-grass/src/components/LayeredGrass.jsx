@@ -145,9 +145,10 @@ export default function LayeredGrass({
       const portrait = Boolean(portraitMode);
       const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
 
-      const activeMasks = portrait
-        ? masks.slice(1)
-        : masks;
+      const activeMasks = layerConfigsForMode(portrait).map((cfg) => {
+        const i = GRASS_LAYER_CONFIG.findIndex((c) => c.id === cfg.id);
+        return masks[i];
+      });
 
       let hovered =
         tileNodes?.length && activeMasks?.length
@@ -185,9 +186,11 @@ export default function LayeredGrass({
       const tiles = tileCountForWidth(width);
       const portrait = Boolean(portraitMode);
 
-      zone.querySelectorAll(".grass-zone__hit-pad, .grass-touch-shield").forEach(
-        (el) => el.remove()
-      );
+      zone
+        .querySelectorAll(
+          ".grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+        )
+        .forEach((el) => el.remove());
       zone.classList.toggle("grass-zone--portrait", portrait);
 
       const layerEls = [];
@@ -240,8 +243,6 @@ export default function LayeredGrass({
         parentEl.appendChild(layerEl);
         return { layerEl, layerTiles };
       };
-
-      zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
 
       const layerConfigs = layerConfigsForMode(portrait);
 
@@ -408,6 +409,14 @@ export default function LayeredGrass({
       cancelAnimationFrame(rafRef.current);
       cancelAnimationFrame(resizeRafRef.current);
       ro.disconnect();
+      zone
+        .querySelectorAll(
+          ".grass-layer, .grass-zone__hit-pad, .grass-touch-shield"
+        )
+        .forEach((el) => el.remove());
+      layerElsRef.current = [];
+      tileElsRef.current = [];
+      simRef.current = null;
       motionMq.removeEventListener("change", onMotionChange);
       zone.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointermove", onPointerMove);
