@@ -11,6 +11,13 @@ import {
 } from "../lib/grassHitTest.js";
 import { GRASS_LAYER_CONFIG } from "../lib/grassLayers.js";
 import { createLayerState, stepGrassLayers } from "../lib/grassPhysics.js";
+import {
+  isMobileViewport,
+  MOBILE_DRAG_SENSITIVITY,
+  MOBILE_HIT_PAD_RATIO,
+  MOBILE_MEDIA,
+  MOBILE_MIRROR_PARALLAX,
+} from "../lib/mobileGrass.js";
 import { createWindState, stepWind } from "../lib/windSystem.js";
 
 const TILES_MIN = 4;
@@ -34,8 +41,30 @@ function isPointerInViewport(clientX, clientY) {
   );
 }
 
-function isPhoneGrassDouble() {
-  return window.matchMedia("(max-width: 767px) and (pointer: coarse)").matches;
+function frontLayerIndex() {
+  return GRASS_LAYER_CONFIG.findIndex((c) => c.id === "front");
+}
+
+/** Extended lawn hit when finger is above visible blades (mobile pad band) */
+function resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols) {
+  const pad = rect.height * MOBILE_HIT_PAD_RATIO;
+  if (
+    clientY < rect.top - pad ||
+    clientY > rect.bottom ||
+    clientX < rect.left ||
+    clientX > rect.right
+  ) {
+    return null;
+  }
+
+  const frontIdx = frontLayerIndex();
+  const layer = frontIdx >= 0 ? frontIdx : tileNodes.length - 1;
+  const tile = clamp(
+    Math.floor(((clientX - rect.left) / rect.width) * cols),
+    0,
+    cols - 1
+  );
+  return { layer, tile };
 }
 
 export default function LayeredGrass({
@@ -116,18 +145,25 @@ export default function LayeredGrass({
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
 
+      const mobile = isMobileViewport();
+      const cols = simRef.current?.[0]?.cols ?? TILES_MIN;
+
       let hovered =
         tileNodes?.length && masks?.length
           ? findHoveredGrassTile(clientX, clientY, tileNodes, masks)
           : null;
 
-      const cols = simRef.current?.[0]?.cols;
       if (hovered && cols && hovered.tile >= cols) {
         hovered = { layer: hovered.layer, tile: hovered.tile % cols };
       }
 
+      if (!hovered && mobile && tileNodes?.length) {
+        hovered = resolveMobilePadHover(clientX, clientY, rect, tileNodes, cols);
+      }
+
       const x = clamp((clientX - rect.left) / rect.width, 0, 1);
-      const vx = hovered ? x - prevPointerXRef.current : p.vx * 0.82;
+      const vxRaw = hovered ? x - prevPointerXRef.current : p.vx * 0.82;
+      const vx = mobile && hovered ? vxRaw * MOBILE_DRAG_SENSITIVITY : vxRaw;
       if (hovered) prevPointerXRef.current = x;
 
       pointerRef.current = {
@@ -146,10 +182,20 @@ export default function LayeredGrass({
       if (width < 8 || height < 8) return false;
 
       const tiles = tileCountForWidth(width);
-      const doubled = isPhoneGrassDouble();
+      const mobile = isMobileViewport();
+      const doubled = mobile;
 
       zone.querySelectorAll(".grass-stack").forEach((el) => el.remove());
+      zone.querySelectorAll(".grass-zone__hit-pad").forEach((el) => el.remove());
+      zone.classList.toggle("grass-zone--mobile", mobile);
       zone.classList.toggle("grass-zone--doubled", doubled);
+
+      if (mobile) {
+        const hitPad = document.createElement("div");
+        hitPad.className = "grass-zone__hit-pad pog-touch-guard";
+        hitPad.setAttribute("aria-hidden", "true");
+        zone.appendChild(hitPad);
+      }
 
       const layerEls = [];
       const mirrorLayerEls = [];
@@ -168,6 +214,7 @@ export default function LayeredGrass({
           img.className = "grass-tile__img pog-touch-guard";
           img.decoding = "async";
           img.loading = "eager";
+          img.addEventListener("contextmenu", (e) => e.preventDefault());
 
           tile.appendChild(img);
           parent.appendChild(tile);
@@ -265,7 +312,7 @@ export default function LayeredGrass({
       );
     });
 
-    const phoneMq = window.matchMedia("(max-width: 767px) and (pointer: coarse)");
+    const phoneMq = window.matchMedia(MOBILE_MEDIA);
     const onPhoneLayoutChange = () => {
       cancelAnimationFrame(resizeRafRef.current);
       resizeRafRef.current = requestAnimationFrame(() => build());
@@ -292,6 +339,7 @@ export default function LayeredGrass({
       const mirrorLayerNodes = mirrorLayerElsRef.current;
       const mirrorTileNodes = mirrorTileElsRef.current;
       const reduced = reducedMotionRef.current;
+      const mobileEase = isMobileViewport();
 
       if (sim?.length && tileNodes?.length && layerNodes?.length) {
         const windSample = reduced
@@ -299,7 +347,7 @@ export default function LayeredGrass({
           : stepWind(windRef.current, now, dt, windMultiplier);
 
         if (!reduced) {
-          stepGrassLayers(sim, pointerRef.current, now, windSample);
+          stepGrassLayers(sim, pointerRef.current, now, windSample, { mobileEase });
         }
 
         for (let li = 0; li < sim.length; li++) {
@@ -315,9 +363,21 @@ export default function LayeredGrass({
 
           let layerTransform;
           if (!reduced) {
-            layerTransform = `translate3d(${layer.layerTx.toFixed(2)}px, ${(cfg.offsetY + layer.layerTy).toFixed(2)}px, 0) scale(${cfg.scale}) rotate(${layer.layerAngle.toFixed(3)}deg)`;
+            const tx = layer.layerTx.toFixed(2);
+            const ty = (cfg.offsetY + layer.layerTy).toFixed(2);
+            const rot = layer.layerAngle.toFixed(3);
+            layerTransform = `translate3d(${tx}px, ${ty}px, 0) scale(${cfg.scale}) rotate(${rot}deg)`;
             layerEl.style.transform = layerTransform;
-            if (mirrorEl) mirrorEl.style.transform = layerTransform;
+
+            if (mirrorEl) {
+              const mx = (layer.layerTx * MOBILE_MIRROR_PARALLAX).toFixed(2);
+              const my = (
+                cfg.offsetY +
+                layer.layerTy * MOBILE_MIRROR_PARALLAX
+              ).toFixed(2);
+              const mrot = (layer.layerAngle * MOBILE_MIRROR_PARALLAX).toFixed(3);
+              mirrorEl.style.transform = `translate3d(${mx}px, ${my}px, 0) scale(${cfg.scale}) rotate(${mrot}deg)`;
+            }
 
             for (let i = 0; i < layer.cols; i++) {
               const angle = layer.angles[i];

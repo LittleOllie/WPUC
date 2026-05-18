@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 
-const GUARD_SELECTOR =
-  ".grass-zone, .grass-tile__img, .pog-scene-visual, .pog-sky-bg, .pog-llama, .pog-fence, .pog-cloud";
+/** Long-press / save-image guards — interactive lawn only (not global scroll) */
+const GRASS_GUARD_SELECTOR =
+  ".grass-zone, .grass-zone__hit-pad, .grass-tile, .grass-tile__img";
 
 /**
- * Block iOS long-press / save-image / selection on the scene without affecting
- * document scrolling (this app uses overflow:hidden on body).
+ * Block iOS/Android long-press menus on the grass interaction surface.
  */
 export function useSceneTouchGuard(rootRef) {
   useEffect(() => {
@@ -13,7 +13,7 @@ export function useSceneTouchGuard(rootRef) {
     if (!root) return;
 
     const isGuarded = (target) =>
-      target instanceof Element && Boolean(target.closest(GUARD_SELECTOR));
+      target instanceof Element && Boolean(target.closest(GRASS_GUARD_SELECTOR));
 
     const blockIfGuarded = (e) => {
       if (!isGuarded(e.target)) return;

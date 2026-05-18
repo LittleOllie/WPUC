@@ -52,17 +52,12 @@ body {
   -webkit-touch-callout: none;
 }
 
-/* Block iOS image long-press / save menu on the scene */
-.pog-app,
-.pog-scene-visual,
-.pog-touch-guard,
+/* Block long-press menus on interactive lawn elements */
 .grass-zone,
+.grass-zone__hit-pad,
+.grass-tile,
 .grass-tile__img,
-.pog-sky-bg,
-.pog-llama,
-.pog-fence,
-.pog-cloud,
-.pog-logo {
+.pog-touch-guard {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
@@ -522,95 +517,115 @@ button {
 
 .grass-zone--doubled {
   overflow: visible;
-  --pog-grass-stack-lift: calc(var(--pog-grass-height) * 0.5);
+  --pog-grass-stack-lift: calc(var(--pog-grass-height) * 0.48);
   height: calc(var(--pog-grass-height) + var(--pog-grass-stack-lift));
 }
 
-/* ── Mobile / iPhone: +10% grass, wider row spacing, taller lawn for thumbs ── */
-@media (max-width: 767px) and (pointer: coarse) {
+/* Invisible touch band above visible blades (mobile only, enabled in JS) */
+.grass-zone__hit-pad {
+  display: none;
+}
+
+/* ── Mobile (<768px): taller lawn, fuller grass, easier thumbs ── */
+@media (max-width: 767px) {
   :root {
     --pog-grass-height: clamp(
-      252px,
-      calc(38dvh + env(safe-area-inset-bottom, 0px)),
-      440px
+      248px,
+      calc(32dvh + env(safe-area-inset-bottom, 0px)),
+      460px
     );
     --pog-fence-drop: 0.35rem;
   }
 
   .grass-zone {
+    overflow: visible;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-sizing: content-box;
   }
 
-  /* +10% touch area on every grass PNG */
+  .grass-zone--mobile::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -22%;
+    height: 55%;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(126, 200, 248, 0) 0%,
+      rgba(72, 150, 95, 0.07) 42%,
+      rgba(45, 107, 58, 0.14) 100%
+    );
+  }
+
+  .grass-zone__hit-pad {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 34%;
+    z-index: 48;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    user-select: none;
+    background: transparent;
+  }
+
   .grass-tile__img {
-    min-width: 130%;
-    transform: scale(1.1);
+    min-width: 128%;
+    transform: scale(1.08);
     transform-origin: bottom center;
   }
 
   .grass-back-row {
-    height: 152%;
+    height: 150%;
   }
 
-  /* Rearmost row highest; rows spaced ~36–40px apart (vs ~28px desktop) */
   .grass-back-row--0 {
-    bottom: 192px;
-    height: 167%;
-    transform: scale(1.21);
+    bottom: 188px;
+    height: 165%;
+    transform: scale(1.18);
   }
 
   .grass-back-row--1 {
-    bottom: 150px;
+    bottom: 146px;
   }
 
   .grass-back-row--2 {
-    bottom: 112px;
+    bottom: 108px;
   }
 
   .grass-back-row--3 {
-    bottom: 72px;
+    bottom: 68px;
   }
 
   .grass-layer--middle {
-    height: 119%;
-    bottom: 22px;
+    height: 117%;
+    bottom: 20px;
   }
 
   .grass-layer--front {
-    height: 110%;
+    height: 108%;
+  }
+
+  .grass-stack--upper {
+    opacity: 0.94;
+    filter: saturate(0.97);
   }
 
   .pog-llama {
-    height: min(46vh, 480px);
+    height: min(44vh, 460px);
   }
 
   .pog-fence {
-    height: min(40vh, 420px);
-  }
-}
-
-/* Tablets / narrow desktop without coarse pointer — keep prior mobile layout */
-@media (max-width: 767px) and (pointer: fine) {
-  :root {
-    --pog-grass-height: clamp(
-      228px,
-      calc(34dvh + env(safe-area-inset-bottom, 0px)),
-      400px
-    );
-    --pog-fence-drop: 0.35rem;
+    height: min(38vh, 400px);
   }
 
-  .grass-zone {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    box-sizing: content-box;
-  }
-
-  .pog-llama {
-    height: min(46vh, 480px);
-  }
-
-  .pog-fence {
-    height: min(40vh, 420px);
+  .pog-top-bar {
+    max-height: 22vh;
   }
 }
