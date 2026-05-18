@@ -259,7 +259,7 @@ button {
   filter: drop-shadow(0 2px 10px rgba(26, 46, 31, 0.1));
 }
 
-/* Desktop: logo corner + centered timer (original layout) */
+/* Ultra Grass: logo top-left, timer + toggle top-right */
 .pog-app--immersive .pog-top-bar {
   display: block;
 }
@@ -275,20 +275,33 @@ button {
 }
 
 .pog-app--immersive .pog-top-bar__stack {
-  align-items: center;
-  width: 100%;
-  padding: clamp(1.1rem, 2.8dvh, 1.75rem) 1rem 0;
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  z-index: 60;
+  width: min(32vw, 280px);
+  align-items: stretch;
+  padding: 0;
   gap: 0.5rem;
 }
 
 .pog-app--immersive .pog-timer-slot {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  width: 100%;
   padding: 0;
 }
 
+.pog-app--immersive .pog-timer-slot .lo-timer,
+.pog-app--immersive .pog-top-bar__stack .pog-mode-toggle {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
 .pog-app--immersive .pog-timer-slot .lo-timer {
-  min-width: min(92vw, 280px);
+  min-width: 0;
+  max-width: none;
 }
 
 /* Mobile: logo top-left, timer top-right */
