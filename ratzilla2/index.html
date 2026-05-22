@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RATZILLA — Underground Transmission</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex" />
+    <meta
+      name="description"
+      content="An underground transmission from the tunnels below."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="rz2-body">
+    <div class="rz2-stage" id="rz2Stage">
+      <div class="rz2-curtain" id="rz2Curtain" aria-hidden="true"></div>
+
+      <!-- Background tunnel -->
+      <div class="rz2-bg" aria-hidden="true">
+        <img
+          class="rz2-bg__img"
+          src="assets/RatzillaTunelBG.png"
+          alt=""
+          width="1920"
+          height="1920"
+          draggable="false"
+          decoding="async"
+        />
+        <div class="rz2-bg__depth"></div>
+        <div class="rz2-bg__tunnel-glow"></div>
+      </div>
+
+      <!-- Flickering sewer lights -->
+      <div class="rz2-lights" aria-hidden="true">
+        <div class="rz2-lights__red rz2-lights__red--a"></div>
+        <div class="rz2-lights__red rz2-lights__red--b"></div>
+        <div class="rz2-lights__dim rz2-lights__dim--a"></div>
+        <div class="rz2-lights__dim rz2-lights__dim--b"></div>
+        <div class="rz2-lights__tunnel"></div>
+      </div>
+
+      <!-- Atmospheric layers -->
+      <div class="rz2-fog rz2-fog--1" aria-hidden="true"></div>
+      <div class="rz2-fog rz2-fog--2" aria-hidden="true"></div>
+      <div class="rz2-fog rz2-fog--3" aria-hidden="true"></div>
+      <div class="rz2-smoke" aria-hidden="true"></div>
+
+      <!-- Rat running through tunnel (white-keyed video) -->
+      <div class="rz2-rat-run" id="rz2RatRun" aria-hidden="true">
+        <div class="rz2-rat-run__track" id="rz2RatTrack"></div>
+        <canvas
+          id="rz2RatSource"
+          class="rz2-rat-run__source"
+          aria-hidden="true"
+        ></canvas>
+        <video
+          id="rz2RatVideo"
+          class="rz2-rat-run__video"
+          playsinline
+          muted
+          loop
+          preload="auto"
+        ></video>
+      </div>
+
+      <!-- Top: logo (restore split: R2.PNG + ATZILLA2.PNG — see git/history) -->
+      <header class="rz2-top">
+        <div class="rz2-wordmark rz2-wordmark--full" aria-label="RATZILLA">
+          <img
+            class="rz2-logo"
+            src="assets/RATZILLA2.PNG"
+            alt="RATZILLA"
+            width="480"
+            height="96"
+            draggable="false"
+          />
+          <!--
+          <div class="rz2-wordmark__r-slot" aria-hidden="true">
+            <img class="rz2-wordmark__r" src="assets/R2.PNG" alt="" width="120" height="120" draggable="false" />
+          </div>
+          <img class="rz2-wordmark__text" src="assets/ATZILLA2.PNG" alt="ATZILLA" width="520" height="120" draggable="false" />
+          -->
+        </div>
+      </header>
+
+      <!-- Center: R2 (same horizontal axis as logo + COMING SOON) -->
+      <div class="rz2-mid-r" aria-hidden="true">
+        <img
+          class="rz2-mid-r__img"
+          src="assets/R2.PNG"
+          alt=""
+          width="420"
+          height="420"
+          draggable="false"
+        />
+      </div>
+
+      <!-- Bottom: transmission -->
+      <footer class="rz2-bottom">
+        <p class="rz2-soon" aria-live="polite">
+          <span class="rz2-soon__text" id="rz2Soon"></span
+          ><span class="rz2-cursor" id="rz2Cursor" aria-hidden="true"></span>
+        </p>
+        <img
+          class="rz2-skull"
+          src="assets/RatLogo.png"
+          alt=""
+          width="80"
+          height="80"
+          draggable="false"
+          aria-hidden="true"
+        />
+      </footer>
+
+      <!-- FX overlays -->
+      <div class="rz2-fx" aria-hidden="true">
+        <div class="rz2-fx__vignette"></div>
+        <div class="rz2-fx__grain"></div>
+        <div class="rz2-fx__scan"></div>
+        <div class="rz2-fx__chroma"></div>
+        <div class="rz2-fx__flicker" id="rz2Flicker"></div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
