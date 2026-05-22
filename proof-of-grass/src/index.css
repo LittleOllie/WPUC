@@ -351,8 +351,8 @@ button {
   position: static !important;
   justify-self: start;
   align-self: start;
-  width: clamp(72px, 38%, 120px) !important;
-  max-width: 46%;
+  width: clamp(144px, 76%, 240px) !important;
+  max-width: 100%;
   height: auto;
   opacity: 0.94;
 }

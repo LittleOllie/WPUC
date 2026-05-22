@@ -160,8 +160,17 @@ export default function LayeredGrass({
     };
     motionMq.addEventListener("change", onMotionChange);
 
+    const refreshLawnHitRect = () => {
+      lawnHitRectRef.current = measureLawnHitRect(zone);
+    };
+
     const applyPointer = (clientX, clientY) => {
-      if (!document.hasFocus() || !isPointerInViewport(clientX, clientY)) {
+      if (document.visibilityState !== "visible") {
+        clearPointer();
+        return;
+      }
+
+      if (!isPointerInViewport(clientX, clientY)) {
         clearPointer();
         return;
       }
@@ -169,8 +178,7 @@ export default function LayeredGrass({
       const p = pointerRef.current;
       const tileNodes = tileElsRef.current;
       const masks = layerMasksRef.current;
-      const lawnRect =
-        lawnHitRectRef.current ?? measureLawnHitRect(zone);
+      const lawnRect = lawnHitRectRef.current ?? measureLawnHitRect(zone);
 
       if (!lawnRect || lawnRect.width < 1 || lawnRect.height < 1) return;
 
@@ -462,6 +470,12 @@ export default function LayeredGrass({
       applyPointer(e.clientX, e.clientY);
     };
 
+    const onTouch = (e) => {
+      const t = e.touches?.[0] ?? e.changedTouches?.[0];
+      if (!t) return;
+      applyPointer(t.clientX, t.clientY);
+    };
+
     const onPointerLeaveWindow = (e) => {
       if (e.relatedTarget != null) return;
       clearPointer();
@@ -470,7 +484,19 @@ export default function LayeredGrass({
     const onWindowBlur = () => clearPointer();
 
     const onVisibilityChange = () => {
-      if (document.visibilityState !== "visible") clearPointer();
+      if (document.visibilityState !== "visible") {
+        clearPointer();
+        return;
+      }
+      requestAnimationFrame(refreshLawnHitRect);
+    };
+
+    const onPageShow = () => {
+      requestAnimationFrame(refreshLawnHitRect);
+    };
+
+    const onWindowFocus = () => {
+      requestAnimationFrame(refreshLawnHitRect);
     };
 
     document.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -479,7 +505,13 @@ export default function LayeredGrass({
     zone.addEventListener("pointerdown", onPointerDown, { passive: true });
     document.addEventListener("pointerup", onPointerUp, { passive: true });
     document.addEventListener("pointercancel", onPointerUp, { passive: true });
+    zone.addEventListener("touchstart", onTouch, { passive: true });
+    zone.addEventListener("touchmove", onTouch, { passive: true });
+    zone.addEventListener("touchend", onTouch, { passive: true });
+    zone.addEventListener("touchcancel", onTouch, { passive: true });
     window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("focus", onWindowFocus);
+    window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
@@ -504,7 +536,13 @@ export default function LayeredGrass({
       document.removeEventListener("pointerleave", onPointerLeaveWindow);
       document.removeEventListener("pointerup", onPointerUp);
       document.removeEventListener("pointercancel", onPointerUp);
+      zone.removeEventListener("touchstart", onTouch);
+      zone.removeEventListener("touchmove", onTouch);
+      zone.removeEventListener("touchend", onTouch);
+      zone.removeEventListener("touchcancel", onTouch);
       window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("focus", onWindowFocus);
+      window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [windMultiplier, onGrassMovingChange, portraitMode]);
