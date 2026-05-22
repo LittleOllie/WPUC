@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { ASSETS } from "../lib/assets.js";
 import CloudLayer from "./CloudLayer.jsx";
-
 /**
  * Layer stack (back → front):
  * Sky → weather → clouds → llama → fence (grass is a sibling in App)
