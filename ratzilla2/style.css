@@ -507,18 +507,55 @@ body {
   line-height: 0;
   text-align: center;
   opacity: 0;
+  perspective: 880px;
+  transform-style: preserve-3d;
   animation: rz2-mid-r-in 2.2s cubic-bezier(0.16, 1, 0.3, 1) 1.8s forwards;
   pointer-events: none;
+}
+
+/* Y-axis coin spin: front + back on opposite sides of the axis */
+.rz2-mid-r__spinner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-origin: center center;
+  animation: rz2-r2-axis-spin 10s linear 4s infinite;
+  will-change: transform;
 }
 
 .rz2-mid-r__img {
   display: block;
   width: 100%;
   height: auto;
-  margin: 0 auto;
   object-fit: contain;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   filter: drop-shadow(0 0 20px rgba(255, 40, 35, 0.4))
     drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+}
+
+.rz2-mid-r__img--front {
+  transform: rotateY(0deg) translateZ(2px);
+}
+
+.rz2-mid-r__img--back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  /* Opposite side of axis; scaleX(-1) = mirrored R when spin passes 180° */
+  transform: rotateY(180deg) translateZ(2px) scaleX(-1);
+}
+
+@keyframes rz2-r2-axis-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
 }
 
 @keyframes rz2-mid-r-in {
@@ -905,6 +942,7 @@ body {
   .rz2-lights__dim,
   .rz2-lights__tunnel,
   .rz2-mid-r,
+  .rz2-mid-r__spinner,
   .rz2-wordmark__r,
   .rz2-wordmark__r-slot,
   .rz2-skull,
