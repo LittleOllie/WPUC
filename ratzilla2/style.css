@@ -45,27 +45,31 @@ body {
   opacity: 0;
 }
 
-/* ═══ Tunnel background ═══ */
-.rz2-bg {
+/* ═══ Tunnel scene (image + track share one proportional frame) ═══ */
+.rz2-scene {
   position: absolute;
-  inset: -2%;
+  inset: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
   opacity: 0;
   transition: opacity 2.8s ease 0.6s;
 }
 
-.rz2-stage.is-live .rz2-bg {
+.rz2-stage.is-live .rz2-scene {
   opacity: 1;
 }
 
-.rz2-bg__img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  filter: brightness(0.48) contrast(1.1) saturate(0.82);
+/* Square frame sized like object-fit:cover on 1:1 art — % = image coords */
+.rz2-scene__frame {
+  --rz2-art-aspect: 1;
+  position: relative;
+  aspect-ratio: var(--rz2-art-aspect);
+  width: max(100vw, 100dvh);
+  height: max(100vw, 100dvh);
+  flex-shrink: 0;
   transform: translate(
     calc(var(--rz2-px) * -0.8%),
     calc(var(--rz2-py) * -0.5%)
@@ -74,9 +78,20 @@ body {
   will-change: transform;
 }
 
-.rz2-bg__depth {
+.rz2-scene__img {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  filter: brightness(0.48) contrast(1.1) saturate(0.82);
+}
+
+.rz2-scene__depth {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   background:
     radial-gradient(
       ellipse 80% 55% at 50% 50%,
@@ -94,12 +109,13 @@ body {
   pointer-events: none;
 }
 
-.rz2-bg__tunnel-glow {
+.rz2-scene__tunnel-glow {
   position: absolute;
+  z-index: 3;
   left: 50%;
-  top: 46%;
-  width: min(92vw, 720px);
-  height: 18vh;
+  top: 48%;
+  width: 88%;
+  height: 14%;
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse 100% 100% at 50% 50%,
@@ -109,11 +125,11 @@ body {
   pointer-events: none;
 }
 
-/* ═══ Flickering lights ═══ */
+/* ═══ Flickering lights (inside scene frame) ═══ */
 .rz2-lights {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
   opacity: 0;
   transition: opacity 2s ease 1.2s;
@@ -150,6 +166,43 @@ body {
   animation-delay: -2.1s;
 }
 
+/* Right tunnel wall — red warning lights */
+.rz2-lights__red--r1 {
+  right: 4%;
+  top: 41%;
+  width: clamp(44px, 9vw, 82px);
+  height: clamp(52px, 11vh, 96px);
+  border-radius: 42% 58% 48% 52%;
+  background: rgba(255, 42, 28, 0.3);
+  filter: blur(22px);
+  animation-duration: 3.2s;
+  animation-delay: -0.5s;
+}
+
+.rz2-lights__red--r2 {
+  right: 2.5%;
+  top: 49%;
+  width: clamp(52px, 11vw, 98px);
+  height: clamp(48px, 10vh, 88px);
+  border-radius: 50% 45% 55% 50%;
+  background: rgba(255, 32, 24, 0.34);
+  filter: blur(24px);
+  animation-duration: 4.6s;
+  animation-delay: -1.8s;
+}
+
+.rz2-lights__red--r3 {
+  right: 5%;
+  top: 56%;
+  width: clamp(40px, 8vw, 76px);
+  height: clamp(46px, 9vh, 84px);
+  border-radius: 48% 52% 44% 56%;
+  background: rgba(220, 28, 32, 0.26);
+  filter: blur(20px);
+  animation-duration: 5.1s;
+  animation-delay: -3.4s;
+}
+
 .rz2-lights__dim {
   position: absolute;
   border-radius: 50%;
@@ -179,9 +232,9 @@ body {
 .rz2-lights__tunnel {
   position: absolute;
   left: 50%;
-  top: 46%;
-  width: min(88vw, 680px);
-  height: 16vh;
+  top: 48%;
+  width: 86%;
+  height: 14%;
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse 100% 100% at 50% 50%,
@@ -350,23 +403,27 @@ body {
   }
 }
 
-/* ═══ Tunnel rat (white-keyed video) ═══ */
-.rz2-rat-run {
+/* ═══ Tunnel track — invisible floor path over tunnel opening ═══ */
+.rz2-tunnel-track {
   position: absolute;
-  z-index: 8;
-  inset: 0;
+  z-index: 6;
+  left: 5.5%;
+  right: 5.5%;
+  top: 53.8%;
+  height: 9.5%;
+  overflow: visible;
   pointer-events: none;
   opacity: 0;
   transition: opacity 1.6s ease 3s;
 }
 
-.rz2-stage.is-live .rz2-rat-run,
-.rz2-rat-run.is-ready {
+.rz2-stage.is-live .rz2-tunnel-track.is-ready,
+.rz2-tunnel-track.is-ready {
   opacity: 1;
 }
 
-.rz2-rat-run__video,
-.rz2-rat-run__source {
+.rz2-tunnel-track__video,
+.rz2-tunnel-track__source {
   position: absolute;
   width: 0;
   height: 0;
@@ -375,40 +432,33 @@ body {
   overflow: hidden;
 }
 
-.rz2-rat-run__track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 56%;
-  height: 11vh;
-  overflow: visible;
-}
-
 .rz2-rat-run__mover {
   position: absolute;
-  top: 100%;
-  left: -20%;
-  width: clamp(79px, 17.6vw, 154px);
-  transform: translateY(-100%);
+  bottom: 0;
+  left: -48%;
+  width: 11.5%;
+  transform-origin: 50% 100%;
+  transform: translateY(-46%) scaleX(1);
   opacity: 0;
   will-change: left, opacity, transform;
 }
 
 .rz2-rat-run__mover.is-ltr {
-  transform: translateY(-100%) scaleX(1);
+  transform: translateY(-46%) scaleX(1);
 }
 
 .rz2-rat-run__mover.is-rtl {
-  transform: translateY(-100%) scaleX(-1);
+  transform: translateY(-46%) scaleX(-1);
 }
 
 .rz2-rat-run__canvas {
   display: block;
   width: 100%;
   height: auto;
-  filter: brightness(0.38) contrast(1.45) saturate(0.15)
-    drop-shadow(0 6px 14px rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 6px rgba(0, 0, 0, 0.6));
+  vertical-align: bottom;
+  filter: brightness(0.2) contrast(1.62) saturate(0.08)
+    drop-shadow(0 0.4% 0.9% rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 0.35% rgba(0, 0, 0, 0.82));
 }
 
 /* ═══ Top wordmark ═══ */
@@ -596,7 +646,16 @@ body {
   }
 }
 
+.rz2-rat-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.1rem;
+}
+
 .rz2-skull {
+  display: block;
   width: clamp(92px, 23vw, 148px);
   height: auto;
   opacity: 0;
@@ -609,6 +668,89 @@ body {
 @keyframes rz2-skull-in {
   to {
     opacity: 0.55;
+  }
+}
+
+.rz2-press-sound {
+  margin: 0;
+  padding: 0.28rem 0.5rem 0.32rem;
+  border: 1px solid rgba(100, 98, 102, 0.45);
+  border-radius: 2px;
+  background: rgba(8, 6, 8, 0.65);
+  color: rgba(175, 168, 164, 0.82);
+  font: inherit;
+  font-size: clamp(0.6rem, 2.5vw, 0.72rem);
+  letter-spacing: 0.06em;
+  text-transform: none;
+  line-height: 1.2;
+  cursor: pointer;
+  opacity: 0;
+  visibility: visible;
+  animation: rz2-press-in 1.6s ease 5.6s forwards;
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Off — stays visible, neutral (not red) */
+.rz2-press-sound.is-muted {
+  border-color: rgba(100, 98, 102, 0.45);
+  color: rgba(175, 168, 164, 0.82);
+  background: rgba(8, 6, 8, 0.65);
+  box-shadow: none;
+  opacity: 0.92;
+  animation: none;
+}
+
+.rz2-stage.is-live .rz2-press-sound.is-muted {
+  opacity: 0.92;
+}
+
+.rz2-press-sound.is-muted:hover {
+  border-color: rgba(140, 130, 132, 0.55);
+  color: rgba(210, 200, 196, 0.92);
+}
+
+.rz2-press-sound:focus-visible {
+  outline: 1px solid rgba(200, 60, 50, 0.7);
+  outline-offset: 2px;
+}
+
+/* On — red */
+.rz2-press-sound.is-on {
+  border-color: rgba(235, 65, 52, 0.95);
+  color: rgba(255, 110, 95, 1);
+  background: rgba(52, 10, 10, 0.82);
+  box-shadow: 0 0 14px rgba(220, 45, 38, 0.5);
+  opacity: 0.95;
+  animation: rz2-press-pulse 2.4s ease-in-out infinite;
+}
+
+.rz2-press-sound.is-on:hover {
+  border-color: rgba(255, 85, 70, 1);
+  color: rgba(255, 150, 130, 1);
+}
+
+@keyframes rz2-press-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.92;
+  }
+}
+
+@keyframes rz2-press-pulse {
+  0%,
+  100% {
+    opacity: 0.95;
+    box-shadow: 0 0 12px rgba(220, 45, 38, 0.45);
+  }
+  50% {
+    opacity: 0.98;
+    box-shadow: 0 0 18px rgba(240, 55, 42, 0.6);
   }
 }
 
@@ -720,7 +862,8 @@ body {
 
 /* ═══ Reduced motion ═══ */
 @media (prefers-reduced-motion: reduce) {
-  .rz2-bg__img,
+  .rz2-scene__img,
+  .rz2-scene__frame,
   .rz2-fog,
   .rz2-lights__red,
   .rz2-lights__dim,
@@ -729,28 +872,51 @@ body {
   .rz2-wordmark__r,
   .rz2-wordmark__r-slot,
   .rz2-skull,
+  .rz2-press-sound,
   .rz2-fx__grain,
+  .rz2-fx__scan,
+  .rz2-fx__chroma {
+    animation: none !important;
+  }
+
+  .rz2-press-sound {
+    opacity: 0.92;
+  }
 }
 
 /* ═══ Mobile ═══ */
 @media (max-width: 600px) {
-  .rz2-bg__img {
+  .rz2-scene__img {
     object-position: center 44%;
   }
 
-  .rz2-bg__tunnel-glow {
-    top: 54%;
-    height: 14vh;
+  .rz2-scene__tunnel-glow {
+    top: 50%;
+    height: 15%;
   }
 
-  .rz2-rat-run__track {
-    top: 55%;
-    height: 13vh;
-    min-height: 76px;
+  .rz2-tunnel-track {
+    top: 52.5%;
+    height: 10.5%;
+  }
+
+  .rz2-lights__red--r1 {
+    right: 3%;
+    top: 43%;
+  }
+
+  .rz2-lights__red--r2 {
+    right: 1.5%;
+    top: 51%;
+  }
+
+  .rz2-lights__red--r3 {
+    right: 3.5%;
+    top: 58%;
   }
 
   .rz2-rat-run__mover {
-    width: clamp(68px, 18vw, 132px);
+    width: 12.5%;
   }
 
   .rz2-top {
@@ -782,19 +948,10 @@ body {
   }
 }
 
-@media (max-width: 600px) and (max-aspect-ratio: 10/16) {
-  .rz2-rat-run__track {
-    top: 53%;
-    height: 14vh;
-    min-height: 82px;
-  }
-}
-
 @media (max-height: 520px) {
-  .rz2-rat-run__track {
-    top: 52%;
-    height: 15vh;
-    min-height: 70px;
+  .rz2-tunnel-track {
+    top: 52.2%;
+    height: 11%;
   }
 
   .rz2-top {
