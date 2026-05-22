@@ -246,6 +246,17 @@
     if (document.hidden) stopHum();
   });
 
+  function lockLogoVisible() {
+    logo?.classList.add("is-revealed");
+  }
+
+  logo?.addEventListener("animationend", (e) => {
+    if (e.animationName === "rz-logo-reveal") lockLogoVisible();
+  });
+
+  /* Fallback if reveal animation is skipped (reduced motion, etc.) */
+  setTimeout(lockLogoVisible, 6800);
+
   cinematicBoot();
   scheduleAmbient();
 })();

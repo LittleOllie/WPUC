@@ -587,7 +587,7 @@ img {
   position: relative;
   display: inline-block;
   width: min(94vw, 640px);
-  margin: 0 auto 1.25rem;
+  margin: 0 auto 0.65rem;
 }
 
 .rz-rat-wrap {
@@ -774,8 +774,16 @@ img {
     rz-logo-pulse 9s ease-in-out 6.5s infinite;
 }
 
-.rz-logo.is-glitch {
-  animation: rz-logo-glitch 0.28s steps(2) 2;
+.rz-logo.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  animation: rz-logo-pulse 9s ease-in-out 6.5s infinite;
+}
+
+.rz-logo.is-revealed.is-glitch {
+  animation:
+    rz-logo-pulse 9s ease-in-out 6.5s infinite,
+    rz-logo-glitch 0.28s steps(2) 2;
 }
 
 @keyframes rz-logo-reveal {
@@ -804,12 +812,8 @@ img {
 }
 
 @keyframes rz-logo-glitch {
-  0% {
-    transform: translate(0);
-  }
   50% {
     transform: translate(2px, -1px);
-    opacity: 0.85;
   }
 }
 
@@ -1189,6 +1193,6 @@ img {
   }
 
   .rz-logo-stack {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.3rem;
   }
 }
