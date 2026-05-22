@@ -14,6 +14,8 @@
   const flicker = document.getElementById("rz2Flicker");
   const pressSoundBtn = document.getElementById("rz2PressSound");
   const pressSoundLabel = pressSoundBtn?.querySelector(".rz2-press-sound__label");
+  const skullBtn = document.getElementById("rz2SkullBtn");
+  const ratMark = document.getElementById("rz2RatMark");
 
   const tunnelTrack = document.getElementById("rz2TunnelTrack");
   const ratVideo = document.getElementById("rz2RatVideo");
@@ -411,6 +413,8 @@
     pressSoundBtn?.classList.toggle("is-muted", staticMuted);
     pressSoundBtn?.classList.toggle("is-on", enabled);
     pressSoundBtn?.setAttribute("aria-pressed", enabled ? "true" : "false");
+    ratMark?.classList.toggle("is-sound-on", enabled);
+    skullBtn?.setAttribute("aria-pressed", enabled ? "true" : "false");
     if (pressSoundLabel) {
       pressSoundLabel.textContent = "Press the Rat";
     }
@@ -437,6 +441,11 @@
   }
 
   pressSoundBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePressSound();
+  });
+
+  skullBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     togglePressSound();
   });

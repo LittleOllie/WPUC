@@ -654,6 +654,22 @@ body {
   margin-top: 0.1rem;
 }
 
+.rz2-skull-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rz2-skull-btn:focus-visible {
+  outline: 1px solid rgba(200, 60, 50, 0.65);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
 .rz2-skull {
   display: block;
   width: clamp(92px, 23vw, 148px);
@@ -663,6 +679,26 @@ body {
   animation:
     rz2-skull-in 2s ease 5.2s forwards,
     rz2-skull-pulse 7s ease-in-out 7.5s infinite;
+  transition: filter 0.3s ease;
+  pointer-events: none;
+}
+
+.rz2-rat-mark.is-sound-on .rz2-skull {
+  animation: rz2-skull-glow 2.2s ease-in-out infinite;
+}
+
+@keyframes rz2-skull-glow {
+  0%,
+  100% {
+    opacity: 0.72;
+    filter: drop-shadow(0 0 10px rgba(255, 45, 38, 0.55))
+      drop-shadow(0 0 22px rgba(255, 35, 28, 0.45));
+  }
+  50% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 16px rgba(255, 60, 48, 0.85))
+      drop-shadow(0 0 32px rgba(255, 40, 32, 0.7));
+  }
 }
 
 @keyframes rz2-skull-in {
@@ -872,6 +908,7 @@ body {
   .rz2-wordmark__r,
   .rz2-wordmark__r-slot,
   .rz2-skull,
+  .rz2-rat-mark.is-sound-on .rz2-skull,
   .rz2-press-sound,
   .rz2-fx__grain,
   .rz2-fx__scan,
@@ -881,6 +918,13 @@ body {
 
   .rz2-press-sound {
     opacity: 0.92;
+  }
+
+  .rz2-rat-mark.is-sound-on .rz2-skull {
+    animation: none !important;
+    opacity: 0.82;
+    filter: drop-shadow(0 0 12px rgba(255, 50, 42, 0.75))
+      drop-shadow(0 0 24px rgba(255, 38, 30, 0.55));
   }
 }
 
@@ -920,7 +964,7 @@ body {
   }
 
   .rz2-top {
-    top: clamp(1.4rem, 4.2vh, 2.6rem);
+    top: clamp(1.65rem, 5vh, 3rem);
   }
 
   .rz2-bottom {
@@ -928,8 +972,9 @@ body {
   }
 
   .rz2-logo {
-    width: min(90vw, 540px);
-    max-height: clamp(65px, 21vw, 108px);
+    width: min(94vw, 600px);
+    max-height: clamp(74px, 24vw, 124px);
+    transform: translateY(0.35rem);
   }
 
   .rz2-mid-r {
