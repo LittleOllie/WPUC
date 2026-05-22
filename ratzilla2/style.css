@@ -735,7 +735,26 @@ body {
 /* ═══ Mobile ═══ */
 @media (max-width: 600px) {
   .rz2-bg__img {
-    object-position: center 46%;
+    object-position: center 44%;
+  }
+
+  .rz2-bg__tunnel-glow {
+    top: 54%;
+    height: 14vh;
+  }
+
+  .rz2-rat-run__track {
+    top: 55%;
+    height: 13vh;
+    min-height: 76px;
+  }
+
+  .rz2-rat-run__mover {
+    width: clamp(68px, 18vw, 132px);
+  }
+
+  .rz2-top {
+    top: clamp(1.4rem, 4.2vh, 2.6rem);
   }
 
   .rz2-bottom {
@@ -743,12 +762,12 @@ body {
   }
 
   .rz2-logo {
-    width: min(84vw, 450px);
-    max-height: clamp(54px, 17.5vw, 90px);
+    width: min(90vw, 540px);
+    max-height: clamp(65px, 21vw, 108px);
   }
 
   .rz2-mid-r {
-    width: clamp(161px, 50vw, 332px);
+    width: clamp(193px, 60vw, 398px);
   }
 
   .rz2-wordmark__r-slot {
@@ -763,7 +782,25 @@ body {
   }
 }
 
+@media (max-width: 600px) and (max-aspect-ratio: 10/16) {
+  .rz2-rat-run__track {
+    top: 53%;
+    height: 14vh;
+    min-height: 82px;
+  }
+}
+
 @media (max-height: 520px) {
+  .rz2-rat-run__track {
+    top: 52%;
+    height: 15vh;
+    min-height: 70px;
+  }
+
+  .rz2-top {
+    top: clamp(0.85rem, 3vh, 1.6rem);
+  }
+
   .rz2-bottom {
     bottom: 6%;
     gap: 0.35rem;
