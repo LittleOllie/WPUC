@@ -641,9 +641,9 @@ body {
 
 .rz2-soon {
   margin: 0;
-  min-height: 1.4em;
-  font-size: clamp(0.95rem, 3.6vw, 1.25rem);
-  letter-spacing: 0.32em;
+  min-height: 1.5em;
+  font-size: clamp(0.875rem, 3.25vw, 1.15rem);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(220, 214, 204, 0.88);
   text-shadow:

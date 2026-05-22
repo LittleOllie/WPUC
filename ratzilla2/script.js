@@ -4,7 +4,23 @@
 (function () {
   "use strict";
 
-  const TEXT = "COMING SOON";
+  /* Short transmission story — plays in order, then loops */
+  const STORY = [
+    "SIGNAL LOST...",
+    "STATIC ON THE LINE.",
+    "CAN YOU HEAR THAT?",
+    "SOMETHING IN THE TUNNEL.",
+    "FOOTSTEPS. THEN SILENCE.",
+    "RED LIGHT FLICKERS.",
+    "THEY ARE RUNNING NOW.",
+    "THE INFECTION IS SPREADING.",
+    "CLOSER. KEEP WATCHING.",
+    "DO NOT LOOK DOWN.",
+    "IT KNOWS YOU'RE LISTENING.",
+    "THE CITY BELOW IS WAKING.",
+    "RATZILLA IS NEAR.",
+    "COMING SOON.",
+  ];
 
   const stage = document.getElementById("rz2Stage");
   const curtain = document.getElementById("rz2Curtain");
@@ -23,6 +39,7 @@
 
   if (!stage || !soonEl) return;
 
+  let phraseIdx = -1;
   let typingStop = false;
   let ratRaf = 0;
   let ratCrossingTimer = 0;
@@ -450,23 +467,50 @@
     togglePressSound();
   });
 
-  function textGlitch() {
-    if (Math.random() > 0.35) return;
-    soonWrap?.classList.add("is-glitch");
-    setTimeout(() => soonWrap?.classList.remove("is-glitch"), 220);
+  function nextStoryLine() {
+    phraseIdx = (phraseIdx + 1) % STORY.length;
+    return STORY[phraseIdx];
   }
 
-  async function typeComingSoon() {
-    cursorEl?.classList.remove("is-off");
-    for (let i = 0; i <= TEXT.length; i++) {
+  function textGlitch() {
+    if (Math.random() > 0.28) return;
+    soonWrap?.classList.add("is-glitch");
+    setTimeout(() => soonWrap?.classList.remove("is-glitch"), 200);
+  }
+
+  async function erase(text) {
+    for (let i = text.length; i >= 0; i--) {
       if (typingStop) return;
-      soonEl.textContent = TEXT.slice(0, i);
-      let wait = rand(95, 180);
-      const ch = TEXT[i - 1] || "";
-      if (ch === " ") wait = rand(120, 220);
-      if (Math.random() < 0.06) wait += rand(280, 520);
-      if (Math.random() < 0.05) textGlitch();
+      soonEl.textContent = text.slice(0, i);
+      await delay(rand(24, 52));
+      if (Math.random() < 0.04) textGlitch();
+    }
+  }
+
+  async function type(text) {
+    cursorEl?.classList.remove("is-off");
+    for (let i = 0; i <= text.length; i++) {
+      if (typingStop) return;
+      soonEl.textContent = text.slice(0, i);
+      const ch = text[i - 1] || "";
+      let wait = rand(48, 105);
+      if (ch === "." || ch === "/") wait = rand(220, 480);
+      else if (ch === " ") wait = rand(70, 130);
+      if (Math.random() < 0.05) wait += rand(250, 600);
+      if (Math.random() < 0.07) textGlitch();
       await delay(wait);
+    }
+    await delay(rand(1600, 3000));
+  }
+
+  async function typeLoop() {
+    while (!typingStop) {
+      const line = nextStoryLine();
+      await type(line);
+      if (typingStop) break;
+      await delay(rand(350, 800));
+      await erase(line);
+      await delay(rand(600, 1200));
     }
   }
 
@@ -478,7 +522,7 @@
       stage.classList.add("is-live");
     }, 200);
 
-    setTimeout(() => typeComingSoon(), 4800);
+    setTimeout(() => typeLoop(), 4800);
   }
 
   function scheduleAmbient() {
