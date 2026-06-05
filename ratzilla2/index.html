@@ -1,8 +1,7 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>RATZILLA — Underground Transmission</title>
+    <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
@@ -10,7 +9,7 @@
     <meta name="robots" content="noindex" />
     <meta
       name="description"
-      content="An underground transmission from the tunnels below."
+      content="RATZILLA underground transmission — Infection Station."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,150 +17,10 @@
       href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
+    <title>RATZILLA — Underground Transmission</title>
   </head>
-  <body class="rz2-body">
-    <div class="rz2-stage" id="rz2Stage">
-      <div class="rz2-curtain" id="rz2Curtain" aria-hidden="true"></div>
-
-      <!-- Tunnel scene: BG + track share one coordinate space (square frame = image) -->
-      <div class="rz2-scene" aria-hidden="true">
-        <div class="rz2-scene__frame" id="rz2SceneFrame">
-          <img
-            class="rz2-scene__img"
-            src="assets/RatzillaTunelBG.png"
-            alt=""
-            width="1920"
-            height="1920"
-            draggable="false"
-            decoding="async"
-          />
-          <div class="rz2-scene__depth"></div>
-          <div class="rz2-scene__tunnel-glow"></div>
-
-          <div class="rz2-lights" aria-hidden="true">
-            <div class="rz2-lights__red rz2-lights__red--a"></div>
-            <div class="rz2-lights__red rz2-lights__red--b"></div>
-            <div class="rz2-lights__red rz2-lights__red--r1"></div>
-            <div class="rz2-lights__red rz2-lights__red--r2"></div>
-            <div class="rz2-lights__red rz2-lights__red--r3"></div>
-            <div class="rz2-lights__dim rz2-lights__dim--a"></div>
-            <div class="rz2-lights__dim rz2-lights__dim--b"></div>
-            <div class="rz2-lights__tunnel"></div>
-          </div>
-
-          <!-- Invisible path over tunnel floor — rats animate only here -->
-          <div class="rz2-tunnel-track" id="rz2TunnelTrack" aria-hidden="true">
-            <canvas
-              id="rz2RatSource"
-              class="rz2-tunnel-track__source"
-              aria-hidden="true"
-            ></canvas>
-            <video
-              id="rz2RatVideo"
-              class="rz2-tunnel-track__video"
-              playsinline
-              muted
-              loop
-              preload="auto"
-            ></video>
-          </div>
-        </div>
-      </div>
-
-      <!-- Atmospheric layers (viewport-wide) -->
-      <div class="rz2-fog rz2-fog--1" aria-hidden="true"></div>
-      <div class="rz2-fog rz2-fog--2" aria-hidden="true"></div>
-      <div class="rz2-fog rz2-fog--3" aria-hidden="true"></div>
-      <div class="rz2-smoke" aria-hidden="true"></div>
-
-      <!-- Top: logo (restore split: R2.PNG + ATZILLA2.PNG — see git/history) -->
-      <header class="rz2-top">
-        <div class="rz2-wordmark rz2-wordmark--full" aria-label="RATZILLA">
-          <img
-            class="rz2-logo"
-            src="assets/RATZILLA2.PNG"
-            alt="RATZILLA"
-            width="480"
-            height="96"
-            draggable="false"
-          />
-          <!--
-          <div class="rz2-wordmark__r-slot" aria-hidden="true">
-            <img class="rz2-wordmark__r" src="assets/R2.PNG" alt="" width="120" height="120" draggable="false" />
-          </div>
-          <img class="rz2-wordmark__text" src="assets/ATZILLA2.PNG" alt="ATZILLA" width="520" height="120" draggable="false" />
-          -->
-        </div>
-      </header>
-
-      <!-- Center: R2 (same horizontal axis as logo + COMING SOON) -->
-      <div class="rz2-mid-r" aria-hidden="true">
-        <div class="rz2-mid-r__spinner">
-          <img
-            class="rz2-mid-r__img rz2-mid-r__img--front"
-            src="assets/R2.PNG"
-            alt=""
-            width="420"
-            height="420"
-            draggable="false"
-          />
-          <img
-            class="rz2-mid-r__img rz2-mid-r__img--back"
-            src="assets/R2.PNG"
-            alt=""
-            width="420"
-            height="420"
-            draggable="false"
-            aria-hidden="true"
-          />
-        </div>
-      </div>
-
-      <!-- Bottom: transmission -->
-      <footer class="rz2-bottom">
-        <p class="rz2-soon" aria-live="polite">
-          <span class="rz2-soon__text" id="rz2Soon"></span
-          ><span class="rz2-cursor" id="rz2Cursor" aria-hidden="true"></span>
-        </p>
-        <div class="rz2-rat-mark" id="rz2RatMark">
-          <button
-            type="button"
-            class="rz2-skull-btn"
-            id="rz2SkullBtn"
-            aria-label="Press the rat to toggle TV static sound"
-          >
-            <img
-              class="rz2-skull"
-              src="assets/RatLogo.png"
-              alt=""
-              width="80"
-              height="80"
-              draggable="false"
-            />
-          </button>
-          <button
-            type="button"
-            class="rz2-press-sound is-muted"
-            id="rz2PressSound"
-            aria-label="Press the Rat to toggle TV static sound"
-            aria-pressed="false"
-          >
-            <span class="rz2-press-sound__label">Press the Rat</span>
-          </button>
-        </div>
-      </footer>
-
-      <!-- FX overlays -->
-      <div class="rz2-fx" aria-hidden="true">
-        <div class="rz2-fx__vignette"></div>
-        <div class="rz2-fx__grain"></div>
-        <div class="rz2-fx__scan"></div>
-        <div class="rz2-fx__chroma"></div>
-        <div class="rz2-fx__flicker" id="rz2Flicker"></div>
-      </div>
-    </div>
-
-    <script src="script.js"></script>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
