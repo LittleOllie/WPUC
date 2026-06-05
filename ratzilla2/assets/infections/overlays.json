@@ -1,0 +1,9 @@
+[
+  {
+    "id": "ratzilla",
+    "name": "Ratzilla Infection",
+    "filename": "ratzillainfected.png",
+    "underlay": "infectedunder.jpg",
+    "default": true
+  }
+]

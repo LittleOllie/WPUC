@@ -180,6 +180,11 @@ export default function InfectionStation() {
 
     setError(null);
     setShareNotice(null);
+    if (activeOverlay) {
+      const preload = new Image();
+      preload.src = getOverlayUrl(activeOverlay.filename);
+    }
+
     setPhase("warning");
     setStatusMessage("UNKNOWN PATHOGEN DETECTED");
     await wait(800);
@@ -193,21 +198,26 @@ export default function InfectionStation() {
     }
 
     setPhase("burst");
-    await wait(600);
+    setStatusMessage("Host compromised...");
 
-    try {
+    const mergePromise = (async () => {
       const nftImage = await loadFileImage(uploadedFile);
-      const blob = await mergeInfectionImage(
+      return mergeInfectionImage(
         nftImage,
         activeOverlay.filename,
         activeOverlay.underlay,
       );
+    })();
+
+    await wait(650);
+
+    try {
+      const blob = await mergePromise;
       const url = URL.createObjectURL(blob);
       setInfectedBlob(blob);
       setInfectedUrl(url);
       setInfectionLevel(100);
       setPhase("complete");
-      setStatusMessage("Host compromised...");
     } catch {
       setError("Infection failed. Try another image.");
       setPhase("idle");
@@ -329,13 +339,23 @@ export default function InfectionStation() {
                         : undefined
                     }
                   >
-                    <img
-                      ref={nftPreviewRef}
-                      src={previewUrl ?? ""}
-                      alt="NFT infection preview"
-                      className="rz-infection__preview-top"
-                      onLoad={syncPreviewWidth}
-                    />
+                    <div className="rz-infection__preview-frame">
+                      <img
+                        ref={nftPreviewRef}
+                        src={previewUrl ?? ""}
+                        alt="NFT infection preview"
+                        className="rz-infection__preview-top"
+                        onLoad={syncPreviewWidth}
+                      />
+                      {phase === "burst" && activeOverlay && (
+                        <img
+                          src={getOverlayUrl(activeOverlay.filename)}
+                          alt=""
+                          className="rz-infection__overlay-slap"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </div>
                     {activeOverlay?.underlay && previewStackWidth !== null && (
                       <img
                         src={getOverlayUrl(activeOverlay.underlay)}
