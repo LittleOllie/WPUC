@@ -2,6 +2,7 @@ import {
   loadCollectionMeta,
   loadTokenSlice,
 } from "./collections.js";
+import { preferredImageUrl } from "./imageUrls.js";
 import { matchSummary, traitBreakdown } from "./traitNormalizer.js";
 
 /**
@@ -53,7 +54,7 @@ export async function findTwins(slug, tokenId) {
       id: twinId,
       score: Number(match.score),
       summary: match.summary || matchSummary(sourceTraits, twinTraits, weights),
-      image: images[twinId] || "",
+      image: preferredImageUrl(images[twinId] || ""),
       traits: twinTraits,
       breakdown,
     };
@@ -63,7 +64,7 @@ export async function findTwins(slug, tokenId) {
     collection,
     token: {
       id,
-      image: images[id] || "",
+      image: preferredImageUrl(images[id] || ""),
       traits: sourceTraits,
       name: metadata[id]?.name || `${collection.name} #${id}`,
     },

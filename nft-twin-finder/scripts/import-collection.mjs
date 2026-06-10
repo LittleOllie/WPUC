@@ -37,7 +37,7 @@ function normalizeImageUrl(url) {
   if (!url || typeof url !== "string") return "";
   let s = url.trim();
   if (!s) return "";
-  if (s.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${s.slice(7)}`;
+  if (s.startsWith("ipfs://")) return `https://gateway.pinata.cloud/ipfs/${s.slice(7)}`;
   if (s.startsWith("ar://")) return `https://arweave.net/${s.slice(5)}`;
   if (s.startsWith("//")) return `https:${s}`;
   return s;
@@ -53,8 +53,8 @@ async function fetchTokenRecord(contract, id) {
       const raw = data?.metadata || data?.rawMetadata;
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       const image =
-        normalizeImageUrl(parsed?.image) ||
         normalizeImageUrl(data?.media?.[0]?.gateway) ||
+        normalizeImageUrl(parsed?.image) ||
         normalizeImageUrl(data?.media?.[0]?.raw) ||
         "";
       return {
@@ -93,10 +93,18 @@ const name = args.name;
 const slug = args.slug;
 const contract = args.contract?.toLowerCase();
 const supply = Number(args.supply);
+const startId = Number(args.start ?? 1);
 
-if (!name || !slug || !contract || !/^0x[a-f0-9]{40}$/.test(contract) || !supply) {
+if (
+  !name ||
+  !slug ||
+  !contract ||
+  !/^0x[a-f0-9]{40}$/.test(contract) ||
+  !supply ||
+  !Number.isFinite(startId)
+) {
   console.error(
-    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888",
+    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888 [--start 0]",
   );
   process.exit(1);
 }
@@ -104,8 +112,9 @@ if (!name || !slug || !contract || !/^0x[a-f0-9]{40}$/.test(contract) || !supply
 const collectionDir = join(COLLECTIONS_ROOT, slug);
 mkdirSync(collectionDir, { recursive: true });
 
-const ids = Array.from({ length: supply }, (_, i) => String(i + 1));
-console.log(`Importing ${name} (${supply} tokens)…`);
+const ids = Array.from({ length: supply }, (_, i) => String(startId + i));
+const lastId = startId + supply - 1;
+console.log(`Importing ${name} (#${startId}–#${lastId}, ${supply} tokens)…`);
 
 const started = Date.now();
 let done = 0;

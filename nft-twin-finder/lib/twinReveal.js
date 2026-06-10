@@ -1,15 +1,44 @@
+import { imageUrlCandidates } from "./imageUrls.js";
+
 export const REVEAL_MS = 1600;
 export const FLASH_MS = 380;
 export const REVEAL_TOTAL_MS = REVEAL_MS + FLASH_MS;
 
-export function preloadImage(url) {
+const PRELOAD_TIMEOUT_MS = 6000;
+
+/**
+ * Race IPFS gateways in parallel; return the first URL that loads in time.
+ * @param {string} url
+ */
+export async function preloadImage(url) {
+  if (!url) return null;
+
+  const candidates = imageUrlCandidates(url);
+  if (!candidates.length) return null;
+
   return new Promise((resolve) => {
-    const img = new Image();
-    img.decoding = "async";
-    const done = () => resolve();
-    img.onload = done;
-    img.onerror = done;
-    img.src = url;
+    let pending = candidates.length;
+    let settled = false;
+
+    const finish = (winner) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve(winner);
+    };
+
+    const timer = window.setTimeout(() => finish(null), PRELOAD_TIMEOUT_MS);
+
+    for (const candidate of candidates) {
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => finish(candidate);
+      img.onerror = () => {
+        pending -= 1;
+        if (pending === 0) finish(null);
+      };
+      img.src = candidate;
+    }
   });
 }
 
@@ -31,10 +60,17 @@ export async function playTwinReveal({ sourceImage, twinImage }) {
     return;
   }
 
-  await Promise.all([preloadImage(sourceImage), preloadImage(twinImage)]);
+  const [resolvedSource, resolvedTwin] = await Promise.all([
+    preloadImage(sourceImage),
+    preloadImage(twinImage),
+  ]);
 
-  halfA.style.backgroundImage = `url("${sourceImage}")`;
-  halfB.style.backgroundImage = `url("${twinImage}")`;
+  if (resolvedSource) {
+    halfA.style.backgroundImage = `url("${resolvedSource}")`;
+  }
+  if (resolvedTwin) {
+    halfB.style.backgroundImage = `url("${resolvedTwin}")`;
+  }
   stage.style.setProperty("--reveal-duration", `${REVEAL_MS}ms`);
 
   stage.hidden = false;

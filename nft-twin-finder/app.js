@@ -1,6 +1,7 @@
 import { loadCollectionIndex } from "./lib/collections.js";
 import { createLoadingRotator } from "./lib/loadingMessages.js";
 import { findTwins } from "./lib/search.js";
+import { imageUrlCandidates } from "./lib/imageUrls.js";
 import { playTwinReveal, preloadImage, REVEAL_TOTAL_MS } from "./lib/twinReveal.js";
 
 const screens = {
@@ -121,6 +122,26 @@ function updateFindEnabled() {
   findBtn.disabled = !slug || !/^\d+$/.test(token);
 }
 
+function attachImageFallback(img, url) {
+  const candidates = imageUrlCandidates(url);
+  if (!candidates.length) return;
+
+  let index = 0;
+  img.src = candidates[0];
+  img.addEventListener("error", () => {
+    index += 1;
+    if (index < candidates.length) {
+      img.src = candidates[index];
+    }
+  });
+}
+
+function bindImageFallbacks(root) {
+  root.querySelectorAll("img[data-image-src]").forEach((img) => {
+    attachImageFallback(img, img.dataset.imageSrc || "");
+  });
+}
+
 function renderNftCard({ image, collectionName, tokenId, label, accent }) {
   const accentClass = accent ? " ntf-duo-card--accent" : "";
 
@@ -128,7 +149,13 @@ function renderNftCard({ image, collectionName, tokenId, label, accent }) {
     <article class="ntf-duo-card${accentClass}">
       <div class="ntf-duo-card__label">${escapeHtml(label)}</div>
       <div class="ntf-nft-stage">
-        <img src="${escapeAttr(image)}" alt="NFT #${escapeHtml(tokenId)}" loading="eager" decoding="async" />
+        <img
+          src="${escapeAttr(image)}"
+          data-image-src="${escapeAttr(image)}"
+          alt="NFT #${escapeHtml(tokenId)}"
+          loading="eager"
+          decoding="async"
+        />
       </div>
       <div class="ntf-duo-card__meta">
         <div class="ntf-duo-card__collection">${escapeHtml(collectionName)}</div>
@@ -164,6 +191,8 @@ function renderDuoHero(result, twinIndex = 0) {
     <p class="ntf-duo-hero__match">${twin.score.toFixed(1)}% Match</p>
     <p class="ntf-duo-hero__summary">${escapeHtml(twin.summary)}</p>
   `;
+
+  bindImageFallbacks(duoHero);
 }
 
 function updateTwinSelection() {
@@ -197,7 +226,13 @@ function renderTwinCard(twin, rank, twinIndex) {
     <div class="ntf-twin-card__row">
       <div class="ntf-twin-thumb">
         <span class="ntf-twin-rank">#${rank}</span>
-        <img src="${escapeAttr(twin.image)}" alt="" loading="lazy" decoding="async" />
+        <img
+          src="${escapeAttr(twin.image)}"
+          data-image-src="${escapeAttr(twin.image)}"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
       </div>
       <div class="ntf-twin-card__body">
         <div class="ntf-twin-score">${twin.score.toFixed(1)}% Match</div>
@@ -218,6 +253,9 @@ function renderTwinCard(twin, rank, twinIndex) {
       return `<div class="${cls}">${icon} ${escapeHtml(row.label)}</div>`;
     })
     .join("");
+
+  const thumbImg = card.querySelector(".ntf-twin-thumb img");
+  if (thumbImg) attachImageFallback(thumbImg, twin.image);
 
   const pickTwin = () => selectTwin(twinIndex);
 
@@ -338,9 +376,12 @@ findBtn.addEventListener("click", async () => {
     await loadingProgress.animateTo(42, 320);
     loadingMessage.textContent = "Loading artwork...";
 
-    await Promise.all([
-      preloadImage(result.token.image),
-      preloadImage(topTwin.image),
+    await Promise.race([
+      Promise.all([
+        preloadImage(result.token.image),
+        preloadImage(topTwin.image),
+      ]),
+      new Promise((resolve) => window.setTimeout(resolve, 7000)),
     ]);
     await loadingProgress.animateTo(58, 280);
     loadingMessage.textContent = "Twin found!";

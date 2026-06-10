@@ -1,11 +1,23 @@
 [
   {
+    "slug": "call-of-the-stars",
+    "name": "Call of the Stars"
+  },
+  {
     "slug": "dropded-gorgez",
     "name": "DropDed Gorgez"
   },
   {
     "slug": "long-lost",
     "name": "Long Lost"
+  },
+  {
+    "slug": "ogenies",
+    "name": "Ogenies"
+  },
+  {
+    "slug": "pudgy-penguins",
+    "name": "Pudgy Penguins"
   },
   {
     "slug": "quirkies",

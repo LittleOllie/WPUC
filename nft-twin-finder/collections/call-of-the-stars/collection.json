@@ -1,0 +1,16 @@
+{
+  "name": "Call of the Stars",
+  "slug": "call-of-the-stars",
+  "supply": 3636,
+  "contract": "0x11ad9906f148c6b452f9617b350ce5c98660ab1c",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}
