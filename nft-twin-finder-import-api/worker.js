@@ -1,6 +1,6 @@
 /**
- * NFT Twin Finder — Contract Import API
- * GET /api/import-collection?network=ethereum&contract=0x...
+ * NFT Twin Finder — Contract Import API (chunked for Cloudflare subrequest limits)
+ * GET /api/import-collection?network=ethereum&contract=0x...&pageKey=...&importLimit=...&imported=...
  */
 
 const CORS = {
@@ -17,7 +17,10 @@ const NETWORKS = {
   polygon: "polygon-mainnet.g.alchemy.com",
 };
 
-const DEFAULT_MAX_TOKENS = 2000;
+const DEFAULT_MAX_TOKENS = 10000;
+const ABSOLUTE_MAX_TOKENS = 15000;
+/** Alchemy pages per worker call (100 NFTs/page). Keep under Cloudflare's ~50 subrequest limit. */
+const DEFAULT_PAGES_PER_REQUEST = 40;
 
 function corsJson(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -32,11 +35,34 @@ function getAlchemyKey(env) {
   return String(env.ALCHEMY_API_KEY || "").trim();
 }
 
-function getMaxTokens(env) {
+function getEnvMaxTokens(env) {
   const raw = env.IMPORT_MAX_TOKENS;
   if (raw == null || raw === "") return DEFAULT_MAX_TOKENS;
   const n = parseInt(String(raw).trim(), 10);
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_TOKENS;
+}
+
+function getPagesPerRequest(env) {
+  const raw = env.IMPORT_PAGES_PER_REQUEST;
+  if (raw == null || raw === "") return DEFAULT_PAGES_PER_REQUEST;
+  const n = parseInt(String(raw).trim(), 10);
+  if (!Number.isFinite(n) || n < 1) return DEFAULT_PAGES_PER_REQUEST;
+  return Math.min(n, 45);
+}
+
+function resolveImportLimit(env, contractMeta, queryLimit) {
+  const envMax = getEnvMaxTokens(env);
+  const supply = Number(
+    contractMeta?.totalSupply || contractMeta?.contractMetadata?.totalSupply || 0,
+  );
+  let limit = envMax;
+  if (queryLimit) {
+    const q = parseInt(String(queryLimit).trim(), 10);
+    if (Number.isFinite(q) && q > 0) limit = q;
+  } else if (supply > 0) {
+    limit = Math.min(supply, envMax);
+  }
+  return Math.min(limit, ABSOLUTE_MAX_TOKENS);
 }
 
 function validateContract(addr) {
@@ -140,12 +166,16 @@ function normalizeNftRecord(nft) {
   if (!tokenId) return null;
 
   const meta = parseMetadata(nft?.rawMetadata ?? nft?.metadata) || {};
+  let traits = normalizeTraits(meta);
+  if (!Object.keys(traits).length) {
+    traits = normalizeTraits(nft);
+  }
+
   const name =
     (typeof nft?.name === "string" && nft.name) ||
     (typeof meta?.name === "string" && meta.name) ||
     `Token #${tokenId}`;
 
-  const traits = normalizeTraits(meta);
   const image = pickImageUrl(nft);
 
   const tokenUriRaw =
@@ -164,70 +194,19 @@ function normalizeNftRecord(nft) {
   };
 }
 
-function classifyUri(uri) {
-  if (!uri || typeof uri !== "string") return "unknown";
-  if (uri.startsWith("data:")) return "on-chain";
-  if (uri.startsWith("ipfs://") || uri.includes("/ipfs/")) return "ipfs";
-  if (uri.startsWith("ar://") || uri.includes("arweave.net")) return "arweave";
-  if (uri.startsWith("http://") || uri.startsWith("https://")) return "https";
-  return "unknown";
-}
-
-function detectMetadataSource(records) {
-  const uris = records
-    .map((r) => r.tokenUri)
-    .filter(Boolean)
-    .slice(0, 12);
-
-  if (!uris.length) {
-    return {
-      type: "alchemy-resolved",
-      description: "Metadata resolved by Alchemy (no tokenURI exposed in samples)",
-      sampleTokenUri: null,
-      pattern: null,
-      hosts: [],
-    };
-  }
-
-  const types = [...new Set(uris.map(classifyUri))];
-  let pattern = null;
-
-  if (uris.length >= 2) {
-    const a = uris[0];
-    const b = uris[1];
-    let prefix = "";
-    for (let i = 0; i < Math.min(a.length, b.length); i++) {
-      if (a[i] === b[i]) prefix += a[i];
-      else break;
-    }
-    const lastSlash = prefix.lastIndexOf("/");
-    if (lastSlash > 8) {
-      pattern = `${prefix.slice(0, lastSlash + 1)}{id}`;
-      if (a.endsWith(".json") || b.endsWith(".json")) pattern += ".json";
-    }
-  }
-
-  const hosts = [
-    ...new Set(
-      uris
-        .filter((u) => u.startsWith("http"))
-        .map((u) => {
-          try {
-            return new URL(u).host;
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean),
-    ),
-  ];
-
+function collectionInfoFromMeta(contractMeta) {
   return {
-    type: types.length === 1 ? types[0] : "mixed",
-    description: `Detected from ${uris.length} sample tokenURI(s) via Alchemy`,
-    sampleTokenUri: uris[0],
-    pattern,
-    hosts,
+    collectionName:
+      contractMeta?.name ||
+      contractMeta?.openSeaMetadata?.collectionName ||
+      contractMeta?.contractMetadata?.name ||
+      "Unknown Collection",
+    symbol: contractMeta?.symbol || contractMeta?.contractMetadata?.symbol || "",
+    totalSupply: Number(
+      contractMeta?.totalSupply || contractMeta?.contractMetadata?.totalSupply || 0,
+    ),
+    tokenStandard:
+      contractMeta?.tokenType || contractMeta?.contractMetadata?.tokenType || "ERC721",
   };
 }
 
@@ -254,13 +233,16 @@ async function fetchContractMeta(host, apiKey, contract) {
   }
 }
 
-async function fetchAllContractNfts(host, apiKey, contract, maxTokens) {
+/**
+ * Fetch up to maxPages Alchemy pages starting at pageKey.
+ * @returns {{ nfts: object[], nextPageKey: string|null }}
+ */
+async function fetchNftPages(host, apiKey, contract, startPageKey, maxPages, remaining) {
   const all = [];
-  let pageKey = null;
+  let pageKey = startPageKey || null;
   let pages = 0;
-  const maxPages = Math.ceil(maxTokens / 100) + 2;
 
-  do {
+  while (pages < maxPages && all.length < remaining) {
     const params = {
       contractAddress: contract,
       withMetadata: "true",
@@ -274,77 +256,13 @@ async function fetchAllContractNfts(host, apiKey, contract, maxTokens) {
     pageKey = data?.pageKey || null;
     pages += 1;
 
-    if (all.length >= maxTokens) break;
-  } while (pageKey && pages < maxPages);
-
-  return all.slice(0, maxTokens);
-}
-
-function buildOutput(network, contract, contractMeta, records, maxTokens) {
-  const metadata = {};
-  const images = {};
-
-  for (const rec of records) {
-    metadata[rec.tokenId] = {
-      name: rec.name,
-      traits: rec.traits,
-    };
-    if (rec.description) metadata[rec.tokenId].description = rec.description;
-    if (rec.image) images[rec.tokenId] = rec.image;
-  }
-
-  const collectionName =
-    contractMeta?.name ||
-    contractMeta?.openSeaMetadata?.collectionName ||
-    contractMeta?.contractMetadata?.name ||
-    "Unknown Collection";
-
-  const symbol =
-    contractMeta?.symbol || contractMeta?.contractMetadata?.symbol || "";
-
-  const totalSupply =
-    contractMeta?.totalSupply ||
-    contractMeta?.contractMetadata?.totalSupply ||
-    records.length;
-
-  const tokenStandard =
-    contractMeta?.tokenType ||
-    contractMeta?.contractMetadata?.tokenType ||
-    "ERC721";
-
-  const metadataSource = detectMetadataSource(records);
-
-  const sampleIds = ["1", "0", records[0]?.tokenId].filter(Boolean);
-  const samples = [];
-  for (const id of sampleIds) {
-    const hit = records.find((r) => r.tokenId === id);
-    if (hit && !samples.some((s) => s.tokenId === hit.tokenId)) samples.push(hit);
-  }
-  for (const rec of records) {
-    if (samples.length >= 3) break;
-    if (!samples.some((s) => s.tokenId === rec.tokenId)) samples.push(rec);
+    if (!pageKey) break;
+    if (all.length >= remaining) break;
   }
 
   return {
-    ok: true,
-    network,
-    contract,
-    collectionName,
-    symbol,
-    totalSupply: Number(totalSupply) || records.length,
-    tokenStandard,
-    metadataSource,
-    importedCount: records.length,
-    cappedAt: records.length >= maxTokens ? maxTokens : null,
-    samples: samples.map((s) => ({
-      tokenId: s.tokenId,
-      name: s.name,
-      image: s.image,
-      traits: s.traits,
-      tokenUri: s.tokenUri || null,
-    })),
-    metadata,
-    images,
+    nfts: all.slice(0, remaining),
+    nextPageKey: pageKey,
   };
 }
 
@@ -354,7 +272,10 @@ async function handleImport(request, env) {
   const contract = validateContract(url.searchParams.get("contract"));
 
   if (!network) {
-    return corsJson({ ok: false, error: "Invalid network. Use ethereum, base, apechain, or polygon." }, 400);
+    return corsJson(
+      { ok: false, error: "Invalid network. Use ethereum, base, apechain, or polygon." },
+      400,
+    );
   }
   if (!contract) {
     return corsJson({ ok: false, error: "Invalid contract address." }, 400);
@@ -362,32 +283,94 @@ async function handleImport(request, env) {
 
   const apiKey = getAlchemyKey(env);
   if (!apiKey) {
-    return corsJson({ ok: false, error: "Missing ALCHEMY_API_KEY_NFT_IMPORT on worker." }, 503);
+    return corsJson({ ok: false, error: "Missing ALCHEMY_API_KEY on worker." }, 503);
   }
 
-  const maxTokens = getMaxTokens(env);
   const host = NETWORKS[network];
+  const startPageKey = url.searchParams.get("pageKey") || null;
+  const isFirstChunk = !startPageKey;
+  const alreadyImported = Math.max(
+    0,
+    parseInt(String(url.searchParams.get("imported") || "0"), 10) || 0,
+  );
 
-  const [contractMeta, rawNfts] = await Promise.all([
-    fetchContractMeta(host, apiKey, contract),
-    fetchAllContractNfts(host, apiKey, contract, maxTokens),
-  ]);
+  let contractMeta = null;
+  let importLimit = parseInt(String(url.searchParams.get("importLimit") || "0"), 10) || 0;
 
-  const records = rawNfts
+  if (isFirstChunk) {
+    contractMeta = await fetchContractMeta(host, apiKey, contract);
+    importLimit = resolveImportLimit(
+      env,
+      contractMeta,
+      url.searchParams.get("limit"),
+    );
+  }
+
+  if (!importLimit) {
+    importLimit = getEnvMaxTokens(env);
+  }
+
+  const remaining = Math.max(0, importLimit - alreadyImported);
+  if (remaining <= 0) {
+    return corsJson({
+      ok: true,
+      complete: true,
+      network,
+      contract,
+      importLimit,
+      importedTotal: alreadyImported,
+      chunkRecords: [],
+      nextPageKey: null,
+    });
+  }
+
+  const maxPages = getPagesPerRequest(env);
+  const { nfts, nextPageKey } = await fetchNftPages(
+    host,
+    apiKey,
+    contract,
+    startPageKey,
+    maxPages,
+    remaining,
+  );
+
+  const chunkRecords = nfts
     .map(normalizeNftRecord)
     .filter(Boolean)
     .sort((a, b) => Number(a.tokenId) - Number(b.tokenId));
 
-  if (!records.length) {
-    return corsJson({
-      ok: false,
-      error: "No NFTs with metadata found for this contract on the selected network.",
-      network,
-      contract,
-    }, 404);
+  if (isFirstChunk && !chunkRecords.length) {
+    return corsJson(
+      {
+        ok: false,
+        error: "No NFTs with metadata found for this contract on the selected network.",
+        network,
+        contract,
+      },
+      404,
+    );
   }
 
-  return corsJson(buildOutput(network, contract, contractMeta, records, maxTokens));
+  const importedTotal = alreadyImported + chunkRecords.length;
+  const complete = importedTotal >= importLimit || !nextPageKey;
+
+  const payload = {
+    ok: true,
+    network,
+    contract,
+    complete,
+    importLimit,
+    importedTotal,
+    nextPageKey: complete ? null : nextPageKey,
+    chunkRecords,
+    chunkCount: chunkRecords.length,
+  };
+
+  if (isFirstChunk && contractMeta) {
+    Object.assign(payload, collectionInfoFromMeta(contractMeta));
+  }
+
+  return corsJson(payload);
 }
 
 export default {
@@ -399,7 +382,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/api/health") {
-      return corsJson({ ok: true, service: "nft-twin-finder-import" });
+      return corsJson({ ok: true, service: "nft-twin-finder-import", chunked: true });
     }
 
     if (request.method === "GET" && url.pathname === "/api/import-collection") {

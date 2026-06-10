@@ -12,4 +12,4 @@ preview_urls = true
 #   npx wrangler secret put ALCHEMY_API_KEY_NFT_IMPORT
 #   npx wrangler secret put ALCHEMY_API_KEY   (fallback)
 #
-# Optional var: IMPORT_MAX_TOKENS=2000
+# Optional var: IMPORT_MAX_TOKENS=10000  (default; full supply up to 15000 per request)

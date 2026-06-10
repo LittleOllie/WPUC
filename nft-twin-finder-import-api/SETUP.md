@@ -33,7 +33,13 @@ Networks: `ethereum`, `base`, `apechain`, `polygon`
 
 Returns: collection name, supply, metadata source info, samples, `metadata`, `images`.
 
-Optional env `IMPORT_MAX_TOKENS` (default 2000) caps per-request fetch size.
+Imports use the collection **total supply** when known (e.g. Space Riders 8888), up to **10,000** by default.
+
+Optional env `IMPORT_MAX_TOKENS` raises that ceiling. Hard max per request: **15,000** (Worker limits).
+
+Large collections are fetched in **chunks** (~4,000 tokens per worker call) to stay under Cloudflare's subrequest limit. The importer UI loops automatically.
+
+Query override: `?limit=8888` on the first chunk.
 
 ## UI
 

@@ -1,3 +1,5 @@
+import { buildImportResult } from "./lib/mergeImport.js?v=3";
+
 const networkSelect = document.getElementById("network");
 const contractInput = document.getElementById("contract");
 const importBtn = document.getElementById("import-btn");
@@ -19,14 +21,6 @@ const apiStatusEl = document.getElementById("api-status");
 
 /** @type {Record<string, unknown> | null} */
 let lastResult = null;
-
-const STATUS_MESSAGES = [
-  "Connecting to chain…",
-  "Reading contract…",
-  "Detecting metadata source…",
-  "Downloading metadata…",
-  "Normalizing collection…",
-];
 
 function apiBase() {
   return String(window.NTF_IMPORT_API_BASE || "").replace(/\/$/, "");
@@ -107,14 +101,79 @@ function escapeAttr(v) {
   return escapeHtml(v).replace(/"/g, "&quot;");
 }
 
-function startStatusRotation() {
-  let i = 0;
-  setStatus(STATUS_MESSAGES[0]);
-  const id = window.setInterval(() => {
-    i = (i + 1) % STATUS_MESSAGES.length;
-    setStatus(STATUS_MESSAGES[i]);
-  }, 2200);
-  return () => window.clearInterval(id);
+async function fetchImportChunk(network, contract, pageKey, importLimit, imported) {
+  const params = new URLSearchParams({ network, contract });
+  if (pageKey) params.set("pageKey", pageKey);
+  if (importLimit) params.set("importLimit", String(importLimit));
+  if (imported) params.set("imported", String(imported));
+
+  const res = await fetch(`${apiBase()}/api/import-collection?${params}`);
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `Import failed (${res.status})`);
+  }
+  return data;
+}
+
+function isLegacyImportResponse(data) {
+  return Boolean(
+    data?.metadata &&
+      data?.images &&
+      typeof data.metadata === "object" &&
+      !data.chunkRecords,
+  );
+}
+
+async function importCollectionChunked(network, contract) {
+  const allRecords = [];
+  let pageKey = null;
+  let importLimit = 0;
+  let meta = { network, contract };
+
+  while (true) {
+    const chunk = await fetchImportChunk(
+      network,
+      contract,
+      pageKey,
+      importLimit,
+      allRecords.length,
+    );
+
+    /* Older worker returned everything in one response */
+    if (isLegacyImportResponse(chunk)) {
+      return chunk;
+    }
+
+    if (chunk.collectionName) {
+      meta = {
+        ...meta,
+        collectionName: chunk.collectionName,
+        symbol: chunk.symbol,
+        totalSupply: chunk.totalSupply,
+        tokenStandard: chunk.tokenStandard,
+      };
+    }
+
+    importLimit = chunk.importLimit || importLimit;
+
+    const records = Array.isArray(chunk.chunkRecords) ? chunk.chunkRecords : [];
+    allRecords.push(...records);
+
+    const target = meta.totalSupply || importLimit || "?";
+    setStatus(`Downloading metadata… ${allRecords.length} / ${target}`);
+
+    if (chunk.complete) break;
+    if (!chunk.nextPageKey) break;
+    pageKey = chunk.nextPageKey;
+  }
+
+  if (!allRecords.length) {
+    throw new Error(
+      "No tokens imported. Push the latest nft-twin-finder-import/ files and redeploy the worker.",
+    );
+  }
+
+  return buildImportResult({ ...meta, importLimit }, allRecords);
 }
 
 async function checkApiConnection() {
@@ -129,7 +188,8 @@ async function checkApiConnection() {
     const res = await fetch(`${base}/api/health`);
     const data = await res.json();
     if (res.ok && data.ok) {
-      apiStatusEl.textContent = `Connected to ${base}`;
+      const mode = data.chunked ? "chunked import" : "legacy import";
+      apiStatusEl.textContent = `Connected to ${base} (${mode})`;
       apiStatusEl.className = "ntf-api-status is-ok";
       importBtn.disabled = false;
       return true;
@@ -158,45 +218,42 @@ importBtn.addEventListener("click", async () => {
   }
 
   importBtn.disabled = true;
-  const stopRotation = startStatusRotation();
 
   try {
-    const base = apiBase();
-    if (!base) throw new Error("Import API base URL is not configured.");
+    if (!apiBase()) throw new Error("Import API base URL is not configured.");
 
-    const url = `${base}/api/import-collection?network=${encodeURIComponent(network)}&contract=${encodeURIComponent(contract)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error || `Import failed (${res.status})`);
-    }
-
-    lastResult = data;
+    setStatus("Reading contract…");
+    lastResult = await importCollectionChunked(network, contract);
     setStatus("Import complete");
-    renderResults(data);
+    renderResults(lastResult);
   } catch (e) {
     setStatus("Import failed");
     const msg = e?.message || "";
     if (msg === "Failed to fetch" || msg.includes("NetworkError")) {
       setError(
-        `Cannot reach the import API at ${apiBase()}. Open /api/health in your browser. If testing locally, run: cd nft-twin-finder-import-api && npm run dev`,
+        `Cannot reach the import API at ${apiBase()}. Redeploy the worker after pulling latest code.`,
       );
     } else {
       setError(msg || "Import failed.");
     }
   } finally {
-    stopRotation();
     importBtn.disabled = false;
   }
 });
 
+function downloadOrWarn(filename, data) {
+  if (!data || !Object.keys(data).length) {
+    setError(`No ${filename} data — re-import after pushing latest importer files.`);
+    return;
+  }
+  setError("");
+  downloadJson(filename, data);
+}
+
 dlMetadata.addEventListener("click", () => {
-  if (!lastResult?.metadata) return;
-  downloadJson("metadata.json", lastResult.metadata);
+  downloadOrWarn("metadata.json", lastResult?.metadata);
 });
 
 dlImages.addEventListener("click", () => {
-  if (!lastResult?.images) return;
-  downloadJson("images.json", lastResult.images);
+  downloadOrWarn("images.json", lastResult?.images);
 });
