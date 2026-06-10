@@ -23,7 +23,7 @@ export const DEFAULT_WEIGHTS = {
 const TRAIT_ALIASES = {
   skin: "Skin",
   fur: "Skin",
-  body: "Skin",
+  body: "Clothing",
   bones: "Skin",
   "body type": "Skin",
   type: "Skin",
@@ -48,7 +48,17 @@ const TRAIT_ALIASES = {
   glasses: "Accessories",
   eyewear: "Accessories",
   background: "Background",
+  backgrounds: "Background",
   bg: "Background",
+  skeleton: "Skin",
+  zombie: "Skin",
+  "skeleton special": "Accessories",
+  tats: "Accessories",
+  headwear: "Hat",
+  hats: "Hat",
+  heads: "Skin",
+  faces: "Eyes",
+  antenna: "Accessories",
 };
 
 function normalizeKey(raw) {

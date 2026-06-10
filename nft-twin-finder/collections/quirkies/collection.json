@@ -1,0 +1,16 @@
+{
+  "name": "Quirkies",
+  "slug": "quirkies",
+  "supply": 4999,
+  "contract": "0xd4b7d9bb20fa20ddada9ecef8a7355ca983cccb1",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}

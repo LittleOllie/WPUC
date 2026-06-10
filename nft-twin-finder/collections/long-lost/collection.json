@@ -1,0 +1,16 @@
+{
+  "name": "Long Lost",
+  "slug": "long-lost",
+  "supply": 10000,
+  "contract": "0x1347a97789cd3aa0b11433e8117f55ab640a0451",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}
