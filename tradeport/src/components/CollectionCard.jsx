@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import CollectionLogo from "./CollectionLogo";
 import NftStackPreview from "./NftStackPreview";
 import { collectionThemeStyle } from "../utils/theme";
-import { logoEdgeFill } from "../utils/logoEdgeFill";
 
 const CARD_STYLES = {
   ddg: {
@@ -41,7 +40,6 @@ const CARD_STYLES = {
 export default function CollectionCard({ collection, large = false, selected = false }) {
   const theme = collection.theme;
   const accent = CARD_STYLES[collection.id] || CARD_STYLES.ddg;
-  const edgeLogo = logoEdgeFill(collection);
 
   return (
     <motion.article
@@ -71,7 +69,7 @@ export default function CollectionCard({ collection, large = false, selected = f
       <div className="relative flex flex-col gap-4">
         <div className="flex flex-col items-center text-center">
           <div
-            className={`relative flex items-center justify-center overflow-hidden rounded-2xl ${edgeLogo ? "p-0" : "p-2"}`}
+            className="relative flex items-center justify-center rounded-2xl p-2"
             style={{ boxShadow: `0 0 40px ${theme.primary}44` }}
           >
             <CollectionLogo

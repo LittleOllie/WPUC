@@ -1,0 +1,13 @@
+{
+  "name": "nft-twin-finder-import-api",
+  "private": true,
+  "description": "Cloudflare Worker — NFT Twin Finder contract metadata import",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "dev:remote": "wrangler dev --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.54.0"
+  }
+}

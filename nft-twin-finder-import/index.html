@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Contract Importer — NFT Twin Finder</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="stylesheet" href="../nft-twin-finder/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function () {
+      var h = location.hostname;
+      var local = h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+      if (!Object.prototype.hasOwnProperty.call(window, "NTF_IMPORT_API_BASE")) {
+        window.NTF_IMPORT_API_BASE = local
+          ? (h === "[::1]" ? "http://[::1]:8787" : "http://" + h + ":8787")
+          : "https://twinapp.littleollienft.workers.dev";
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="ntf-page ntf-import-page">
+    <a href="../nft-twin-finder-admin/" class="ntf-back">← Admin</a>
+
+    <header class="ntf-hero">
+      <img class="ntf-hero__mascot" src="../dopeornope/assets/lo1.png" alt="" width="120" height="120" />
+      <h1 class="ntf-hero__title">CONTRACT IMPORTER</h1>
+      <p class="ntf-hero__sub">Network + contract → metadata.json &amp; images.json</p>
+    </header>
+
+    <div class="ntf-panel">
+      <h2 class="ntf-section-head">Import collection</h2>
+
+      <div class="ntf-field">
+        <label class="ntf-field__label" for="network">Blockchain</label>
+        <select id="network" class="ntf-select">
+          <option value="ethereum">Ethereum</option>
+          <option value="base">Base</option>
+          <option value="apechain">ApeChain</option>
+          <option value="polygon">Polygon</option>
+        </select>
+      </div>
+
+      <div class="ntf-field">
+        <label class="ntf-field__label" for="contract">Contract address</label>
+        <input id="contract" class="ntf-input" type="text" placeholder="0x…" spellcheck="false" autocomplete="off" />
+      </div>
+
+      <p id="api-status" class="ntf-api-status" aria-live="polite">Checking API connection…</p>
+
+      <button id="import-btn" class="ntf-btn ntf-btn--accent" type="button" disabled>
+        Import Collection
+      </button>
+
+      <div id="status" class="ntf-status" hidden aria-live="polite">
+        <p id="status-label" class="ntf-status__label">Ready</p>
+      </div>
+
+      <p id="error" class="ntf-error" hidden></p>
+    </div>
+
+    <div id="results" class="ntf-panel ntf-results" hidden>
+      <h2 class="ntf-section-head">Import results</h2>
+
+      <dl class="ntf-dl">
+        <dt>Collection</dt>
+        <dd id="out-name">—</dd>
+        <dt>Total supply</dt>
+        <dd id="out-supply">—</dd>
+        <dt>Imported tokens</dt>
+        <dd id="out-count">—</dd>
+        <dt>Metadata source</dt>
+        <dd id="out-source">—</dd>
+        <dt>Sample tokenURI</dt>
+        <dd id="out-uri" class="ntf-uri">—</dd>
+        <dt>Detected pattern</dt>
+        <dd id="out-pattern" class="ntf-uri">—</dd>
+      </dl>
+
+      <h3 class="ntf-section-head">Sample tokens</h3>
+      <div id="samples" class="ntf-sample-grid"></div>
+
+      <div class="ntf-btn-row">
+        <button id="dl-metadata" class="ntf-btn ntf-btn--primary" type="button">Download metadata.json</button>
+        <button id="dl-images" class="ntf-btn ntf-btn--primary" type="button">Download images.json</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

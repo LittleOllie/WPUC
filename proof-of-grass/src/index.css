@@ -190,6 +190,8 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  container-type: size;
+  container-name: pog-app;
 }
 
 * {
@@ -548,6 +550,44 @@ button {
   filter: drop-shadow(0 6px 18px rgba(26, 46, 31, 0.12));
 }
 
+/* Scene characters — white-keyed video, random crossings */
+.pog-ollie-run-wrap,
+.pog-coach-skate-wrap {
+  position: absolute;
+  left: 0;
+  bottom: var(--pog-fence-bottom);
+  z-index: 44;
+  line-height: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.pog-ollie-run-source,
+.pog-coach-skate-source {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pog-ollie-run,
+.pog-coach-skate {
+  --pog-ollie-run-scale: 1.4;
+  display: block;
+  height: min(52vh, 560px);
+  width: auto;
+  max-width: min(52vw, 380px);
+  object-fit: contain;
+  object-position: bottom center;
+  transform: translateY(var(--pog-fence-drop)) scale(var(--pog-ollie-run-scale));
+  transform-origin: bottom center;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 6px 14px rgba(26, 46, 31, 0.14));
+}
+
 /* Fence — edge-to-edge, pinned near bottom of the page */
 .pog-fence-wrap {
   position: absolute;
@@ -795,11 +835,41 @@ button {
   z-index: 36;
 }
 
-.pog-app--portrait .pog-llama {
+.pog-app--portrait .pog-ollie-run-wrap,
+.pog-app--portrait .pog-coach-skate-wrap {
+  bottom: var(--pog-llama-anchor);
+  z-index: 36;
+}
+
+.pog-app--portrait .pog-ollie-run,
+.pog-app--portrait .pog-coach-skate {
   height: 52cqh;
   max-height: calc(100cqh - var(--pog-fence-h) - 10cqh);
+  transform: translateY(calc(-1 * var(--pog-fence-lift)));
+  transform-origin: bottom center;
+}
+
+.pog-app--portrait .pog-ollie-run {
+  --pog-ollie-run-scale: 0.7;
+  max-width: min(58cqw, 224px);
+  transform: translateY(calc(-1 * var(--pog-fence-lift)))
+    scale(var(--pog-ollie-run-scale));
+}
+
+.pog-app--portrait .pog-coach-skate {
+  --pog-ollie-run-scale: 0.84;
+  max-width: min(58cqw, 269px);
+  transform: translateY(calc(-1 * var(--pog-fence-lift)))
+    scale(var(--pog-ollie-run-scale));
+}
+
+.pog-app--portrait .pog-llama {
+  --pog-llama-scale: 1.15;
+  height: 52cqh;
+  max-height: calc(100cqh - var(--pog-fence-h) - 8cqh);
   max-width: 94cqw;
-  transform: translateY(calc(-1 * var(--pog-fence-lift))) scale(1.15);
+  transform: translateY(calc(-1 * var(--pog-fence-lift)))
+    scale(var(--pog-llama-scale));
   transform-origin: bottom center;
 }
 
@@ -908,6 +978,18 @@ button {
   z-index: 44;
 }
 
+.pog-app--immersive .pog-ollie-run-wrap,
+.pog-app--immersive .pog-coach-skate-wrap {
+  z-index: 44;
+}
+
+.pog-app--immersive .pog-ollie-run,
+.pog-app--immersive .pog-coach-skate {
+  height: min(44vh, 476px);
+  max-width: min(48vw, 504px);
+  transform: translateY(var(--pog-fence-drop)) scale(var(--pog-ollie-run-scale));
+}
+
 .pog-app--immersive .pog-fence {
   height: min(44vh, 480px);
   transform: translateY(var(--pog-fence-drop));
@@ -915,16 +997,24 @@ button {
 }
 
 .pog-app--immersive .pog-llama {
+  --pog-llama-scale: 2.21;
   height: min(44vh, 476px);
-  max-width: min(67vw, 459px);
-  transform: translateY(var(--pog-fence-drop)) scale(1.7);
+  max-width: min(67vw, 597px);
+  transform: translateY(var(--pog-fence-drop)) scale(var(--pog-llama-scale));
 }
 
 /* Short desktop preview panes only */
 @media (max-height: 520px) {
   .pog-app--immersive .pog-llama {
+    --pog-llama-scale: 1.495;
     height: min(33vh, 272px);
-    transform: translateY(var(--pog-fence-drop)) scale(1.15);
+    transform: translateY(var(--pog-fence-drop)) scale(var(--pog-llama-scale));
+  }
+
+  .pog-app--immersive .pog-ollie-run,
+  .pog-app--immersive .pog-coach-skate {
+    height: min(33vh, 272px);
+    transform: translateY(var(--pog-fence-drop)) scale(var(--pog-ollie-run-scale));
   }
 
   .pog-app--immersive .pog-fence {

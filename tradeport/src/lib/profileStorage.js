@@ -21,11 +21,7 @@ export function saveProfile(address, profile) {
   const key = profileKey(address);
   if (!key || typeof localStorage === "undefined") return null;
   const next = { ...profile, updatedAt: new Date().toISOString() };
-  try {
-    localStorage.setItem(key, JSON.stringify(next));
-  } catch {
-    return next;
-  }
+  localStorage.setItem(key, JSON.stringify(next));
   return next;
 }
 

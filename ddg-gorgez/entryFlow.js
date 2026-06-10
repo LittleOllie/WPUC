@@ -192,7 +192,7 @@ export function mountEntry({ startClassic, onWalletPoolLoaded }) {
         if (failures.length) {
           entryWalletStatus.textContent = failures[0] || "Could not load wallets.";
         } else {
-          entryWalletStatus.textContent = "No DropDed Gorgez NFTs found for these wallets.";
+          entryWalletStatus.textContent = "No Drop Dead Gorgez NFTs found for these wallets.";
         }
         return;
       }

@@ -20,32 +20,12 @@ import {
 import { getPosterLayout } from "./posterLayouts.js";
 import { mountEntry } from "./entryFlow.js";
 
-/**
- * DO NOT recreate separate export positioning logic.
- * With a poster grid, download uses a high-res offscreen canvas: upscale the live `#canvas` (template + slogan),
- * then paint each `.frameMultiCell` from the same wallet/upload drawables with `objectFitCover` math; slot
- * bounds come from `getBoundingClientRect` vs `#canvas` so layout matches the preview. html2canvas is only
- * a fallback (it resamples DOM / backgrounds and looks soft on iPhone). The on-screen grid stays DOM-only.
- */
-const EXPORT_MIME = "image/png";
-/** PNG is lossless — best for sharp NFT edges. JPEG recompression would make downloads look worse, especially after html2canvas. */
-const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.png";
-const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.png";
+/** Shared JPEG quality for download + right-click / long-press mirror (MIME `image/jpeg`). */
+const EXPORT_JPEG_QUALITY = 0.92;
+const EXPORT_FILENAME_COMPOSITE = "ddg-gorgez.jpg";
+const EXPORT_FILENAME_IDLE = "ddg-gorgez-template.jpg";
 const TEMPLATE_INDEX_LS_KEY = "ddg-gorgez-template-index";
 const CUSTOM_SLOGAN_LS_KEY = "ddg-gorgez-custom-slogan";
-
-/** 1×1 transparent GIF — wallet grid cell before CORS-safe art is ready for the overlay mirror. */
-const OVERLAY_PLACEHOLDER_DATA_URL =
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
-/** Extra % of canvas height on `#frameMultiOverlay` when a poster grid is shown — hides a thin black seam at the bottom of the hole. */
-const MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT = 0.38;
-/** Nudge overlay down a hair so the grid covers any subpixel gap above template black at the bottom. */
-const MULTI_GRID_OVERLAY_TOP_NUDGE_PCT = 0.08;
-
-/** Max width (px) for lossless poster export; scales from `canvas.width` for sharp NFTs on retina phones. */
-const EXPORT_POSTER_MAX_PX = 3200;
-const EXPORT_POSTER_MIN_MULT = 2.25;
 
 /** Strip `index.html` from the path so the bar shows `/ddg-gorgez/` instead. */
 try {
@@ -542,7 +522,7 @@ async function paintIdleTemplateCanvas(template) {
   if (String(customSloganText || "").trim()) {
     await drawCustomSloganOnCanvas(template);
   }
-  await assignExportMirrorFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
+  await assignJpegFromCanvas(EXPORT_FILENAME_IDLE, { linkForDownload: false });
   syncFrameMultiOverlay();
 }
 
@@ -621,7 +601,6 @@ function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Same behavior as CSS `object-fit: cover` + centered crop (single-image frame path only). */
 function objectFitCover(srcW, srcH, dstW, dstH) {
   const srcRatio = srcW / srcH;
   const dstRatio = dstW / dstH;
@@ -639,6 +618,115 @@ function objectFitCover(srcW, srcH, dstW, dstH) {
   const dx = (dstW - drawW) / 2;
   const dy = (dstH - drawH) / 2;
   return { dx, dy, dw: drawW, dh: drawH };
+}
+
+function parseTemplateAreaRows(templateAreas) {
+  const cleaned = String(templateAreas || "")
+    .replace(/\//g, "")
+    .trim();
+  const rows = [];
+  const re = /"([^"]+)"/g;
+  let m;
+  while ((m = re.exec(cleaned))) {
+    rows.push(m[1].trim().split(/\s+/).filter(Boolean));
+  }
+  return rows;
+}
+
+function findCellSpanInGrid(grid, areaName) {
+  const name = String(areaName);
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] !== name) continue;
+      let c1 = c;
+      while (c1 < row.length && row[c1] === name) c1++;
+      return { row: r, col: c, colSpan: c1 - c };
+    }
+  }
+  return null;
+}
+
+function rectForGridArea(frame, grid, layout, areaName) {
+  const span = findCellSpanInGrid(grid, areaName);
+  if (!span) return null;
+  const cols = Math.max(...grid.map((row) => row.length));
+  const numRows = grid.length;
+  const rf = layout.rowFr;
+  const rowFr =
+    Array.isArray(rf) && rf.length === numRows && rf.every((x) => typeof x === "number" && x > 0 && Number.isFinite(x))
+      ? rf
+      : Array(numRows).fill(1);
+  const rsum = rowFr.reduce((a, b) => a + b, 0);
+  const rowHs = rowFr.map((fr) => (fr / rsum) * frame.height);
+  let y = frame.y;
+  for (let i = 0; i < span.row; i++) y += rowHs[i];
+  const cellW = frame.width / cols;
+  return {
+    x: frame.x + span.col * cellW,
+    y,
+    width: span.colSpan * cellW,
+    height: rowHs[span.row],
+  };
+}
+
+function drawImageCoverInRect(img, rect, panRel, edgeBleedPx = 0) {
+  const { w: srcW, h: srcH } = drawablePixels(img);
+  if (!srcW || !srcH || !rect.width || !rect.height) return;
+  const { dx, dy, dw, dh } = objectFitCover(srcW, srcH, rect.width, rect.height);
+  const pr = panRel || { rx: 0, ry: 0 };
+  const panTx = (Number(pr.rx) || 0) * rect.width;
+  const panTy = (Number(pr.ry) || 0) * rect.height;
+  const b = Math.max(0, Number(edgeBleedPx) || 0);
+  ctx.drawImage(img, 0, 0, srcW, srcH, rect.x + dx + panTx - b, rect.y + dy + panTy - b, dw + 2 * b, dh + 2 * b);
+}
+
+/** Extra canvas pixels past each poster cell edge to hide subpixel seams (matches overlay image bleed). */
+const POSTER_GRID_EDGE_BLEED = 1;
+
+function drawWalletLayoutInFrame(frame, nfts, gridLogoImg, revealImg) {
+  const layout = getPosterLayout(nfts.length);
+  const grid = parseTemplateAreaRows(layout.templateAreas);
+  if (!grid.length) return;
+  let nftIdx = 0;
+  for (const slot of layout.slots) {
+    const rect = rectForGridArea(frame, grid, layout, slot.area);
+    if (!rect) continue;
+    const pan = { rx: 0, ry: 0 };
+    if (slot.kind === "logo") {
+      if (gridLogoImg) drawImageCoverInRect(gridLogoImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else if (slot.kind === "reveal") {
+      if (revealImg) drawImageCoverInRect(revealImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else {
+      const nft = nfts[nftIdx++];
+      if (!nft) continue;
+      const im = walletImageByTokenId.get(String(nft.tokenId));
+      if (im) drawImageCoverInRect(im, rect, pan, POSTER_GRID_EDGE_BLEED);
+    }
+  }
+}
+
+function drawUploadLayoutInFrame(frame, gridLogoImg, revealImg) {
+  const n = lastUploadFiles.length;
+  if (!n) return;
+  const layout = getPosterLayout(n);
+  const grid = parseTemplateAreaRows(layout.templateAreas);
+  if (!grid.length) return;
+  let upIdx = 0;
+  for (const slot of layout.slots) {
+    const rect = rectForGridArea(frame, grid, layout, slot.area);
+    if (!rect) continue;
+    const pan = { rx: 0, ry: 0 };
+    if (slot.kind === "logo") {
+      if (gridLogoImg) drawImageCoverInRect(gridLogoImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else if (slot.kind === "reveal") {
+      if (revealImg) drawImageCoverInRect(revealImg, rect, pan, POSTER_GRID_EDGE_BLEED);
+    } else {
+      const im = uploadImageByIndex.get(String(upIdx));
+      upIdx += 1;
+      if (im) drawImageCoverInRect(im, rect, pan, POSTER_GRID_EDGE_BLEED);
+    }
+  }
 }
 
 function clearWalletCompositeState() {
@@ -726,90 +814,6 @@ function drawablePixels(source) {
   return { w, h };
 }
 
-/** True `object-fit: cover` draw into export canvas (uses full-res `Image` / `ImageBitmap`, not DOM resampling). */
-function drawDrawableCoverInRectForExport(octx, drawable, rect) {
-  const { w: srcW, h: srcH } = drawablePixels(drawable);
-  if (!srcW || !srcH || rect.width < 1 || rect.height < 1) return;
-  const { dx, dy, dw, dh } = objectFitCover(srcW, srcH, rect.width, rect.height);
-  octx.save();
-  octx.beginPath();
-  octx.rect(rect.x, rect.y, rect.width, rect.height);
-  octx.clip();
-  octx.imageSmoothingEnabled = true;
-  octx.imageSmoothingQuality = "high";
-  try {
-    octx.drawImage(drawable, 0, 0, srcW, srcH, rect.x + dx, rect.y + dy, dw, dh);
-  } catch (_) {
-    /* ignore */
-  }
-  octx.restore();
-}
-
-/**
- * Lossless-style PNG for poster layouts: scale `#canvas` up, paint tiles from bitmap sources + DOM slot rects.
- * Fixes soft NFT exports from html2canvas on iOS.
- */
-async function buildHighResPosterDataUrl() {
-  if (!canvas?.width || !canvas.height) return null;
-  if (!frameMultiOverlay || frameMultiOverlay.classList.contains("hidden")) return null;
-
-  const dpr = Math.max(1, Number(window.devicePixelRatio) || 2);
-  const mult = Math.min(4, Math.max(EXPORT_POSTER_MIN_MULT, dpr * 1.35));
-  const outW = Math.min(EXPORT_POSTER_MAX_PX, Math.round(canvas.width * mult));
-  const outH = Math.max(1, Math.round((outW * canvas.height) / canvas.width));
-
-  const out = document.createElement("canvas");
-  out.width = outW;
-  out.height = outH;
-  const octx = out.getContext("2d", { alpha: true });
-  octx.imageSmoothingEnabled = true;
-  octx.imageSmoothingQuality = "high";
-
-  octx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, outW, outH);
-
-  const canvasR = canvas.getBoundingClientRect();
-  if (canvasR.width < 2 || canvasR.height < 2) return null;
-
-  const [logoImg, revealImg] = await Promise.all([
-    safeLoadOptional(ASSETS.ddgGridLogo),
-    safeLoadOptional(ASSETS.ddgReveal),
-  ]);
-
-  const cells = frameMultiOverlay.querySelectorAll(".frameMultiCell");
-  for (const cell of cells) {
-    const r = cell.getBoundingClientRect();
-    const rx = ((r.left - canvasR.left) / canvasR.width) * outW;
-    const ry = ((r.top - canvasR.top) / canvasR.height) * outH;
-    const rw = (r.width / canvasR.width) * outW;
-    const rh = (r.height / canvasR.height) * outH;
-    const rect = {
-      x: Math.round(rx),
-      y: Math.round(ry),
-      width: Math.max(1, Math.round(rw)),
-      height: Math.max(1, Math.round(rh)),
-    };
-
-    if (cell.dataset.slotRole === "logo") {
-      if (logoImg) drawDrawableCoverInRectForExport(octx, logoImg, rect);
-    } else if (cell.dataset.slotRole === "reveal") {
-      if (revealImg) drawDrawableCoverInRectForExport(octx, revealImg, rect);
-    } else if (cell.dataset.slotNftIndex != null && cell.dataset.slotNftIndex !== "") {
-      const idx = Number(cell.dataset.slotNftIndex);
-      if (!Number.isFinite(idx)) continue;
-      let drawable = null;
-      if (lastWalletNfts.length) {
-        const nft = lastWalletNfts[idx];
-        if (nft) drawable = walletImageByTokenId.get(String(nft.tokenId));
-      } else if (lastUploadFiles.length) {
-        drawable = uploadImageByIndex.get(String(idx));
-      }
-      if (drawable) drawDrawableCoverInRectForExport(octx, drawable, rect);
-    }
-  }
-
-  return out.toDataURL(EXPORT_MIME);
-}
-
 /**
  * Load a remote NFT image for canvas export. iOS Safari is picky: prefer fetch→blob→blob URL→Image
  * (same-origin pixels, no taint) and await decode. Falls back to crossOrigin Image, then plain Image.
@@ -851,7 +855,7 @@ async function loadRemoteImageForCanvas(url) {
     /* ignore */
   }
 
-  throw new Error("Remote NFT art could not be loaded in a CORS-safe way for export.");
+  return loadImage(u, { highPriority: true, awaitDecode: true });
 }
 
 /** Letter PNGs: some static hosts prefer encoded vs raw `%20` paths — try both. */
@@ -920,19 +924,19 @@ function clearCanvas() {
 }
 
 /**
- * Encodes the canvas as PNG `data:` URL on the mirror `<img>`, and the same URL + `download`
- * on the wrapping `<a>` so Safari/macOS “Download Linked File” / “Save Link As” use a real .png name.
- * @param {string} filename e.g. ddg-gorgez.png
+ * Encodes the canvas as JPEG `data:` URL on the mirror `<img>`, and the same URL + `download`
+ * on the wrapping `<a>` so Safari/macOS “Download Linked File” / “Save Link As” use a real .jpg name.
+ * @param {string} filename e.g. ddg-gorgez.jpg
  * @param {{ linkForDownload?: boolean }} opts if true, also sets latestRenderedDataUrl for the Download button
  */
-function assignExportMirrorFromCanvas(filename, opts = {}) {
+function assignJpegFromCanvas(filename, opts = {}) {
   const linkForDownload = !!opts.linkForDownload;
   const el = canvasExportMirror;
   const link = canvasExportMirrorLink;
   if (!el || !canvas.width || !canvas.height) return Promise.resolve();
 
   return new Promise((resolve) => {
-    const dataUrl = canvas.toDataURL(EXPORT_MIME);
+    const dataUrl = canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
     el.dataset.saveFilename = filename;
     el.src = dataUrl;
     if (link) {
@@ -944,158 +948,6 @@ function assignExportMirrorFromCanvas(filename, opts = {}) {
     }
     resolve();
   });
-}
-
-/** Wait for webfonts so html2canvas matches the live caption typography. */
-async function awaitDocumentFontsReady() {
-  try {
-    if (document.fonts?.ready) await document.fonts.ready;
-  } catch (_) {
-    /* ignore */
-  }
-}
-
-/** `background-image: url("…")` for `.frameMultiFill` (quote-safe; same URL as `data-bg-src`). */
-function cssBackgroundUrl(u) {
-  const s = String(u || "").trim();
-  if (!s) return "none";
-  return `url("${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`;
-}
-
-/**
- * Wait for every `<img>` and `.frameMultiFill` background under the template before DOM export.
- * @param {ParentNode | null | undefined} root
- */
-async function awaitSubtreeImagesLoaded(root) {
-  if (!root) return;
-  const imgs = root.querySelectorAll("img");
-  const oneImg = (img) => {
-    if (!img || !img.src) return Promise.resolve();
-    if (img.complete && img.naturalWidth > 0) {
-      if (typeof img.decode === "function") return img.decode().catch(() => {});
-      return Promise.resolve();
-    }
-    return new Promise((resolve) => {
-      img.addEventListener("load", () => resolve(), { once: true });
-      img.addEventListener("error", () => resolve(), { once: true });
-    });
-  };
-  await Promise.all([...imgs].map(oneImg));
-
-  const fills = root.querySelectorAll(".frameMultiFill[data-bg-src]");
-  await Promise.all(
-    [...fills].map((el) => {
-      const u = String(el.getAttribute("data-bg-src") || "").trim();
-      if (!u) return Promise.resolve();
-      return new Promise((resolve) => {
-        const im = new Image();
-        im.onload = () => resolve();
-        im.onerror = () => resolve();
-        im.src = u;
-      });
-    })
-  );
-}
-
-/** Visible template shell — must match `index.html` (.canvasWrap.ddg-template). */
-function getDdgTemplateExportEl() {
-  return document.querySelector(".ddg-template") || canvasWrap;
-}
-
-/** html2canvas clones the document; backdrop-filter on ancestors caused all-white PNGs — neutralize in clone only. */
-function prepareHtml2CanvasClone(doc) {
-  try {
-    for (const el of doc.querySelectorAll("*")) {
-      el.style.setProperty("backdrop-filter", "none");
-      el.style.setProperty("-webkit-backdrop-filter", "none");
-    }
-  } catch (_) {
-    /* ignore */
-  }
-  try {
-    doc.getElementById("canvasExportMirrorLink")?.style.setProperty("display", "none", "important");
-  } catch (_) {
-    /* ignore */
-  }
-}
-
-/** html2canvas `scale` caps — iPhone CSS width is small vs 1024px artboard, so NFTs need a higher scale or they look soft after capture. */
-const EXPORT_H2C_MIN_SCALE = 2;
-const EXPORT_H2C_MAX_SCALE = 4;
-const EXPORT_H2C_MIN_SCALE_IOS = 2.75;
-const EXPORT_H2C_MAX_SCALE_IOS = 5.75;
-
-function isAppleMobileDevice() {
-  try {
-    const ua = navigator.userAgent || "";
-    if (/iPhone|iPod/i.test(ua)) return true;
-    if (/iPad/i.test(ua)) return true;
-    if (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1) return true;
-    return false;
-  } catch (_) {
-    return false;
-  }
-}
-
-function computeExportScreenshotScale() {
-  const el = getDdgTemplateExportEl();
-  const rect = el?.getBoundingClientRect?.();
-  const cssW = Math.max(1, rect?.width || 1);
-  const dpr = Math.max(1, Number(window.devicePixelRatio) || 2);
-  const bitmapW = canvas?.width || CANVAS_OUTPUT_WIDTH;
-  const matchBitmap = bitmapW / cssW;
-  const ios = isAppleMobileDevice();
-  const minS = ios ? EXPORT_H2C_MIN_SCALE_IOS : EXPORT_H2C_MIN_SCALE;
-  const maxS = ios ? EXPORT_H2C_MAX_SCALE_IOS : EXPORT_H2C_MAX_SCALE;
-  const dprBoost = dpr * (ios ? 1.45 : 1.25);
-  const oversample = matchBitmap * (ios ? 1.18 : 1.08);
-  return Math.min(maxS, Math.max(minS, oversample, dprBoost));
-}
-
-/**
- * Screenshot of `.ddg-template` (same DOM as preview). Fallback: canvas readback if html2canvas missing/fails.
- */
-async function getExportDataUrl() {
-  await yieldForBitmapExport();
-  await awaitDocumentFontsReady();
-  const exportEl = getDdgTemplateExportEl();
-  await awaitSubtreeImagesLoaded(exportEl);
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  try {
-    void exportEl?.offsetWidth;
-  } catch (_) {
-    /* ignore */
-  }
-
-  try {
-    const posterUrl = await buildHighResPosterDataUrl();
-    if (posterUrl) return posterUrl;
-  } catch (e) {
-    console.warn("[ddg-gorgez] high-res poster export failed, falling back:", e);
-  }
-
-  const h2c = globalThis.html2canvas;
-  if (typeof h2c === "function" && exportEl) {
-    try {
-      const scale = computeExportScreenshotScale();
-      const shot = await h2c(exportEl, {
-        backgroundColor: null,
-        scale,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        foreignObjectRendering: false,
-        imageTimeout: 20000,
-        onclone(doc) {
-          prepareHtml2CanvasClone(doc);
-        },
-      });
-      return shot.toDataURL(EXPORT_MIME);
-    } catch (e) {
-      console.warn("[ddg-gorgez] html2canvas export failed, using canvas fallback:", e);
-    }
-  }
-  return canvas.toDataURL(EXPORT_MIME);
 }
 
 function clamp(n, lo, hi) {
@@ -1353,25 +1205,37 @@ async function renderComposite(userImg) {
     await yieldForBitmapExport();
   }
 
-  // Template bitmap only. Wallet/upload NFT grid + logo/reveal cells live on `#frameMultiOverlay` (DOM);
-  // do not redraw them here — export is html2canvas(`.ddg-template`) and must match that DOM exactly.
+  // Render order:
+  // Template background
+  // User image into frame
   ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
 
-  const domGrid = lastWalletNfts.length > 0 || lastUploadFiles.length > 0;
-  if (!domGrid && userImg) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(frame.x, frame.y, frame.width, frame.height);
-    ctx.clip();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(frame.x, frame.y, frame.width, frame.height);
+  ctx.clip();
+  if (lastWalletNfts.length) {
+    const [gridLogoImg, revealImg] = await Promise.all([
+      safeLoadOptional(ASSETS.ddgGridLogo),
+      safeLoadOptional(ASSETS.ddgReveal),
+    ]);
+    drawWalletLayoutInFrame(frame, lastWalletNfts, gridLogoImg, revealImg);
+  } else if (lastUploadFiles.length) {
+    const [gridLogoImg, revealImg] = await Promise.all([
+      safeLoadOptional(ASSETS.ddgGridLogo),
+      safeLoadOptional(ASSETS.ddgReveal),
+    ]);
+    drawUploadLayoutInFrame(frame, gridLogoImg, revealImg);
+  } else if (userImg) {
     drawImageToFrame(userImg, frame);
-    ctx.restore();
   }
+  ctx.restore();
 
   if (String(customSloganText || "").trim()) {
     await drawCustomSloganOnCanvas(template);
   }
 
-  await assignExportMirrorFromCanvas(EXPORT_FILENAME_COMPOSITE, { linkForDownload: true });
+  await assignJpegFromCanvas(EXPORT_FILENAME_COMPOSITE, { linkForDownload: true });
   syncFrameMultiOverlay();
 }
 
@@ -1393,11 +1257,10 @@ async function ensureWalletImagesLoaded() {
       }
     }
   }
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < 2; pass++) {
     const need = lastWalletNfts.filter((n) => !walletImageByTokenId.has(String(n.tokenId)));
     if (!need.length) return;
     await Promise.all(need.map((n) => loadOne(n)));
-    if (pass < 2) await new Promise((r) => setTimeout(r, 90));
   }
 }
 
@@ -1534,61 +1397,40 @@ function syncFrameMultiOverlay() {
     cell.dataset.area = slot.area;
     const pan = document.createElement("div");
     pan.className = "frameMultiPan";
+    const img = document.createElement("img");
+    img.className = "frameMultiImg";
+    img.draggable = false;
+    img.decoding = "async";
+    img.loading = "lazy";
     if (slot.kind === "logo") {
-      cell.dataset.slotRole = "logo";
-      const img = document.createElement("img");
-      img.className = "frameMultiImg";
-      img.draggable = false;
-      img.decoding = "async";
-      img.loading = "eager";
       img.alt = "DDG";
       img.src = ASSETS.ddgGridLogo;
-      pan.appendChild(img);
+      cell.dataset.slotRole = "logo";
     } else if (slot.kind === "reveal") {
-      cell.dataset.slotRole = "reveal";
-      const img = document.createElement("img");
-      img.className = "frameMultiImg";
-      img.draggable = false;
-      img.decoding = "async";
-      img.loading = "eager";
       img.alt = "";
       img.src = ASSETS.ddgReveal;
-      pan.appendChild(img);
+      cell.dataset.slotRole = "reveal";
     } else if (lastWalletNfts.length) {
       const si = nftIdx;
       nftIdx += 1;
       cell.dataset.slotNftIndex = String(si);
       const nft = lastWalletNfts[si];
-      const fill = document.createElement("div");
-      fill.className = "frameMultiFill";
-      fill.setAttribute("role", "img");
-      fill.setAttribute("aria-label", nft?.name || "NFT");
-      const tid = nft ? String(nft.tokenId) : "";
-      const loaded = tid ? walletImageByTokenId.get(tid) : null;
-      const src = loaded?.src || OVERLAY_PLACEHOLDER_DATA_URL;
-      fill.setAttribute("data-bg-src", src);
-      fill.style.backgroundImage = cssBackgroundUrl(src);
-      pan.appendChild(fill);
+      img.alt = nft?.name || "";
+      img.src = nft ? nft.thumb || nft.full || "" : "";
     } else {
       const si = upIdx;
       upIdx += 1;
       cell.dataset.slotNftIndex = String(si);
       const f = lastUploadFiles[si];
-      const fill = document.createElement("div");
-      fill.className = "frameMultiFill";
-      fill.setAttribute("role", "img");
-      fill.setAttribute("aria-label", f?.name || "Upload");
+      img.alt = f?.name || "";
       if (f) {
         const u = URL.createObjectURL(f);
         overlayPreviewUrls.push(u);
-        fill.setAttribute("data-bg-src", u);
-        fill.style.backgroundImage = cssBackgroundUrl(u);
-      } else {
-        fill.setAttribute("data-bg-src", OVERLAY_PLACEHOLDER_DATA_URL);
-        fill.style.backgroundImage = cssBackgroundUrl(OVERLAY_PLACEHOLDER_DATA_URL);
+        img.src = u;
       }
-      pan.appendChild(fill);
     }
+    img.style.transform = "";
+    pan.appendChild(img);
     cell.appendChild(pan);
     frameMultiOverlay.appendChild(cell);
     attachGridSlotInteraction(cell, slot);
@@ -1649,13 +1491,9 @@ function applyFrameHint(framePx) {
   const cw = canvas.width || 1;
   const ch = canvas.height || 1;
   const fx = (framePx.x / cw) * 100;
-  let fy = (framePx.y / ch) * 100;
+  const fy = (framePx.y / ch) * 100;
   const fw = (framePx.width / cw) * 100;
-  let fh = (framePx.height / ch) * 100;
-  if (lastWalletNfts.length > 0 || lastUploadFiles.length > 0) {
-    fy += MULTI_GRID_OVERLAY_TOP_NUDGE_PCT;
-    fh += MULTI_GRID_OVERLAY_HEIGHT_BUMP_PCT;
-  }
+  const fh = (framePx.height / ch) * 100;
   canvasWrap.style.setProperty("--fx", `${fx}%`);
   canvasWrap.style.setProperty("--fy", `${fy}%`);
   canvasWrap.style.setProperty("--fw", `${fw}%`);
@@ -1928,7 +1766,7 @@ downloadBtn?.addEventListener("click", async () => {
   try {
     if (lastUploadFiles.length) await rebuildUploadImageCache();
     await renderComposite(null);
-    const url = await getExportDataUrl();
+    const url = canvas.toDataURL("image/jpeg", EXPORT_JPEG_QUALITY);
     latestRenderedDataUrl = url;
     const a = document.createElement("a");
     a.href = url;
@@ -2058,7 +1896,7 @@ function buildWalletPickerStrip() {
     im.className = "walletPickerChipImg";
     im.src = nft.thumb || nft.full || "";
     im.alt = "";
-    im.loading = "eager";
+    im.loading = "lazy";
     im.decoding = "async";
     const cap = document.createElement("span");
     cap.className = "walletPickerChipCap";

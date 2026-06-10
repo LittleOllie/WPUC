@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="LO Logic">
+  <rect width="64" height="64" rx="14" fill="#ffdd55" stroke="#1a1a2e" stroke-width="3"/>
+  <rect x="10" y="10" width="14" height="14" rx="3" fill="#3d7bff" stroke="#1a1a2e" stroke-width="2"/>
+  <circle cx="45" cy="17" r="8" fill="#ff4d5a" stroke="#1a1a2e" stroke-width="2"/>
+  <path d="M38 42 L50 42 L44 52 Z" fill="#ffc72c" stroke="#1a1a2e" stroke-width="2" stroke-linejoin="round"/>
+  <text x="32" y="62" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="800" fill="#1a1a2e">LOGIC</text>
+</svg>

@@ -1,4 +1,2 @@
 # Copy to .dev.vars (never commit). Get key from dashboard.alchemy.com
 ALCHEMY_API_KEY=your_alchemy_api_key_here
-# Optional — Web3House auto-logos from OpenSea (wrangler secret put OPENSEA_API_KEY)
-OPENSEA_API_KEY=your_opensea_api_key_here

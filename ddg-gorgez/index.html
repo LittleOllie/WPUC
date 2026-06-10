@@ -14,12 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="style.css?v=dataUrlLink1" />
     <!--
-      DO NOT recreate separate export positioning logic.
-      PNG = html2canvas(`.ddg-template`) — a screenshot of the same DOM you see. NFTs are not redrawn on
-      canvas for export; strip backdrop-filter in the clone so capture is not a blank white image.
-    -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
-    <!--
       Wallet loading: Alchemy NFT API key (not shown in the app UI). Visible in page source — rotate if leaked; prefer a server proxy for production.
       Override before this script if needed: window.DDG_GORGEZ_ALCHEMY_KEY = "…";
       Fallbacks (see walletLoader.js): meta name="ddg-gorgez-alchemy-key", localhost sessionStorage.DDG_GORGEZ_ALCHEMY_KEY.
@@ -67,16 +61,16 @@
 
         <div class="stage" id="stage">
           <div
-            class="canvasWrap ddg-template"
+            class="canvasWrap"
             id="canvasWrap"
-            title="Download = named PNG. Right-click the card: if Save Image is “Unknown”, use Download Linked File or Save Link As for a .png name."
+            title="Download = named JPG. Right-click the card: if Save Image is “Unknown”, use Download Linked File or Save Link As for a .jpg name."
           >
             <canvas id="canvas" width="1024" height="1193" aria-label="Template preview"></canvas>
             <a
               id="canvasExportMirrorLink"
               class="canvasExportMirrorLink"
               href="#"
-              download="ddg-gorgez.png"
+              download="ddg-gorgez.jpg"
               aria-hidden="true"
             >
               <img

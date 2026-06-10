@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Vault Raid</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="auth-screen" class="auth-screen">
+      <div class="dw-window dw-window--auth">
+        <div class="dw-titlebar">Vault Raid</div>
+        <div class="dw-body dw-body--auth">
+          <form id="form-enter" class="auth-form">
+            <label class="auth-label">Enter Username</label>
+            <input
+              type="text"
+              id="username-input"
+              name="username"
+              class="dw-inp"
+              placeholder="Your raider name"
+              required
+              minlength="2"
+              maxlength="20"
+              autocomplete="username"
+            />
+            <p id="auth-error" class="auth-err" hidden></p>
+            <button type="submit" id="btn-enter" class="dw-btn dw-btn--default">Enter Game</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="game-screen" class="game-screen is-hidden" aria-hidden="true">
+      <div class="dw-window dw-window--game">
+        <div class="dw-titlebar">
+          <span>Vault Raid</span>
+          <span class="dw-titlebar-user" id="title-username"></span>
+        </div>
+
+        <div class="dw-body">
+          <div class="dw-top">
+            <div class="dw-stats-panel">
+              <div class="dw-stats-box" id="stats-box"></div>
+              <p class="dw-market-event" id="market-event"></p>
+              <div class="dw-charge-row">
+                <span class="dw-charge-label">CHARGE</span>
+                <div class="dw-charge-track"><div class="dw-charge-fill" id="charge-fill"></div></div>
+                <span class="dw-charge-pct" id="charge-pct"></span>
+              </div>
+              <p class="dw-charge-timer" id="charge-timer"></p>
+              <button type="button" class="dw-btn dw-btn--dev" id="btn-refill-charge">Refill Charge</button>
+            </div>
+
+            <div class="dw-travel-panel">
+              <p class="dw-travel-header" id="location-name">Splash Park</p>
+              <div class="dw-travel-grid" id="location-btns"></div>
+            </div>
+          </div>
+
+          <div class="dw-news-panel">
+            <div class="dw-news-log" id="event-log" tabindex="0"></div>
+          </div>
+
+          <div class="dw-mode-bar">
+            <button type="button" class="dw-btn dw-mode-btn dw-mode-btn--on" data-mode="trade">Trade</button>
+            <button type="button" class="dw-btn dw-mode-btn" data-mode="gear">Gear</button>
+            <button type="button" class="dw-btn dw-mode-btn" data-mode="raid">Raid</button>
+          </div>
+
+          <!-- TRADE (core loop) -->
+          <div id="panel-trade" class="dw-bottom dw-panel">
+            <div class="dw-bottom-col dw-market-col">
+              <p class="dw-col-title">Snacks here — <span id="trade-loc-label">Splash Park</span></p>
+              <div class="dw-list-frame dw-list-frame--market">
+                <table class="dw-list" id="market-table">
+                  <thead><tr><th>Item</th><th>Price</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dw-bottom-col dw-actions-col">
+              <label class="dw-qty-label">Qty <input type="number" id="trade-qty" class="dw-inp dw-qty" value="1" min="1" max="99" /></label>
+              <input type="number" id="vault-amount" class="dw-inp dw-amt" value="100" min="1" title="Vault amount" />
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-buy-snack">Buy &gt;&gt;</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-sell-snack">&lt;&lt; Sell</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-deposit">To Vault</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-withdraw">&lt;&lt; Vault</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-help">Help</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-logout">Change Name</button>
+            </div>
+
+            <div class="dw-bottom-col dw-inv-col">
+              <p class="dw-col-title" id="snack-inv-title">Snack stash: 0/100</p>
+              <div class="dw-list-frame dw-list-frame--tall">
+                <table class="dw-list" id="snack-inv-table">
+                  <thead><tr><th>Item</th><th>Qty</th><th>Avg</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- GEAR SHOP -->
+          <div id="panel-gear" class="dw-bottom dw-panel is-hidden">
+            <div class="dw-bottom-col dw-market-col">
+              <p class="dw-col-title">Gear shop</p>
+              <div class="dw-list-frame dw-list-frame--market">
+                <table class="dw-list" id="shop-table">
+                  <thead><tr><th>Gear</th><th>Price</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p class="dw-col-title" id="gear-inv-title">Gear pack: 0/12</p>
+            </div>
+
+            <div class="dw-bottom-col dw-actions-col">
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-buy-gear">Buy &gt;&gt;</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-mode-trade">Back to Trade</button>
+            </div>
+
+            <div class="dw-bottom-col dw-inv-col">
+              <div class="dw-list-frame dw-list-frame--tall">
+                <table class="dw-list" id="gear-inv-table">
+                  <thead><tr><th>Gear</th><th>Qty</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- RAID -->
+          <div id="panel-raid" class="dw-bottom dw-panel is-hidden">
+            <div class="dw-bottom-col dw-market-col">
+              <p class="dw-col-title">Raid targets (exposed cash)</p>
+              <div class="dw-list-frame dw-list-frame--market">
+                <table class="dw-list" id="raid-table">
+                  <thead><tr><th>Target</th><th>Exposed</th><th>Risk</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p class="dw-col-title">Your gear — click to equip</p>
+              <div class="dw-list-frame dw-list-frame--short">
+                <table class="dw-list" id="owned-gear-table">
+                  <thead><tr><th>Gear</th><th>Slot</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dw-bottom-col dw-actions-col">
+              <div class="dw-loadout-box" id="loadout-box">LOADOUT: (none)</div>
+              <p class="dw-raid-hint" id="raid-hint">Equip attack gear, then Scout / Raid</p>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-scout">Scout (3 Chg)</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-raid">Raid!</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-ranks">Ranks</button>
+              <button type="button" class="dw-btn dw-btn--wide" id="btn-mode-trade2">Back to Trade</button>
+            </div>
+
+            <div class="dw-bottom-col dw-inv-col">
+              <p class="dw-col-title">Your exposed $Lollies</p>
+              <p class="dw-exposed-cash" id="exposed-cash">$0 at risk</p>
+              <p class="dw-col-title">Vault (safe from raids)</p>
+              <p class="dw-vault-safe" id="vault-safe">$0 protected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="app.js?v=8"></script>
+  </body>
+</html>

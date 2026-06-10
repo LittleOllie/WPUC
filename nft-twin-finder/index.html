@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NFT Twin Finder — Little Ollie Labs</title>
+  <meta name="description" content="Find the closest looking NFT in your collection using trait similarity." />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ntf-page">
+    <!-- Search -->
+    <section id="screen-search" class="ntf-screen is-active" aria-label="Search">
+      <a href="../links/" class="ntf-back">← Back</a>
+
+      <header class="ntf-hero">
+        <img
+          class="ntf-hero__mascot"
+          src="../dopeornope/assets/lo1.png"
+          alt=""
+          width="160"
+          height="160"
+          decoding="async"
+        />
+        <h1 class="ntf-hero__title">NFT TWIN FINDER</h1>
+        <p class="ntf-hero__sub">Find your closest lookalike in the collection</p>
+      </header>
+
+      <div class="ntf-panel">
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="collection-select">Collection</label>
+          <select id="collection-select" class="ntf-select" disabled>
+            <option value="">Loading collections…</option>
+          </select>
+        </div>
+
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="token-input">NFT Number</label>
+          <input
+            id="token-input"
+            class="ntf-input"
+            type="text"
+            inputmode="numeric"
+            placeholder="#437"
+            autocomplete="off"
+          />
+        </div>
+
+        <button id="find-btn" class="ntf-btn ntf-btn--accent" type="button" disabled>
+          Find My Twin
+        </button>
+
+        <p id="search-error" class="ntf-error" hidden></p>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <section id="screen-loading" class="ntf-screen" aria-label="Loading" aria-live="polite">
+      <div class="ntf-loading">
+        <div class="ntf-spinner" aria-hidden="true"></div>
+        <p id="loading-message" class="ntf-loading__msg">Checking traits...</p>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="screen-results" class="ntf-screen" aria-label="Results">
+      <a href="../links/" class="ntf-back">← Back</a>
+
+      <header class="ntf-hero">
+        <h1 class="ntf-hero__title">YOUR TWINS</h1>
+        <p class="ntf-hero__sub">Closest matches in the collection</p>
+      </header>
+
+      <article id="featured-card" class="ntf-feature-card"></article>
+
+      <h2 class="ntf-section-title">Top 5 Closest Twins</h2>
+      <div id="twin-list" class="ntf-twin-list"></div>
+
+      <button id="search-again-btn" class="ntf-btn ntf-btn--ghost" type="button">
+        Search again
+      </button>
+    </section>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

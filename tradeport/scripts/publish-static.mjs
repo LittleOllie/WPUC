@@ -1,7 +1,7 @@
 /**
  * Copy Vite build output from dist/ to tradeport/ root so the app is served at /tradeport/
  */
-import { cpSync, existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,17 +28,4 @@ for (const name of entries) {
   }
   cpSync(from, join(tradeportDir, name), { recursive: true });
   console.log(`published: ${name}`);
-}
-
-const indexPath = join(tradeportDir, "index.html");
-if (existsSync(indexPath)) {
-  let html = readFileSync(indexPath, "utf8");
-  if (!html.includes('tp-boot')) {
-    html = html.replace(
-      '<div id="root"></div>',
-      '<div id="root"><p class="tp-boot">Loading TradePort...</p></div>'
-    );
-  }
-  writeFileSync(indexPath, html);
-  console.log("published: boot loader in index.html");
 }

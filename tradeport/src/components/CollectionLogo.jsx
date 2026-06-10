@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { logoEdgeFill } from "../utils/logoEdgeFill";
 
 export default function CollectionLogo({ collection, className = "h-12 w-12", textClass = "text-lg" }) {
   const [failed, setFailed] = useState(false);
@@ -21,13 +20,11 @@ export default function CollectionLogo({ collection, className = "h-12 w-12", te
     );
   }
 
-  const edge = logoEdgeFill(collection);
-
   return (
     <img
       src={collection.logo}
       alt={`${collection.name} logo`}
-      className={`shrink-0 rounded-xl ${edge ? "object-cover scale-[1.12]" : "object-contain"} ${className}`}
+      className={`shrink-0 rounded-xl object-contain ${className}`}
       onError={() => setFailed(true)}
     />
   );

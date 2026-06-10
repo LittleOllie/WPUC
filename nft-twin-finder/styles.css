@@ -1,0 +1,422 @@
+/**
+ * NFT Twin Finder — visual language aligned with Dope or Nope (dopeornope/)
+ * Scoped to .ntf-* / .screen--ntf; does not modify global site styles.
+ */
+
+:root {
+  --lo-blue-deep: #2d6fd4;
+  --lo-blue-mid: #4a8df3;
+  --lo-blue-light: #7bb9f9;
+  --lo-blue-primary: #1e73ff;
+  --lo-yellow: #ffd84d;
+  --lo-yellow-bright: #ffdf66;
+  --lo-navy: #0f2f6e;
+  --text-on-light: #0f172a;
+  --text-on-lo: #ffffff;
+  --muted-on-lo: rgba(255, 255, 255, 0.88);
+  --glass: rgba(255, 255, 255, 0.22);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --shadow-soft: 0 8px 24px rgba(15, 47, 110, 0.18);
+  --radius-lg: 24px;
+  --radius-md: 20px;
+  --tap: 0.95;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+    sans-serif;
+  color: var(--text-on-light);
+  background: linear-gradient(180deg, var(--lo-blue-light) 0%, var(--lo-blue-mid) 42%, var(--lo-blue-deep) 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(closest-side at 50% 36%, rgba(255, 255, 255, 0.09), transparent 68%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.ntf-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+}
+
+.ntf-screen {
+  display: none;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.ntf-screen.is-active {
+  display: block;
+}
+
+.ntf-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--text-on-lo);
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+}
+
+.ntf-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 8px 8px 16px;
+}
+
+.ntf-hero__mascot {
+  width: min(120px, 32vw);
+  height: auto;
+  filter: drop-shadow(0 10px 20px rgba(15, 47, 110, 0.35));
+}
+
+.ntf-hero__title {
+  margin: 0;
+  font-size: clamp(1.35rem, 5vw, 1.85rem);
+  font-weight: 1000;
+  letter-spacing: 0.06em;
+  color: var(--text-on-lo);
+  text-shadow: 0 2px 8px rgba(15, 47, 110, 0.35);
+}
+
+.ntf-hero__sub {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--muted-on-lo);
+  letter-spacing: 0.03em;
+}
+
+.ntf-panel {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 18px 55px rgba(15, 47, 110, 0.28);
+}
+
+.ntf-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ntf-field__label {
+  font-weight: 900;
+  font-size: 12px;
+  color: var(--muted-on-lo);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ntf-input,
+.ntf-select {
+  width: 100%;
+  height: 54px;
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  padding: 0 14px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text-on-light);
+  box-shadow: var(--shadow-soft);
+}
+
+.ntf-input:focus,
+.ntf-select:focus {
+  border-color: var(--lo-yellow);
+  box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.35);
+}
+
+.ntf-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 16px 14px;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 140ms ease, filter 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ntf-btn--accent {
+  background: linear-gradient(180deg, var(--lo-yellow-bright) 0%, var(--lo-yellow) 100%);
+  color: var(--lo-navy);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 7px 0 rgba(180, 140, 0, 0.4), 0 10px 28px rgba(15, 47, 110, 0.18);
+}
+
+.ntf-btn--ghost {
+  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--text-on-lo);
+  border: 2px solid rgba(255, 216, 77, 0.65);
+  font-size: 15px;
+  padding: 14px;
+}
+
+.ntf-btn:active:not(:disabled) {
+  transform: scale(var(--tap));
+}
+
+.ntf-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ntf-error {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 77, 77, 0.2);
+  border: 1px solid rgba(255, 120, 120, 0.55);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.ntf-loading {
+  text-align: center;
+  padding: 48px 16px;
+}
+
+.ntf-loading__msg {
+  margin: 20px 0 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-on-lo);
+  letter-spacing: 0.04em;
+  min-height: 1.5em;
+}
+
+.ntf-spinner {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--lo-yellow);
+  animation: ntf-spin 0.9s linear infinite;
+}
+
+@keyframes ntf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Featured NFT card (Hot Or Not yellow mat) */
+.ntf-feature-card {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 236, 150, 0.96) 0%,
+    rgba(255, 216, 77, 0.94) 38%,
+    rgba(255, 200, 70, 0.93) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 18px 50px rgba(15, 47, 110, 0.2), 0 8px 22px rgba(180, 140, 0, 0.28);
+  margin-bottom: 18px;
+}
+
+.ntf-nft-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    165deg,
+    var(--lo-yellow-bright) 0%,
+    var(--lo-yellow) 42%,
+    rgba(255, 200, 60, 0.92) 100%
+  );
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.ntf-nft-stage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-lg);
+}
+
+.ntf-feature-meta {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.ntf-feature-meta__collection {
+  font-size: 1.35rem;
+  font-weight: 1000;
+  color: var(--lo-navy);
+  letter-spacing: 0.02em;
+}
+
+.ntf-feature-meta__token {
+  margin-top: 4px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: rgba(15, 47, 110, 0.75);
+}
+
+.ntf-section-title {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 1000;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-on-lo);
+}
+
+.ntf-twin-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ntf-twin-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.ntf-twin-card__row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.ntf-twin-thumb {
+  width: 88px;
+  height: 88px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #e8eef8;
+}
+
+.ntf-twin-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ntf-twin-score {
+  font-size: 1.15rem;
+  font-weight: 1000;
+  color: var(--lo-blue-primary);
+}
+
+.ntf-twin-token {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--lo-navy);
+  margin-top: 2px;
+}
+
+.ntf-twin-summary {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(15, 47, 110, 0.65);
+  line-height: 1.35;
+}
+
+.ntf-why-toggle {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(30, 115, 255, 0.25);
+  background: rgba(30, 115, 255, 0.08);
+  color: var(--lo-blue-primary);
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ntf-why-panel {
+  display: none;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(30, 115, 255, 0.06);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.ntf-why-panel.is-open {
+  display: block;
+}
+
+.ntf-why-row--match {
+  color: #1a8f4a;
+}
+
+.ntf-why-row--diff {
+  color: #c0392b;
+}
+
+@media (max-width: 400px) {
+  .ntf-twin-card__row {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .ntf-twin-thumb {
+    width: 72px;
+    height: 72px;
+  }
+}

@@ -325,7 +325,7 @@ canvas#canvas {
   display: block;
 }
 
-/* Wrapped in <a download> so “Save link / Download linked file” can use a real .png name (Safari). */
+/* Wrapped in <a download> so “Save link / Download linked file” can use a real .jpg name (Safari). */
 .canvasExportMirrorLink {
   position: absolute;
   inset: 0;
@@ -562,8 +562,7 @@ canvas#canvas {
   margin: 0;
   min-width: 0;
   min-height: 0;
-  /* Let inner pan bleed past cell bounds — kills 1px hairlines between grid tracks (subpixel gaps). */
-  overflow: visible;
+  overflow: hidden;
   background: transparent;
   border: 0;
   outline: none;
@@ -580,46 +579,21 @@ canvas#canvas {
 
 .frameMultiPan {
   position: absolute;
-  /* 1px bleed past each cell edge so tiles visually touch (covers anti-aliased grid seams). */
-  inset: -1px;
-  width: calc(100% + 2px);
-  height: calc(100% + 2px);
-  overflow: hidden;
+  inset: 0;
   transform-origin: center center;
-  min-width: 0;
-  min-height: 0;
 }
 
 .frameMultiPan--drag {
   cursor: grabbing;
 }
 
-/* Logo / reveal cells (static assets) — real <img>, browser + html2canvas handle predictably. */
 .frameMultiImg {
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
   object-fit: cover;
-  object-position: center center;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-/**
- * NFT slots: cover via background-size (same visual as object-fit:cover on an <img>).
- * html2canvas often squashes <img>+object-fit; background cover matches export to live preview.
- */
-.frameMultiFill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  box-sizing: border-box;
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;

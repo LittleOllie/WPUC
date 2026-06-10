@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>LO Logic – Little Ollie Labs</title>
+    <meta
+      name="description"
+      content="LO Logic — a kid-friendly 3×3 visual deduction puzzle. Piece together clue fragments to solve the hidden board!"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#6ba8ff" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="lo-app">
+      <header class="lo-header">
+        <div class="lo-brand">
+          <div class="lo-logo" aria-hidden="true">LO</div>
+          <div class="lo-title-block">
+            <h1>LO Logic</h1>
+            <p>Visual deduction puzzles</p>
+          </div>
+        </div>
+        <div class="lo-header-actions">
+          <button type="button" class="lo-icon-btn" id="btn-sound" aria-pressed="false" title="Sound (off)">
+            🔇
+          </button>
+        </div>
+      </header>
+
+      <div class="lo-meta">
+        <span id="puzzle-num">Puzzle 1 / 10</span>
+        <span id="difficulty" class="lo-diff lo-diff--easy">easy</span>
+      </div>
+
+      <div class="lo-main">
+        <section>
+          <div class="lo-board-wrap">
+            <div id="board" class="lo-board" aria-label="3 by 3 puzzle board"></div>
+            <div id="success" class="lo-success is-hidden" role="status">
+              <h2>Solved!</h2>
+              <button type="button" class="lo-btn lo-btn--primary" id="btn-next">Next puzzle →</button>
+            </div>
+          </div>
+
+          <p id="feedback" class="lo-feedback" aria-live="polite"></p>
+
+          <div class="lo-actions">
+            <button type="button" class="lo-btn lo-btn--peek" id="btn-show-solved" aria-pressed="false">
+              Show solved
+            </button>
+            <button type="button" class="lo-btn lo-btn--secondary" id="btn-reset">Reset</button>
+            <button type="button" class="lo-btn lo-btn--primary" id="btn-check">Check answer</button>
+          </div>
+        </section>
+
+        <aside class="lo-fragments-wrap">
+          <p class="lo-fragments-title">Clue fragments</p>
+          <p class="lo-fragments-hint">
+            Each numbered piece is a chunk of the hidden board. <strong>Color squares</strong> show color only.
+            <strong>Grey shapes</strong> show shape only. Combined tiles show both.
+          </p>
+          <div id="fragments" class="lo-fragments" aria-label="Visual clue fragments"></div>
+        </aside>
+      </div>
+
+      <div class="lo-tray-wrap">
+        <p class="lo-tray-label">Drag tiles — circles, squares &amp; triangles in red, blue &amp; yellow</p>
+        <div id="tray" class="lo-tray" aria-label="Tile tray"></div>
+      </div>
+
+      <a href="../games.html" class="lo-back">← Back to LO Arcade</a>
+    </div>
+
+    <script type="module" src="js/app.js?v=13"></script>
+  </body>
+</html>

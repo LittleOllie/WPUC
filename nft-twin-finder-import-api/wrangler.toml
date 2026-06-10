@@ -1,0 +1,15 @@
+name = "twinapp"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+workers_dev = true
+preview_urls = true
+
+# Deploy: npx wrangler deploy
+# Local: cp .dev.vars.example .dev.vars && npm run dev
+#
+# Secrets:
+#   npx wrangler secret put ALCHEMY_API_KEY_NFT_IMPORT
+#   npx wrangler secret put ALCHEMY_API_KEY   (fallback)
+#
+# Optional var: IMPORT_MAX_TOKENS=2000

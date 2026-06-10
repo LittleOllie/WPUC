@@ -1,0 +1,10 @@
+{
+  "name": "vault-raid",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Vault Raid — old-school LO browser game (HTML/CSS/JS + Firebase)",
+  "scripts": {
+    "dev": "npx --yes serve . -p 5175",
+    "start": "npm run dev"
+  }
+}

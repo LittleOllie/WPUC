@@ -6,8 +6,7 @@ import MockWalletNotice from "../components/MockWalletNotice";
 import NftPreview from "../components/NftPreview";
 import CollectionLogo from "../components/CollectionLogo";
 import { useWallet } from "../context/WalletContext";
-import { fetchWalletNfts } from "../lib/api";
-import { buildNftImageCandidates } from "../utils/nftImages";
+import { fetchWalletNfts, proxiedImageUrl } from "../lib/api";
 
 const STEPS = [
   "What you HAVE",
@@ -136,22 +135,14 @@ export default function CreateTrade() {
     fetchWalletNfts(address, have.contract)
       .then((data) => {
         if (cancelled) return;
-        const list = (data.nfts || []).map((n) => {
-          const imageCandidates = buildNftImageCandidates({
-            collectionId: have.id,
-            tokenId: n.tokenId,
-            imageUrl: n.imageUrl,
-          });
-          return {
-            id: `${n.contract}-${n.tokenId}`,
-            tokenId: n.tokenId,
-            contract: n.contract,
-            label: n.name || `#${n.tokenId}`,
-            imageUrl: imageCandidates[0] || null,
-            imageCandidates,
-            gradient: [have.theme.primary, have.theme.background],
-          };
-        });
+        const list = (data.nfts || []).map((n) => ({
+          id: `${n.contract}-${n.tokenId}`,
+          tokenId: n.tokenId,
+          contract: n.contract,
+          label: n.name || `#${n.tokenId}`,
+          imageUrl: proxiedImageUrl(n.imageUrl),
+          gradient: [have.theme.primary, have.theme.background],
+        }));
         setWalletNfts(list);
         if (!list.length) setNftsError(`No ${have.shortName} NFTs found in this wallet on mainnet.`);
       })
@@ -260,7 +251,6 @@ export default function CreateTrade() {
                       gradient={n.gradient}
                       label={n.label}
                       imageUrl={n.imageUrl}
-                      imageCandidates={n.imageCandidates}
                       className="aspect-square w-full"
                     />
                   </button>
@@ -532,7 +522,6 @@ export default function CreateTrade() {
                   gradient={selectedNft.gradient}
                   label={selectedNft.label}
                   imageUrl={selectedNft.imageUrl}
-                  imageCandidates={selectedNft.imageCandidates}
                   className="w-32 shrink-0"
                 />
                 <div className="text-sm">

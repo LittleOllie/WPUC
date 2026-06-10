@@ -1,0 +1,256 @@
+/**
+ * NFT Twin Finder Admin — extends public app tokens, form-heavy layout.
+ * Requires ../nft-twin-finder/styles.css linked first in index.html.
+ */
+
+.ntf-admin-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.ntf-admin-cta {
+  margin-bottom: 16px;
+}
+
+.ntf-admin-lead {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--muted-on-lo);
+  text-align: left;
+}
+
+.ntf-admin-lead code {
+  font-size: 0.78rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.ntf-btn--link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.ntf-admin-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.ntf-admin-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 520px) {
+  .ntf-admin-grid--2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ntf-weight-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ntf-weight-row {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 10px;
+  align-items: center;
+}
+
+.ntf-weight-row input {
+  height: 44px;
+}
+
+.ntf-upload-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  color: var(--muted-on-lo);
+  font-weight: 700;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ntf-upload-zone input {
+  display: none;
+}
+
+.ntf-upload-zone label {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ntf-log {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.55;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.ntf-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ntf-stat-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.ntf-btn-row {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.ntf-btn--primary {
+  background: linear-gradient(180deg, #2a7cff 0%, var(--lo-blue-primary) 100%);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 0 rgba(15, 47, 110, 0.35), var(--shadow-soft);
+}
+
+.ntf-section-head {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 1000;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-on-lo);
+}
+
+.ntf-index-snippet {
+  width: 100%;
+  min-height: 72px;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  resize: vertical;
+}
+
+.ntf-upload-name {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--lo-yellow);
+}
+
+.ntf-status {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ntf-status__label {
+  margin: 0 0 8px;
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.ntf-status__steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ntf-status__step--done {
+  color: rgba(160, 230, 140, 0.95);
+}
+
+.ntf-status__step--active {
+  color: var(--lo-yellow);
+}
+
+.ntf-export-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ntf-deploy-hint {
+  margin: 12px 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--muted-on-lo);
+  text-align: left;
+}
+
+.ntf-deploy-hint code {
+  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.ntf-advanced {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--muted-on-lo);
+  font-size: 0.85rem;
+}
+
+.ntf-advanced summary {
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.ntf-advanced h3 {
+  margin-top: 16px;
+}
+
+.ntf-phase-note {
+  margin: 18px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.ntf-stat-pill--warn {
+  background: rgba(255, 160, 60, 0.35);
+}

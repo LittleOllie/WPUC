@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NFT Twin Finder Admin — Little Ollie Labs</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="stylesheet" href="../nft-twin-finder/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ntf-page ntf-admin-page">
+    <a href="../nft-twin-finder/" class="ntf-back">← Public app</a>
+
+    <header class="ntf-hero">
+      <img
+        class="ntf-hero__mascot"
+        src="../dopeornope/assets/lo1.png"
+        alt=""
+        width="120"
+        height="120"
+        decoding="async"
+      />
+      <h1 class="ntf-hero__title">TWIN FINDER ADMIN</h1>
+      <p class="ntf-hero__sub">Import collections → build twins → export packages</p>
+    </header>
+
+    <div class="ntf-panel ntf-admin-cta">
+      <h2 class="ntf-section-head">Step 1 — Get metadata</h2>
+      <p class="ntf-admin-lead">
+        Use the <strong>Contract Importer</strong> to fetch metadata from a contract address.
+        Similarity scoring comes after metadata is proven.
+      </p>
+      <a href="../nft-twin-finder-import/" class="ntf-btn ntf-btn--accent ntf-btn--link">
+        Open Contract Importer →
+      </a>
+    </div>
+
+    <div class="ntf-panel">
+      <h2 class="ntf-section-head">Step 2 — Build package (manual)</h2>
+      <p class="ntf-admin-lead">
+        After you have <code>metadata.json</code> + <code>images.json</code> from the importer,
+        upload them here to generate similarity scores and export the full collection package.
+      </p>
+
+      <div class="ntf-admin-grid ntf-admin-grid--2">
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="name">Collection name</label>
+          <input id="name" class="ntf-input" type="text" placeholder="Space Riders" />
+        </div>
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="slug">Slug (folder name)</label>
+          <input id="slug" class="ntf-input" type="text" placeholder="space-riders" />
+        </div>
+      </div>
+
+      <h3 class="ntf-section-head">Upload metadata</h3>
+      <div class="ntf-admin-grid ntf-admin-grid--2">
+        <div class="ntf-upload-zone" id="json-zone">
+          <p><strong>JSON file</strong></p>
+          <label for="json-file">Choose JSON</label>
+          <input id="json-file" type="file" accept=".json,application/json" />
+          <p id="json-file-name" class="ntf-upload-name" hidden></p>
+        </div>
+        <div class="ntf-upload-zone" id="folder-zone">
+          <p><strong>Metadata folder</strong></p>
+          <label for="folder-files">Choose folder</label>
+          <input id="folder-files" type="file" webkitdirectory directory multiple />
+          <p id="folder-file-name" class="ntf-upload-name" hidden></p>
+        </div>
+      </div>
+
+      <div class="ntf-btn-row">
+        <button id="build-btn" class="ntf-btn ntf-btn--primary" type="button">
+          Build similarity package
+        </button>
+      </div>
+
+      <div id="status" class="ntf-status" hidden aria-live="polite">
+        <p id="status-label" class="ntf-status__label">Ready</p>
+        <ol id="status-steps" class="ntf-status__steps"></ol>
+      </div>
+
+      <div id="stats" class="ntf-stats" hidden></div>
+      <pre id="log" class="ntf-log" hidden></pre>
+
+      <div id="export-block" class="ntf-export-block" hidden>
+        <h3 class="ntf-section-head">Export &amp; deploy</h3>
+        <button id="export-btn" class="ntf-btn ntf-btn--accent" type="button">
+          Export package (4 JSON files)
+        </button>
+        <p class="ntf-deploy-hint">
+          Save into <code>nft-twin-finder/collections/<span id="deploy-slug">slug</span>/</code>
+        </p>
+        <textarea id="index-snippet" class="ntf-index-snippet" readonly></textarea>
+        <button id="copy-index-btn" class="ntf-btn ntf-btn--ghost" type="button">Copy index entry</button>
+      </div>
+
+      <details class="ntf-advanced">
+        <summary>Advanced options</summary>
+        <div id="weight-grid" class="ntf-weight-grid"></div>
+      </details>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
