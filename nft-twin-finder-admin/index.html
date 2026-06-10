@@ -71,6 +71,38 @@
         </div>
       </div>
 
+      <details class="ntf-advanced">
+        <summary>Advanced options</summary>
+        <h3 class="ntf-section-head">Image URLs</h3>
+        <p class="ntf-admin-lead">
+          Use when metadata has traits but no <code>image</code> field. <code>{id}</code> is replaced with each token ID.
+        </p>
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="image-template">Image URL template</label>
+          <input
+            id="image-template"
+            class="ntf-input"
+            type="url"
+            placeholder="https://cdn.example.com/collection/{id}.png"
+            spellcheck="false"
+            autocomplete="off"
+          />
+        </div>
+        <div class="ntf-field">
+          <label class="ntf-field__label" for="metadata-base-url">Or image base URL</label>
+          <input
+            id="metadata-base-url"
+            class="ntf-input"
+            type="url"
+            placeholder="https://cdn.example.com/images/"
+            spellcheck="false"
+            autocomplete="off"
+          />
+        </div>
+        <h3 class="ntf-section-head">Trait weights</h3>
+        <div id="weight-grid" class="ntf-weight-grid"></div>
+      </details>
+
       <div class="ntf-btn-row">
         <button id="build-btn" class="ntf-btn ntf-btn--primary" type="button">
           Build similarity package
@@ -96,11 +128,6 @@
         <textarea id="index-snippet" class="ntf-index-snippet" readonly></textarea>
         <button id="copy-index-btn" class="ntf-btn ntf-btn--ghost" type="button">Copy index entry</button>
       </div>
-
-      <details class="ntf-advanced">
-        <summary>Advanced options</summary>
-        <div id="weight-grid" class="ntf-weight-grid"></div>
-      </details>
     </div>
   </div>
 

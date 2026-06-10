@@ -32,6 +32,8 @@ const statusSteps = document.getElementById("status-steps");
 const fields = {
   name: document.getElementById("name"),
   slug: document.getElementById("slug"),
+  imageTemplate: document.getElementById("image-template"),
+  metadataBaseUrl: document.getElementById("metadata-base-url"),
 };
 
 /** @type {ReturnType<typeof buildCollectionPackage> | null} */
@@ -207,7 +209,10 @@ buildBtn.addEventListener("click", async () => {
       name: fields.name.value,
       slug: fields.slug.value,
       weights,
-      optional: {},
+      optional: {
+        imageUrlTemplate: fields.imageTemplate.value.trim(),
+        metadataBaseUrl: fields.metadataBaseUrl.value.trim(),
+      },
     });
 
     setStatus(2, "Calculating similarity scores…");
@@ -218,7 +223,7 @@ buildBtn.addEventListener("click", async () => {
 
     if (packageState.missingImages > 0) {
       log(
-        `Warning: ${packageState.missingImages} token(s) have no image URL. Add image fields to metadata or use Advanced → image template.`,
+        `Warning: ${packageState.missingImages} token(s) have no image URL. Add image fields to metadata, or set Image URL template under Advanced options and rebuild.`,
       );
     }
 

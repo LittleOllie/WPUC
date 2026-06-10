@@ -242,6 +242,14 @@
   margin-top: 16px;
 }
 
+.ntf-advanced h3:first-of-type {
+  margin-top: 0;
+}
+
+.ntf-advanced .ntf-field {
+  margin-bottom: 12px;
+}
+
 .ntf-phase-note {
   margin: 18px 0 0;
   font-size: 0.72rem;
