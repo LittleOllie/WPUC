@@ -3,12 +3,12 @@
   "slug": "dropded-gorgez",
   "supply": 8888,
   "traitWeights": {
-    "Skin": 35,
-    "Eyes": 15,
-    "Mouth": 15,
-    "Clothing": 10,
-    "Hat": 10,
-    "Accessories": 10,
+    "Skin": 10,
+    "Eyes": 28,
+    "Mouth": 0,
+    "Clothing": 30,
+    "Hat": 27,
+    "Accessories": 0,
     "Background": 5
   }
 }
