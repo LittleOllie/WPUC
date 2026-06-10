@@ -1,7 +1,8 @@
-const REVEAL_MS = 4800;
-const FLASH_MS = 380;
+export const REVEAL_MS = 1600;
+export const FLASH_MS = 380;
+export const REVEAL_TOTAL_MS = REVEAL_MS + FLASH_MS;
 
-function preloadImage(url) {
+export function preloadImage(url) {
   return new Promise((resolve) => {
     const img = new Image();
     img.decoding = "async";

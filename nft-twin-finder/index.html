@@ -73,7 +73,18 @@
             <div class="ntf-reveal__flash" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="ntf-spinner" aria-hidden="true"></div>
+        <div
+          id="loading-bar"
+          class="ntf-loading-bar"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          aria-label="Loading twins"
+        >
+          <span class="ntf-loading-bar__fill"></span>
+        </div>
+        <div class="ntf-spinner" hidden aria-hidden="true"></div>
         <p id="loading-message" class="ntf-loading__msg">Checking traits...</p>
       </div>
     </section>

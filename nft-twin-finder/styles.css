@@ -364,13 +364,13 @@ button.ntf-back {
 .ntf-reveal--active .ntf-reveal__half--a,
 .ntf-reveal--active .ntf-reveal__half--b,
 .ntf-reveal--active .ntf-reveal__lightning {
-  animation: ntf-reveal-angle var(--reveal-duration, 4.8s) linear forwards;
+  animation: ntf-reveal-angle var(--reveal-duration, 1.6s) linear forwards;
 }
 
 .ntf-reveal--active .ntf-reveal__lightning {
   opacity: 0.95;
   animation:
-    ntf-reveal-angle var(--reveal-duration, 4.8s) linear forwards,
+    ntf-reveal-angle var(--reveal-duration, 1.6s) linear forwards,
     ntf-reveal-glow 0.22s ease-in-out infinite alternate;
 }
 
@@ -430,6 +430,33 @@ button.ntf-back {
   min-height: 1.5em;
 }
 
+.ntf-loading-bar {
+  --progress: 0%;
+  width: min(300px, 88vw);
+  height: 12px;
+  margin: 0 auto 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 2px 6px rgba(15, 47, 110, 0.2);
+  overflow: hidden;
+}
+
+.ntf-loading-bar__fill {
+  display: block;
+  height: 100%;
+  width: var(--progress);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #e74c3c 0%,
+    #f39c12 45%,
+    #2ecc71 100%
+  );
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.45);
+  transition: width 0.28s ease-out;
+}
+
 .ntf-spinner {
   width: 56px;
   height: 56px;
@@ -438,6 +465,10 @@ button.ntf-back {
   border: 4px solid rgba(255, 255, 255, 0.35);
   border-top-color: var(--lo-yellow);
   animation: ntf-spin 0.9s linear infinite;
+}
+
+.ntf-spinner[hidden] {
+  display: none;
 }
 
 @keyframes ntf-spin {
@@ -460,6 +491,10 @@ button.ntf-back {
 }
 
 .ntf-duo-hero__vs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
   font-size: 1.6rem;
   font-weight: 1000;
   color: var(--lo-yellow);

@@ -1,7 +1,7 @@
 import { loadCollectionIndex } from "./lib/collections.js";
 import { createLoadingRotator } from "./lib/loadingMessages.js";
 import { findTwins } from "./lib/search.js";
-import { playTwinReveal } from "./lib/twinReveal.js";
+import { playTwinReveal, preloadImage, REVEAL_TOTAL_MS } from "./lib/twinReveal.js";
 
 const screens = {
   search: document.getElementById("screen-search"),
@@ -21,7 +21,77 @@ const twinList = document.getElementById("twin-list");
 const searchAgainBtn = document.getElementById("search-again-btn");
 const resultsBackBtn = document.getElementById("results-back-btn");
 const revealStage = document.getElementById("ntf-reveal-stage");
+const loadingBar = document.getElementById("loading-bar");
 const loadingSpinner = document.querySelector(".ntf-spinner");
+
+function createLoadingProgress(barEl) {
+  let value = 0;
+  let creepTimer = null;
+  let animateFrame = null;
+
+  const apply = (next) => {
+    value = Math.max(0, Math.min(100, next));
+    barEl.style.setProperty("--progress", `${value}%`);
+    barEl.setAttribute("aria-valuenow", String(Math.round(value)));
+  };
+
+  const stopCreep = () => {
+    if (creepTimer) {
+      clearInterval(creepTimer);
+      creepTimer = null;
+    }
+  };
+
+  const stopAnimate = () => {
+    if (animateFrame) {
+      cancelAnimationFrame(animateFrame);
+      animateFrame = null;
+    }
+  };
+
+  return {
+    reset() {
+      stopCreep();
+      stopAnimate();
+      apply(0);
+    },
+    set(target) {
+      stopAnimate();
+      apply(target);
+    },
+    startCreep(max = 28, step = 0.35) {
+      stopCreep();
+      creepTimer = window.setInterval(() => {
+        if (value < max) apply(value + step);
+      }, 60);
+    },
+    stopCreep,
+    animateTo(target, durationMs) {
+      stopAnimate();
+      stopCreep();
+      const start = value;
+      const delta = target - start;
+      if (!delta) return Promise.resolve();
+
+      const startTime = performance.now();
+      return new Promise((resolve) => {
+        const tick = (now) => {
+          const t = Math.min(1, (now - startTime) / durationMs);
+          apply(start + delta * t);
+          if (t < 1) {
+            animateFrame = requestAnimationFrame(tick);
+          } else {
+            animateFrame = null;
+            resolve();
+          }
+        };
+        animateFrame = requestAnimationFrame(tick);
+      });
+    },
+  };
+}
+
+const loadingProgress = createLoadingProgress(loadingBar);
 
 let collections = [];
 let stopLoadingRotator = null;
@@ -250,7 +320,10 @@ findBtn.addEventListener("click", async () => {
   setSearchError("");
   showScreen("loading");
   revealStage.hidden = true;
-  loadingSpinner.hidden = false;
+  loadingBar.hidden = false;
+  loadingSpinner.hidden = true;
+  loadingProgress.reset();
+  loadingProgress.startCreep(30);
   stopLoadingRotator?.();
   stopLoadingRotator = createLoadingRotator((msg) => {
     loadingMessage.textContent = msg;
@@ -261,23 +334,41 @@ findBtn.addEventListener("click", async () => {
     const topTwin = result.twins[0];
     if (!topTwin) throw new Error("NO_TWINS_FOUND");
 
-    stopLoadingRotator?.();
-    stopLoadingRotator = null;
-    loadingSpinner.hidden = true;
+    loadingProgress.stopCreep();
+    await loadingProgress.animateTo(42, 320);
+    loadingMessage.textContent = "Loading artwork...";
+
+    await Promise.all([
+      preloadImage(result.token.image),
+      preloadImage(topTwin.image),
+    ]);
+    await loadingProgress.animateTo(58, 280);
     loadingMessage.textContent = "Twin found!";
 
-    await playTwinReveal({
-      sourceImage: result.token.image,
-      twinImage: topTwin.image,
-    });
+    stopLoadingRotator?.();
+    stopLoadingRotator = null;
+
+    const revealDuration = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 400
+      : REVEAL_TOTAL_MS;
+
+    await Promise.all([
+      playTwinReveal({
+        sourceImage: result.token.image,
+        twinImage: topTwin.image,
+      }),
+      loadingProgress.animateTo(100, revealDuration),
+    ]);
 
     renderResults(result);
     showScreen("results");
   } catch (error) {
     stopLoadingRotator?.();
     stopLoadingRotator = null;
+    loadingProgress.reset();
     revealStage.hidden = true;
-    loadingSpinner.hidden = false;
+    loadingBar.hidden = false;
+    loadingSpinner.hidden = true;
     showScreen("search");
 
     const code = error?.message || "";
