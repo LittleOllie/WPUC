@@ -44,6 +44,7 @@ const TRAIT_ALIASES = {
   cap: "Hat",
   accessories: "Accessories",
   accessory: "Accessories",
+  "space shine": "Accessories",
   glasses: "Accessories",
   eyewear: "Accessories",
   background: "Background",

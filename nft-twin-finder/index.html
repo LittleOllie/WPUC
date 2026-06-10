@@ -8,6 +8,9 @@
   <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
   <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
   <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,8 +24,8 @@
           class="ntf-hero__mascot"
           src="../dopeornope/assets/lo1.png"
           alt=""
-          width="160"
-          height="160"
+          width="360"
+          height="360"
           decoding="async"
         />
         <h1 class="ntf-hero__title">NFT TWIN FINDER</h1>
@@ -57,9 +60,19 @@
       </div>
     </section>
 
-    <!-- Loading -->
+    <!-- Loading + twin reveal -->
     <section id="screen-loading" class="ntf-screen" aria-label="Loading" aria-live="polite">
       <div class="ntf-loading">
+        <div id="ntf-reveal-stage" class="ntf-reveal" hidden>
+          <div class="ntf-reveal__frame">
+            <div class="ntf-reveal__merged">
+              <div id="ntf-reveal-half-a" class="ntf-reveal__half ntf-reveal__half--a" aria-hidden="true"></div>
+              <div id="ntf-reveal-half-b" class="ntf-reveal__half ntf-reveal__half--b" aria-hidden="true"></div>
+            </div>
+            <div id="ntf-reveal-lightning" class="ntf-reveal__lightning" aria-hidden="true"></div>
+            <div class="ntf-reveal__flash" aria-hidden="true"></div>
+          </div>
+        </div>
         <div class="ntf-spinner" aria-hidden="true"></div>
         <p id="loading-message" class="ntf-loading__msg">Checking traits...</p>
       </div>
@@ -67,21 +80,33 @@
 
     <!-- Results -->
     <section id="screen-results" class="ntf-screen" aria-label="Results">
-      <a href="../links/" class="ntf-back">← Back</a>
+      <button id="results-back-btn" class="ntf-back" type="button">← Back</button>
 
       <header class="ntf-hero">
+        <img
+          class="ntf-hero__mascot"
+          src="../dopeornope/assets/lo1.png"
+          alt=""
+          width="360"
+          height="360"
+          decoding="async"
+        />
         <h1 class="ntf-hero__title">YOUR TWINS</h1>
         <p class="ntf-hero__sub">Closest matches in the collection</p>
       </header>
 
-      <article id="featured-card" class="ntf-feature-card"></article>
+      <div id="duo-hero" class="ntf-duo-hero"></div>
 
-      <h2 class="ntf-section-title">Top 5 Closest Twins</h2>
-      <div id="twin-list" class="ntf-twin-list"></div>
-
-      <button id="search-again-btn" class="ntf-btn ntf-btn--ghost" type="button">
+      <button id="search-again-btn" class="ntf-btn ntf-btn--ghost ntf-btn--after-match" type="button">
         Search again
       </button>
+
+      <p id="compare-hint" class="ntf-compare-hint" hidden>
+        Tap any match below to swap it into the comparison.
+      </p>
+
+      <h2 id="more-twins-title" class="ntf-section-title" hidden>All Close Matches</h2>
+      <div id="twin-list" class="ntf-twin-list"></div>
     </section>
   </div>
 
