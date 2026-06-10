@@ -16,6 +16,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const COLLECTIONS_ROOT = join(__dirname, "../collections");
 const ALCHEMY_KEY = "eadmEoxRFK-i4vfpLIovV";
 const CONCURRENCY = 12;
+const METADATA_CONCURRENCY = 6;
 
 function parseArgs(argv) {
   const out = {};
@@ -43,8 +44,39 @@ function normalizeImageUrl(url) {
   return s;
 }
 
-async function fetchTokenRecord(contract, id) {
-  const url = `https://eth-mainnet.g.alchemy.com/nft/v2/${ALCHEMY_KEY}/getNFTMetadata?contractAddress=${contract}&tokenId=${id}`;
+function resolveMetadataUrl(template, id) {
+  return template.replaceAll("{id}", String(id));
+}
+
+async function fetchMetadataRecord(metadataUrl) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const res = await fetch(metadataUrl);
+      if (res.ok) return res.json();
+      if (res.status === 429 || res.status >= 500) {
+        await sleep(500 * (attempt + 1));
+        continue;
+      }
+      throw new Error(`${metadataUrl}: HTTP ${res.status}`);
+    } catch (error) {
+      if (attempt >= 5) throw error;
+      await sleep(500 * (attempt + 1));
+    }
+  }
+  throw new Error(`${metadataUrl}: failed after retries`);
+}
+
+async function fetchTokenRecord(contract, id, { alchemyHost, metadataUrlTemplate }) {
+  if (metadataUrlTemplate) {
+    const parsed = await fetchMetadataRecord(resolveMetadataUrl(metadataUrlTemplate, id));
+    return {
+      name: parsed?.name || `Token #${id}`,
+      traits: normalizeTraits(parsed),
+      image: normalizeImageUrl(parsed?.image) || "",
+    };
+  }
+
+  const url = `https://${alchemyHost}/nft/v2/${ALCHEMY_KEY}/getNFTMetadata?contractAddress=${contract}&tokenId=${id}`;
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const res = await fetch(url);
@@ -73,7 +105,7 @@ async function fetchTokenRecord(contract, id) {
   throw new Error(`Token ${id}: failed after retries`);
 }
 
-async function mapPool(ids, worker) {
+async function mapPool(ids, worker, concurrency = CONCURRENCY) {
   const results = new Array(ids.length);
   let next = 0;
 
@@ -84,7 +116,7 @@ async function mapPool(ids, worker) {
     }
   }
 
-  await Promise.all(Array.from({ length: CONCURRENCY }, run));
+  await Promise.all(Array.from({ length: concurrency }, run));
   return results;
 }
 
@@ -94,6 +126,13 @@ const slug = args.slug;
 const contract = args.contract?.toLowerCase();
 const supply = Number(args.supply);
 const startId = Number(args.start ?? 1);
+const network = String(args.network || "ethereum").trim().toLowerCase();
+const metadataUrlTemplate = args["metadata-url"] || "";
+
+const ALCHEMY_HOSTS = {
+  ethereum: "eth-mainnet.g.alchemy.com",
+  apechain: "apechain-mainnet.g.alchemy.com",
+};
 
 if (
   !name ||
@@ -101,10 +140,11 @@ if (
   !contract ||
   !/^0x[a-f0-9]{40}$/.test(contract) ||
   !supply ||
-  !Number.isFinite(startId)
+  !Number.isFinite(startId) ||
+  (!metadataUrlTemplate && !ALCHEMY_HOSTS[network])
 ) {
   console.error(
-    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888 [--start 0]",
+    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888 [--start 0] [--network ethereum|apechain] [--metadata-url https://.../{id}.json]",
   );
   process.exit(1);
 }
@@ -118,14 +158,20 @@ console.log(`Importing ${name} (#${startId}–#${lastId}, ${supply} tokens)…`)
 
 const started = Date.now();
 let done = 0;
+const fetchOptions = {
+  alchemyHost: ALCHEMY_HOSTS[network],
+  metadataUrlTemplate,
+};
+
+const poolSize = metadataUrlTemplate ? METADATA_CONCURRENCY : CONCURRENCY;
 const entries = await mapPool(ids, async (id) => {
-  const record = await fetchTokenRecord(contract, id);
+  const record = await fetchTokenRecord(contract, id, fetchOptions);
   done += 1;
   if (done % 250 === 0 || done === supply) {
     console.log(`  ${done}/${supply}`);
   }
   return [id, record];
-});
+}, poolSize);
 
 const metadata = {};
 const images = {};
@@ -146,7 +192,7 @@ const collection = {
   slug,
   supply,
   contract,
-  network: "ethereum",
+  network,
   traitWeights,
 };
 
