@@ -1,6 +1,6 @@
 import { imageUrlCandidates } from "./imageUrls.js";
 
-const HEADER_LOGO = new URL("../dopeornope/assets/lo1.png", import.meta.url).href;
+const HEADER_LOGO = new URL("../../dopeornope/assets/lo1.png", import.meta.url).href;
 const FOOTER_MASCOT = new URL("../LOCharacter.png", import.meta.url).href;
 const FONT = '"Fredoka", ui-rounded, system-ui, sans-serif';
 
@@ -22,8 +22,8 @@ const LAYOUT = {
   width: 1080,
   padX: 48,
   padTop: 36,
-  padBottom: 40,
-  logoSize: 96,
+  padBottom: 28,
+  logoMaxWidth: 420,
   cardSize: 380,
   cardGap: 48,
 };
@@ -58,18 +58,68 @@ function truncateText(ctx, text, maxWidth) {
 
 /**
  * @param {string} url
+ */
+function corsProxyUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    if (parsed.hostname === "images.weserv.nl") return "";
+    if (typeof location !== "undefined" && parsed.origin === location.origin) return "";
+    const stripped = `${parsed.host}${parsed.pathname}${parsed.search}`;
+    return `https://images.weserv.nl/?url=${encodeURIComponent(stripped)}`;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * @param {string} src
+ */
+async function loadImageViaFetch(src) {
+  const res = await fetch(src, { mode: "cors", credentials: "omit" });
+  if (!res.ok) throw new Error(src);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    return await loadCorsImage(objectUrl);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/**
+ * @param {string} url
  * @param {{ tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string }} [options]
  */
 async function loadCanvasImage(url, options = {}) {
   const candidates = imageUrlCandidates(url, options);
-  const sources = candidates.length ? candidates : [url];
+  const sources = candidates.length ? candidates : url ? [url] : [];
+  const seen = new Set();
+  /** @type {string[]} */
+  const attempts = [];
+
+  const add = (src) => {
+    const next = String(src || "").trim();
+    if (!next || seen.has(next)) return;
+    seen.add(next);
+    attempts.push(next);
+  };
 
   for (const src of sources) {
-    if (!src) continue;
+    add(src);
+    add(corsProxyUrl(src));
+  }
+
+  for (const src of attempts) {
     try {
       return await loadCorsImage(src);
     } catch {
-      /* try next gateway */
+      /* try fetch blob */
+    }
+    try {
+      return await loadImageViaFetch(src);
+    } catch {
+      /* try next source */
     }
   }
 
@@ -115,11 +165,11 @@ function drawBackground(ctx, w, h) {
  * @returns {number} card height
  */
 function drawTwinCard(ctx, x, y, cardW, { label, collectionName, tokenId, image, accent }) {
-  const pad = 14;
-  const labelSize = 22;
-  const collectionSize = 24;
-  const tokenSize = 30;
-  const metaGap = 4;
+  const pad = 16;
+  const labelSize = 20;
+  const collectionSize = 22;
+  const tokenSize = 26;
+  const metaGap = 2;
   const stageSize = cardW - pad * 2;
   const cardH = pad + labelSize + 10 + stageSize + pad + collectionSize + metaGap + tokenSize + pad;
 
@@ -184,14 +234,52 @@ function drawTwinCard(ctx, x, y, cardW, { label, collectionName, tokenId, image,
   return cardH;
 }
 
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} image
+ * @param {number} x
+ * @param {number} y
+ * @param {number} maxW
+ * @param {number} [maxH]
+ * @returns {number} drawn height
+ */
+function drawFitWidth(ctx, image, x, y, maxW, maxH = Infinity) {
+  const naturalW = "naturalWidth" in image ? image.naturalWidth : image.width;
+  const naturalH = "naturalHeight" in image ? image.naturalHeight : image.height;
+  if (!naturalW || !naturalH) return 0;
+
+  const scale = Math.min(maxW / naturalW, maxH / naturalH);
+  const drawW = naturalW * scale;
+  const drawH = naturalH * scale;
+  ctx.drawImage(image, x + (maxW - drawW) / 2, y, drawW, drawH);
+  return drawH;
+}
+
+function logoDrawHeight(logo, maxWidth) {
+  if (!logo) return 0;
+  const naturalW = logo.naturalWidth || logo.width;
+  const naturalH = logo.naturalHeight || logo.height;
+  if (!naturalW || !naturalH) return 0;
+  return maxWidth * (naturalH / naturalW);
+}
+
 function twinCardHeight(cardW) {
-  const pad = 14;
-  const labelSize = 22;
-  const collectionSize = 24;
-  const tokenSize = 30;
-  const metaGap = 4;
+  const pad = 16;
+  const labelSize = 20;
+  const collectionSize = 22;
+  const tokenSize = 26;
+  const metaGap = 2;
   const stageSize = cardW - pad * 2;
   return pad + labelSize + 10 + stageSize + pad + collectionSize + metaGap + tokenSize + pad;
+}
+
+/**
+ * @param {string} selector
+ */
+function domImageSrc(selector) {
+  const img = document.querySelector(selector);
+  if (!img?.complete || !img.naturalWidth) return "";
+  return img.currentSrc || img.src || "";
 }
 
 /**
@@ -205,23 +293,27 @@ export async function exportTwinComparison(result, twinIndex = 0) {
 
   await document.fonts.ready;
 
+  const sourceDom = domImageSrc("#duo-hero .ntf-duo-card:first-child img");
+  const twinDom = domImageSrc("#duo-hero .ntf-duo-card:last-child img");
+
   const [sourceImage, twinImage, headerLogo, footerMascot] = await Promise.all([
-    loadCanvasImage(token.imageSrc || token.image, token.imageOptions).catch(() => null),
-    loadCanvasImage(twin.imageSrc || twin.image, twin.imageOptions).catch(() => null),
+    loadCanvasImage(sourceDom || token.imageSrc || token.image, token.imageOptions).catch(() => null),
+    loadCanvasImage(twinDom || twin.imageSrc || twin.image, twin.imageOptions).catch(() => null),
     loadCorsImage(HEADER_LOGO).catch(() => null),
     loadCorsImage(FOOTER_MASCOT).catch(() => null),
   ]);
 
-  const { width, padTop, padBottom, logoSize, cardSize, cardGap } = LAYOUT;
+  const { width, padTop, padBottom, logoMaxWidth, cardSize, cardGap } = LAYOUT;
   const cardsWidth = cardSize * 2 + cardGap;
   const cardsLeft = (width - cardsWidth) / 2;
 
-  const headerBlock = (headerLogo ? logoSize + 18 : 0) + 58 + 36 + 28;
+  const logoH = logoDrawHeight(headerLogo, logoMaxWidth);
+  const headerBlock = (headerLogo ? logoH + 16 : 0) + 58 + 36 + 28;
   const cardsTop = padTop + headerBlock;
   const cardH = twinCardHeight(cardSize);
   const matchH = 52;
   const footerH = 36;
-  const height = cardsTop + cardH + 28 + matchH + 32 + footerH + padBottom;
+  const height = cardsTop + cardH + 28 + matchH + 20 + footerH + padBottom;
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -231,18 +323,18 @@ export async function exportTwinComparison(result, twinIndex = 0) {
 
   drawBackground(ctx, width, height);
 
-  y = padTop;
+  let y = padTop;
 
   if (headerLogo) {
-    ctx.drawImage(headerLogo, (width - logoSize) / 2, y, logoSize, logoSize);
-    y += logoSize + 18;
+    const drawnLogoH = drawFitWidth(ctx, headerLogo, (width - logoMaxWidth) / 2, y, logoMaxWidth);
+    y += drawnLogoH + 16;
   }
 
   ctx.fillStyle = COLORS.white;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.font = `900 58px ${FONT}`;
-  ctx.fillText("YOUR TWINS", width / 2, y);
+  ctx.fillText("NFT TWIN FINDER", width / 2, y);
   y += 58;
 
   ctx.fillStyle = COLORS.muted;
@@ -290,7 +382,7 @@ export async function exportTwinComparison(result, twinIndex = 0) {
   ctx.textBaseline = "middle";
   ctx.fillText(`${twin.score.toFixed(1)}% Match`, width / 2, matchY + pillH / 2);
 
-  const footerY = matchY + pillH + 32;
+  const footerY = matchY + pillH + 20;
   const footerText = "Powered by Little Ollie Labs";
   ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
   ctx.font = `700 22px ${FONT}`;
