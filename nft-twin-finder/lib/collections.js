@@ -104,3 +104,28 @@ export async function loadTokenSlice(slug, file, tokenIds) {
   }
   return slice;
 }
+
+/**
+ * Load an entire keyed JSON file (metadata, images, or similarity).
+ * Merges shard files when the monolith is absent.
+ * @param {string} slug
+ * @param {"metadata"|"images"|"similarity"} file
+ */
+export async function loadFullCollectionFile(slug, file) {
+  const mono = await loadMonolith(slug, file);
+  if (mono) return mono;
+
+  /** @type {Record<string, unknown>} */
+  const merged = {};
+  for (let shard = 1; shard <= 999; shard += 1) {
+    const data = await loadShard(slug, file, shard);
+    if (!data) {
+      if (shard === 1) break;
+      continue;
+    }
+    Object.assign(merged, data);
+  }
+
+  if (Object.keys(merged).length) return merged;
+  throw new Error(`${file.toUpperCase()}_MISSING`);
+}

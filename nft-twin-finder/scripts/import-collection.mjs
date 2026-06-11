@@ -9,8 +9,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { normalizeTraits } from "../lib/traitNormalizer.js";
-import { buildSimilarityIndex } from "../../nft-twin-finder-admin/lib/similarityEngine.js";
-import { DEFAULT_WEIGHTS } from "../lib/traitNormalizer.js";
+import { buildSimilarityIndex } from "../lib/similarityEngine.js";
+import { WEIGHT_PROFILE_DEFAULT, resolveWeights } from "../lib/weightProfiles.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const COLLECTIONS_ROOT = join(__dirname, "../collections");
@@ -131,6 +131,7 @@ const metadataUrlTemplate = args["metadata-url"] || "";
 
 const ALCHEMY_HOSTS = {
   ethereum: "eth-mainnet.g.alchemy.com",
+  base: "base-mainnet.g.alchemy.com",
   apechain: "apechain-mainnet.g.alchemy.com",
 };
 
@@ -144,7 +145,7 @@ if (
   (!metadataUrlTemplate && !ALCHEMY_HOSTS[network])
 ) {
   console.error(
-    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888 [--start 0] [--network ethereum|apechain] [--metadata-url https://.../{id}.json]",
+    "Usage: node import-collection.mjs --name \"Collection\" --slug slug --contract 0x... --supply 8888 [--start 0] [--network ethereum|base|apechain] [--metadata-url https://.../{id}.json]",
   );
   process.exit(1);
 }
@@ -186,18 +187,19 @@ console.log(
   `Fetched in ${((Date.now() - started) / 1000).toFixed(1)}s (${emptyTraits} empty traits, ${missingImages} missing images)`,
 );
 
-const traitWeights = { ...DEFAULT_WEIGHTS };
 const collection = {
   name,
   slug,
   supply,
   contract,
   network,
-  traitWeights,
+  weightProfile: WEIGHT_PROFILE_DEFAULT,
+  similarityCalculatedAt: new Date().toISOString(),
 };
 
 console.log("Building similarity index…");
-const similarity = buildSimilarityIndex(metadata, traitWeights, 5);
+const weights = resolveWeights(collection);
+const similarity = buildSimilarityIndex(metadata, weights, 5);
 
 writeFileSync(join(collectionDir, "collection.json"), `${JSON.stringify(collection, null, 2)}\n`);
 writeFileSync(join(collectionDir, "metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);

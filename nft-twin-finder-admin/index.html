@@ -26,6 +26,28 @@
       <p class="ntf-hero__sub">Import collections → build twins → export packages</p>
     </header>
 
+    <div class="ntf-panel" id="collections-panel">
+      <h2 class="ntf-section-head">Collection Management</h2>
+      <p class="ntf-admin-lead">
+        View imported collections, edit weight profiles, and recalculate similarities without re-importing metadata.
+      </p>
+      <div id="collection-progress" class="ntf-collection-progress" hidden>
+        <p id="collection-progress-label" class="ntf-collection-progress__label"></p>
+        <div class="ntf-collection-progress__track">
+          <div id="collection-progress-bar" class="ntf-collection-progress__bar"></div>
+        </div>
+      </div>
+      <div id="collections-list"></div>
+    </div>
+
+    <div id="collection-modal" class="ntf-modal" hidden>
+      <div class="ntf-modal__card" role="dialog" aria-modal="true">
+        <button id="collection-modal-close" class="ntf-modal__close" type="button" aria-label="Close">×</button>
+        <h2 id="collection-modal-title" class="ntf-modal__title"></h2>
+        <div id="collection-modal-body" class="ntf-modal__body"></div>
+      </div>
+    </div>
+
     <div class="ntf-panel ntf-admin-cta">
       <h2 class="ntf-section-head">Step 1 — Get metadata</h2>
       <p class="ntf-admin-lead">
@@ -99,8 +121,21 @@
             autocomplete="off"
           />
         </div>
+        <h3 class="ntf-section-head">Weight profile</h3>
+        <fieldset class="ntf-weight-profile__toggle" id="build-weight-profile">
+          <label>
+            <input type="radio" name="build-weight-profile" value="default" checked />
+            Default Profile
+          </label>
+          <label>
+            <input type="radio" name="build-weight-profile" value="custom" />
+            Custom Profile
+          </label>
+        </fieldset>
+        <p id="build-weight-total" class="ntf-weight-total">Total: 100%</p>
+        <p id="build-weight-warning" class="ntf-weight-warning" hidden></p>
         <h3 class="ntf-section-head">Trait weights</h3>
-        <div id="weight-grid" class="ntf-weight-grid"></div>
+        <div id="weight-grid" class="ntf-weight-grid ntf-weight-grid--readonly"></div>
       </details>
 
       <div class="ntf-btn-row">

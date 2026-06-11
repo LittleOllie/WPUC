@@ -4,13 +4,6 @@
   "supply": 5555,
   "contract": "0x5b12e009e1b5f14b1e8f3a3b9fb3ca165702dcbd",
   "network": "ethereum",
-  "traitWeights": {
-    "Skin": 35,
-    "Eyes": 15,
-    "Mouth": 15,
-    "Clothing": 10,
-    "Hat": 10,
-    "Accessories": 10,
-    "Background": 5
-  }
+  "weightProfile": "default",
+  "similarityCalculatedAt": "2026-06-11T12:07:57.045Z"
 }

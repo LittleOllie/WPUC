@@ -1,23 +1,8 @@
-/** Canonical trait categories used by the similarity engine. */
-export const TRAIT_CATEGORIES = [
-  "Skin",
-  "Eyes",
-  "Mouth",
-  "Clothing",
-  "Hat",
-  "Accessories",
-  "Background",
-];
+export { TRAIT_CATEGORIES } from "./traitCategories.js";
+import { TRAIT_CATEGORIES } from "./traitCategories.js";
+import { DEFAULT_WEIGHTS } from "./weightProfiles.js";
 
-export const DEFAULT_WEIGHTS = {
-  Skin: 35,
-  Eyes: 15,
-  Mouth: 15,
-  Clothing: 10,
-  Hat: 10,
-  Accessories: 10,
-  Background: 5,
-};
+export { DEFAULT_WEIGHTS } from "./weightProfiles.js";
 
 /** Map common metadata keys → canonical category names. */
 const TRAIT_ALIASES = {
@@ -41,6 +26,9 @@ const TRAIT_ALIASES = {
   clothes: "Clothing",
   outfit: "Clothing",
   shirt: "Clothing",
+  top: "Clothing",
+  drip: "Accessories",
+  hair: "Hat",
   hat: "Hat",
   "hat and hair": "Hat",
   head: "Hat",

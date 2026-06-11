@@ -1,7 +1,12 @@
+import { TRAIT_CATEGORIES } from "../nft-twin-finder/lib/traitCategories.js";
 import {
   DEFAULT_WEIGHTS,
-  TRAIT_CATEGORIES,
-} from "../nft-twin-finder/lib/traitNormalizer.js";
+  WEIGHT_PROFILE_CUSTOM,
+  WEIGHT_PROFILE_DEFAULT,
+  sumWeights,
+  validateWeights,
+} from "../nft-twin-finder/lib/weightProfiles.js";
+import { initCollectionAdmin } from "./lib/collectionAdmin.js";
 import { buildCollectionPackage } from "./lib/buildPackage.js";
 import {
   buildIndexSnippet,
@@ -13,6 +18,9 @@ import {
 } from "./lib/metadataParser.js";
 
 const weightGrid = document.getElementById("weight-grid");
+const buildWeightTotal = document.getElementById("build-weight-total");
+const buildWeightWarning = document.getElementById("build-weight-warning");
+const buildWeightProfileRadios = document.querySelectorAll('input[name="build-weight-profile"]');
 const jsonFileInput = document.getElementById("json-file");
 const folderInput = document.getElementById("folder-files");
 const jsonFileName = document.getElementById("json-file-name");
@@ -39,6 +47,7 @@ const fields = {
 /** @type {ReturnType<typeof buildCollectionPackage> | null} */
 let packageState = null;
 let weights = { ...DEFAULT_WEIGHTS };
+let weightProfile = WEIGHT_PROFILE_DEFAULT;
 
 const BUILD_STEPS = [
   "Reading uploaded metadata",
@@ -68,7 +77,37 @@ function setStatus(stepIndex, label) {
   }).join("");
 }
 
+function currentBuildProfile() {
+  return (
+    document.querySelector('input[name="build-weight-profile"]:checked')?.value ||
+    WEIGHT_PROFILE_DEFAULT
+  );
+}
+
+function updateBuildWeightTotal() {
+  const profile = currentBuildProfile();
+  const activeWeights = profile === WEIGHT_PROFILE_CUSTOM ? weights : { ...DEFAULT_WEIGHTS };
+  const total = sumWeights(activeWeights);
+  const check = validateWeights(activeWeights);
+  buildWeightTotal.textContent = `Total: ${total}%`;
+  buildWeightTotal.classList.toggle(
+    "ntf-weight-total--invalid",
+    !check.valid && profile === WEIGHT_PROFILE_CUSTOM,
+  );
+  buildWeightWarning.hidden = check.valid || profile === WEIGHT_PROFILE_DEFAULT;
+  buildWeightWarning.textContent = check.errors[0] || "";
+  buildBtn.disabled = profile === WEIGHT_PROFILE_CUSTOM && !check.valid;
+}
+
 function renderWeightInputs() {
+  weightProfile = currentBuildProfile();
+  const editable = weightProfile === WEIGHT_PROFILE_CUSTOM;
+  weightGrid.classList.toggle("ntf-weight-grid--readonly", !editable);
+
+  if (!editable) {
+    weights = { ...DEFAULT_WEIGHTS };
+  }
+
   weightGrid.innerHTML = TRAIT_CATEGORIES.map(
     (category) => `
       <div class="ntf-weight-row">
@@ -81,16 +120,22 @@ function renderWeightInputs() {
           max="100"
           value="${weights[category]}"
           data-category="${category}"
+          ${editable ? "" : "readonly"}
         />
       </div>
     `,
   ).join("");
 
-  weightGrid.querySelectorAll("input[data-category]").forEach((input) => {
-    input.addEventListener("change", () => {
-      weights[input.dataset.category] = Number(input.value) || 0;
+  if (editable) {
+    weightGrid.querySelectorAll("input[data-category]").forEach((input) => {
+      input.addEventListener("input", () => {
+        weights[input.dataset.category] = Number(input.value) || 0;
+        updateBuildWeightTotal();
+      });
     });
-  });
+  }
+
+  updateBuildWeightTotal();
 }
 
 function readWeightsFromUI() {
@@ -204,11 +249,22 @@ buildBtn.addEventListener("click", async () => {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     readWeightsFromUI();
+    weightProfile = currentBuildProfile();
+    if (weightProfile === WEIGHT_PROFILE_CUSTOM) {
+      const check = validateWeights(weights);
+      if (!check.valid) {
+        log(check.errors[0] || "Trait weights must total 100%.");
+        setStatus(1, "Invalid weight profile");
+        return;
+      }
+    }
+
     packageState = buildCollectionPackage({
       items,
       name: fields.name.value,
       slug: fields.slug.value,
       weights,
+      weightProfile,
       optional: {
         imageUrlTemplate: fields.imageTemplate.value.trim(),
         metadataBaseUrl: fields.metadataBaseUrl.value.trim(),
@@ -278,4 +334,9 @@ copyIndexBtn.addEventListener("click", async () => {
   }
 });
 
+buildWeightProfileRadios.forEach((radio) => {
+  radio.addEventListener("change", renderWeightInputs);
+});
+
 renderWeightInputs();
+initCollectionAdmin(document.getElementById("collections-panel"));

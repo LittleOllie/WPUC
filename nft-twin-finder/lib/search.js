@@ -3,6 +3,7 @@ import {
   loadTokenSlice,
 } from "./collections.js";
 import { preferredImageUrl } from "./imageUrls.js";
+import { resolveWeights } from "./weightProfiles.js";
 import { matchSummary, summaryFromBreakdown, traitBreakdown } from "./traitNormalizer.js";
 
 /**
@@ -36,7 +37,7 @@ export async function findTwins(slug, tokenId) {
     loadTokenSlice(slug, "metadata", imageIds),
   ]);
 
-  const weights = collection.traitWeights || undefined;
+  const weights = resolveWeights(collection);
   const sourceTraits = metadata[id]?.traits || {};
 
   const twins = matches.map((match) => {
