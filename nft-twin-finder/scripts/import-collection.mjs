@@ -44,6 +44,17 @@ function normalizeImageUrl(url) {
   return s;
 }
 
+function isIpfsHttpUrl(url) {
+  return /\/ipfs\//i.test(url);
+}
+
+/** Prefer direct HTTPS/CDN URLs over slow IPFS gateways from Alchemy. */
+function pickBestImageUrl(...urls) {
+  const normalized = urls.map(normalizeImageUrl).filter(Boolean);
+  const direct = normalized.find((url) => !isIpfsHttpUrl(url));
+  return direct || normalized[0] || "";
+}
+
 function resolveMetadataUrl(template, id) {
   return template.replaceAll("{id}", String(id));
 }
@@ -84,11 +95,11 @@ async function fetchTokenRecord(contract, id, { alchemyHost, metadataUrlTemplate
       const data = await res.json();
       const raw = data?.metadata || data?.rawMetadata;
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      const image =
-        normalizeImageUrl(data?.media?.[0]?.gateway) ||
-        normalizeImageUrl(parsed?.image) ||
-        normalizeImageUrl(data?.media?.[0]?.raw) ||
-        "";
+      const image = pickBestImageUrl(
+        parsed?.image,
+        data?.media?.[0]?.raw,
+        data?.media?.[0]?.gateway,
+      );
       return {
         name: parsed?.name || data?.title || `Token #${id}`,
         traits: normalizeTraits(parsed || data),

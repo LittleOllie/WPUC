@@ -12,29 +12,72 @@ export function extractIpfsPath(url) {
   return match ? match[1] : null;
 }
 
-/** @param {string} url */
-export function imageUrlCandidates(url) {
-  if (!url || typeof url !== "string") return [];
-  const trimmed = url.trim();
-  if (!trimmed) return [];
+/** @param {string} template @param {string|number} tokenId */
+export function resolveImageUrlTemplate(template, tokenId) {
+  if (!template || tokenId == null || tokenId === "") return "";
+  return template.replaceAll("{id}", String(tokenId));
+}
 
-  const ipfsPath = extractIpfsPath(trimmed);
-  if (!ipfsPath) return [trimmed];
-
+/**
+ * @param {string} url
+ * @param {{ tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string }} [options]
+ */
+export function imageUrlCandidates(url, options = {}) {
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  const { tokenId, imageUrlTemplate, imageIpfsCid } = options;
   const seen = new Set();
+  /** @type {string[]} */
   const candidates = [];
-  for (const gateway of IPFS_GATEWAYS) {
-    const next = `${gateway}${ipfsPath}`;
-    if (!seen.has(next)) {
-      seen.add(next);
-      candidates.push(next);
+
+  const add = (candidate) => {
+    const next = String(candidate || "").trim();
+    if (!next || seen.has(next)) return;
+    seen.add(next);
+    candidates.push(next);
+  };
+
+  if (imageUrlTemplate && tokenId != null) {
+    add(resolveImageUrlTemplate(imageUrlTemplate, tokenId));
+  }
+
+  if (imageIpfsCid && tokenId != null) {
+    const cidPath = `${imageIpfsCid}/${tokenId}.png`;
+    for (const gateway of IPFS_GATEWAYS) {
+      add(`${gateway}${cidPath}`);
     }
   }
-  if (!seen.has(trimmed)) candidates.push(trimmed);
+
+  if (!trimmed) return candidates;
+
+  const ipfsPath = extractIpfsPath(trimmed);
+  if (!ipfsPath) {
+    add(trimmed);
+    return candidates;
+  }
+
+  for (const gateway of IPFS_GATEWAYS) {
+    add(`${gateway}${ipfsPath}`);
+  }
+  add(trimmed);
+
   return candidates;
 }
 
-/** @param {string} url */
-export function preferredImageUrl(url) {
-  return imageUrlCandidates(url)[0] || url || "";
+/** @param {Record<string, unknown>} collection */
+export function imageOptionsForToken(collection, tokenId) {
+  return {
+    tokenId,
+    imageUrlTemplate:
+      typeof collection?.imageUrlTemplate === "string" ? collection.imageUrlTemplate : undefined,
+    imageIpfsCid:
+      typeof collection?.imageIpfsCid === "string" ? collection.imageIpfsCid : undefined,
+  };
+}
+
+/**
+ * @param {string} url
+ * @param {{ tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string }} [options]
+ */
+export function preferredImageUrl(url, options = {}) {
+  return imageUrlCandidates(url, options)[0] || url || "";
 }

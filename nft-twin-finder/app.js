@@ -2,6 +2,7 @@ import { loadCollectionIndex } from "./lib/collections.js";
 import { createLoadingRotator } from "./lib/loadingMessages.js";
 import { findTwins } from "./lib/search.js";
 import { imageUrlCandidates } from "./lib/imageUrls.js";
+import { exportTwinComparison } from "./lib/shareCard.js";
 import { playTwinReveal, preloadImage, REVEAL_TOTAL_MS } from "./lib/twinReveal.js";
 
 const screens = {
@@ -27,6 +28,7 @@ const resultsBackBtn = document.getElementById("results-back-btn");
 const resultsQuickSearch = document.getElementById("results-quick-search");
 const resultsTokenInput = document.getElementById("results-token-input");
 const resultsError = document.getElementById("results-error");
+const exportTwinsBtn = document.getElementById("export-twins-btn");
 const revealStage = document.getElementById("ntf-reveal-stage");
 const loadingBar = document.getElementById("loading-bar");
 const loadingSpinner = document.querySelector(".ntf-spinner");
@@ -138,28 +140,70 @@ function updateFindEnabled() {
   findBtn.disabled = !slug || !/^\d+$/.test(token);
 }
 
-function attachImageFallback(img, url) {
-  const candidates = imageUrlCandidates(url);
+function imageOptionsFromDataset(img) {
+  const options = {};
+  if (img.dataset.imageTokenId) options.tokenId = img.dataset.imageTokenId;
+  if (img.dataset.imageTemplate) options.imageUrlTemplate = img.dataset.imageTemplate;
+  if (img.dataset.imageIpfsCid) options.imageIpfsCid = img.dataset.imageIpfsCid;
+  return options;
+}
+
+function attachImageFallback(img, url, options = {}, { force = false } = {}) {
+  const merged = { ...imageOptionsFromDataset(img), ...options };
+  const candidates = imageUrlCandidates(url, merged);
   if (!candidates.length) return;
 
-  let index = 0;
-  img.src = candidates[0];
-  img.addEventListener("error", () => {
+  let index = force ? 0 : candidates.findIndex((candidate) => candidate === img.currentSrc || candidate === img.src);
+  if (index < 0) index = 0;
+
+  const onError = () => {
     index += 1;
     if (index < candidates.length) {
       img.src = candidates[index];
     }
+  };
+
+  img.removeEventListener("error", img._ntfImageFallback);
+  img._ntfImageFallback = onError;
+  img.addEventListener("error", onError);
+
+  const next = candidates[index];
+  if (force && (img.src === next || img.currentSrc === next)) {
+    img.removeAttribute("src");
+    void img.offsetWidth;
+  }
+  img.src = next;
+}
+
+function reviveResultImages(collection) {
+  requestAnimationFrame(() => {
+    bindImageFallbacks(duoHero, collection, { force: true });
+    twinList.querySelectorAll(".ntf-twin-thumb img").forEach((img) => {
+      const card = img.closest(".ntf-twin-card");
+      const index = Number(card?.dataset.twinIndex);
+      const twin = lastResult?.twins[index];
+      if (!twin) return;
+      attachImageFallback(img, twin.imageSrc || twin.image, twin.imageOptions || { tokenId: twin.id }, {
+        force: true,
+      });
+    });
   });
 }
 
-function bindImageFallbacks(root) {
+function bindImageFallbacks(root, collection, { force = false } = {}) {
+  const template = collection?.imageUrlTemplate || "";
+  const ipfsCid = collection?.imageIpfsCid || "";
   root.querySelectorAll("img[data-image-src]").forEach((img) => {
-    attachImageFallback(img, img.dataset.imageSrc || "");
+    if (template) img.dataset.imageTemplate = template;
+    if (ipfsCid) img.dataset.imageIpfsCid = ipfsCid;
+    const options = imageOptionsFromDataset(img);
+    attachImageFallback(img, img.dataset.imageSrc || img.src || "", options, { force });
   });
 }
 
-function renderNftCard({ image, collectionName, tokenId, label, accent }) {
+function renderNftCard({ image, imageSrc, collectionName, tokenId, label, accent }) {
   const accentClass = accent ? " ntf-duo-card--accent" : "";
+  const storedSrc = imageSrc || image;
 
   return `
     <article class="ntf-duo-card${accentClass}">
@@ -167,7 +211,8 @@ function renderNftCard({ image, collectionName, tokenId, label, accent }) {
       <div class="ntf-nft-stage">
         <img
           src="${escapeAttr(image)}"
-          data-image-src="${escapeAttr(image)}"
+          data-image-src="${escapeAttr(storedSrc)}"
+          data-image-token-id="${escapeAttr(tokenId)}"
           alt="NFT #${escapeHtml(tokenId)}"
           loading="eager"
           decoding="async"
@@ -190,6 +235,7 @@ function renderDuoHero(result, twinIndex = 0) {
     <div class="ntf-duo-hero__grid">
       ${renderNftCard({
         image: token.image,
+        imageSrc: token.imageSrc,
         collectionName: collection.name,
         tokenId: token.id,
         label: "Your NFT",
@@ -198,6 +244,7 @@ function renderDuoHero(result, twinIndex = 0) {
       <div class="ntf-duo-hero__vs" aria-hidden="true">×</div>
       ${renderNftCard({
         image: twin.image,
+        imageSrc: twin.imageSrc,
         collectionName: collection.name,
         tokenId: twin.id,
         label: `#${twinIndex + 1} Twin`,
@@ -208,7 +255,7 @@ function renderDuoHero(result, twinIndex = 0) {
     <p class="ntf-duo-hero__summary">${escapeHtml(twin.summary)}</p>
   `;
 
-  bindImageFallbacks(duoHero);
+  bindImageFallbacks(duoHero, collection);
 }
 
 function updateTwinSelection() {
@@ -225,6 +272,7 @@ function selectTwin(index) {
   selectedTwinIndex = index;
   renderDuoHero(lastResult, index);
   updateTwinSelection();
+  reviveResultImages(lastResult.collection);
 }
 
 function renderTwinCard(twin, rank, twinIndex) {
@@ -244,7 +292,8 @@ function renderTwinCard(twin, rank, twinIndex) {
         <span class="ntf-twin-rank">#${rank}</span>
         <img
           src="${escapeAttr(twin.image)}"
-          data-image-src="${escapeAttr(twin.image)}"
+          data-image-src="${escapeAttr(twin.imageSrc || twin.image)}"
+          data-image-token-id="${escapeAttr(twin.id)}"
           alt=""
           loading="lazy"
           decoding="async"
@@ -271,7 +320,9 @@ function renderTwinCard(twin, rank, twinIndex) {
     .join("");
 
   const thumbImg = card.querySelector(".ntf-twin-thumb img");
-  if (thumbImg) attachImageFallback(thumbImg, twin.image);
+  if (thumbImg) {
+    attachImageFallback(thumbImg, twin.imageSrc || twin.image, twin.imageOptions || { tokenId: twin.id });
+  }
 
   const pickTwin = () => selectTwin(twinIndex);
 
@@ -320,6 +371,7 @@ function renderResults(result) {
   renderDuoHero(result, 0);
   renderTwinList(result);
   setResultsError("");
+  exportTwinsBtn.hidden = false;
 }
 
 function escapeHtml(value) {
@@ -498,8 +550,8 @@ async function runTwinSearch(slug, tokenId, { onErrorScreen = "search" } = {}) {
 
     await Promise.race([
       Promise.all([
-        preloadImage(result.token.image),
-        preloadImage(topTwin.image),
+        preloadImage(result.token.imageSrc || result.token.image, result.token.imageOptions),
+        preloadImage(topTwin.imageSrc || topTwin.image, topTwin.imageOptions),
       ]),
       new Promise((resolve) => window.setTimeout(resolve, 7000)),
     ]);
@@ -515,18 +567,21 @@ async function runTwinSearch(slug, tokenId, { onErrorScreen = "search" } = {}) {
 
     await Promise.all([
       playTwinReveal({
-        sourceImage: result.token.image,
-        twinImage: topTwin.image,
+        sourceImage: result.token.imageSrc || result.token.image,
+        twinImage: topTwin.imageSrc || topTwin.image,
+        sourceOptions: result.token.imageOptions,
+        twinOptions: topTwin.imageOptions,
       }),
       loadingProgress.animateTo(100, revealDuration),
     ]);
 
-    renderResults(result);
     setCollectionValue(slug, { silent: true });
     tokenInput.value = tokenId;
     resultsTokenInput.value = "";
     updateFindEnabled();
     showScreen("results");
+    renderResults(result);
+    reviveResultImages(result.collection);
   } catch (error) {
     stopLoadingRotator?.();
     stopLoadingRotator = null;
@@ -554,8 +609,26 @@ findBtn.addEventListener("click", () => {
 
 function goToSearch() {
   setResultsError("");
+  exportTwinsBtn.hidden = true;
   showScreen("search");
 }
+
+exportTwinsBtn.addEventListener("click", async () => {
+  if (!lastResult) return;
+
+  exportTwinsBtn.disabled = true;
+  const label = exportTwinsBtn.textContent;
+  exportTwinsBtn.textContent = "Exporting…";
+
+  try {
+    await exportTwinComparison(lastResult, selectedTwinIndex);
+  } catch {
+    setResultsError("Could not export image. Try again in a moment.");
+  } finally {
+    exportTwinsBtn.disabled = false;
+    exportTwinsBtn.textContent = label;
+  }
+});
 
 function submitResultsQuickSearch() {
   const slug = lastResult?.collection?.slug;

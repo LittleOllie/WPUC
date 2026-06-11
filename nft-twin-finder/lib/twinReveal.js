@@ -4,16 +4,17 @@ export const REVEAL_MS = 1600;
 export const FLASH_MS = 380;
 export const REVEAL_TOTAL_MS = REVEAL_MS + FLASH_MS;
 
-const PRELOAD_TIMEOUT_MS = 6000;
+const PRELOAD_TIMEOUT_MS = 8000;
 
 /**
- * Race IPFS gateways in parallel; return the first URL that loads in time.
+ * Race image URL candidates in parallel; return the first URL that loads in time.
  * @param {string} url
+ * @param {{ tokenId?: string|number, imageUrlTemplate?: string }} [options]
  */
-export async function preloadImage(url) {
+export async function preloadImage(url, options = {}) {
   if (!url) return null;
 
-  const candidates = imageUrlCandidates(url);
+  const candidates = imageUrlCandidates(url, options);
   if (!candidates.length) return null;
 
   return new Promise((resolve) => {
@@ -44,9 +45,14 @@ export async function preloadImage(url) {
 
 /**
  * Golden-line twin reveal (Collection Overlap–style) before results.
- * @param {{ sourceImage: string, twinImage: string }} images
+ * @param {{
+ *   sourceImage: string,
+ *   twinImage: string,
+ *   sourceOptions?: { tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string },
+ *   twinOptions?: { tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string },
+ * }} images
  */
-export async function playTwinReveal({ sourceImage, twinImage }) {
+export async function playTwinReveal({ sourceImage, twinImage, sourceOptions, twinOptions }) {
   const stage = document.getElementById("ntf-reveal-stage");
   const halfA = document.getElementById("ntf-reveal-half-a");
   const halfB = document.getElementById("ntf-reveal-half-b");
@@ -61,8 +67,8 @@ export async function playTwinReveal({ sourceImage, twinImage }) {
   }
 
   const [resolvedSource, resolvedTwin] = await Promise.all([
-    preloadImage(sourceImage),
-    preloadImage(twinImage),
+    preloadImage(sourceImage, sourceOptions),
+    preloadImage(twinImage, twinOptions),
   ]);
 
   if (resolvedSource) {

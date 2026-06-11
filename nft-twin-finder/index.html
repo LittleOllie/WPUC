@@ -77,6 +77,14 @@
     <!-- Loading + twin reveal -->
     <section id="screen-loading" class="ntf-screen" aria-label="Loading" aria-live="polite">
       <div class="ntf-loading">
+        <img
+          class="ntf-loading__mascot"
+          src="LOCharacter.png"
+          alt=""
+          width="280"
+          height="280"
+          decoding="async"
+        />
         <div id="ntf-reveal-stage" class="ntf-reveal" hidden>
           <div class="ntf-reveal__frame">
             <div class="ntf-reveal__merged">
@@ -121,6 +129,10 @@
       </header>
 
       <div id="duo-hero" class="ntf-duo-hero"></div>
+
+      <button id="export-twins-btn" class="ntf-btn ntf-btn--ghost ntf-btn--export" type="button" hidden>
+        Export image
+      </button>
 
       <div class="ntf-results-actions">
         <form id="results-quick-search" class="ntf-results-actions__form">

@@ -1,0 +1,11 @@
+{
+  "name": "Quirklings",
+  "slug": "quirklings",
+  "supply": 10000,
+  "contract": "0x8f1b132e9fd2b9a2b210baa186bf1ae650adf7ac",
+  "network": "ethereum",
+  "weightProfile": "default",
+  "similarityCalculatedAt": "2026-06-11T13:01:40.824Z",
+  "imageUrlTemplate": "https://quirklings-images.s3.ap-southeast-2.amazonaws.com/{id}.png",
+  "imageIpfsCid": "bafybeib6rkqikdf7czbrtzjphk5k6cdi44smd5ewwc3ysihwr3g2onpwl4"
+}
