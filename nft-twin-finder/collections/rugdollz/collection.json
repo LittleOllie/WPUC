@@ -1,0 +1,16 @@
+{
+  "name": "RugDollz",
+  "slug": "rugdollz",
+  "supply": 5555,
+  "contract": "0x291ac379af66e25bd8488b3154f076b27b9f9e36",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}
