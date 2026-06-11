@@ -2,6 +2,7 @@ import { loadCollectionIndex } from "./lib/collections.js";
 import { createLoadingRotator } from "./lib/loadingMessages.js";
 import { findTwins } from "./lib/search.js";
 import { imageUrlCandidates } from "./lib/imageUrls.js";
+import { openseaTokenUrl } from "./lib/opensea.js";
 import { exportTwinComparison } from "./lib/shareCard.js";
 import { playTwinReveal, preloadImage, REVEAL_TOTAL_MS } from "./lib/twinReveal.js";
 
@@ -201,7 +202,16 @@ function bindImageFallbacks(root, collection, { force = false } = {}) {
   });
 }
 
-function renderNftCard({ image, imageSrc, collectionName, tokenId, label, accent }) {
+function renderTokenLink(collection, tokenId, className) {
+  const label = `#${escapeHtml(tokenId)}`;
+  const url = openseaTokenUrl(collection, tokenId);
+  if (!url) {
+    return `<div class="${className}">${label}</div>`;
+  }
+  return `<a class="${className} ntf-token-link" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" title="View on OpenSea">${label}</a>`;
+}
+
+function renderNftCard({ image, imageSrc, collection, collectionName, tokenId, label, accent }) {
   const accentClass = accent ? " ntf-duo-card--accent" : "";
   const storedSrc = imageSrc || image;
 
@@ -220,7 +230,7 @@ function renderNftCard({ image, imageSrc, collectionName, tokenId, label, accent
       </div>
       <div class="ntf-duo-card__meta">
         <div class="ntf-duo-card__collection">${escapeHtml(collectionName)}</div>
-        <div class="ntf-duo-card__token">#${escapeHtml(tokenId)}</div>
+        ${renderTokenLink(collection, tokenId, "ntf-duo-card__token")}
       </div>
     </article>
   `;
@@ -236,6 +246,7 @@ function renderDuoHero(result, twinIndex = 0) {
       ${renderNftCard({
         image: token.image,
         imageSrc: token.imageSrc,
+        collection,
         collectionName: collection.name,
         tokenId: token.id,
         label: "Your NFT",
@@ -245,6 +256,7 @@ function renderDuoHero(result, twinIndex = 0) {
       ${renderNftCard({
         image: twin.image,
         imageSrc: twin.imageSrc,
+        collection,
         collectionName: collection.name,
         tokenId: twin.id,
         label: `#${twinIndex + 1} Twin`,
@@ -275,7 +287,7 @@ function selectTwin(index) {
   reviveResultImages(lastResult.collection);
 }
 
-function renderTwinCard(twin, rank, twinIndex) {
+function renderTwinCard(twin, rank, twinIndex, collection) {
   const card = document.createElement("article");
   card.className = "ntf-twin-card";
   card.dataset.twinIndex = String(twinIndex);
@@ -301,7 +313,7 @@ function renderTwinCard(twin, rank, twinIndex) {
       </div>
       <div class="ntf-twin-card__body">
         <div class="ntf-twin-score">${twin.score.toFixed(1)}% Match</div>
-        <div class="ntf-twin-token">#${escapeHtml(twin.id)}</div>
+        ${renderTokenLink(collection, twin.id, "ntf-twin-token")}
         <div class="ntf-twin-summary">${escapeHtml(twin.summary)}</div>
       </div>
     </div>
@@ -325,6 +337,10 @@ function renderTwinCard(twin, rank, twinIndex) {
   }
 
   const pickTwin = () => selectTwin(twinIndex);
+
+  card.querySelector(".ntf-token-link")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
 
   card.querySelector(".ntf-twin-card__row")?.addEventListener("click", pickTwin);
   card.addEventListener("keydown", (event) => {
@@ -361,7 +377,7 @@ function renderTwinList(result) {
   compareHint.hidden = twins.length < 2;
 
   for (let i = 0; i < twins.length; i += 1) {
-    twinList.appendChild(renderTwinCard(twins[i], i + 1, i));
+    twinList.appendChild(renderTwinCard(twins[i], i + 1, i, result.collection));
   }
 }
 

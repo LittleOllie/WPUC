@@ -704,6 +704,16 @@ button.ntf-back {
   color: rgba(15, 47, 110, 0.8);
 }
 
+.ntf-token-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ntf-token-link:hover {
+  color: var(--lo-blue-primary);
+  text-decoration: underline;
+}
+
 .ntf-nft-stage {
   position: relative;
   width: 100%;
