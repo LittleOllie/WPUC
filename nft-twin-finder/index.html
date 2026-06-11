@@ -34,10 +34,24 @@
 
       <div class="ntf-panel">
         <div class="ntf-field">
-          <label class="ntf-field__label" for="collection-select">Collection</label>
-          <select id="collection-select" class="ntf-select" disabled>
-            <option value="">Loading collections…</option>
-          </select>
+          <label class="ntf-field__label" for="collection-select-trigger">Collection</label>
+          <div class="ntf-select-wrap">
+            <select id="collection-select" class="ntf-sr-only" disabled tabindex="-1" aria-hidden="true">
+              <option value="">Loading collections…</option>
+            </select>
+            <button
+              id="collection-select-trigger"
+              class="ntf-select ntf-select__trigger"
+              type="button"
+              disabled
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-labelledby="collection-select-label"
+            >
+              <span id="collection-select-label">Loading collections…</span>
+            </button>
+            <ul id="collection-select-menu" class="ntf-select-menu" role="listbox" hidden></ul>
+          </div>
         </div>
 
         <div class="ntf-field">
@@ -108,9 +122,23 @@
 
       <div id="duo-hero" class="ntf-duo-hero"></div>
 
-      <button id="search-again-btn" class="ntf-btn ntf-btn--ghost ntf-btn--after-match" type="button">
-        Search again
-      </button>
+      <div class="ntf-results-actions">
+        <form id="results-quick-search" class="ntf-results-actions__form">
+          <label class="ntf-sr-only" for="results-token-input">New NFT number</label>
+          <input
+            id="results-token-input"
+            class="ntf-input ntf-results-actions__input"
+            type="text"
+            inputmode="numeric"
+            placeholder="#123"
+            autocomplete="off"
+          />
+        </form>
+        <button id="search-again-btn" class="ntf-btn ntf-btn--ghost ntf-results-actions__btn" type="button">
+          Search again
+        </button>
+      </div>
+      <p id="results-error" class="ntf-error ntf-results-error" hidden></p>
 
       <p id="compare-hint" class="ntf-compare-hint" hidden>
         Tap any match below to swap it into the comparison.

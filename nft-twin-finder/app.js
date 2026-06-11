@@ -11,6 +11,9 @@ const screens = {
 };
 
 const collectionSelect = document.getElementById("collection-select");
+const collectionSelectTrigger = document.getElementById("collection-select-trigger");
+const collectionSelectLabel = document.getElementById("collection-select-label");
+const collectionSelectMenu = document.getElementById("collection-select-menu");
 const tokenInput = document.getElementById("token-input");
 const findBtn = document.getElementById("find-btn");
 const searchError = document.getElementById("search-error");
@@ -21,6 +24,9 @@ const compareHint = document.getElementById("compare-hint");
 const twinList = document.getElementById("twin-list");
 const searchAgainBtn = document.getElementById("search-again-btn");
 const resultsBackBtn = document.getElementById("results-back-btn");
+const resultsQuickSearch = document.getElementById("results-quick-search");
+const resultsTokenInput = document.getElementById("results-token-input");
+const resultsError = document.getElementById("results-error");
 const revealStage = document.getElementById("ntf-reveal-stage");
 const loadingBar = document.getElementById("loading-bar");
 const loadingSpinner = document.querySelector(".ntf-spinner");
@@ -114,6 +120,16 @@ function setSearchError(message) {
   }
   searchError.hidden = false;
   searchError.textContent = message;
+}
+
+function setResultsError(message) {
+  if (!message) {
+    resultsError.hidden = true;
+    resultsError.textContent = "";
+    return;
+  }
+  resultsError.hidden = false;
+  resultsError.textContent = message;
 }
 
 function updateFindEnabled() {
@@ -303,6 +319,7 @@ function renderResults(result) {
   selectedTwinIndex = 0;
   renderDuoHero(result, 0);
   renderTwinList(result);
+  setResultsError("");
 }
 
 function escapeHtml(value) {
@@ -317,17 +334,82 @@ function escapeAttr(value) {
   return escapeHtml(value).replace(/'/g, "&#39;");
 }
 
+function getCollectionLabel(slug) {
+  if (!slug) {
+    return collections.length ? "Choose a collection…" : "No collections yet";
+  }
+  return collections.find((collection) => collection.slug === slug)?.name || slug;
+}
+
+function closeCollectionMenu() {
+  collectionSelectMenu.hidden = true;
+  collectionSelectTrigger.setAttribute("aria-expanded", "false");
+}
+
+function openCollectionMenu() {
+  collectionSelectMenu.hidden = false;
+  collectionSelectTrigger.setAttribute("aria-expanded", "true");
+}
+
+function setCollectionValue(slug, { silent = false } = {}) {
+  const nextSlug = slug || "";
+  collectionSelect.value = nextSlug;
+  collectionSelectLabel.textContent = getCollectionLabel(nextSlug);
+  collectionSelectMenu.querySelectorAll(".ntf-select-menu__option").forEach((option) => {
+    const active = option.dataset.slug === nextSlug;
+    option.classList.toggle("is-active", active);
+    option.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  if (!silent) {
+    setSearchError("");
+    updateFindEnabled();
+    collectionSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+}
+
+function renderCollectionPicker() {
+  const placeholder = collections.length ? "Choose a collection…" : "No collections yet";
+  collectionSelect.innerHTML = collections.length
+    ? `<option value="">${placeholder}</option>${collections
+        .map((collection) => `<option value="${escapeAttr(collection.slug)}">${escapeHtml(collection.name)}</option>`)
+        .join("")}`
+    : `<option value="">${placeholder}</option>`;
+
+  collectionSelectMenu.innerHTML = collections
+    .map(
+      (collection) => `
+        <li role="presentation">
+          <button
+            type="button"
+            class="ntf-select-menu__option"
+            role="option"
+            data-slug="${escapeAttr(collection.slug)}"
+            aria-selected="false"
+          >
+            ${escapeHtml(collection.name)}
+          </button>
+        </li>
+      `,
+    )
+    .join("");
+
+  const disabled = collections.length === 0;
+  collectionSelect.disabled = disabled;
+  collectionSelectTrigger.disabled = disabled;
+  setCollectionValue(collectionSelect.value || "", { silent: true });
+}
+
 async function boot() {
   try {
     collections = await loadCollectionIndex();
-    collectionSelect.innerHTML = collections.length
-      ? `<option value="">Choose a collection…</option>${collections
-          .map((c) => `<option value="${escapeAttr(c.slug)}">${escapeHtml(c.name)}</option>`)
-          .join("")}`
-      : `<option value="">No collections yet</option>`;
-    collectionSelect.disabled = collections.length === 0;
+    renderCollectionPicker();
   } catch {
+    collections = [];
     collectionSelect.innerHTML = `<option value="">Could not load collections</option>`;
+    collectionSelectMenu.innerHTML = "";
+    collectionSelectLabel.textContent = "Could not load collections";
+    collectionSelect.disabled = true;
+    collectionSelectTrigger.disabled = true;
     setSearchError("Collections could not be loaded. Try again later.");
   }
   updateFindEnabled();
@@ -336,6 +418,31 @@ async function boot() {
 collectionSelect.addEventListener("change", () => {
   setSearchError("");
   updateFindEnabled();
+});
+
+collectionSelectTrigger.addEventListener("click", () => {
+  if (collectionSelectTrigger.disabled) return;
+  if (collectionSelectMenu.hidden) {
+    openCollectionMenu();
+  } else {
+    closeCollectionMenu();
+  }
+});
+
+collectionSelectMenu.addEventListener("click", (event) => {
+  const option = event.target.closest(".ntf-select-menu__option");
+  if (!option) return;
+  setCollectionValue(option.dataset.slug || "");
+  closeCollectionMenu();
+});
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest(".ntf-select-wrap")) return;
+  closeCollectionMenu();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeCollectionMenu();
 });
 
 tokenInput.addEventListener("input", () => {
@@ -350,12 +457,25 @@ tokenInput.addEventListener("keydown", (event) => {
   }
 });
 
-findBtn.addEventListener("click", async () => {
-  const slug = collectionSelect.value;
-  const tokenId = tokenInput.value.trim().replace(/^#/, "");
+function resolveSearchErrorMessage(error) {
+  const code = error?.message || "";
+  if (code === "INVALID_TOKEN_ID") {
+    return "Enter a valid NFT number (digits only).";
+  }
+  if (code === "NO_TWINS_FOUND") {
+    return "No twins found for that token. Try another number.";
+  }
+  if (code === "COLLECTION_NOT_FOUND") {
+    return "That collection is not available yet.";
+  }
+  return "Something went wrong. Please try again.";
+}
+
+async function runTwinSearch(slug, tokenId, { onErrorScreen = "search" } = {}) {
   if (!slug || !tokenId) return;
 
   setSearchError("");
+  setResultsError("");
   showScreen("loading");
   revealStage.hidden = true;
   loadingBar.hidden = false;
@@ -402,6 +522,10 @@ findBtn.addEventListener("click", async () => {
     ]);
 
     renderResults(result);
+    setCollectionValue(slug, { silent: true });
+    tokenInput.value = tokenId;
+    resultsTokenInput.value = "";
+    updateFindEnabled();
     showScreen("results");
   } catch (error) {
     stopLoadingRotator?.();
@@ -410,26 +534,50 @@ findBtn.addEventListener("click", async () => {
     revealStage.hidden = true;
     loadingBar.hidden = false;
     loadingSpinner.hidden = true;
-    showScreen("search");
 
-    const code = error?.message || "";
-    if (code === "INVALID_TOKEN_ID") {
-      setSearchError("Enter a valid NFT number (digits only).");
-    } else if (code === "NO_TWINS_FOUND") {
-      setSearchError("No twins found for that token. Try another number.");
-    } else if (code === "COLLECTION_NOT_FOUND") {
-      setSearchError("That collection is not available yet.");
+    const message = resolveSearchErrorMessage(error);
+    if (onErrorScreen === "results") {
+      showScreen("results");
+      setResultsError(message);
     } else {
-      setSearchError("Something went wrong. Please try again.");
+      showScreen("search");
+      setSearchError(message);
     }
   }
+}
+
+findBtn.addEventListener("click", () => {
+  const slug = collectionSelect.value;
+  const tokenId = tokenInput.value.trim().replace(/^#/, "");
+  void runTwinSearch(slug, tokenId);
 });
 
 function goToSearch() {
+  setResultsError("");
   showScreen("search");
 }
 
-searchAgainBtn.addEventListener("click", goToSearch);
+function submitResultsQuickSearch() {
+  const slug = lastResult?.collection?.slug;
+  const entered = resultsTokenInput.value.trim().replace(/^#/, "");
+  const tokenId = entered || lastResult?.token?.id;
+  if (!slug || !/^\d+$/.test(String(tokenId || ""))) {
+    setResultsError("Enter a valid NFT number (digits only).");
+    return;
+  }
+  void runTwinSearch(slug, tokenId, { onErrorScreen: "results" });
+}
+
+searchAgainBtn.addEventListener("click", submitResultsQuickSearch);
 resultsBackBtn.addEventListener("click", goToSearch);
+
+resultsTokenInput.addEventListener("input", () => {
+  setResultsError("");
+});
+
+resultsQuickSearch.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitResultsQuickSearch();
+});
 
 void boot();

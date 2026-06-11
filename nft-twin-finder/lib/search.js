@@ -3,7 +3,7 @@ import {
   loadTokenSlice,
 } from "./collections.js";
 import { preferredImageUrl } from "./imageUrls.js";
-import { matchSummary, traitBreakdown } from "./traitNormalizer.js";
+import { matchSummary, summaryFromBreakdown, traitBreakdown } from "./traitNormalizer.js";
 
 /**
  * @typedef {{ id: string, score: number, summary?: string }} TwinMatch
@@ -30,14 +30,10 @@ export async function findTwins(slug, tokenId) {
 
   const twinIds = matches.map((m) => String(m.id));
   const imageIds = [id, ...twinIds];
-  const needsTwinMetadata = matches.some(
-    (m) => !Array.isArray(m.breakdown) || !m.breakdown.length,
-  );
-  const metadataIds = needsTwinMetadata ? imageIds : [id];
 
   const [images, metadata] = await Promise.all([
     loadTokenSlice(slug, "images", imageIds),
-    loadTokenSlice(slug, "metadata", metadataIds),
+    loadTokenSlice(slug, "metadata", imageIds),
   ]);
 
   const weights = collection.traitWeights || undefined;
@@ -50,10 +46,13 @@ export async function findTwins(slug, tokenId) {
       Array.isArray(match.breakdown) && match.breakdown.length
         ? match.breakdown
         : traitBreakdown(sourceTraits, twinTraits, weights);
+    const summary = breakdown.length
+      ? summaryFromBreakdown(breakdown)
+      : matchSummary(sourceTraits, twinTraits, weights);
     return {
       id: twinId,
       score: Number(match.score),
-      summary: match.summary || matchSummary(sourceTraits, twinTraits, weights),
+      summary,
       image: preferredImageUrl(images[twinId] || ""),
       traits: twinTraits,
       breakdown,

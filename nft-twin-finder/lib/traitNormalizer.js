@@ -57,6 +57,8 @@ const TRAIT_ALIASES = {
   "space shine": "Accessories",
   glasses: "Accessories",
   eyewear: "Accessories",
+  earring: "Accessories",
+  earrings: "Accessories",
   background: "Background",
   backgrounds: "Background",
   bg: "Background",
@@ -168,11 +170,20 @@ export function traitBreakdown(source, twin, weights = DEFAULT_WEIGHTS) {
 
 /** Short summary for twin cards. */
 export function matchSummary(source, twin, weights = DEFAULT_WEIGHTS) {
-  const rows = traitBreakdown(source, twin, weights);
-  const same = rows.filter((r) => r.match).map((r) => r.category);
-  if (same.length >= 3) {
-    return `Same ${same.slice(0, 3).join(", ")}`;
-  }
+  return summaryFromBreakdown(traitBreakdown(source, twin, weights));
+}
+
+/** Build summary text from a precomputed breakdown list. */
+export function summaryFromBreakdown(breakdown) {
+  const same = breakdown
+    .filter((row) => row.match)
+    .map((row) => {
+      if (row.category) return row.category;
+      const label = String(row.label || "");
+      return label.startsWith("Same ") ? label.slice(5) : label;
+    })
+    .filter(Boolean);
+
   if (same.length > 0) {
     return `Same ${same.join(", ")}`;
   }

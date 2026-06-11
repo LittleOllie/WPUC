@@ -1,5 +1,9 @@
 [
   {
+    "slug": "bayc",
+    "name": "BAYC"
+  },
+  {
     "slug": "call-of-the-stars",
     "name": "Call of the Stars"
   },
@@ -14,6 +18,10 @@
   {
     "slug": "dropded-gorgez",
     "name": "DropDed Gorgez"
+  },
+  {
+    "slug": "less-than-three",
+    "name": "Less Than Three"
   },
   {
     "slug": "long-lost",

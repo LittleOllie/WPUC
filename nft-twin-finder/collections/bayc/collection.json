@@ -1,0 +1,16 @@
+{
+  "name": "BAYC",
+  "slug": "bayc",
+  "supply": 10000,
+  "contract": "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}
