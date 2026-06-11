@@ -1,0 +1,16 @@
+{
+  "name": "Deadfellaz",
+  "slug": "deadfellaz",
+  "supply": 10000,
+  "contract": "0x2acab3dea77832c09420663b0e1cb386031ba17b",
+  "network": "ethereum",
+  "traitWeights": {
+    "Skin": 35,
+    "Eyes": 15,
+    "Mouth": 15,
+    "Clothing": 10,
+    "Hat": 10,
+    "Accessories": 10,
+    "Background": 5
+  }
+}

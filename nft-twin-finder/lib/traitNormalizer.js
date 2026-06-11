@@ -36,6 +36,7 @@ const TRAIT_ALIASES = {
   mouth: "Mouth",
   lips: "Mouth",
   face: "Mouth",
+  nose: "Accessories",
   clothing: "Clothing",
   clothes: "Clothing",
   outfit: "Clothing",
