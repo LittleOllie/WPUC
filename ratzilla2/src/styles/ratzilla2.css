@@ -1035,8 +1035,8 @@ body {
   }
 
   .rz2-logo--blackwater {
-    width: min(88vw, 420px);
-    max-height: clamp(52px, 13vw, 82px);
+    width: min(92vw, 420px);
+    max-height: clamp(104px, 26vw, 164px);
   }
 
   .rz2-mid-r {
