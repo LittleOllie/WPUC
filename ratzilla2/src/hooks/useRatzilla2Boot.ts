@@ -89,10 +89,6 @@ export function useRatzilla2Boot() {
     const cursorEl = document.getElementById("rz2Cursor");
     const soonWrap = soonEl?.closest(".rz2-soon");
     const flicker = document.getElementById("rz2Flicker");
-    const pressSoundBtn = document.getElementById("rz2PressSound");
-    const pressSoundLabel = pressSoundBtn?.querySelector(".rz2-press-sound__label");
-    const skullBtn = document.getElementById("rz2SkullBtn");
-    const ratMark = document.getElementById("rz2RatMark");
     const tunnelTrack = document.getElementById("rz2TunnelTrack");
     const ratVideo = document.getElementById("rz2RatVideo") as HTMLVideoElement | null;
     const ratSource = document.getElementById("rz2RatSource") as HTMLCanvasElement | null;
@@ -105,15 +101,6 @@ export function useRatzilla2Boot() {
     let ratCrossingTimer = 0;
     let ratFrameSize = { width: 1, height: 1 };
     const RAT_MAX_ACTIVE = 4;
-
-    let staticCtx: AudioContext | null = null;
-    let staticGain: GainNode | null = null;
-    let staticBase = 0.028;
-    let staticStarted = false;
-    let staticMuted = true;
-    let staticHissTimer = 0;
-    let staticHum: OscillatorNode | null = null;
-    let staticNoise: AudioBufferSourceNode | null = null;
 
     function initRatRun() {
       if (!ratVideo || !ratSource || !tunnelTrack) return;
@@ -293,175 +280,10 @@ export function useRatzilla2Boot() {
       void flicker.offsetWidth;
       flicker.classList.add("is-on");
       window.setTimeout(() => flicker.classList.remove("is-on"), 380);
-      staticCrackle();
-    }
-
-    function stopStatic() {
-      window.clearTimeout(staticHissTimer);
-      staticHissTimer = 0;
-      try {
-        staticNoise?.stop();
-      } catch {
-        /* noop */
-      }
-      staticNoise = null;
-      try {
-        staticHum?.stop();
-      } catch {
-        /* noop */
-      }
-      staticHum = null;
-      if (staticGain && staticCtx) {
-        try {
-          staticGain.gain.setValueAtTime(0, staticCtx.currentTime);
-        } catch {
-          /* noop */
-        }
-      }
-      try {
-        staticGain?.disconnect();
-      } catch {
-        /* noop */
-      }
-      staticGain = null;
-      staticCtx?.close?.().catch(() => {});
-      staticCtx = null;
-      staticStarted = false;
-    }
-
-    function staticCrackle() {
-      if (staticMuted || !staticCtx || !staticGain) return;
-      const t = staticCtx.currentTime;
-      const peak = staticBase * (1.6 + Math.random() * 1.4);
-      staticGain.gain.cancelScheduledValues(t);
-      staticGain.gain.setValueAtTime(staticGain.gain.value, t);
-      staticGain.gain.linearRampToValueAtTime(peak, t + 0.012);
-      staticGain.gain.exponentialRampToValueAtTime(
-        Math.max(0.0001, staticBase),
-        t + 0.1 + Math.random() * 0.08,
-      );
     }
 
     function reducedMotion() {
       return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    }
-
-    function scheduleStaticHiss() {
-      if (staticMuted || !staticCtx || !staticGain) return;
-      const t = staticCtx.currentTime;
-      const wobble = staticBase * (0.75 + Math.random() * 0.55);
-      staticGain.gain.cancelScheduledValues(t);
-      staticGain.gain.setValueAtTime(staticGain.gain.value, t);
-      staticGain.gain.linearRampToValueAtTime(wobble, t + 0.04);
-      staticGain.gain.linearRampToValueAtTime(
-        staticBase,
-        t + 0.12 + Math.random() * 0.1,
-      );
-      staticHissTimer = window.setTimeout(
-        () => scheduleStaticHiss(),
-        rand(reducedMotion() ? 2200 : 900, reducedMotion() ? 4200 : 1800),
-      );
-    }
-
-    function startStatic() {
-      if (staticMuted || staticStarted) return;
-      try {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx) return;
-
-        staticBase = reducedMotion() ? 0.016 : 0.045;
-
-        staticCtx = new Ctx();
-        const sampleRate = staticCtx.sampleRate;
-        const seconds = 2;
-        const length = Math.floor(sampleRate * seconds);
-        const buffer = staticCtx.createBuffer(1, length, sampleRate);
-        const channel = buffer.getChannelData(0);
-        for (let i = 0; i < length; i++) {
-          channel[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = staticCtx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
-
-        const hp = staticCtx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 380;
-        hp.Q.value = 0.65;
-
-        const bp = staticCtx.createBiquadFilter();
-        bp.type = "bandpass";
-        bp.frequency.value = 3200;
-        bp.Q.value = 0.5;
-
-        const lp = staticCtx.createBiquadFilter();
-        lp.type = "lowpass";
-        lp.frequency.value = 11000;
-
-        const hum = staticCtx.createOscillator();
-        hum.type = "sawtooth";
-        hum.frequency.value = 59.94;
-        const humGain = staticCtx.createGain();
-        humGain.gain.value = 0.004;
-
-        staticGain = staticCtx.createGain();
-        staticGain.gain.value = staticBase;
-
-        const mix = staticCtx.createGain();
-        mix.gain.value = 1;
-
-        noise.connect(hp);
-        hp.connect(bp);
-        bp.connect(lp);
-        lp.connect(mix);
-        hum.connect(humGain);
-        humGain.connect(mix);
-        mix.connect(staticGain);
-        staticGain.connect(staticCtx.destination);
-        noise.start();
-        staticNoise = noise;
-        staticHum = hum;
-        hum.start();
-        staticCtx.resume().catch(() => {});
-        staticStarted = true;
-
-        scheduleStaticHiss();
-      } catch {
-        stopStatic();
-      }
-    }
-
-    function syncPressSoundUi() {
-      const enabled = !staticMuted;
-      pressSoundBtn?.classList.toggle("is-muted", staticMuted);
-      pressSoundBtn?.classList.toggle("is-on", enabled);
-      pressSoundBtn?.setAttribute("aria-pressed", enabled ? "true" : "false");
-      ratMark?.classList.toggle("is-sound-on", enabled);
-      skullBtn?.setAttribute("aria-pressed", enabled ? "true" : "false");
-      if (pressSoundLabel) {
-        pressSoundLabel.textContent = "Press the Rat";
-      }
-    }
-
-    function setSoundEnabled(enabled: boolean) {
-      staticMuted = !enabled;
-      syncPressSoundUi();
-
-      if (staticMuted) {
-        stopStatic();
-        return;
-      }
-
-      if (staticCtx?.state === "suspended") {
-        staticCtx.resume().then(() => scheduleStaticHiss()).catch(() => {});
-        return;
-      }
-      startStatic();
-    }
-
-    function togglePressSound() {
-      setSoundEnabled(staticMuted);
     }
 
     function nextStoryLine() {
@@ -546,37 +368,16 @@ export function useRatzilla2Boot() {
       });
     };
 
-    const onVisibility = () => {
-      if (document.hidden) {
-        staticCtx?.suspend?.().catch(() => {});
-      } else if (!staticMuted) {
-        staticCtx?.resume?.().catch(() => {});
-      }
-    };
-
-    const onPressSound = (event: Event) => {
-      event.stopPropagation();
-      togglePressSound();
-    };
-
-    pressSoundBtn?.addEventListener("click", onPressSound);
-    skullBtn?.addEventListener("click", onPressSound);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    document.addEventListener("visibilitychange", onVisibility);
 
-    syncPressSoundUi();
     cinematicBoot();
     scheduleAmbient();
     const cleanupRatRun = initRatRun();
 
     return () => {
       typingStop = true;
-      pressSoundBtn?.removeEventListener("click", onPressSound);
-      skullBtn?.removeEventListener("click", onPressSound);
       window.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("visibilitychange", onVisibility);
       cleanupRatRun?.();
-      stopStatic();
     };
   }, []);
 }

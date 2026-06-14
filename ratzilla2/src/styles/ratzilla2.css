@@ -704,6 +704,22 @@ body {
   }
 }
 
+.rz2-powered {
+  margin: 0.15rem 0 0;
+  font-size: clamp(0.58rem, 2.2vw, 0.72rem);
+  letter-spacing: 0.1em;
+  color: rgba(175, 168, 164, 0.72);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  animation: rz2-powered-in 1.6s ease 5.8s forwards;
+}
+
+@keyframes rz2-powered-in {
+  to {
+    opacity: 0.88;
+  }
+}
+
 .rz2-rat-mark {
   display: flex;
   flex-direction: column;

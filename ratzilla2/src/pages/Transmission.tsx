@@ -86,32 +86,9 @@ export default function Transmission() {
             <span className="rz2-soon__text" id="rz2Soon" />
             <span className="rz2-cursor" id="rz2Cursor" aria-hidden="true" />
           </p>
-          <div className="rz2-rat-mark" id="rz2RatMark">
-            <button
-              type="button"
-              className="rz2-skull-btn"
-              id="rz2SkullBtn"
-              aria-label="Press the rat to toggle TV static sound"
-            >
-              <img
-                className="rz2-skull"
-                src={asset("RatLogo.png")}
-                alt=""
-                width={80}
-                height={80}
-                draggable={false}
-              />
-            </button>
-            <button
-              type="button"
-              className="rz2-press-sound is-muted"
-              id="rz2PressSound"
-              aria-label="Press the Rat to toggle TV static sound"
-              aria-pressed={false}
-            >
-              <span className="rz2-press-sound__label">Press the Rat</span>
-            </button>
-          </div>
+          <p className="rz2-powered">
+            Powered by Little Ollie Labs for BlackWater Labs
+          </p>
         </footer>
 
         <div className="rz2-fx" aria-hidden="true">
