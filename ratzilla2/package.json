@@ -1,0 +1,25 @@
+{
+  "name": "ratzilla2",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && cp dist/index.vite.html dist/index.html && cp dist/index.html dist/404.html",
+    "publish": "npm run build && node scripts/publish-static.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^12.14.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.12"
+  }
+}
