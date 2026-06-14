@@ -564,13 +564,39 @@
   animation: rz-outbreak-panel-pulse 0.7s ease-out;
 }
 
-/* Landing page — dock sits top-right, clear of Infect Me button */
-.rz-outbreak--landing {
-  top: max(14px, env(safe-area-inset-top));
-  left: auto;
-  right: max(14px, env(safe-area-inset-right));
-  transform: none;
-  width: min(300px, calc(100vw - 120px));
+/* Landing header stack — counter above logo */
+.rz-outbreak--header {
+  position: relative;
+  width: min(100%, 300px);
+  margin: 0;
+  padding: 0.45rem 0.6rem 0.5rem;
+  z-index: 1;
+  backdrop-filter: blur(6px);
+  border-color: rgba(220, 60, 70, 0.65);
+  box-shadow:
+    0 0 20px rgba(200, 32, 42, 0.35),
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 0 14px rgba(80, 12, 18, 0.22);
+}
+
+.rz-outbreak--header .rz-outbreak__title {
+  margin-bottom: 0.28rem;
+  font-size: clamp(0.56rem, 2.2vw, 0.68rem);
+}
+
+.rz-outbreak--header .rz-outbreak__count {
+  margin-bottom: 0.35rem;
+  font-size: clamp(0.78rem, 2.8vw, 0.92rem);
+}
+
+.rz-outbreak--header .rz-outbreak__count-label {
+  display: inline;
+  margin-left: 0.12rem;
+  font-size: 0.68em;
+}
+
+.rz-outbreak--header .rz-outbreak__bar {
+  height: 7px;
 }
 
 @media (max-width: 640px) {
@@ -579,9 +605,23 @@
     width: min(440px, calc(100vw - 20px));
   }
 
-  .rz-outbreak--landing {
-    top: max(52px, calc(env(safe-area-inset-top) + 38px));
-    width: min(300px, calc(100vw - 28px));
+  .rz-outbreak--header {
+    width: min(100%, 250px);
+    padding: 0.35rem 0.5rem 0.42rem;
+  }
+
+  .rz-outbreak--header .rz-outbreak__title {
+    font-size: 0.54rem;
+    letter-spacing: 0.16em;
+  }
+
+  .rz-outbreak--header .rz-outbreak__count {
+    font-size: 0.76rem;
+    margin-bottom: 0.28rem;
+  }
+
+  .rz-outbreak--header .rz-outbreak__bar {
+    height: 6px;
   }
 
   .rz-infection__shell {

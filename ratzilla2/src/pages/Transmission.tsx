@@ -61,6 +61,7 @@ export default function Transmission() {
         <div className="rz2-smoke" aria-hidden="true" />
 
         <header className="rz2-top">
+          <OutbreakStatus className="rz-outbreak--header" />
           <div className="rz2-wordmark rz2-wordmark--full" aria-label="BLACKWATER">
             <img
               className="rz2-logo rz2-logo--blackwater"
@@ -120,8 +121,6 @@ export default function Transmission() {
           <div className="rz2-fx__chroma" />
           <div className="rz2-fx__flicker" id="rz2Flicker" />
         </div>
-
-        <OutbreakStatus className="rz-outbreak--dock rz-outbreak--landing" />
       </div>
     </div>
   );

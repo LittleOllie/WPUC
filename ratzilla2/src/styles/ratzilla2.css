@@ -465,11 +465,15 @@ body {
 .rz2-top {
   position: absolute;
   z-index: 14;
-  top: clamp(0.35rem, 1.2vh, 0.85rem);
+  top: clamp(0.75rem, 2.5vh, 1.25rem);
   left: 0;
   right: 0;
   width: min(96vw, 1080px);
   margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.35rem, 1.2vh, 0.65rem);
   text-align: center;
 }
 
@@ -1021,7 +1025,9 @@ body {
   }
 
   .rz2-top {
-    top: clamp(1.65rem, 5vh, 3rem);
+    top: clamp(2rem, 5.5vh, 2.85rem);
+    width: min(92vw, 420px);
+    gap: 0.4rem;
   }
 
   .rz2-bottom {
@@ -1029,8 +1035,8 @@ body {
   }
 
   .rz2-logo--blackwater {
-    width: min(94vw, 1020px);
-    max-height: clamp(120px, 33vw, 225px);
+    width: min(88vw, 420px);
+    max-height: clamp(52px, 13vw, 82px);
   }
 
   .rz2-mid-r {
