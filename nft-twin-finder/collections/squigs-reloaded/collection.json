@@ -1,0 +1,9 @@
+{
+  "name": "Squigs Reloaded",
+  "slug": "squigs-reloaded",
+  "supply": 4444,
+  "contract": "0x8c9a02c0585200c4c65608df6b8def543d33792a",
+  "network": "ethereum",
+  "weightProfile": "default",
+  "similarityCalculatedAt": "2026-06-21T15:05:02.029Z"
+}
