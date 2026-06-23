@@ -26,7 +26,7 @@ hydrateImageLoaderFromSession();
 
 const DEV = window.location.hostname === "localhost";
 /** Max NFTs (including custom uploads) in one grid build / reorder. */
-const FLEX_GRID_MAX_NFTS = 900;
+const FLEX_GRID_MAX_NFTS = 1600;
 /** Points users to #retryBtn (above the grid) when image loads fail. */
 const RETRY_MISSING_BUTTON_HINT = "Try the 🔄 Retry missing button above.";
 const $ = (id) => document.getElementById(id);
