@@ -1,4 +1,5 @@
 const IPFS_GATEWAYS = [
+  "https://alchemy.mypinata.cloud/ipfs/",
   "https://gateway.pinata.cloud/ipfs/",
   "https://nftstorage.link/ipfs/",
   "https://dweb.link/ipfs/",
@@ -12,10 +13,21 @@ export function extractIpfsPath(url) {
   return match ? match[1] : null;
 }
 
+/** @param {string} url */
+function isDirectHttpsImage(url) {
+  return /^https?:\/\//i.test(url) && !extractIpfsPath(url);
+}
+
 /** @param {string} template @param {string|number} tokenId */
 export function resolveImageUrlTemplate(template, tokenId) {
   if (!template || tokenId == null || tokenId === "") return "";
   return template.replaceAll("{id}", String(tokenId));
+}
+
+function addIpfsGatewayVariants(add, ipfsPath) {
+  for (const gateway of IPFS_GATEWAYS) {
+    add(`${gateway}${ipfsPath}`);
+  }
 }
 
 /**
@@ -40,25 +52,20 @@ export function imageUrlCandidates(url, options = {}) {
     add(resolveImageUrlTemplate(imageUrlTemplate, tokenId));
   }
 
-  if (imageIpfsCid && tokenId != null) {
-    const cidPath = `${imageIpfsCid}/${tokenId}.png`;
-    for (const gateway of IPFS_GATEWAYS) {
-      add(`${gateway}${cidPath}`);
+  if (trimmed) {
+    const ipfsPath = extractIpfsPath(trimmed);
+    if (ipfsPath) {
+      add(trimmed);
+      addIpfsGatewayVariants(add, ipfsPath);
+    } else {
+      add(trimmed);
     }
   }
 
-  if (!trimmed) return candidates;
-
-  const ipfsPath = extractIpfsPath(trimmed);
-  if (!ipfsPath) {
-    add(trimmed);
-    return candidates;
+  if (imageIpfsCid && tokenId != null) {
+    const cidPath = `${imageIpfsCid}/${tokenId}.png`;
+    addIpfsGatewayVariants(add, cidPath);
   }
-
-  for (const gateway of IPFS_GATEWAYS) {
-    add(`${gateway}${ipfsPath}`);
-  }
-  add(trimmed);
 
   return candidates;
 }
@@ -79,5 +86,7 @@ export function imageOptionsForToken(collection, tokenId) {
  * @param {{ tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string }} [options]
  */
 export function preferredImageUrl(url, options = {}) {
-  return imageUrlCandidates(url, options)[0] || url || "";
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  if (isDirectHttpsImage(trimmed)) return trimmed;
+  return imageUrlCandidates(url, options)[0] || trimmed || "";
 }

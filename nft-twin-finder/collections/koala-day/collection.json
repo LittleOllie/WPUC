@@ -1,0 +1,10 @@
+{
+  "name": "Koala Day",
+  "slug": "koala-day",
+  "supply": 738,
+  "contract": "0x50372c1153170840ecce9129c6cc70b912f34273",
+  "network": "base",
+  "weightProfile": "default",
+  "similarityCalculatedAt": "2026-06-25T12:53:29.830Z",
+  "imageIpfsCid": "bafybeigjeggkcyj6wyv667ejt4zf2iveldvgjjkq2fj5dn6u7ttjmpkrcy"
+}

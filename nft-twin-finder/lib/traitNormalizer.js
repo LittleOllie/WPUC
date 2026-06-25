@@ -1,6 +1,7 @@
 export { TRAIT_CATEGORIES } from "./traitCategories.js";
 import { TRAIT_CATEGORIES } from "./traitCategories.js";
 import { DEFAULT_WEIGHTS } from "./weightProfiles.js";
+import { traitAliasesForCollection } from "./collectionTraitMaps.js";
 
 export { DEFAULT_WEIGHTS } from "./weightProfiles.js";
 
@@ -69,19 +70,28 @@ function normalizeKey(raw) {
     .replace(/\s+/g, " ");
 }
 
+function canonicalCategory(key, collectionSlug) {
+  const normalized = normalizeKey(key);
+  const collectionAliases = traitAliasesForCollection(collectionSlug);
+  if (collectionAliases?.[normalized]) return collectionAliases[normalized];
+  return TRAIT_ALIASES[normalized] || String(key || "").trim();
+}
+
 /**
  * Convert raw NFT metadata into canonical trait map.
  * @param {unknown} raw
+ * @param {{ slug?: string }} [options]
  * @returns {Record<string, string>}
  */
-export function normalizeTraits(raw) {
+export function normalizeTraits(raw, options = {}) {
   const traits = {};
+  const { slug } = options;
 
   if (!raw || typeof raw !== "object") return traits;
 
   if (raw.traits && typeof raw.traits === "object" && !Array.isArray(raw.traits)) {
     for (const [key, value] of Object.entries(raw.traits)) {
-      const canon = TRAIT_ALIASES[normalizeKey(key)] || key;
+      const canon = canonicalCategory(key, slug);
       traits[canon] = String(value ?? "").trim();
     }
     return traits;
@@ -94,7 +104,7 @@ export function normalizeTraits(raw) {
       const type = attr.trait_type ?? attr.traitType ?? attr.name;
       const value = attr.value;
       if (type == null || value == null) continue;
-      const canon = TRAIT_ALIASES[normalizeKey(type)] || String(type).trim();
+      const canon = canonicalCategory(type, slug);
       traits[canon] = String(value).trim();
     }
   }

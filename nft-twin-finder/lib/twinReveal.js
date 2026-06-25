@@ -5,11 +5,44 @@ export const FLASH_MS = 380;
 export const REVEAL_TOTAL_MS = REVEAL_MS + FLASH_MS;
 
 const PRELOAD_TIMEOUT_MS = 8000;
+const PER_CANDIDATE_MS = 4000;
 
 /**
- * Race image URL candidates in parallel; return the first URL that loads in time.
+ * @param {string} src
+ * @param {number} timeoutMs
+ */
+function tryLoadImage(src, timeoutMs) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = "async";
+
+    const timer = window.setTimeout(() => {
+      cleanup();
+      resolve(false);
+    }, timeoutMs);
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      img.onload = null;
+      img.onerror = null;
+    };
+
+    img.onload = () => {
+      cleanup();
+      resolve(true);
+    };
+    img.onerror = () => {
+      cleanup();
+      resolve(false);
+    };
+    img.src = src;
+  });
+}
+
+/**
+ * Try image URL candidates in order; stop at the first load within the total budget.
  * @param {string} url
- * @param {{ tokenId?: string|number, imageUrlTemplate?: string }} [options]
+ * @param {{ tokenId?: string|number, imageUrlTemplate?: string, imageIpfsCid?: string }} [options]
  */
 export async function preloadImage(url, options = {}) {
   if (!url) return null;
@@ -17,30 +50,16 @@ export async function preloadImage(url, options = {}) {
   const candidates = imageUrlCandidates(url, options);
   if (!candidates.length) return null;
 
-  return new Promise((resolve) => {
-    let pending = candidates.length;
-    let settled = false;
-
-    const finish = (winner) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timer);
-      resolve(winner);
-    };
-
-    const timer = window.setTimeout(() => finish(null), PRELOAD_TIMEOUT_MS);
-
-    for (const candidate of candidates) {
-      const img = new Image();
-      img.decoding = "async";
-      img.onload = () => finish(candidate);
-      img.onerror = () => {
-        pending -= 1;
-        if (pending === 0) finish(null);
-      };
-      img.src = candidate;
+  const deadline = Date.now() + PRELOAD_TIMEOUT_MS;
+  for (const candidate of candidates) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    if (await tryLoadImage(candidate, Math.min(remaining, PER_CANDIDATE_MS))) {
+      return candidate;
     }
-  });
+  }
+
+  return null;
 }
 
 /**

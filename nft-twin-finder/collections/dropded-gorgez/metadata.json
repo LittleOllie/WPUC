@@ -23963,7 +23963,10 @@
   },
   "2635": {
     "name": "Gorgez 2635",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Swiss"
+    }
   },
   "2636": {
     "name": "Gorgez 2636",
@@ -24082,7 +24085,13 @@
   },
   "2653": {
     "name": "Gorgez 2653",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Purple",
+      "Clothing": "Slicker Green",
+      "Hat": "Dark Prince",
+      "Eyes": "Supreme Beams"
+    }
   },
   "2654": {
     "name": "Gorgez 2654",
@@ -24131,7 +24140,13 @@
   },
   "2660": {
     "name": "Gorgez 2660",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Hat": "Gorgez Halo",
+      "Skin": "Coal",
+      "Clothing": "Royal Angelic Armor",
+      "Eyes": "Bans"
+    }
   },
   "2661": {
     "name": "Gorgez 2661",
@@ -24139,7 +24154,12 @@
   },
   "2662": {
     "name": "Gorgez 2662",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Latte",
+      "Eyes": "Stank-Eye",
+      "Hat": "Toque Brown"
+    }
   },
   "2663": {
     "name": "Gorgez 2663",
@@ -24201,7 +24221,12 @@
   },
   "2672": {
     "name": "Gorgez 2672",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Shrouded",
+      "Clothing": "DDG Varsity",
+      "Hat": "Bowler"
+    }
   },
   "2673": {
     "name": "Gorgez 2673",
@@ -24214,7 +24239,13 @@
   },
   "2674": {
     "name": "Gorgez 2674",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Hat": "Gorgez Halo",
+      "Skin": "Coal",
+      "Clothing": "Shadow Council",
+      "Eyes": "WaterWorks"
+    }
   },
   "2675": {
     "name": "Gorgez 2675",
@@ -24353,11 +24384,23 @@
   },
   "2695": {
     "name": "Gorgez 2695",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Gloop",
+      "Clothing": "Varsity Red",
+      "Eyes": "Diners",
+      "Hat": "BW Blue Cap"
+    }
   },
   "2696": {
     "name": "Gorgez 2696",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Harlequin",
+      "Clothing": "Polo Black",
+      "Eyes": "Boardwalks",
+      "Hat": "Phantom Jelly Crown"
+    }
   },
   "2697": {
     "name": "Gorgez 2697",
@@ -24404,7 +24447,13 @@
   },
   "2704": {
     "name": "Gorgez 2704",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Gloop",
+      "Clothing": "Bomber Pink",
+      "Eyes": "Gorgez Visor",
+      "Hat": "Capt. Marquess"
+    }
   },
   "2705": {
     "name": "Gorgez 2705",
@@ -24412,7 +24461,11 @@
   },
   "2706": {
     "name": "Gorgez 2706",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Mantle",
+      "Clothing": "Crew Pink"
+    }
   },
   "2707": {
     "name": "Gorgez 2707",
@@ -24428,7 +24481,12 @@
   },
   "2710": {
     "name": "Gorgez 2710",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Astral",
+      "Eyes": "Boardwalks",
+      "Hat": "Gorgez Bandana"
+    }
   },
   "2711": {
     "name": "Gorgez 2711",
@@ -24457,7 +24515,12 @@
   },
   "2715": {
     "name": "Gorgez 2715",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Infinity",
+      "Eyes": "Stank-Eye",
+      "Hat": "Fro Brown"
+    }
   },
   "2716": {
     "name": "Gorgez 2716",
@@ -24500,7 +24563,12 @@
   },
   "2722": {
     "name": "Gorgez 2722",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Prismatic",
+      "Clothing": "Slicker Green",
+      "Hat": "Fringe Purple"
+    }
   },
   "2723": {
     "name": "Gorgez 2723",
@@ -24551,11 +24619,21 @@
   },
   "2731": {
     "name": "Gorgez 2731",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Gloop",
+      "Clothing": "DropDed Jersey"
+    }
   },
   "2732": {
     "name": "Gorgez 2732",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Swiss",
+      "Clothing": "OGT Hoody",
+      "Eyes": "Visionary",
+      "Hat": "Crown of Divinity"
+    }
   },
   "2733": {
     "name": "Gorgez 2733",
@@ -24567,15 +24645,29 @@
   },
   "2735": {
     "name": "Gorgez 2735",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Avocado",
+      "Clothing": "BioSuit",
+      "Hat": "Fur Bucket"
+    }
   },
   "2736": {
     "name": "Gorgez 2736",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Swiss",
+      "Clothing": "Enchanter"
+    }
   },
   "2737": {
     "name": "Gorgez 2737",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Lime",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Gorgez Cap"
+    }
   },
   "2738": {
     "name": "Gorgez 2738",
@@ -24588,7 +24680,12 @@
   },
   "2739": {
     "name": "Gorgez 2739",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Avocado",
+      "Clothing": "Warrior Robe",
+      "Hat": "Fringe Red"
+    }
   },
   "2740": {
     "name": "Gorgez 2740",
@@ -24726,7 +24823,12 @@
   },
   "2761": {
     "name": "Gorgez 2761",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Infinity",
+      "Clothing": "BearWithUs Purple",
+      "Eyes": "Mana Green"
+    }
   },
   "2762": {
     "name": "Gorgez 2762",
@@ -24752,7 +24854,13 @@
   },
   "2765": {
     "name": "Gorgez 2765",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Gloop",
+      "Clothing": "Tank Brown",
+      "Eyes": "Dreamy",
+      "Hat": "Dark Prince"
+    }
   },
   "2766": {
     "name": "Gorgez 2766",
@@ -24760,11 +24868,21 @@
   },
   "2767": {
     "name": "Gorgez 2767",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Watermelon",
+      "Eyes": "Gold Vipers",
+      "Hat": "Gorgez Bandana"
+    }
   },
   "2768": {
     "name": "Gorgez 2768",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Catrin",
+      "Clothing": "Supreme General",
+      "Hat": "BW Cap Pink"
+    }
   },
   "2769": {
     "name": "Gorgez 2769",
@@ -24819,7 +24937,12 @@
   },
   "2777": {
     "name": "Gorgez 2777",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Catrin",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Fro Brown"
+    }
   },
   "2778": {
     "name": "Gorgez 2778",
@@ -24885,7 +25008,11 @@
   },
   "2788": {
     "name": "Gorgez 2788",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Astral",
+      "Clothing": "McGs"
+    }
   },
   "2789": {
     "name": "Gorgez 2789",
@@ -24905,11 +25032,22 @@
   },
   "2793": {
     "name": "Gorgez 2793",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Mechanoid",
+      "Clothing": "Kage",
+      "Eyes": "Wide-Eyed",
+      "Hat": "DedPhones Purple"
+    }
   },
   "2794": {
     "name": "Gorgez 2794",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Coal",
+      "Eyes": "Awww",
+      "Hat": "Dark Prince"
+    }
   },
   "2795": {
     "name": "Gorgez 2795",
@@ -24935,7 +25073,13 @@
   },
   "2798": {
     "name": "Gorgez 2798",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Hat": "Gorgez Halo",
+      "Skin": "Strawberry",
+      "Clothing": "Demin Shirt",
+      "Eyes": "Visionary"
+    }
   },
   "2799": {
     "name": "Gorgez 2799",
@@ -24967,11 +25111,23 @@
   },
   "2803": {
     "name": "Gorgez 2803",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Avocado",
+      "Clothing": "DDG Chain White T",
+      "Eyes": "Awww",
+      "Hat": "Toque Brown"
+    }
   },
   "2804": {
     "name": "Gorgez 2804",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Snow",
+      "Clothing": "Supreme Robes",
+      "Eyes": "Primal",
+      "Hat": "Bowl Blonde"
+    }
   },
   "2805": {
     "name": "Gorgez 2805",
@@ -25008,11 +25164,23 @@
   },
   "2809": {
     "name": "Gorgez 2809",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Purple",
+      "Clothing": "Punked T",
+      "Eyes": "Daemonic",
+      "Hat": "The General"
+    }
   },
   "2810": {
     "name": "Gorgez 2810",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Watermelon",
+      "Clothing": "Warrior Robe",
+      "Eyes": "Glare",
+      "Hat": "SteamPunk"
+    }
   },
   "2811": {
     "name": "Gorgez 2811",
@@ -25119,11 +25287,19 @@
   },
   "2827": {
     "name": "Gorgez 2827",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Watermelon",
+      "Hat": "Fringe Purple"
+    }
   },
   "2828": {
     "name": "Gorgez 2828",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Watermelon",
+      "Eyes": "Wide-Eyed"
+    }
   },
   "2829": {
     "name": "Gorgez 2829",
@@ -25162,7 +25338,13 @@
   },
   "2835": {
     "name": "Gorgez 2835",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Shrouded",
+      "Clothing": "Duke",
+      "Eyes": "Starryeyed",
+      "Hat": "Supreme Wizard Hat"
+    }
   },
   "2836": {
     "name": "Gorgez 2836",
@@ -25224,11 +25406,22 @@
   },
   "2845": {
     "name": "Gorgez 2845",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Marbled",
+      "Clothing": "Swinging Suit",
+      "Hat": "Bowler"
+    }
   },
   "2846": {
     "name": "Gorgez 2846",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Tilsit",
+      "Clothing": "Gormani Suit",
+      "Eyes": "DreamCasters",
+      "Hat": "Fur Bucket"
+    }
   },
   "2847": {
     "name": "Gorgez 2847",
@@ -25259,7 +25452,11 @@
   },
   "2851": {
     "name": "Gorgez 2851",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Purple",
+      "Eyes": "Supreme Beams"
+    }
   },
   "2852": {
     "name": "Gorgez 2852",
@@ -25284,11 +25481,22 @@
   },
   "2855": {
     "name": "Gorgez 2855",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Midnight Tatt",
+      "Clothing": "Gold Hoody",
+      "Eyes": "WaterWorks"
+    }
   },
   "2856": {
     "name": "Gorgez 2856",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Crystal",
+      "Clothing": "Gorgecci Black",
+      "Eyes": "DreamCasters",
+      "Hat": "Gorgez Half-Shell"
+    }
   },
   "2857": {
     "name": "Gorgez 2857",
@@ -25381,7 +25589,11 @@
   },
   "2871": {
     "name": "Gorgez 2871",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Strawberry",
+      "Hat": "Gorgez Cap"
+    }
   },
   "2872": {
     "name": "Gorgez 2872",
@@ -25532,7 +25744,13 @@
   },
   "2893": {
     "name": "Gorgez 2893",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Swiss",
+      "Clothing": "Swinging Suit",
+      "Eyes": "Wide-Eyed",
+      "Hat": "Jelly Roll Mohawk"
+    }
   },
   "2894": {
     "name": "Gorgez 2894",
@@ -25550,7 +25768,11 @@
   },
   "2896": {
     "name": "Gorgez 2896",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Crystal",
+      "Hat": "Pirate King"
+    }
   },
   "2897": {
     "name": "Gorgez 2897",
@@ -25568,7 +25790,11 @@
   },
   "2899": {
     "name": "Gorgez 2899",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Weldment",
+      "Eyes": "Visionary"
+    }
   },
   "2900": {
     "name": "Gorgez 2900",
@@ -25589,7 +25815,13 @@
   },
   "2903": {
     "name": "Gorgez 2903",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Catrin",
+      "Clothing": "Scarf & Slicker Blue",
+      "Eyes": "Glare",
+      "Hat": "Pirate King"
+    }
   },
   "2904": {
     "name": "Gorgez 2904",
@@ -25628,7 +25860,13 @@
   },
   "2909": {
     "name": "Gorgez 2909",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Latte",
+      "Clothing": "Tropical Green",
+      "Eyes": "Stank-Eye",
+      "Hat": "Capt. Marquess"
+    }
   },
   "2910": {
     "name": "Gorgez 2910",
@@ -25642,7 +25880,12 @@
   },
   "2911": {
     "name": "Gorgez 2911",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Coal",
+      "Eyes": "Cheshire",
+      "Hat": "Perm Pink"
+    }
   },
   "2912": {
     "name": "Gorgez 2912",
@@ -25662,7 +25905,12 @@
   },
   "2916": {
     "name": "Gorgez 2916",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Snow",
+      "Clothing": "Tshirt Black",
+      "Eyes": "Dreamy"
+    }
   },
   "2917": {
     "name": "Gorgez 2917",
@@ -25699,7 +25947,13 @@
   },
   "2921": {
     "name": "Gorgez 2921",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Snow",
+      "Clothing": "BioSuit",
+      "Eyes": "Daggers",
+      "Hat": "Bowl Blonde"
+    }
   },
   "2922": {
     "name": "Gorgez 2922",
@@ -25707,7 +25961,13 @@
   },
   "2923": {
     "name": "Gorgez 2923",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Shrouded",
+      "Clothing": "Marquess",
+      "Eyes": "Avalanche",
+      "Hat": "Capt. Marquess"
+    }
   },
   "2924": {
     "name": "Gorgez 2924",
@@ -25885,7 +26145,13 @@
   },
   "2953": {
     "name": "Gorgez 2953",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Avocado",
+      "Clothing": "DDG Puffer Red",
+      "Eyes": "Daggers",
+      "Hat": "Toque Brown"
+    }
   },
   "2954": {
     "name": "Gorgez 2954",
@@ -25901,7 +26167,13 @@
   },
   "2956": {
     "name": "Gorgez 2956",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Lime",
+      "Clothing": "Chunky Knit",
+      "Eyes": "DreamCasters",
+      "Hat": "Dreads Brown"
+    }
   },
   "2957": {
     "name": "Gorgez 2957",
@@ -25909,7 +26181,12 @@
   },
   "2958": {
     "name": "Gorgez 2958",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Lime",
+      "Clothing": "Demin Shirt",
+      "Eyes": "Glare"
+    }
   },
   "2959": {
     "name": "Gorgez 2959",
@@ -25931,7 +26208,13 @@
   },
   "2962": {
     "name": "Gorgez 2962",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Mantle",
+      "Clothing": "Sweater T Floral",
+      "Eyes": "Daaaaamn",
+      "Hat": "Perm Blonde"
+    }
   },
   "2963": {
     "name": "Gorgez 2963",
@@ -25975,7 +26258,12 @@
   },
   "2968": {
     "name": "Gorgez 2968",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Midnight Tatt",
+      "Clothing": "Rancher Turtleneck",
+      "Eyes": "Visionary"
+    }
   },
   "2969": {
     "name": "Gorgez 2969",
@@ -25993,7 +26281,11 @@
   },
   "2971": {
     "name": "Gorgez 2971",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Strawberry",
+      "Clothing": "Gormani Suit"
+    }
   },
   "2972": {
     "name": "Gorgez 2972",
@@ -26019,7 +26311,12 @@
   },
   "2976": {
     "name": "Gorgez 2976",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Gloop",
+      "Clothing": "DDG Puffer Red",
+      "Eyes": "Glare"
+    }
   },
   "2977": {
     "name": "Gorgez 2977",
@@ -26310,7 +26607,12 @@
   },
   "3021": {
     "name": "Gorgez 3021",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Snow",
+      "Eyes": "Daggers",
+      "Hat": "Spikey Black"
+    }
   },
   "3022": {
     "name": "Gorgez 3022",
@@ -26433,7 +26735,12 @@
   },
   "3041": {
     "name": "Gorgez 3041",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Shrouded",
+      "Eyes": "Flawless",
+      "Hat": "Pompadour"
+    }
   },
   "3042": {
     "name": "Gorgez 3042",
@@ -26447,7 +26754,12 @@
   },
   "3043": {
     "name": "Gorgez 3043",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Avocado",
+      "Eyes": "Glare",
+      "Hat": "Bun Purple"
+    }
   },
   "3044": {
     "name": "Gorgez 3044",
@@ -26487,7 +26799,13 @@
   },
   "3049": {
     "name": "Gorgez 3049",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Latte",
+      "Clothing": "DDG Varsity",
+      "Eyes": "Mana Blue",
+      "Hat": "Sergeant"
+    }
   },
   "3050": {
     "name": "Gorgez 3050",
@@ -26500,7 +26818,12 @@
   },
   "3051": {
     "name": "Gorgez 3051",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Infinity",
+      "Eyes": "Primal",
+      "Hat": "Gorgez Half-Shell"
+    }
   },
   "3052": {
     "name": "Gorgez 3052",
@@ -26554,7 +26877,13 @@
   },
   "3058": {
     "name": "Gorgez 3058",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Catrin",
+      "Clothing": "White T",
+      "Eyes": "Awww",
+      "Hat": "Gorgez Bandana"
+    }
   },
   "3059": {
     "name": "Gorgez 3059",
@@ -26707,7 +27036,12 @@
   },
   "3084": {
     "name": "Gorgez 3084",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "OGTatt",
+      "Clothing": "Gorgecci Hoody Red",
+      "Hat": "Gorgez Bucket"
+    }
   },
   "3085": {
     "name": "Gorgez 3085",
@@ -26770,7 +27104,13 @@
   },
   "3094": {
     "name": "Gorgez 3094",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Strawberry",
+      "Clothing": "FabForce - GI Gorgez",
+      "Eyes": "Glare",
+      "Hat": "Fringe Red"
+    }
   },
   "3095": {
     "name": "Gorgez 3095",
@@ -26945,7 +27285,13 @@
   },
   "3121": {
     "name": "Gorgez 3121",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Weldment",
+      "Clothing": "Tropical Green",
+      "Eyes": "Visionary",
+      "Hat": "Supreme Brain"
+    }
   },
   "3122": {
     "name": "Gorgez 3122",
@@ -27001,7 +27347,12 @@
   },
   "3130": {
     "name": "Gorgez 3130",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Lumen",
+      "Clothing": "GorgezSaver",
+      "Hat": "Perm Pink"
+    }
   },
   "3131": {
     "name": "Gorgez 3131",
@@ -27028,7 +27379,12 @@
   },
   "3134": {
     "name": "Gorgez 3134",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Weldment",
+      "Clothing": "DDG Varsity",
+      "Hat": "BowCap"
+    }
   },
   "3135": {
     "name": "Gorgez 3135",
@@ -27044,7 +27400,13 @@
   },
   "3137": {
     "name": "Gorgez 3137",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Midnight Tatt",
+      "Clothing": "Flannel Purple",
+      "Eyes": "Avalanche",
+      "Hat": "Dreads Brown"
+    }
   },
   "3138": {
     "name": "Gorgez 3138",
@@ -27133,7 +27495,12 @@
   },
   "3151": {
     "name": "Gorgez 3151",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Gold",
+      "Clothing": "Buildor T",
+      "Eyes": "Utopian"
+    }
   },
   "3152": {
     "name": "Gorgez 3152",
@@ -27218,7 +27585,13 @@
   },
   "3163": {
     "name": "Gorgez 3163",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Construct",
+      "Clothing": "Flannel Purple",
+      "Eyes": "Sus",
+      "Hat": "Bear-ish Cap"
+    }
   },
   "3164": {
     "name": "Gorgez 3164",
@@ -27289,11 +27662,22 @@
   },
   "3175": {
     "name": "Gorgez 3175",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Avocado",
+      "Clothing": "Shinobi Sky",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Angelic Bob"
+    }
   },
   "3176": {
     "name": "Gorgez 3176",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Gold",
+      "Clothing": "Gypsy Blue",
+      "Hat": "SteamPunk"
+    }
   },
   "3177": {
     "name": "Gorgez 3177",
@@ -27383,7 +27767,13 @@
   },
   "3189": {
     "name": "Gorgez 3189",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Obsidian Tatt",
+      "Clothing": "White T",
+      "Eyes": "Primal",
+      "Hat": "Perm Blonde"
+    }
   },
   "3190": {
     "name": "Gorgez 3190",
@@ -27505,7 +27895,12 @@
   },
   "3205": {
     "name": "Gorgez 3205",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Latte",
+      "Clothing": "FabForce - LGPD Trooper",
+      "Hat": "Fro Brown"
+    }
   },
   "3206": {
     "name": "Gorgez 3206",
@@ -27594,7 +27989,12 @@
   },
   "3222": {
     "name": "Gorgez 3222",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Gloop",
+      "Clothing": "Varsity Red",
+      "Hat": "Perm Blonde"
+    }
   },
   "3223": {
     "name": "Gorgez 3223",
@@ -27618,7 +28018,13 @@
   },
   "3227": {
     "name": "Gorgez 3227",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Weldment",
+      "Clothing": "Smock",
+      "Eyes": "Flawless",
+      "Hat": "Twin-Bun Blue"
+    }
   },
   "3228": {
     "name": "Gorgez 3228",
@@ -27626,7 +28032,12 @@
   },
   "3229": {
     "name": "Gorgez 3229",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Gloop",
+      "Clothing": "DDG Chain Black T",
+      "Hat": "Toque Brown"
+    }
   },
   "3230": {
     "name": "Gorgez 3230",
@@ -27684,7 +28095,12 @@
   },
   "3238": {
     "name": "Gorgez 3238",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Gold",
+      "Eyes": "Daggers",
+      "Hat": "Bowler"
+    }
   },
   "3239": {
     "name": "Gorgez 3239",
@@ -27749,7 +28165,11 @@
   },
   "3248": {
     "name": "Gorgez 3248",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Purple",
+      "Hat": "Spikey Black"
+    }
   },
   "3249": {
     "name": "Gorgez 3249",
@@ -27766,7 +28186,12 @@
   },
   "3251": {
     "name": "Gorgez 3251",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Lumen",
+      "Clothing": "Shinobi Waves",
+      "Hat": "Gorgez Bubble Brim"
+    }
   },
   "3252": {
     "name": "Gorgez 3252",
@@ -27868,7 +28293,12 @@
   },
   "3270": {
     "name": "Gorgez 3270",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Gloop",
+      "Eyes": "Wide-Eyed",
+      "Hat": "Bunny Beanie"
+    }
   },
   "3271": {
     "name": "Gorgez 3271",
@@ -27999,7 +28429,12 @@
   },
   "3290": {
     "name": "Gorgez 3290",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Gloop",
+      "Eyes": "Visionary",
+      "Hat": "Bowler"
+    }
   },
   "3291": {
     "name": "Gorgez 3291",
@@ -28012,7 +28447,13 @@
   },
   "3292": {
     "name": "Gorgez 3292",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Catrin",
+      "Clothing": "Puffer Blue",
+      "Eyes": "Mana Red",
+      "Hat": "Angelic Bob"
+    }
   },
   "3293": {
     "name": "Gorgez 3293",
@@ -28032,7 +28473,13 @@
   },
   "3296": {
     "name": "Gorgez 3296",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Snow",
+      "Clothing": "Gorgez Don Fur Pink",
+      "Eyes": "Starryeyed",
+      "Hat": "Sorcerer Cavalier"
+    }
   },
   "3297": {
     "name": "Gorgez 3297",
@@ -28071,7 +28518,12 @@
   },
   "3302": {
     "name": "Gorgez 3302",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Papaya",
+      "Eyes": "Mana Blue",
+      "Hat": "Gorgez Cap"
+    }
   },
   "3303": {
     "name": "Gorgez 3303",
@@ -28100,7 +28552,12 @@
   },
   "3308": {
     "name": "Gorgez 3308",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Weldment",
+      "Clothing": "GorgezSaver",
+      "Hat": "Bun Blonde"
+    }
   },
   "3309": {
     "name": "Gorgez 3309",
@@ -28181,7 +28638,13 @@
   },
   "3322": {
     "name": "Gorgez 3322",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Mantle",
+      "Clothing": "Royal Daemonic Armor",
+      "Eyes": "Radiant",
+      "Hat": "Flat Cap"
+    }
   },
   "3323": {
     "name": "Gorgez 3323",
@@ -28192,7 +28655,12 @@
   },
   "3324": {
     "name": "Gorgez 3324",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Obsidian Tatt",
+      "Eyes": "Daggers",
+      "Hat": "Perm Blonde"
+    }
   },
   "3325": {
     "name": "Gorgez 3325",
@@ -28285,7 +28753,12 @@
   },
   "3338": {
     "name": "Gorgez 3338",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Infinity",
+      "Clothing": "Tropical MC",
+      "Hat": "Flat Cap"
+    }
   },
   "3339": {
     "name": "Gorgez 3339",
@@ -28328,7 +28801,13 @@
   },
   "3344": {
     "name": "Gorgez 3344",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Lime",
+      "Clothing": "Sweater T Floral",
+      "Eyes": "Radiant",
+      "Hat": "Spikey Black"
+    }
   },
   "3345": {
     "name": "Gorgez 3345",
@@ -28352,7 +28831,11 @@
   },
   "3349": {
     "name": "Gorgez 3349",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Prismatic",
+      "Hat": "BW Cap Pink"
+    }
   },
   "3350": {
     "name": "Gorgez 3350",
@@ -28592,7 +29075,13 @@
   },
   "3383": {
     "name": "Gorgez 3383",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Mechanoid",
+      "Clothing": "Rancher Turtleneck",
+      "Eyes": "Mana Purple",
+      "Hat": "Curls Red"
+    }
   },
   "3384": {
     "name": "Gorgez 3384",
@@ -28641,7 +29130,12 @@
   },
   "3391": {
     "name": "Gorgez 3391",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Shrouded",
+      "Clothing": "Punked T",
+      "Hat": "Toque Brown"
+    }
   },
   "3392": {
     "name": "Gorgez 3392",
@@ -28760,7 +29254,11 @@
   },
   "3412": {
     "name": "Gorgez 3412",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Mechanoid",
+      "Clothing": "Demin Shirt"
+    }
   },
   "3413": {
     "name": "Gorgez 3413",
@@ -28810,7 +29308,13 @@
   },
   "3419": {
     "name": "Gorgez 3419",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Tilsit",
+      "Clothing": "Sweater T Floral",
+      "Eyes": "Radiant",
+      "Hat": "Sorcerer Cavalier"
+    }
   },
   "3420": {
     "name": "Gorgez 3420",
@@ -28831,7 +29335,13 @@
   },
   "3423": {
     "name": "Gorgez 3423",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Snow",
+      "Clothing": "Crew Pink",
+      "Eyes": "Dreamy",
+      "Hat": "Fringe Purple"
+    }
   },
   "3424": {
     "name": "Gorgez 3424",
@@ -28864,7 +29374,11 @@
   },
   "3429": {
     "name": "Gorgez 3429",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Tilsit",
+      "Clothing": "Punked T"
+    }
   },
   "3430": {
     "name": "Gorgez 3430",
@@ -28921,11 +29435,22 @@
   },
   "3438": {
     "name": "Gorgez 3438",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Weldment",
+      "Clothing": "DDG Chain White T",
+      "Eyes": "Quixotic",
+      "Hat": "Captain"
+    }
   },
   "3439": {
     "name": "Gorgez 3439",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Marbled",
+      "Clothing": "Cape of the Wise Ones",
+      "Eyes": "WaterWorks"
+    }
   },
   "3440": {
     "name": "Gorgez 3440",
@@ -28967,11 +29492,22 @@
   },
   "3448": {
     "name": "Gorgez 3448",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Papaya",
+      "Clothing": "Gorgez Waistcoat",
+      "Eyes": "Radiant",
+      "Hat": "Toque Brown"
+    }
   },
   "3449": {
     "name": "Gorgez 3449",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Lumen",
+      "Eyes": "Radiant",
+      "Hat": "Dreads Black"
+    }
   },
   "3450": {
     "name": "Gorgez 3450",
@@ -28992,7 +29528,12 @@
   },
   "3453": {
     "name": "Gorgez 3453",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Lime",
+      "Eyes": "Suaves",
+      "Hat": "BW Blue Cap"
+    }
   },
   "3454": {
     "name": "Gorgez 3454",
@@ -29006,7 +29547,12 @@
   },
   "3455": {
     "name": "Gorgez 3455",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Catrin",
+      "Clothing": "Shinobi Mountain",
+      "Hat": "Spikey Black"
+    }
   },
   "3456": {
     "name": "Gorgez 3456",
@@ -29090,7 +29636,12 @@
   },
   "3469": {
     "name": "Gorgez 3469",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Gold",
+      "Clothing": "DDG Chain White T",
+      "Hat": "Sorcerer Cavalier"
+    }
   },
   "3470": {
     "name": "Gorgez 3470",
@@ -29120,11 +29671,22 @@
   },
   "3473": {
     "name": "Gorgez 3473",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Hat": "Gorgez Halo",
+      "Skin": "Gloop",
+      "Eyes": "Visionary"
+    }
   },
   "3474": {
     "name": "Gorgez 3474",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Astral",
+      "Clothing": "Preppy Red",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Dreads Black"
+    }
   },
   "3475": {
     "name": "Gorgez 3475",
@@ -29175,7 +29737,11 @@
   },
   "3483": {
     "name": "Gorgez 3483",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Latte",
+      "Clothing": "Demin Shirt"
+    }
   },
   "3484": {
     "name": "Gorgez 3484",
@@ -29360,7 +29926,13 @@
   },
   "3514": {
     "name": "Gorgez 3514",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Lumen",
+      "Clothing": "Flannel Green",
+      "Eyes": "Quixotic",
+      "Hat": "S-Curl"
+    }
   },
   "3515": {
     "name": "Gorgez 3515",
@@ -29478,7 +30050,12 @@
   },
   "3532": {
     "name": "Gorgez 3532",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Watermelon",
+      "Eyes": "WaterWorks",
+      "Hat": "Spikey Black"
+    }
   },
   "3533": {
     "name": "Gorgez 3533",
@@ -29795,7 +30372,11 @@
   },
   "3572": {
     "name": "Gorgez 3572",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Papaya",
+      "Hat": "Perm Blonde"
+    }
   },
   "3573": {
     "name": "Gorgez 3573",
@@ -30191,7 +30772,12 @@
   },
   "3621": {
     "name": "Gorgez 3621",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Gloop",
+      "Clothing": "Preppy Red",
+      "Hat": "Pompadour"
+    }
   },
   "3622": {
     "name": "Gorgez 3622",
@@ -30377,7 +30963,12 @@
   },
   "3647": {
     "name": "Gorgez 3647",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Marbled",
+      "Clothing": "Vibes Up MC",
+      "Hat": "Fringe Red"
+    }
   },
   "3648": {
     "name": "Gorgez 3648",
@@ -30557,7 +31148,11 @@
   },
   "3673": {
     "name": "Gorgez 3673",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Latte",
+      "Clothing": "Scarf & Slicker Blue"
+    }
   },
   "3674": {
     "name": "Gorgez 3674",
@@ -30794,7 +31389,13 @@
   },
   "3702": {
     "name": "Gorgez 3702",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Blueberry",
+      "Clothing": "DDG Polo White",
+      "Eyes": "Radiant",
+      "Hat": "Enchanter Scarf"
+    }
   },
   "3703": {
     "name": "Gorgez 3703",
@@ -32531,7 +33132,13 @@
   },
   "3920": {
     "name": "Gorgez 3920",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Cerebrum",
+      "Clothing": "Polo Black",
+      "Eyes": "Wide-Eyed",
+      "Hat": "DedPhones Purple"
+    }
   },
   "3921": {
     "name": "Gorgez 3921",
@@ -33270,7 +33877,13 @@
   },
   "4015": {
     "name": "Gorgez 4015",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Mantle",
+      "Clothing": "Scarf & Slicker Blue",
+      "Eyes": "Sus",
+      "Hat": "Perm Blonde"
+    }
   },
   "4016": {
     "name": "Gorgez 4016",
@@ -33583,7 +34196,12 @@
   },
   "4056": {
     "name": "Gorgez 4056",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Calavera",
+      "Eyes": "Radiant",
+      "Hat": "Dreads Brown"
+    }
   },
   "4057": {
     "name": "Gorgez 4057",
@@ -34004,11 +34622,21 @@
   },
   "4109": {
     "name": "Gorgez 4109",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Catrin",
+      "Eyes": "Gorgez Laser",
+      "Hat": "Fringe Purple"
+    }
   },
   "4110": {
     "name": "Gorgez 4110",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Construct",
+      "Clothing": "Supreme General",
+      "Hat": "Capt. Marquess"
+    }
   },
   "4111": {
     "name": "Gorgez 4111",
@@ -34233,7 +34861,12 @@
   },
   "4139": {
     "name": "Gorgez 4139",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Blueberry",
+      "Clothing": "Tshirt Black",
+      "Eyes": "Glare"
+    }
   },
   "4140": {
     "name": "Gorgez 4140",
@@ -34491,7 +35124,13 @@
   },
   "4174": {
     "name": "Gorgez 4174",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Catrin",
+      "Clothing": "Earl",
+      "Eyes": "Wide-Eyed",
+      "Hat": "Hydra Crown"
+    }
   },
   "4175": {
     "name": "Gorgez 4175",
@@ -34738,11 +35377,23 @@
   },
   "4210": {
     "name": "Gorgez 4210",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Watermelon",
+      "Clothing": "Shinobi Mountain",
+      "Eyes": "Mana Blue",
+      "Hat": "Goblin Crown"
+    }
   },
   "4211": {
     "name": "Gorgez 4211",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Watermelon",
+      "Clothing": "Blow Up Body Purple",
+      "Eyes": "Daggers",
+      "Hat": "Spikey Black"
+    }
   },
   "4212": {
     "name": "Gorgez 4212",
@@ -34931,7 +35582,13 @@
   },
   "4234": {
     "name": "Gorgez 4234",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Lumen",
+      "Clothing": "Tropical MC",
+      "Eyes": "Gorgez Visor",
+      "Hat": "Dreads Brown"
+    }
   },
   "4235": {
     "name": "Gorgez 4235",
@@ -35072,11 +35729,21 @@
   },
   "4251": {
     "name": "Gorgez 4251",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Obsidian Tatt",
+      "Clothing": "Kage"
+    }
   },
   "4252": {
     "name": "Gorgez 4252",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Shrouded",
+      "Clothing": "Shinobi Forest",
+      "Eyes": "Gold Vipers",
+      "Hat": "Cap Black"
+    }
   },
   "4253": {
     "name": "Gorgez 4253",
@@ -35153,7 +35820,11 @@
   },
   "4263": {
     "name": "Gorgez 4263",
-    "traits": {}
+    "traits": {
+      "Background": "Cream",
+      "Skin": "Tilsit",
+      "Clothing": "OGT Hoody"
+    }
   },
   "4264": {
     "name": "Gorgez 4264",
@@ -35226,7 +35897,11 @@
   },
   "4272": {
     "name": "Gorgez 4272",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Astral",
+      "Eyes": "Doom'n'Gloom"
+    }
   },
   "4273": {
     "name": "Gorgez 4273",
@@ -35257,7 +35932,12 @@
   },
   "4276": {
     "name": "Gorgez 4276",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Crystal",
+      "Clothing": "FabForce - GI Gorgez",
+      "Hat": "Dreads Black"
+    }
   },
   "4277": {
     "name": "Gorgez 4277",
@@ -35415,7 +36095,12 @@
   },
   "4297": {
     "name": "Gorgez 4297",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Blueberry",
+      "Clothing": "Slicker Green",
+      "Hat": "SteamPunk"
+    }
   },
   "4298": {
     "name": "Gorgez 4298",
@@ -35583,11 +36268,20 @@
   },
   "4319": {
     "name": "Gorgez 4319",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Avocado",
+      "Clothing": "Crew Pink"
+    }
   },
   "4320": {
     "name": "Gorgez 4320",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Blueberry",
+      "Eyes": "Radiant",
+      "Hat": "Jingasa"
+    }
   },
   "4321": {
     "name": "Gorgez 4321",
@@ -35795,7 +36489,13 @@
   },
   "4345": {
     "name": "Gorgez 4345",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Mantle",
+      "Clothing": "Bomber Pink",
+      "Hat": "Dreads Black",
+      "Eyes": "Supreme Beams"
+    }
   },
   "4346": {
     "name": "Gorgez 4346",
@@ -35816,7 +36516,11 @@
   },
   "4348": {
     "name": "Gorgez 4348",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Calavera",
+      "Hat": "Daemon Horns"
+    }
   },
   "4349": {
     "name": "Gorgez 4349",
@@ -36114,7 +36818,13 @@
   },
   "4387": {
     "name": "Gorgez 4387",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Mechanoid",
+      "Clothing": "Gorgez Don Fur Gold",
+      "Eyes": "Utopian",
+      "Hat": "Dreads Brown"
+    }
   },
   "4388": {
     "name": "Gorgez 4388",
@@ -36216,7 +36926,12 @@
   },
   "4400": {
     "name": "Gorgez 4400",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Marbled",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Enchanter Scarf"
+    }
   },
   "4401": {
     "name": "Gorgez 4401",
@@ -36367,7 +37082,11 @@
   },
   "4418": {
     "name": "Gorgez 4418",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Swiss",
+      "Clothing": "DDG Polo White"
+    }
   },
   "4419": {
     "name": "Gorgez 4419",
@@ -38063,7 +38782,12 @@
   },
   "4607": {
     "name": "Gorgez 4607",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "OGTatt",
+      "Eyes": "Blaze",
+      "Hat": "Fur Bucket"
+    }
   },
   "4608": {
     "name": "Gorgez 4608",
@@ -38093,7 +38817,13 @@
   },
   "4611": {
     "name": "Gorgez 4611",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Obsidian Tatt",
+      "Clothing": "Varsity Red",
+      "Eyes": "WaterWorks",
+      "Hat": "S-Curl"
+    }
   },
   "4612": {
     "name": "Gorgez 4612",
@@ -52412,7 +53142,12 @@
   },
   "6210": {
     "name": "Gorgez 6210",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Midnight Tatt",
+      "Clothing": "Tropical Blue",
+      "Eyes": "Glare"
+    }
   },
   "6211": {
     "name": "Gorgez 6211",
@@ -54873,7 +55608,13 @@
   },
   "6493": {
     "name": "Gorgez 6493",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Obsidian Tatt",
+      "Clothing": "Swinging Suit",
+      "Eyes": "Heart-Ons",
+      "Hat": "Dreads Brown"
+    }
   },
   "6494": {
     "name": "Gorgez 6494",
@@ -55742,7 +56483,12 @@
   },
   "6591": {
     "name": "Gorgez 6591",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Mechanoid",
+      "Clothing": "Blue Camo Punk",
+      "Eyes": "Daaaaamn"
+    }
   },
   "6592": {
     "name": "Gorgez 6592",
@@ -58452,7 +59198,13 @@
   },
   "6899": {
     "name": "Gorgez 6899",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Weldment",
+      "Clothing": "Supreme General",
+      "Eyes": "Daggers",
+      "Hat": "Angelic Bob"
+    }
   },
   "6900": {
     "name": "Gorgez 6900",
@@ -59849,7 +60601,13 @@
   },
   "7055": {
     "name": "Gorgez 7055",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Coal",
+      "Clothing": "Preppy Red",
+      "Eyes": "Utopian",
+      "Hat": "Dreads Brown"
+    }
   },
   "7056": {
     "name": "Gorgez 7056",
@@ -59928,7 +60686,12 @@
   },
   "7064": {
     "name": "Gorgez 7064",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Mantle",
+      "Clothing": "McGs",
+      "Hat": "BW Cap Pink"
+    }
   },
   "7065": {
     "name": "Gorgez 7065",
@@ -62549,11 +63312,21 @@
   },
   "7355": {
     "name": "Gorgez 7355",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Tilsit",
+      "Eyes": "Glare"
+    }
   },
   "7356": {
     "name": "Gorgez 7356",
-    "traits": {}
+    "traits": {
+      "Background": "Blush",
+      "Skin": "Latte",
+      "Clothing": "Smock",
+      "Eyes": "Sus",
+      "Hat": "Gorgez Bubble Brim"
+    }
   },
   "7357": {
     "name": "Gorgez 7357",
@@ -63721,7 +64494,13 @@
   },
   "7495": {
     "name": "Gorgez 7495",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Prismatic",
+      "Clothing": "Enchanter",
+      "Eyes": "Doom'n'Gloom",
+      "Hat": "Cat Hat"
+    }
   },
   "7496": {
     "name": "Gorgez 7496",
@@ -64629,7 +65408,11 @@
   },
   "7598": {
     "name": "Gorgez 7598",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Gold",
+      "Hat": "Enchanter Scarf"
+    }
   },
   "7599": {
     "name": "Gorgez 7599",
@@ -65661,7 +66444,13 @@
   },
   "7714": {
     "name": "Gorgez 7714",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Shrouded",
+      "Clothing": "Demin Shirt",
+      "Eyes": "Dreamy",
+      "Hat": "Pompadour"
+    }
   },
   "7715": {
     "name": "Gorgez 7715",
@@ -66477,7 +67266,12 @@
   },
   "7812": {
     "name": "Gorgez 7812",
-    "traits": {}
+    "traits": {
+      "Background": "Mint",
+      "Skin": "Lime",
+      "Eyes": "Gorgez Visor",
+      "Hat": "Dedphones Blonde"
+    }
   },
   "7813": {
     "name": "Gorgez 7813",
@@ -70034,11 +70828,21 @@
   },
   "8208": {
     "name": "Gorgez 8208",
-    "traits": {}
+    "traits": {
+      "Background": "Gray Goose",
+      "Skin": "Cerebrum",
+      "Clothing": "Flannel Green",
+      "Eyes": "Daaaaamn",
+      "Hat": "Sergeant"
+    }
   },
   "8209": {
     "name": "Gorgez 8209",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Nuclear",
+      "Hat": "The General"
+    }
   },
   "8210": {
     "name": "Gorgez 8210",
@@ -70523,7 +71327,13 @@
   },
   "8263": {
     "name": "Gorgez 8263",
-    "traits": {}
+    "traits": {
+      "Background": "OffWhite",
+      "Skin": "Shrouded",
+      "Clothing": "Tshirt Black",
+      "Eyes": "WaterWorks",
+      "Hat": "Pompadour"
+    }
   },
   "8264": {
     "name": "Gorgez 8264",
@@ -71039,7 +71849,11 @@
   },
   "8321": {
     "name": "Gorgez 8321",
-    "traits": {}
+    "traits": {
+      "Background": "Soft Blue",
+      "Skin": "Obsidian Tatt",
+      "Hat": "Twin-Bun Blue"
+    }
   },
   "8322": {
     "name": "Gorgez 8322",
@@ -72579,7 +73393,12 @@
   },
   "8499": {
     "name": "Gorgez 8499",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Obsidian Tatt",
+      "Clothing": "DDG Polo White",
+      "Eyes": "Quixotic"
+    }
   },
   "8500": {
     "name": "Gorgez 8500",
@@ -72982,7 +73801,12 @@
   },
   "8552": {
     "name": "Gorgez 8552",
-    "traits": {}
+    "traits": {
+      "Background": "Bubblegum",
+      "Skin": "Purple",
+      "Clothing": "Gormani Suit",
+      "Eyes": "Quixotic"
+    }
   },
   "8553": {
     "name": "Gorgez 8553",
@@ -74677,7 +75501,12 @@
   },
   "8769": {
     "name": "Gorgez 8769",
-    "traits": {}
+    "traits": {
+      "Background": "Mauve",
+      "Skin": "Purple",
+      "Clothing": "McGs",
+      "Eyes": "Primal"
+    }
   },
   "8770": {
     "name": "Gorgez 8770",

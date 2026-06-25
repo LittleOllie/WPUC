@@ -2,7 +2,7 @@
  * Fetch Space Riders traits from Alchemy and rebuild metadata + similarity.
  * Usage: node nft-twin-finder/scripts/rebuild-space-riders.mjs
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { normalizeTraits } from "../lib/traitNormalizer.js";
@@ -11,13 +11,57 @@ import { resolveWeights } from "../lib/weightProfiles.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const COLLECTION_DIR = join(__dirname, "../collections/space-riders");
+const SLUG = "space-riders";
 const CONTRACT = "0x1bf99f0c396e532e6bd31b11108b2ba61976a54b";
 const ALCHEMY_KEY = "eadmEoxRFK-i4vfpLIovV";
 const SUPPLY = 8888;
 const CONCURRENCY = 12;
+const SHARD_SIZE = 500;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseAlchemyMetadata(data) {
+  let parsed = data?.metadata || data?.rawMetadata || data?.raw?.metadata;
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      parsed = null;
+    }
+  }
+  if (!parsed || typeof parsed !== "object") parsed = {};
+  if (!parsed.name && data?.name) parsed = { ...parsed, name: data.name };
+  return parsed;
+}
+
+function shardFilename(index) {
+  return `shard-${String(index).padStart(4, "0")}.json`;
+}
+
+function shardIndex(tokenId) {
+  const n = Number(tokenId);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.floor((n - 1) / SHARD_SIZE) + 1;
+}
+
+function writeSimilarityShards(similarity) {
+  const outDir = join(COLLECTION_DIR, "similarity");
+  mkdirSync(outDir, { recursive: true });
+  const shards = new Map();
+
+  for (const [tokenId, value] of Object.entries(similarity)) {
+    const index = shardIndex(tokenId);
+    if (!shards.has(index)) shards.set(index, {});
+    shards.get(index)[tokenId] = value;
+  }
+
+  for (const [index, shard] of [...shards.entries()].sort((a, b) => a[0] - b[0])) {
+    writeFileSync(join(outDir, shardFilename(index)), `${JSON.stringify(shard)}\n`);
+  }
+
+  return shards.size;
 }
 
 async function fetchTokenMeta(id) {
@@ -27,11 +71,10 @@ async function fetchTokenMeta(id) {
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      const raw = data?.metadata || data?.rawMetadata;
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const parsed = parseAlchemyMetadata(data);
       return {
-        name: parsed?.name || data?.title || `Space Rider #${id}`,
-        traits: normalizeTraits(parsed || data),
+        name: parsed?.name || data?.title || data?.name || `Space Rider #${id}`,
+        traits: normalizeTraits(parsed, { slug: SLUG }),
       };
     }
     if (res.status === 429 || res.status >= 500) {
@@ -84,7 +127,13 @@ const similarity = buildSimilarityIndex(metadata, resolveWeights(collection), 5)
 
 writeFileSync(join(COLLECTION_DIR, "metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`);
 writeFileSync(join(COLLECTION_DIR, "similarity.json"), `${JSON.stringify(similarity, null, 2)}\n`);
+const shardCount = writeSimilarityShards(similarity);
 
-const sample = similarity["1"]?.slice(0, 3) || [];
-console.log("Token #1 top twins:", sample.map((t) => `#${t.id} (${t.score}%)`).join(", "));
+const sample332 = similarity["332"]?.slice(0, 3) || [];
+const m332 = metadata["332"]?.traits || {};
+const m8502 = metadata["8502"]?.traits || {};
+console.log("#332 traits:", m332);
+console.log("#8502 traits:", m8502);
+console.log("#332 top twins:", sample332.map((t) => `#${t.id} (${t.score}%)`).join(", "));
+console.log(`Wrote similarity shards: ${shardCount}`);
 console.log("Done.");

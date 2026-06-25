@@ -120,7 +120,7 @@ async function fetchTokenRecord(contract, id, { alchemyHost, metadataUrlTemplate
     const parsed = await fetchMetadataRecord(resolveMetadataUrl(metadataUrlTemplate, id));
     return {
       name: parsed?.name || `Token #${id}`,
-      traits: normalizeTraits(parsed),
+      traits: normalizeTraits(parsed, { slug }),
       image: normalizeImageUrl(parsed?.image) || "",
     };
   }
@@ -135,7 +135,7 @@ async function fetchTokenRecord(contract, id, { alchemyHost, metadataUrlTemplate
       const image = imageFromAlchemyMetadata(data, parsed);
       return {
         name: parsed?.name || data?.title || data?.name || `Token #${id}`,
-        traits: normalizeTraits(parsed),
+        traits: normalizeTraits(parsed, { slug }),
         image,
       };
     }
