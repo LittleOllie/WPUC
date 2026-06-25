@@ -1,0 +1,9 @@
+{
+  "name": "Quacker Friends",
+  "slug": "quacker-friends",
+  "supply": 301,
+  "contract": "0xa2c82bda5585c1d729e2b4f85dcc9a11ded7db4c",
+  "network": "base",
+  "weightProfile": "default",
+  "similarityCalculatedAt": "2026-06-25T08:39:39.431Z"
+}

@@ -59,6 +59,44 @@ function resolveMetadataUrl(template, id) {
   return template.replaceAll("{id}", String(id));
 }
 
+/** Normalize Alchemy getNFTMetadata payloads (legacy + current shapes). */
+function parseAlchemyMetadata(data) {
+  let parsed = data?.metadata || data?.rawMetadata || data?.raw?.metadata;
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      parsed = null;
+    }
+  }
+  if (!parsed || typeof parsed !== "object") {
+    parsed = {};
+  }
+  if (!parsed.name && data?.name) {
+    parsed = { ...parsed, name: data.name };
+  }
+  if (!parsed.image && data?.image) {
+    parsed = { ...parsed, image: data.image };
+  }
+  return parsed;
+}
+
+function imageFromAlchemyMetadata(data, parsed) {
+  const imageField = parsed?.image ?? data?.image;
+  if (typeof imageField === "string") {
+    return normalizeImageUrl(imageField);
+  }
+  if (imageField && typeof imageField === "object") {
+    return pickBestImageUrl(
+      imageField.originalUrl,
+      imageField.cachedUrl,
+      imageField.pngUrl,
+      imageField.thumbnailUrl,
+    );
+  }
+  return pickBestImageUrl(data?.media?.[0]?.raw, data?.media?.[0]?.gateway);
+}
+
 async function fetchMetadataRecord(metadataUrl) {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     try {
@@ -93,16 +131,11 @@ async function fetchTokenRecord(contract, id, { alchemyHost, metadataUrlTemplate
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      const raw = data?.metadata || data?.rawMetadata;
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      const image = pickBestImageUrl(
-        parsed?.image,
-        data?.media?.[0]?.raw,
-        data?.media?.[0]?.gateway,
-      );
+      const parsed = parseAlchemyMetadata(data);
+      const image = imageFromAlchemyMetadata(data, parsed);
       return {
-        name: parsed?.name || data?.title || `Token #${id}`,
-        traits: normalizeTraits(parsed || data),
+        name: parsed?.name || data?.title || data?.name || `Token #${id}`,
+        traits: normalizeTraits(parsed),
         image,
       };
     }

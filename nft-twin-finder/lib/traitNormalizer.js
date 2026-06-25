@@ -8,7 +8,7 @@ export { DEFAULT_WEIGHTS } from "./weightProfiles.js";
 const TRAIT_ALIASES = {
   skin: "Skin",
   fur: "Skin",
-  body: "Clothing",
+  body: "Skin",
   bones: "Skin",
   "body type": "Type",
   type: "Type",

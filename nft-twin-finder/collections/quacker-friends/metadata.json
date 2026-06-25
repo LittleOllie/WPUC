@@ -1,0 +1,3100 @@
+{
+  "1": {
+    "name": "Quacker Friend #1",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Black",
+      "Eyes": "Goat",
+      "Clothing": "Jaws Tee",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "2": {
+    "name": "Quacker Friend #2",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Empty",
+      "Clothing": "Legendairy Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Chopsticks"
+    }
+  },
+  "3": {
+    "name": "Quacker Friend #3",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Pleased",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Palette"
+    }
+  },
+  "4": {
+    "name": "Quacker Friend #4",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Normal",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Crown"
+    }
+  },
+  "5": {
+    "name": "Quacker Friend #5",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Golden",
+      "Eyes": "Fire",
+      "Clothing": "Verified Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "6": {
+    "name": "Quacker Friend #6",
+    "traits": {
+      "One of Ones": "Quacker Rick"
+    }
+  },
+  "7": {
+    "name": "Quacker Friend #7",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Yellow",
+      "Eyes": "Pleased",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "8": {
+    "name": "Quacker Friend #8",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Lost",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Unicorn"
+    }
+  },
+  "9": {
+    "name": "Quacker Friend #9",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Yellow",
+      "Eyes": "Pleased",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Unicorn"
+    }
+  },
+  "10": {
+    "name": "Quacker Friend #10",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Crown"
+    }
+  },
+  "11": {
+    "name": "Quacker Friend #11",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Laser",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Crown"
+    }
+  },
+  "12": {
+    "name": "Quacker Friend #12",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Ink",
+      "Clothing": "Chill Duck Tee",
+      "Hat": "Elzo",
+      "Hand": "Chopsticks"
+    }
+  },
+  "13": {
+    "name": "Quacker Friend #13",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Lost",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Vietnamese Hat",
+      "Hand": "Palette"
+    }
+  },
+  "14": {
+    "name": "Quacker Friend #14",
+    "traits": {
+      "Background": "Black",
+      "Skin": "White",
+      "Eyes": "Eye patch",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "15": {
+    "name": "Quacker Friend #15",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Blue",
+      "Eyes": "Laser",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Horn"
+    }
+  },
+  "16": {
+    "name": "Quacker Friend #16",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "17": {
+    "name": "Quacker Friend #17",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Sparkle",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "18": {
+    "name": "Quacker Friend #18",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Empty",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "19": {
+    "name": "Quacker Friend #19",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Eye patch",
+      "Clothing": "Quacker King Tee",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "20": {
+    "name": "Quacker Friend #20",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "White",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Star Hoodie",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "21": {
+    "name": "Quacker Friend #21",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Verified Tee",
+      "Hat": "Crown",
+      "Hand": "Chopsticks"
+    }
+  },
+  "22": {
+    "name": "Quacker Friend #22",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "White",
+      "Eyes": "Sleeping",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "23": {
+    "name": "Quacker Friend #23",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Black",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Heart Tee",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "24": {
+    "name": "Quacker Friend #24",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Wild",
+      "Eyes": "Laser",
+      "Clothing": "Chill Duck Tee",
+      "Hat": "Top Hat"
+    }
+  },
+  "25": {
+    "name": "Quacker Friend #25",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Verified Hoodie",
+      "Hat": "Italian Bob"
+    }
+  },
+  "26": {
+    "name": "Quacker Friend #26",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Buttons",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Horn"
+    }
+  },
+  "27": {
+    "name": "Quacker Friend #27",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Golden",
+      "Eyes": "Eye patch",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Crown"
+    }
+  },
+  "28": {
+    "name": "Quacker Friend #28",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Fire",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "29": {
+    "name": "Quacker Friend #29",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Blindfold",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "30": {
+    "name": "Quacker Friend #30",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Green Suit",
+      "Hat": "Italian Bob"
+    }
+  },
+  "31": {
+    "name": "Quacker Friend #31",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Normal",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Tomato"
+    }
+  },
+  "32": {
+    "name": "Quacker Friend #32",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Lost",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Horn"
+    }
+  },
+  "33": {
+    "name": "Quacker Friend #33",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Sparkle",
+      "Clothing": "Black Suit",
+      "Hat": "Crown",
+      "Hand": "Rose"
+    }
+  },
+  "34": {
+    "name": "Quacker Friend #34",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Yellow",
+      "Eyes": "Fire",
+      "Clothing": "Verified Hoodie",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "35": {
+    "name": "Quacker Friend #35",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Buttons",
+      "Clothing": "Heart Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "36": {
+    "name": "Quacker Friend #36",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Blue",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "37": {
+    "name": "Quacker Friend #37",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Normal",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Italian Bob"
+    }
+  },
+  "38": {
+    "name": "Quacker Friend #38",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Heart Tee",
+      "Hat": "Top Hat"
+    }
+  },
+  "39": {
+    "name": "Quacker Friend #39",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Burnt Out"
+    }
+  },
+  "40": {
+    "name": "Quacker Friend #40",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Normal",
+      "Clothing": "Heart Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Tomato"
+    }
+  },
+  "41": {
+    "name": "Quacker Friend #41",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Yellow",
+      "Eyes": "Laser",
+      "Clothing": "3K Overalls",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "42": {
+    "name": "Quacker Friend #42",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Yellow",
+      "Eyes": "Sleeping",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Italian Bob"
+    }
+  },
+  "43": {
+    "name": "Quacker Friend #43",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "44": {
+    "name": "Quacker Friend #44",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Wild",
+      "Eyes": "Empty",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "45": {
+    "name": "Quacker Friend #45",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Lost",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Top Hat",
+      "Hand": "Churros"
+    }
+  },
+  "46": {
+    "name": "Quacker Friend #46",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Goat",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "47": {
+    "name": "Quacker Friend #47",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Golden",
+      "Eyes": "Empty",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "48": {
+    "name": "Quacker Friend #48",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Lost",
+      "Clothing": "Jaws Tee",
+      "Hat": "Horn"
+    }
+  },
+  "49": {
+    "name": "Quacker Friend #49",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "50": {
+    "name": "Quacker Friend #50",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Legendairy Tee",
+      "Hat": "Elzo"
+    }
+  },
+  "51": {
+    "name": "Quacker Friend #51",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Pleased",
+      "Clothing": "Black Suit",
+      "Hat": "Horn"
+    }
+  },
+  "52": {
+    "name": "Quacker Friend #52",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Blue",
+      "Eyes": "Lost",
+      "Clothing": "Verified Tee",
+      "Hat": "Crown",
+      "Hand": "Sword"
+    }
+  },
+  "53": {
+    "name": "Quacker Friend #53",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Fire",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "54": {
+    "name": "Quacker Friend #54",
+    "traits": {
+      "Background": "White",
+      "Skin": "Black",
+      "Eyes": "Sparkle",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Elzo",
+      "Hand": "Churros"
+    }
+  },
+  "55": {
+    "name": "Quacker Friend #55",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Black",
+      "Eyes": "Buttons",
+      "Clothing": "Star Hoodie",
+      "Hat": "Italian Bob"
+    }
+  },
+  "56": {
+    "name": "Quacker Friend #56",
+    "traits": {
+      "Background": "Green",
+      "Skin": "White",
+      "Eyes": "Heart",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Unicorn"
+    }
+  },
+  "57": {
+    "name": "Quacker Friend #57",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Yellow",
+      "Eyes": "Sparkle",
+      "Clothing": "Black Suit",
+      "Hat": "Chef Hat",
+      "Hand": "Pizza"
+    }
+  },
+  "58": {
+    "name": "Quacker Friend #58",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Small Eyes",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Palette"
+    }
+  },
+  "59": {
+    "name": "Quacker Friend #59",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Lilac",
+      "Eyes": "Goat",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Horn"
+    }
+  },
+  "60": {
+    "name": "Quacker Friend #60",
+    "traits": {
+      "Background": "BW",
+      "Skin": "White",
+      "Eyes": "Ink",
+      "Clothing": "Green Suit",
+      "Hat": "Horn",
+      "Hand": "Rose"
+    }
+  },
+  "61": {
+    "name": "Quacker Friend #61",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Wild",
+      "Eyes": "Small Eyes",
+      "Clothing": "Jaws Tee",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "62": {
+    "name": "Quacker Friend #62",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Pleased",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "63": {
+    "name": "Quacker Friend #63",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Goat",
+      "Clothing": "White Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "64": {
+    "name": "Quacker Friend #64",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "65": {
+    "name": "Quacker Friend #65",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Yellow",
+      "Eyes": "Heart",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Jar of Socks",
+      "Hand": "Tomato"
+    }
+  },
+  "66": {
+    "name": "Quacker Friend #66",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Eye patch",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "67": {
+    "name": "Quacker Friend #67",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Buttons",
+      "Clothing": "White Tee",
+      "Hat": "Top Hat",
+      "Hand": "Churros"
+    }
+  },
+  "68": {
+    "name": "Quacker Friend #68",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Ink",
+      "Clothing": "Green Suit",
+      "Hat": "Chef Hat"
+    }
+  },
+  "69": {
+    "name": "Quacker Friend #69",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Lilac",
+      "Eyes": "Laser",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Elzo"
+    }
+  },
+  "70": {
+    "name": "Quacker Friend #70",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Yellow",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "71": {
+    "name": "Quacker Friend #71",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Sleeping",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown"
+    }
+  },
+  "72": {
+    "name": "Quacker Friend #72",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Fire",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "73": {
+    "name": "Quacker Friend #73",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Black",
+      "Eyes": "Empty",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Chef Hat"
+    }
+  },
+  "74": {
+    "name": "Quacker Friend #74",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Fire",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "75": {
+    "name": "Quacker Friend #75",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Blindfold",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Burnt Out",
+      "Hand": "Tomato"
+    }
+  },
+  "76": {
+    "name": "Quacker Friend #76",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Blue",
+      "Eyes": "Sparkle",
+      "Clothing": "Heart Tee",
+      "Hat": "Chef Hat"
+    }
+  },
+  "77": {
+    "name": "Quacker Friend #77",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Wild",
+      "Eyes": "Blindfold",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "78": {
+    "name": "Quacker Friend #78",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Black",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "79": {
+    "name": "Quacker Friend #79",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Sparkle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Sprout"
+    }
+  },
+  "80": {
+    "name": "Quacker Friend #80",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "White Tee",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "81": {
+    "name": "Quacker Friend #81",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Pleased",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Top Hat"
+    }
+  },
+  "82": {
+    "name": "Quacker Friend #82",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Monocle",
+      "Clothing": "Jaws Tee",
+      "Hat": "Sprout",
+      "Hand": "Tomato"
+    }
+  },
+  "83": {
+    "name": "Quacker Friend #83",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Ink",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Top Hat",
+      "Hand": "Churros"
+    }
+  },
+  "84": {
+    "name": "Quacker Friend #84",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Sleeping",
+      "Clothing": "Green Suit",
+      "Hat": "Vietnamese Hat",
+      "Hand": "Sword"
+    }
+  },
+  "85": {
+    "name": "Quacker Friend #85",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Navy Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "86": {
+    "name": "Quacker Friend #86",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Goat",
+      "Clothing": "White Tee",
+      "Hat": "Lightning bolt",
+      "Hand": "Tomato"
+    }
+  },
+  "87": {
+    "name": "Quacker Friend #87",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Blue",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "88": {
+    "name": "Quacker Friend #88",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Elzo",
+      "Hand": "Pizza"
+    }
+  },
+  "89": {
+    "name": "Quacker Friend #89",
+    "traits": {
+      "Background": "BW",
+      "Skin": "White",
+      "Eyes": "Ink",
+      "Clothing": "Black Suit",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "90": {
+    "name": "Quacker Friend #90",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Lightning bolt"
+    }
+  },
+  "91": {
+    "name": "Quacker Friend #91",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Heart",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Pizza"
+    }
+  },
+  "92": {
+    "name": "Quacker Friend #92",
+    "traits": {
+      "Background": "White",
+      "Skin": "Black",
+      "Eyes": "Fire",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Tomato"
+    }
+  },
+  "93": {
+    "name": "Quacker Friend #93",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "White Tee",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "94": {
+    "name": "Quacker Friend #94",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Blue",
+      "Eyes": "Normal",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "95": {
+    "name": "Quacker Friend #95",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Samurai Hat",
+      "Hand": "Sword"
+    }
+  },
+  "96": {
+    "name": "Quacker Friend #96",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Blue",
+      "Eyes": "Pleased",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "97": {
+    "name": "Quacker Friend #97",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Cat Ears"
+    }
+  },
+  "98": {
+    "name": "Quacker Friend #98",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Sleeping",
+      "Clothing": "White Tee",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "99": {
+    "name": "Quacker Friend #99",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Blindfold",
+      "Clothing": "White Tee",
+      "Hat": "Burnt Out",
+      "Hand": "Tomato"
+    }
+  },
+  "100": {
+    "name": "Quacker Friend #100",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "White",
+      "Eyes": "Normal",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "101": {
+    "name": "Quacker Friend #101",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Yellow",
+      "Eyes": "Buttons",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Sprout"
+    }
+  },
+  "102": {
+    "name": "Quacker Friend #102",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Buttons",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "103": {
+    "name": "Quacker Friend #103",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Black",
+      "Eyes": "Goat",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "104": {
+    "name": "Quacker Friend #104",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Sleeping",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Italian Bob"
+    }
+  },
+  "105": {
+    "name": "Quacker Friend #105",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Normal",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "106": {
+    "name": "Quacker Friend #106",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Black",
+      "Eyes": "Goat",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Crown"
+    }
+  },
+  "107": {
+    "name": "Quacker Friend #107",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "108": {
+    "name": "Quacker Friend #108",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Normal",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "109": {
+    "name": "Quacker Friend #109",
+    "traits": {
+      "Background": "White",
+      "Skin": "Black",
+      "Eyes": "Goat",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Maroon Mohawk",
+      "Hand": "Tomato"
+    }
+  },
+  "110": {
+    "name": "Quacker Friend #110",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Black",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Green Suit",
+      "Hat": "Sprout"
+    }
+  },
+  "111": {
+    "name": "Quacker Friend #111",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Ink",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Sprout"
+    }
+  },
+  "112": {
+    "name": "Quacker Friend #112",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Sparkle",
+      "Clothing": "Green Suit",
+      "Hat": "Chef Hat",
+      "Hand": "Pizza"
+    }
+  },
+  "113": {
+    "name": "Quacker Friend #113",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Small Eyes",
+      "Clothing": "Heart Tee",
+      "Hat": "Crown"
+    }
+  },
+  "114": {
+    "name": "Quacker Friend #114",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "115": {
+    "name": "Quacker Friend #115",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Eye patch",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "116": {
+    "name": "Quacker Friend #116",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Black",
+      "Eyes": "Buttons",
+      "Clothing": "Jaws Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "117": {
+    "name": "Quacker Friend #117",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "118": {
+    "name": "Quacker Friend #118",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Monocle",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "119": {
+    "name": "Quacker Friend #119",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Blindfold",
+      "Clothing": "Navy Tee",
+      "Hat": "Vietnamese Hat",
+      "Hand": "Palette"
+    }
+  },
+  "120": {
+    "name": "Quacker Friend #120",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Blindfold",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "121": {
+    "name": "Quacker Friend #121",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Black Suit",
+      "Hat": "Crown"
+    }
+  },
+  "122": {
+    "name": "Quacker Friend #122",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Laser",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "123": {
+    "name": "Quacker Friend #123",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Pleased",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Unicorn"
+    }
+  },
+  "124": {
+    "name": "Quacker Friend #124",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Blindfold",
+      "Clothing": "Pink Quack Tee",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "125": {
+    "name": "Quacker Friend #125",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Eye patch",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "126": {
+    "name": "Quacker Friend #126",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Blue",
+      "Eyes": "Ink",
+      "Clothing": "Star Hoodie",
+      "Hat": "Crown"
+    }
+  },
+  "127": {
+    "name": "Quacker Friend #127",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Blue",
+      "Eyes": "Sleeping",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "128": {
+    "name": "Quacker Friend #128",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Elzo"
+    }
+  },
+  "129": {
+    "name": "Quacker Friend #129",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Yellow",
+      "Eyes": "Small Eyes",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Lightning bolt"
+    }
+  },
+  "130": {
+    "name": "Quacker Friend #130",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Small Eyes",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Pizza"
+    }
+  },
+  "131": {
+    "name": "Quacker Friend #131",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Sparkle",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Chef Hat",
+      "Hand": "Pizza"
+    }
+  },
+  "132": {
+    "name": "Quacker Friend #132",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Empty",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Elzo"
+    }
+  },
+  "133": {
+    "name": "Quacker Friend #133",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Sleeping",
+      "Clothing": "Navy Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "134": {
+    "name": "Quacker Friend #134",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Black",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Jaws Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "135": {
+    "name": "Quacker Friend #135",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Yellow",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "136": {
+    "name": "Quacker Friend #136",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Goat",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Cat Ears"
+    }
+  },
+  "137": {
+    "name": "Quacker Friend #137",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Sleeping",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "138": {
+    "name": "Quacker Friend #138",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Sparkle",
+      "Clothing": "White Tee",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "139": {
+    "name": "Quacker Friend #139",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Normal",
+      "Clothing": "Green Suit",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "140": {
+    "name": "Quacker Friend #140",
+    "traits": {
+      "Background": "Green",
+      "Skin": "White",
+      "Eyes": "Laser",
+      "Clothing": "EGO Shirt",
+      "Hat": "Cat Ears",
+      "Hand": "Fire Katana"
+    }
+  },
+  "141": {
+    "name": "Quacker Friend #141",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Buttons",
+      "Clothing": "Black Kimono",
+      "Hat": "Horn",
+      "Hand": "Chopsticks"
+    }
+  },
+  "142": {
+    "name": "Quacker Friend #142",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Wild",
+      "Eyes": "Goat",
+      "Clothing": "Heart Tee",
+      "Hat": "Crown"
+    }
+  },
+  "143": {
+    "name": "Quacker Friend #143",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Golden",
+      "Eyes": "Goat",
+      "Clothing": "Star Hoodie",
+      "Hat": "Elzo"
+    }
+  },
+  "144": {
+    "name": "Quacker Friend #144",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Black",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Tee",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "145": {
+    "name": "Quacker Friend #145",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Lilac",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Horn"
+    }
+  },
+  "146": {
+    "name": "Quacker Friend #146",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Monocle",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Elzo",
+      "Hand": "Pizza"
+    }
+  },
+  "147": {
+    "name": "Quacker Friend #147",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Vietnamese Hat",
+      "Hand": "Palette"
+    }
+  },
+  "148": {
+    "name": "Quacker Friend #148",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Green Suit",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "149": {
+    "name": "Quacker Friend #149",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Laser",
+      "Clothing": "Green Suit",
+      "Hat": "Top Hat"
+    }
+  },
+  "150": {
+    "name": "Quacker Friend #150",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Normal",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "151": {
+    "name": "Quacker Friend #151",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Fire",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "152": {
+    "name": "Quacker Friend #152",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Heart",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Top Hat",
+      "Hand": "Churros"
+    }
+  },
+  "153": {
+    "name": "Quacker Friend #153",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Black Suit",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "154": {
+    "name": "Quacker Friend #154",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Goat",
+      "Clothing": "Green Suit",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "155": {
+    "name": "Quacker Friend #155",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Yellow",
+      "Eyes": "Eye patch",
+      "Clothing": "Black Suit",
+      "Hat": "Crown",
+      "Hand": "Rose"
+    }
+  },
+  "156": {
+    "name": "Quacker Friend #156",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Sparkle",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Burnt Out"
+    }
+  },
+  "157": {
+    "name": "Quacker Friend #157",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Wild",
+      "Eyes": "Monocle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "158": {
+    "name": "Quacker Friend #158",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Blindfold",
+      "Clothing": "Navy Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "159": {
+    "name": "Quacker Friend #159",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Lilac",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Sprout"
+    }
+  },
+  "160": {
+    "name": "Quacker Friend #160",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Sleeping",
+      "Clothing": "White Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "161": {
+    "name": "Quacker Friend #161",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Eye patch",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Sprout",
+      "Hand": "Tomato"
+    }
+  },
+  "162": {
+    "name": "Quacker Friend #162",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Yellow",
+      "Eyes": "Lost",
+      "Clothing": "Black Suit",
+      "Hat": "Burnt Out"
+    }
+  },
+  "163": {
+    "name": "Quacker Friend #163",
+    "traits": {
+      "Background": "BW",
+      "Skin": "White",
+      "Eyes": "Lost",
+      "Clothing": "White Tee",
+      "Hat": "Crown"
+    }
+  },
+  "164": {
+    "name": "Quacker Friend #164",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Laser",
+      "Clothing": "Green Suit",
+      "Hat": "Unicorn"
+    }
+  },
+  "165": {
+    "name": "Quacker Friend #165",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Fire",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "166": {
+    "name": "Quacker Friend #166",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Black",
+      "Eyes": "Empty",
+      "Clothing": "Green Suit",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "167": {
+    "name": "Quacker Friend #167",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "White",
+      "Eyes": "Small Eyes",
+      "Clothing": "Black Suit",
+      "Hat": "Top Hat"
+    }
+  },
+  "168": {
+    "name": "Quacker Friend #168",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Lilac",
+      "Eyes": "Small Eyes",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Elzo"
+    }
+  },
+  "169": {
+    "name": "Quacker Friend #169",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Sparkle",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Top Hat",
+      "Hand": "Churros"
+    }
+  },
+  "170": {
+    "name": "Quacker Friend #170",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Blue",
+      "Eyes": "Normal",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Italian Bob"
+    }
+  },
+  "171": {
+    "name": "Quacker Friend #171",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Empty",
+      "Clothing": "Navy Tee",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "172": {
+    "name": "Quacker Friend #172",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Fire",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "173": {
+    "name": "Token #173",
+    "traits": {}
+  },
+  "174": {
+    "name": "Quacker Friend #174",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Monocle",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "175": {
+    "name": "Quacker Friend #175",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Wild",
+      "Eyes": "Sparkle",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "176": {
+    "name": "Quacker Friend #176",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Heart",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "177": {
+    "name": "Quacker Friend #177",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Colorful",
+      "Eyes": "Sleeping",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Cat Ears"
+    }
+  },
+  "178": {
+    "name": "Quacker Friend #178",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Wild",
+      "Eyes": "Buttons",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "179": {
+    "name": "Quacker Friend #179",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Black",
+      "Eyes": "Monocle",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "180": {
+    "name": "Quacker Friend #180",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Black",
+      "Eyes": "Monocle",
+      "Clothing": "Black Suit",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "181": {
+    "name": "Quacker Friend #181",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Yellow",
+      "Eyes": "Sleeping",
+      "Clothing": "Heart Tee",
+      "Hat": "Italian Bob",
+      "Hand": "Churros"
+    }
+  },
+  "182": {
+    "name": "Quacker Friend #182",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Golden",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Burnt Out"
+    }
+  },
+  "183": {
+    "name": "Quacker Friend #183",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Heart Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "184": {
+    "name": "Quacker Friend #184",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Heart",
+      "Clothing": "Green Suit",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "185": {
+    "name": "Quacker Friend #185",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Eye patch",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "186": {
+    "name": "Quacker Friend #186",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Normal",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Sprout",
+      "Hand": "Tomato"
+    }
+  },
+  "187": {
+    "name": "Quacker Friend #187",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Wild",
+      "Eyes": "Heart",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Jar of Socks",
+      "Hand": "Tomato"
+    }
+  },
+  "188": {
+    "name": "Quacker Friend #188",
+    "traits": {
+      "Background": "Black",
+      "Skin": "White",
+      "Eyes": "Small Eyes",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "189": {
+    "name": "Quacker Friend #189",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "Jaws Tee",
+      "Hat": "Crown"
+    }
+  },
+  "190": {
+    "name": "Quacker Friend #190",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Blindfold",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Crown"
+    }
+  },
+  "191": {
+    "name": "Quacker Friend #191",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "White",
+      "Eyes": "Goat",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Burnt Out"
+    }
+  },
+  "192": {
+    "name": "Quacker Friend #192",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Yellow",
+      "Eyes": "Monocle",
+      "Clothing": "EGO Shirt",
+      "Hat": "Crown",
+      "Hand": "Knife"
+    }
+  },
+  "193": {
+    "name": "Quacker Friend #193",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Eye patch",
+      "Clothing": "Star Hoodie",
+      "Hat": "Elzo"
+    }
+  },
+  "194": {
+    "name": "Quacker Friend #194",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Black",
+      "Eyes": "Heart",
+      "Clothing": "Star Hoodie",
+      "Hat": "Italian Bob"
+    }
+  },
+  "195": {
+    "name": "Quacker Friend #195",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Eye patch",
+      "Clothing": "Black Suit",
+      "Hat": "Cat Ears"
+    }
+  },
+  "196": {
+    "name": "Quacker Friend #196",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Ink",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Burnt Out"
+    }
+  },
+  "197": {
+    "name": "Quacker Friend #197",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Wild",
+      "Eyes": "Sleeping",
+      "Clothing": "White Tee",
+      "Hat": "Top Hat"
+    }
+  },
+  "198": {
+    "name": "Quacker Friend #198",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Unicorn"
+    }
+  },
+  "199": {
+    "name": "Quacker Friend #199",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Ink",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Horn"
+    }
+  },
+  "200": {
+    "name": "Quacker Friend #200",
+    "traits": {
+      "Background": "Black",
+      "Skin": "White",
+      "Eyes": "Ink",
+      "Clothing": "Black Suit",
+      "Hat": "Crown"
+    }
+  },
+  "201": {
+    "name": "Quacker Friend #201",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Yellow",
+      "Eyes": "Eye patch",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "202": {
+    "name": "Quacker Friend #202",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Wild",
+      "Eyes": "Fire",
+      "Clothing": "Star Hoodie",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "203": {
+    "name": "Quacker Friend #203",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Blue",
+      "Eyes": "Blindfold",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Sword"
+    }
+  },
+  "204": {
+    "name": "Quacker Friend #204",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Wild",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "205": {
+    "name": "Quacker Friend #205",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Sparkle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "206": {
+    "name": "Quacker Friend #206",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Yellow",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Black Suit",
+      "Hat": "Sprout"
+    }
+  },
+  "207": {
+    "name": "Quacker Friend #207",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Lilac",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Elzo"
+    }
+  },
+  "208": {
+    "name": "Quacker Friend #208",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Empty",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Unicorn"
+    }
+  },
+  "209": {
+    "name": "Quacker Friend #209",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Monocle",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Elzo"
+    }
+  },
+  "210": {
+    "name": "Quacker Friend #210",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Wild",
+      "Eyes": "Small Eyes",
+      "Clothing": "Green Suit",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "211": {
+    "name": "Quacker Friend #211",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Navy Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "212": {
+    "name": "Quacker Friend #212",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Unicorn"
+    }
+  },
+  "213": {
+    "name": "Quacker Friend #213",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Sleeping",
+      "Clothing": "Heart Tee",
+      "Hat": "Lightning bolt",
+      "Hand": "Tomato"
+    }
+  },
+  "214": {
+    "name": "Quacker Friend #214",
+    "traits": {
+      "Background": "BW",
+      "Skin": "Black",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "215": {
+    "name": "Quacker Friend #215",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Elzo",
+      "Hand": "Pizza"
+    }
+  },
+  "216": {
+    "name": "Quacker Friend #216",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Lost",
+      "Clothing": "EGO Shirt",
+      "Hat": "Crown",
+      "Hand": "Cool Stick"
+    }
+  },
+  "217": {
+    "name": "Quacker Friend #217",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Blue",
+      "Eyes": "Monocle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "218": {
+    "name": "Quacker Friend #218",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Yellow",
+      "Eyes": "Blindfold",
+      "Clothing": "Navy Tee",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "219": {
+    "name": "Quacker Friend #219",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Empty",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Horn"
+    }
+  },
+  "220": {
+    "name": "Quacker Friend #220",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Lilac",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Tee",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "221": {
+    "name": "Quacker Friend #221",
+    "traits": {
+      "Background": "Black",
+      "Skin": "White",
+      "Eyes": "Monocle",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown"
+    }
+  },
+  "222": {
+    "name": "Quacker Friend #222",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "EGO Shirt",
+      "Hat": "Crown",
+      "Hand": "Fire Katana"
+    }
+  },
+  "223": {
+    "name": "Quacker Friend #223",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "White",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "224": {
+    "name": "Quacker Friend #224",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Wild",
+      "Eyes": "Pleased",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "225": {
+    "name": "Quacker Friend #225",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Black",
+      "Eyes": "Blindfold",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "226": {
+    "name": "Quacker Friend #226",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Pleased",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Elzo"
+    }
+  },
+  "227": {
+    "name": "Quacker Friend #227",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Fire",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Vietnamese Hat"
+    }
+  },
+  "228": {
+    "name": "Quacker Friend #228",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Ink",
+      "Clothing": "Navy Tee",
+      "Hat": "Vietnamese Hat",
+      "Hand": "Palette"
+    }
+  },
+  "229": {
+    "name": "Quacker Friend #229",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Golden",
+      "Eyes": "Small Eyes",
+      "Clothing": "Jaws Tee",
+      "Hat": "Crown"
+    }
+  },
+  "230": {
+    "name": "Quacker Friend #230",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Goat",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Lightning bolt",
+      "Hand": "Tomato"
+    }
+  },
+  "231": {
+    "name": "Quacker Friend #231",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Black",
+      "Eyes": "Monocle",
+      "Clothing": "Navy Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "232": {
+    "name": "Quacker Friend #232",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Black",
+      "Eyes": "Sparkle",
+      "Clothing": "Heart Tee",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "233": {
+    "name": "Quacker Friend #233",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Yellow",
+      "Eyes": "Eye patch",
+      "Clothing": "White Tee",
+      "Hat": "Crown"
+    }
+  },
+  "234": {
+    "name": "Quacker Friend #234",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Heart",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "235": {
+    "name": "Quacker Friend #235",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "236": {
+    "name": "Quacker Friend #236",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Blue",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Black Kimono",
+      "Hat": "Maroon Mohawk",
+      "Hand": "Knife"
+    }
+  },
+  "237": {
+    "name": "Quacker Friend #237",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Laser",
+      "Clothing": "Black Suit",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "238": {
+    "name": "Quacker Friend #238",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Sleeping",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Burnt Out",
+      "Hand": "Tomato"
+    }
+  },
+  "239": {
+    "name": "Quacker Friend #239",
+    "traits": {
+      "Background": "Black",
+      "Skin": "White",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Crown"
+    }
+  },
+  "240": {
+    "name": "Quacker Friend #240",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Monocle",
+      "Clothing": "Black Suit",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "241": {
+    "name": "Quacker Friend #241",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Black",
+      "Eyes": "Fire",
+      "Clothing": "Green Suit",
+      "Hat": "Jar of Socks"
+    }
+  },
+  "242": {
+    "name": "Quacker Friend #242",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Buttons",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Italian Bob"
+    }
+  },
+  "243": {
+    "name": "Quacker Friend #243",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Monocle",
+      "Clothing": "Star Hoodie",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "244": {
+    "name": "Quacker Friend #244",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Normal",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "245": {
+    "name": "Quacker Friend #245",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Golden",
+      "Eyes": "Fire",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Italian Bob"
+    }
+  },
+  "246": {
+    "name": "Quacker Friend #246",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Sparkle",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "247": {
+    "name": "Quacker Friend #247",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Sprout",
+      "Hand": "Tomato"
+    }
+  },
+  "248": {
+    "name": "Quacker Friend #248",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "White",
+      "Eyes": "Fire",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "249": {
+    "name": "Quacker Friend #249",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "White",
+      "Eyes": "Monocle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "250": {
+    "name": "Quacker Friend #250",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Wild",
+      "Eyes": "Normal",
+      "Clothing": "Black Suit",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "251": {
+    "name": "Quacker Friend #251",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Golden",
+      "Eyes": "Lost",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Samurai Hat",
+      "Hand": "Palette"
+    }
+  },
+  "252": {
+    "name": "Quacker Friend #252",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Sleeping",
+      "Clothing": "Green Suit",
+      "Hat": "Italian Bob",
+      "Hand": "Pizza"
+    }
+  },
+  "253": {
+    "name": "Quacker Friend #253",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Small Eyes",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Cat Ears"
+    }
+  },
+  "254": {
+    "name": "Quacker Friend #254",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Yellow",
+      "Eyes": "Sleeping",
+      "Clothing": "White Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "255": {
+    "name": "Quacker Friend #255",
+    "traits": {
+      "Background": "White",
+      "Skin": "Blue",
+      "Eyes": "Eye patch",
+      "Clothing": "Black Kimono",
+      "Hat": "Horn",
+      "Hand": "Fire Katana"
+    }
+  },
+  "256": {
+    "name": "Quacker Friend #256",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Samurai Hat"
+    }
+  },
+  "257": {
+    "name": "Quacker Friend #257",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Blue",
+      "Eyes": "Ink",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Burnt Out"
+    }
+  },
+  "258": {
+    "name": "Quacker Friend #258",
+    "traits": {
+      "Background": "White",
+      "Skin": "Yellow",
+      "Eyes": "Pleased",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Crown",
+      "Hand": "Palette"
+    }
+  },
+  "259": {
+    "name": "Quacker Friend #259",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Lilac",
+      "Eyes": "Sparkle",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Lightning bolt"
+    }
+  },
+  "260": {
+    "name": "Quacker Friend #260",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Colorful",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Tee",
+      "Hat": "Sprout",
+      "Hand": "Tomato"
+    }
+  },
+  "261": {
+    "name": "Quacker Friend #261",
+    "traits": {
+      "Background": "White",
+      "Skin": "White",
+      "Eyes": "Empty",
+      "Clothing": "Heart Green Overalls",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "262": {
+    "name": "Quacker Friend #262",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "White",
+      "Eyes": "Goat",
+      "Clothing": "Hawaii Shirt",
+      "Hat": "Unicorn"
+    }
+  },
+  "263": {
+    "name": "Quacker Friend #263",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "White Tee",
+      "Hat": "Teal Mohawk"
+    }
+  },
+  "264": {
+    "name": "Quacker Friend #264",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Heart",
+      "Clothing": "EGO Shirt",
+      "Hat": "Sprout"
+    }
+  },
+  "265": {
+    "name": "Quacker Friend #265",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Lost",
+      "Clothing": "Jaws Tee",
+      "Hat": "Lightning bolt"
+    }
+  },
+  "266": {
+    "name": "Quacker Friend #266",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "267": {
+    "name": "Quacker Friend #267",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Yellow",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "White Tee",
+      "Hat": "Sprout"
+    }
+  },
+  "268": {
+    "name": "Quacker Friend #268",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Ink",
+      "Clothing": "Fieri Shirt",
+      "Hat": "Burnt Out",
+      "Hand": "Tomato"
+    }
+  },
+  "269": {
+    "name": "Quacker Friend #269",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Blue",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Crown"
+    }
+  },
+  "270": {
+    "name": "Quacker Friend #270",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Sleeping",
+      "Clothing": "Black Suit",
+      "Hat": "Italian Bob",
+      "Hand": "Churros"
+    }
+  },
+  "271": {
+    "name": "Quacker Friend #271",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Wild",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Tee",
+      "Hat": "Sprout"
+    }
+  },
+  "272": {
+    "name": "Quacker Friend #272",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Yellow",
+      "Eyes": "Monocle",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Sprout"
+    }
+  },
+  "273": {
+    "name": "Quacker Friend #273",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "White",
+      "Eyes": "Normal",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Samurai Hat",
+      "Hand": "Sword"
+    }
+  },
+  "274": {
+    "name": "Quacker Friend #274",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "White",
+      "Eyes": "Small Eyes",
+      "Clothing": "Heart Tee",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "275": {
+    "name": "Quacker Friend #275",
+    "traits": {
+      "Background": "Colorful",
+      "Skin": "Wild",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Tee",
+      "Hat": "Sprout"
+    }
+  },
+  "276": {
+    "name": "Quacker Friend #276",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "White",
+      "Eyes": "Eye patch",
+      "Clothing": "Heart Tee",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "277": {
+    "name": "Quacker Friend #277",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Sparkle",
+      "Clothing": "Black Kimono",
+      "Hat": "Elzo",
+      "Hand": "Chopsticks"
+    }
+  },
+  "278": {
+    "name": "Quacker Friend #278",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Laser",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown"
+    }
+  },
+  "279": {
+    "name": "Quacker Friend #279",
+    "traits": {
+      "Background": "White",
+      "Skin": "Wild",
+      "Eyes": "Fire",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Maroon Mohawk"
+    }
+  },
+  "280": {
+    "name": "Quacker Friend #280",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Blue",
+      "Eyes": "Goat",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "281": {
+    "name": "Quacker Friend #281",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "White",
+      "Eyes": "Goat",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  },
+  "282": {
+    "name": "Quacker Friend #282",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Wild",
+      "Eyes": "Glowing Glasses",
+      "Clothing": "White Tee",
+      "Hat": "Elzo",
+      "Hand": "Pizza"
+    }
+  },
+  "283": {
+    "name": "Quacker Friend #283",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Wild",
+      "Eyes": "Pleased",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Chef Hat"
+    }
+  },
+  "284": {
+    "name": "Quacker Friend #284",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Lilac",
+      "Eyes": "Small Eyes",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Burnt Out",
+      "Hand": "Tomato"
+    }
+  },
+  "285": {
+    "name": "Quacker Friend #285",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Eye patch",
+      "Clothing": "Star Hoodie",
+      "Hat": "Cat Ears",
+      "Hand": "Pizza"
+    }
+  },
+  "286": {
+    "name": "Quacker Friend #286",
+    "traits": {
+      "Background": "Black",
+      "Skin": "Lilac",
+      "Eyes": "Small Eyes",
+      "Clothing": "White Tee",
+      "Hat": "Crown"
+    }
+  },
+  "287": {
+    "name": "Quacker Friend #287",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Scrooge McDuck",
+      "Clothing": "Polka Dots Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "288": {
+    "name": "Quacker Friend #288",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Sparkle",
+      "Clothing": "Avacado Shirt",
+      "Hat": "Crown"
+    }
+  },
+  "289": {
+    "name": "Quacker Friend #289",
+    "traits": {
+      "Background": "Lavender",
+      "Skin": "Yellow",
+      "Eyes": "Heart",
+      "Clothing": "Heart Tee",
+      "Hat": "Unicorn"
+    }
+  },
+  "290": {
+    "name": "Quacker Friend #290",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Yellow",
+      "Eyes": "Sleeping",
+      "Clothing": "Plain Black Hoodie",
+      "Hat": "Crown"
+    }
+  },
+  "291": {
+    "name": "Quacker Friend #291",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Blue",
+      "Eyes": "Fire",
+      "Clothing": "White Tee",
+      "Hat": "Italian Bob"
+    }
+  },
+  "292": {
+    "name": "Quacker Friend #292",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Blindfold",
+      "Clothing": "Heart Tee",
+      "Hat": "Crown"
+    }
+  },
+  "293": {
+    "name": "Quacker Friend #293",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Yellow",
+      "Eyes": "Normal",
+      "Clothing": "EGO Shirt",
+      "Hat": "Cat Ears"
+    }
+  },
+  "294": {
+    "name": "Quacker Friend #294",
+    "traits": {
+      "Background": "Pink",
+      "Skin": "Lilac",
+      "Eyes": "Eye patch",
+      "Clothing": "Black Suit",
+      "Hat": "Horn"
+    }
+  },
+  "295": {
+    "name": "Quacker Friend #295",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Blue",
+      "Eyes": "Pleased",
+      "Clothing": "Black Kimono",
+      "Hat": "Teal Mohawk",
+      "Hand": "Fire Katana"
+    }
+  },
+  "296": {
+    "name": "Quacker Friend #296",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Blue",
+      "Eyes": "Eye patch",
+      "Clothing": "Plain Black Tee",
+      "Hat": "Cat Ears"
+    }
+  },
+  "297": {
+    "name": "Quacker Friend #297",
+    "traits": {
+      "Background": "Blue",
+      "Skin": "Wild",
+      "Eyes": "Goat",
+      "Clothing": "Green Suit",
+      "Hat": "Cat Ears"
+    }
+  },
+  "298": {
+    "name": "Quacker Friend #298",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Pleased",
+      "Clothing": "Heart Blue Overalls",
+      "Hat": "Unicorn",
+      "Hand": "Churros"
+    }
+  },
+  "299": {
+    "name": "Quacker Friend #299",
+    "traits": {
+      "Background": "Green",
+      "Skin": "Lilac",
+      "Eyes": "Monocle",
+      "Clothing": "Green Quack Tee",
+      "Hat": "Lightning bolt"
+    }
+  },
+  "300": {
+    "name": "Quacker Friend #300",
+    "traits": {
+      "Background": "Orange",
+      "Skin": "Golden",
+      "Eyes": "Goat",
+      "Clothing": "Navy Tee",
+      "Hat": "Burnt Out"
+    }
+  },
+  "301": {
+    "name": "Quacker Friend #301",
+    "traits": {
+      "Background": "Yellow",
+      "Skin": "Yellow",
+      "Eyes": "Lost",
+      "Clothing": "Plain Blue Tee",
+      "Hat": "Jar of Socks",
+      "Hand": "Churros"
+    }
+  }
+}
