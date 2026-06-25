@@ -8,6 +8,7 @@ export const WEIGHT_PROFILE_CUSTOM = "custom";
 /** Default visual-similarity weights (total 100). */
 export const DEFAULT_WEIGHTS = {
   Skin: 25,
+  Type: 0,
   Eyes: 15,
   Mouth: 10,
   Clothing: 20,
@@ -19,6 +20,7 @@ export const DEFAULT_WEIGHTS = {
 /** DropDed Gorgez — outfit-driven custom profile. */
 export const DROP_DED_GORGEZ_WEIGHTS = {
   Skin: 7,
+  Type: 0,
   Eyes: 8,
   Mouth: 0,
   Clothing: 40,
