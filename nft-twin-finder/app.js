@@ -224,6 +224,7 @@ function renderNftCard({ image, imageSrc, collection, collectionName, tokenId, l
           data-image-src="${escapeAttr(storedSrc)}"
           data-image-token-id="${escapeAttr(tokenId)}"
           alt="NFT #${escapeHtml(tokenId)}"
+          crossorigin="anonymous"
           loading="eager"
           decoding="async"
         />
@@ -307,6 +308,7 @@ function renderTwinCard(twin, rank, twinIndex, collection) {
           data-image-src="${escapeAttr(twin.imageSrc || twin.image)}"
           data-image-token-id="${escapeAttr(twin.id)}"
           alt=""
+          crossorigin="anonymous"
           loading="lazy"
           decoding="async"
         />

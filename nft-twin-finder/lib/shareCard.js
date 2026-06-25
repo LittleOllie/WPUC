@@ -107,7 +107,11 @@ async function loadCanvasImage(url, options = {}) {
 
   for (const src of sources) {
     add(src);
-    add(corsProxyUrl(src));
+    if (src.includes("nft2-cdn.alchemy.com")) {
+      add(src.replace("nft2-cdn.alchemy.com", "nft-cdn.alchemy.com"));
+    }
+    const proxied = corsProxyUrl(src);
+    if (proxied) add(proxied);
   }
 
   for (const src of attempts) {
@@ -276,10 +280,29 @@ function twinCardHeight(cardW) {
 /**
  * @param {string} selector
  */
-function domImageSrc(selector) {
+function domImageElement(selector) {
   const img = document.querySelector(selector);
-  if (!img?.complete || !img.naturalWidth) return "";
+  if (!img?.complete || !img.naturalWidth) return null;
+  return img;
+}
+
+/**
+ * @param {string} selector
+ */
+function domImageSrc(selector) {
+  const img = domImageElement(selector);
+  if (!img) return "";
   return img.currentSrc || img.src || "";
+}
+
+/**
+ * Prefer an already-loaded CORS-safe <img> from the results UI.
+ * @param {string} selector
+ */
+function loadedDomImage(selector) {
+  const img = domImageElement(selector);
+  if (!img?.crossOrigin) return null;
+  return img;
 }
 
 /**
@@ -293,12 +316,24 @@ export async function exportTwinComparison(result, twinIndex = 0) {
 
   await document.fonts.ready;
 
-  const sourceDom = domImageSrc("#duo-hero .ntf-duo-card:first-child img");
-  const twinDom = domImageSrc("#duo-hero .ntf-duo-card:last-child img");
+  const sourceDom = loadedDomImage("#duo-hero .ntf-duo-card:first-child img");
+  const twinDom = loadedDomImage("#duo-hero .ntf-duo-card:last-child img");
 
   const [sourceImage, twinImage, headerLogo, footerMascot] = await Promise.all([
-    loadCanvasImage(sourceDom || token.imageSrc || token.image, token.imageOptions).catch(() => null),
-    loadCanvasImage(twinDom || twin.imageSrc || twin.image, twin.imageOptions).catch(() => null),
+    sourceDom
+      ? Promise.resolve(sourceDom)
+      : loadCanvasImage(
+          domImageSrc("#duo-hero .ntf-duo-card:first-child img") ||
+            token.imageSrc ||
+            token.image,
+          token.imageOptions,
+        ).catch(() => null),
+    twinDom
+      ? Promise.resolve(twinDom)
+      : loadCanvasImage(
+          domImageSrc("#duo-hero .ntf-duo-card:last-child img") || twin.imageSrc || twin.image,
+          twin.imageOptions,
+        ).catch(() => null),
     loadCorsImage(HEADER_LOGO).catch(() => null),
     loadCorsImage(FOOTER_MASCOT).catch(() => null),
   ]);

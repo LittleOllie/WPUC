@@ -1,0 +1,10 @@
+# Copy to .dev.vars:
+#   cp .dev.vars.example .dev.vars
+#
+# Use your Alchemy App API key (Dashboard → App → API Key).
+
+ALCHEMY_API_KEY_NFT_IMPORT=your_alchemy_key_here
+# ALCHEMY_API_KEY=
+
+# Optional safety cap per import (default 2000 in worker):
+# IMPORT_MAX_TOKENS=2000
