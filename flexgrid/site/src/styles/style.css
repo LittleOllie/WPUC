@@ -1461,6 +1461,22 @@ body.dark .stageLayoutSectionHeaderHint{
 .flexgrid-chain-btn[data-chain="eth"]{ border-color: rgba(109,224,255,0.40); box-shadow: 0 0 0 2px rgba(109,224,255,0.18); }
 .flexgrid-chain-btn[data-chain="base"]{ border-color: rgba(76,111,255,0.45); box-shadow: 0 0 0 2px rgba(76,111,255,0.16); }
 .flexgrid-chain-btn[data-chain="apechain"]{ border-color: rgba(255,221,85,0.42); box-shadow: 0 0 0 2px rgba(255,221,85,0.14); }
+.flexgrid-chain-btn--custom,
+.flexgrid-chain-btn[data-chain="custom"]{
+  border-color: rgba(140,255,196,0.45);
+  box-shadow: 0 0 0 2px rgba(140,255,196,0.16);
+  grid-column: 1 / -1;
+}
+.customGridIntro{
+  margin: 0 0 14px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.45;
+}
+body.flexgrid-custom-mode .stepItem[data-step="2"],
+body.flexgrid-custom-mode .stepConnector:nth-of-type(2){
+  display: none !important;
+}
 .flexgrid-chain-btn.isSelected{
   border-color: rgba(255,221,85,0.85) !important;
   background: linear-gradient(180deg, var(--btnYellow), var(--btnYellow2));
@@ -1490,6 +1506,7 @@ body.dark .stageLayoutSectionHeaderHint{
 
 /* Wizard screens: lift the active step above stray siblings so taps reach real controls */
 #screen-chain,
+#screen-custom,
 #screen-wallets,
 #screen-collections,
 #screen-grid,
@@ -1498,6 +1515,7 @@ body.dark .stageLayoutSectionHeaderHint{
   z-index: 1;
 }
 body[data-flexgrid-step="1"] #screen-chain,
+body[data-flexgrid-step="2"] #screen-custom,
 body[data-flexgrid-step="2"] #screen-wallets,
 body[data-flexgrid-step="3"] #screen-collections,
 body[data-flexgrid-step="4"] #screen-grid,

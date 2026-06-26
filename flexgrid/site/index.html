@@ -179,9 +179,33 @@
               <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false">Polygon</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false">Solana (Beta)</button>
+              <button type="button" class="flexgrid-chain-btn flexgrid-chain-btn--custom" data-chain="custom" aria-pressed="false">Custom Grid</button>
             </div>
 
             <button id="chainNextBtn" class="btn walletFlowLoadBtn" type="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <!-- STEP 2 (custom): Upload images from device -->
+    <div id="screen-custom" class="screen" style="display:none;">
+    <section class="panel" id="customPanel">
+      <div class="walletSection" style="margin-top:0;">
+        <div class="walletSectionContent">
+          <div class="walletFlowStack">
+            <h2 class="walletFlowTitle">Custom Grid</h2>
+            <p class="customGridIntro">Upload photos from your computer or phone — no wallet needed. Pick as many as you like, then build your grid.</p>
+
+            <div class="customImagesToolbar">
+              <button id="customGridChooseBtn" class="btn guideGlow" type="button" aria-controls="customGridFileInput">📷 Choose images</button>
+              <input type="file" id="customGridFileInput" accept="image/*" multiple class="srOnly" tabindex="-1" aria-hidden="true" />
+            </div>
+
+            <div id="customImagesList" class="customImagesList" aria-live="polite"></div>
+
+            <button id="customGridBuildBtn" class="btn walletFlowLoadBtn" type="button" disabled>🧩 Build grid</button>
           </div>
         </div>
       </div>
@@ -336,7 +360,7 @@
     <div class="buildExportRow" id="buildExportRow">
       <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
       <button id="removeUnloadedBtn" class="btn" type="button" style="display:none;">🗑️ Remove unloaded & reshuffle</button>
-      <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Import Image / Logo</button>
+      <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Add more images</button>
       <button id="gridRemoveImportedBtn" class="btn btnSmall" type="button" title="Remove all imported images from this session" hidden aria-hidden="true">🗑️ Remove imports</button>
       <input type="file" id="importImageInput" accept="image/*" multiple class="srOnly" tabindex="-1" aria-hidden="true" />
       <button id="gridShuffleBtn" class="btn btnSmall" type="button" style="display:none;">🔀 Shuffle order</button>

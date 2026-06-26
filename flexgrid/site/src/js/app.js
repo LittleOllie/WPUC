@@ -26,7 +26,7 @@ hydrateImageLoaderFromSession();
 
 const DEV = window.location.hostname === "localhost";
 /** Max NFTs (including custom uploads) in one grid build / reorder. */
-const FLEX_GRID_MAX_NFTS = 1600;
+const FLEX_GRID_MAX_NFTS = 900;
 /** Points users to #retryBtn (above the grid) when image loads fail. */
 const RETRY_MISSING_BUTTON_HINT = "Try the 🔄 Retry missing button above.";
 const $ = (id) => document.getElementById(id);
@@ -69,6 +69,100 @@ const uiState = {
   wallet: null,
 };
 
+function isCustomGridMode() {
+  return String(uiState.chain || state.chain || "").trim().toLowerCase() === "custom";
+}
+
+function syncCustomModeUi() {
+  const custom = isCustomGridMode();
+  const customScreen = $("screen-custom");
+  if (customScreen) {
+    customScreen.style.display = currentStep === 1 && custom ? "block" : "none";
+  }
+
+  const trait = $("traitOrderSection");
+  if (trait) trait.style.display = custom && currentStep === 3 ? "none" : "";
+
+  const stepItems = document.querySelectorAll(".stepItem");
+  if (stepItems[1]) stepItems[1].textContent = custom ? "2. Images" : "2. Wallets";
+
+  const collectionsStep = stepItems[2];
+  const collectionsConnector = document.querySelector('.stepConnector:nth-of-type(2)');
+  if (collectionsStep) collectionsStep.style.display = custom ? "none" : "";
+  if (collectionsConnector) collectionsConnector.style.display = custom ? "none" : "";
+
+  try {
+    document.body.classList.toggle("flexgrid-custom-mode", custom);
+  } catch (_) {}
+
+  updateCustomGridBuildBtn();
+}
+
+function updateCustomGridBuildBtn() {
+  const btn = $("customGridBuildBtn");
+  if (!btn) return;
+  const count = getSelectedCustomsForBuild().length;
+  btn.disabled = count === 0;
+  btn.textContent = count
+    ? `🧩 Build grid (${count} image${count === 1 ? "" : "s"})`
+    : "🧩 Build grid";
+}
+
+function buildCustomGrid() {
+  const items = getSelectedCustomsForBuild();
+  if (!items.length) {
+    setStatus("📷 Choose at least one image to build your grid");
+    return;
+  }
+
+  BUILD_ID = Date.now();
+  const buildId = BUILD_ID;
+  const exportBtn = $("gridExportBtn");
+
+  state.imageLoadState = {
+    total: 0,
+    loaded: 0,
+    failed: 0,
+    retrying: 0,
+  };
+  errorLog.imageErrorCount = 0;
+  state.selectedKeys.clear();
+
+  let gridItems = items.slice();
+  if (gridItems.length > FLEX_GRID_MAX_NFTS) {
+    gridItems = gridItems.slice(0, FLEX_GRID_MAX_NFTS);
+    setStatus(`Using first ${FLEX_GRID_MAX_NFTS} images`);
+  }
+
+  state.whaleMode = gridItems.length > 300;
+  state.chain = "custom";
+  uiState.chain = "custom";
+
+  const oldBar = document.getElementById("traitBar");
+  if (oldBar) oldBar.remove();
+
+  const stageMeta = $("stageMeta");
+  if (stageMeta) stageMeta.textContent = "";
+
+  const shuffleBtn = $("gridShuffleBtn");
+  if (shuffleBtn) shuffleBtn.style.display = "";
+
+  renderFullLayoutFromItems(gridItems, "classic", buildId);
+  syncLayoutPickerActiveStates();
+
+  const wm = $("wmGrid");
+  if (wm) wm.style.display = "block";
+  requestAnimationFrame(syncWatermarkDOMToOneTile);
+
+  if (exportBtn) exportBtn.disabled = false;
+  syncGridFooterButtons(false, false);
+
+  enableDragDrop();
+  updateGuideGlow();
+  goToStep(3);
+  setStatus("🔥 Your grid is ready! Drag tiles to reorder.");
+}
+
 function renderUI({ scrollTop = false } = {}) {
   // Keep legacy step index in sync (0..3) so existing UI helpers keep working.
   currentStep = Math.max(0, Math.min(3, (uiState.step || 1) - 1));
@@ -78,12 +172,14 @@ function renderUI({ scrollTop = false } = {}) {
   const collections = $("screen-collections");
   const grid = $("screen-grid");
   const gridStage = $("gridStageWrapper");
+  const custom = isCustomGridMode();
 
   if (chain) chain.style.display = currentStep === 0 ? "block" : "none";
-  if (wallets) wallets.style.display = currentStep === 1 ? "block" : "none";
-  if (collections) collections.style.display = currentStep === 2 ? "block" : "none";
+  if (wallets) wallets.style.display = currentStep === 1 && !custom ? "block" : "none";
+  if (collections) collections.style.display = currentStep === 2 && !custom ? "block" : "none";
   if (grid) grid.style.display = currentStep === 3 ? "block" : "none";
   if (gridStage) gridStage.style.display = currentStep === 3 ? "block" : "none";
+  syncCustomModeUi();
 
   try {
     document.body.dataset.flexgridStep = String(uiState.step ?? 1);
@@ -151,12 +247,17 @@ function handleStepClick(stepIdx) {
     renderUI({ scrollTop: true });
     return;
   }
-  if (targetStep === 3 && uiState.chain && uiState.wallet) {
+  if (targetStep === 3 && uiState.chain && !isCustomGridMode() && uiState.wallet) {
     uiState.step = 3;
     renderUI({ scrollTop: true });
     return;
   }
   if (targetStep === 4) {
+    if (isCustomGridMode() && (getSelectedCustomsForBuild().length > 0 || queryAllGridTiles().length > 0)) {
+      uiState.step = 4;
+      renderUI({ scrollTop: true });
+      return;
+    }
     // Allow entering Grid any time after Chain + Wallet are set (grid may be empty until built).
     if (uiState.chain && uiState.wallet) {
       uiState.step = 4;
@@ -189,8 +290,8 @@ function syncHubBackButton() {
     btn.title = "Back to Wallets";
     btn.setAttribute("aria-label", "Back to Wallets");
   } else {
-    btn.title = "Back to Collections";
-    btn.setAttribute("aria-label", "Back to Collections");
+    btn.title = isCustomGridMode() ? "Back to Images" : "Back to Collections";
+    btn.setAttribute("aria-label", isCustomGridMode() ? "Back to Images" : "Back to Collections");
   }
 }
 
@@ -207,7 +308,7 @@ function onHubBackClick() {
     goToStep(1);
     return;
   }
-  goToStep(2);
+  goToStep(isCustomGridMode() ? 1 : 2);
 }
 
 function escapeHtml(str) {
@@ -245,19 +346,39 @@ function setGuideGlow(ids = []) {
 
 // Call this any time state changes
 function updateGuideGlow() {
+  const gridHasTiles = queryAllGridTiles().length > 0;
+
+  // Clear primaryCTA from all CTA buttons
+  ["loadBtn", "gridBuildBtn", "gridExportBtn", "customGridBuildBtn", "customGridChooseBtn"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("primaryCTA");
+  });
+
+  if (isCustomGridMode()) {
+    const count = getSelectedCustomsForBuild().length;
+    if (currentStep === 1 && count === 0) {
+      setGuideGlow(["customGridChooseBtn"]);
+      $("customGridChooseBtn")?.classList.add("primaryCTA");
+      return;
+    }
+    if (currentStep === 1 && count > 0 && !gridHasTiles) {
+      setGuideGlow(["customGridBuildBtn"]);
+      $("customGridBuildBtn")?.classList.add("primaryCTA");
+      return;
+    }
+    if (gridHasTiles) {
+      setGuideGlow(["gridExportBtn"]);
+      $("gridExportBtn")?.classList.add("primaryCTA");
+      return;
+    }
+    setGuideGlow([]);
+    return;
+  }
+
   const hasWallets = state.wallets.length > 0;
   const hasLoadedWallets = state.collections.length > 0;
   const controlsVisible = currentStep === 2;
   const hasOneOrMoreForBuild = hasItemsForBuild();
-
-  const gridHasTiles = queryAllGridTiles().length > 0;
-  const exportEnabled = !!$("gridExportBtn") && $("gridExportBtn").disabled === false;
-
-  // Clear primaryCTA from all CTA buttons
-  ["loadBtn", "gridBuildBtn", "gridExportBtn"].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("primaryCTA");
-  });
 
   // Empty states
   const walletEmpty = $("walletEmptyState");
@@ -5137,7 +5258,7 @@ function ensureSettingsPanel() {
       </section>
       <section class="settings-section">
         <h3 class="settings-section-title">Import</h3>
-        <button type="button" class="btn btnSmall settings-fullbtn" id="settingsImportBtn">Import Image / Logo</button>
+        <button type="button" class="btn btnSmall settings-fullbtn" id="settingsImportBtn">Add more images</button>
         <button type="button" class="btn btnSmall settings-fullbtn settings-btn-muted" id="settingsClearCustomBtn">Clear Custom Images</button>
       </section>
       <section class="settings-section settings-section--comingSoon" aria-label="Text (coming soon)">
@@ -5314,6 +5435,7 @@ function updateBuildButtonAvailability() {
   const ok = hasItemsForBuild();
   const buildBtn = $("gridBuildBtn");
   if (buildBtn) buildBtn.disabled = !ok;
+  updateCustomGridBuildBtn();
   const exp = $("gridExportBtn");
   syncGridFooterButtons(!ok, exp ? exp.disabled : true);
 }
@@ -5893,6 +6015,11 @@ function shuffleCurrentGridOrder() {
 
 // ---------- Build grid ----------
 function buildGrid() {
+  if (isCustomGridMode()) {
+    buildCustomGrid();
+    return;
+  }
+
   BUILD_ID = Date.now();
   const buildId = BUILD_ID;
   const exportBtn = $("gridExportBtn");
@@ -8548,6 +8675,23 @@ function toggleStageLayoutSection() {
   if (selectAllBtn) selectAllBtn.addEventListener("click", () => setAllCollections(true));
   if (selectNoneBtn) selectNoneBtn.addEventListener("click", () => setAllCollections(false));
 
+  const customGridFileInput = $("customGridFileInput");
+  const customGridChooseBtn = $("customGridChooseBtn");
+  const customGridBuildBtn = $("customGridBuildBtn");
+  if (customGridChooseBtn && customGridFileInput) {
+    customGridChooseBtn.addEventListener("click", () => customGridFileInput.click());
+    customGridFileInput.addEventListener("change", () => {
+      const files = customGridFileInput.files;
+      if (files?.length) {
+        addCustomImagesFromFileList(files);
+      }
+      customGridFileInput.value = "";
+    });
+  }
+  if (customGridBuildBtn) {
+    customGridBuildBtn.addEventListener("click", () => buildCustomGrid());
+  }
+
   renderStageLayoutPicker();
   renderCustomImagesPanel();
 
@@ -8716,6 +8860,13 @@ function toggleStageLayoutSection() {
     });
     if (chainNext) chainNext.disabled = !selectedChain;
     uiState.chain = selectedChain || null;
+    if (selectedChain === "custom") {
+      state.chain = "custom";
+      state.host = null;
+      uiState.wallet = null;
+      renderUI();
+      return;
+    }
     if (
       chainSelectEl &&
       (selectedChain === "eth" ||
