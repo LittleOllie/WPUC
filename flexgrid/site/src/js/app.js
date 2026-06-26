@@ -217,6 +217,8 @@ function renderUI({ scrollTop = false } = {}) {
     applySettingsToLiveGrids();
     syncStageCaptionOverlay();
     syncGridRemoveImportedBtnVisibility();
+  } else if (state.customImageRemoveMode) {
+    setCustomImageRemoveMode(false);
   }
 
   syncHubBackButton();
@@ -454,6 +456,8 @@ const state = {
   customImages: [],
   /** Subset of customImages.id included in the next build */
   selectedCustomImageIds: new Set(),
+  /** When true, uploaded tiles show × to remove individually */
+  customImageRemoveMode: false,
   /** Collection contract keys whose collection logo is included first in that collection’s block in the grid */
   includeCollectionLogoInBuild: new Set(),
   /** In-memory cache: `${chain}::${contract}` → raw OpenSea logo URL or null */
@@ -5145,6 +5149,7 @@ function clearAllCustomImages() {
   }
   state.customImages = [];
   state.selectedCustomImageIds.clear();
+  setCustomImageRemoveMode(false);
   refreshGridAfterCustomImagesCleared();
   renderCustomImagesPanel();
   updateBuildButtonAvailability();
@@ -5161,7 +5166,99 @@ function isUserImportedCustomGridItem(it) {
   return !!(it && it.isCustom === true && it.sourceKey === "custom");
 }
 
-/** Show “Remove imports” on the grid toolbar only when there are uploaded custom images. */
+function setCustomImageRemoveMode(on) {
+  state.customImageRemoveMode = !!on;
+  const btn = $("gridRemoveImportedBtn");
+  if (btn) {
+    btn.textContent = on ? "✓ Done removing" : "🗑️ Remove images";
+    btn.classList.toggle("btn--removeModeActive", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  const stack = $("gridStack");
+  if (stack) stack.classList.toggle("gridStack--customRemoveMode", on);
+  syncCustomImageRemoveButtons();
+  if (on) setStatus("Tap × on an image to remove it");
+}
+
+function toggleCustomImageRemoveMode() {
+  if (!state.customImages?.length) {
+    setStatus("No uploaded images to remove");
+    return;
+  }
+  setCustomImageRemoveMode(!state.customImageRemoveMode);
+}
+
+function syncCustomImageRemoveButtons() {
+  const stack = $("gridStack");
+  if (!stack) return;
+
+  stack.querySelectorAll(".tile-removeBtn").forEach((btn) => btn.remove());
+
+  if (!state.customImageRemoveMode) return;
+
+  for (const tile of stack.querySelectorAll(".tile")) {
+    if (tile.dataset.kind === "empty") continue;
+    const orderIdx = parseInt(tile.dataset.orderIndex, 10);
+    if (!Number.isFinite(orderIdx)) continue;
+    const item = state.currentGridItems?.[orderIdx];
+    if (!isUserImportedCustomGridItem(item)) continue;
+
+    const customId = getGridItemKey(item);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tile-removeBtn";
+    btn.setAttribute("aria-label", "Remove image");
+    btn.textContent = "×";
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      removeCustomImageFromGrid(customId);
+    });
+    tile.appendChild(btn);
+  }
+}
+
+function removeCustomImageFromGrid(customId) {
+  const id = String(customId || "").trim();
+  if (!id) return;
+
+  const item = (state.customImages || []).find((c) => c.id === id);
+  if (item && typeof item.image === "string" && item.image.startsWith("blob:")) {
+    try {
+      URL.revokeObjectURL(item.image);
+    } catch (_) {}
+  }
+
+  state.customImages = (state.customImages || []).filter((c) => c.id !== id);
+  state.selectedCustomImageIds.delete(id);
+
+  if (Array.isArray(state.currentGridItems) && state.currentGridItems.length) {
+    const idx = state.currentGridItems.findIndex(
+      (it) => isUserImportedCustomGridItem(it) && getGridItemKey(it) === id,
+    );
+    if (idx >= 0) {
+      state.currentGridItems[idx] = GRID_EMPTY_SENTINEL;
+      syncOrderedItemsFromGrid();
+      reapplyLayoutAfterOrderChange();
+    }
+  }
+
+  renderCustomImagesPanel();
+  updateBuildButtonAvailability();
+  updateGuideGlow();
+  syncGridRemoveImportedBtnVisibility();
+
+  if (!state.customImages.length) {
+    setCustomImageRemoveMode(false);
+    setStatus("All uploaded images removed");
+    return;
+  }
+
+  syncCustomImageRemoveButtons();
+  setStatus("Image removed — tap × on another or press Done removing");
+}
+
+/** Show “Remove images” on the grid toolbar only when there are uploaded custom images. */
 function syncGridRemoveImportedBtnVisibility() {
   const btn = $("gridRemoveImportedBtn");
   if (!btn) return;
@@ -6655,6 +6752,7 @@ function onPointerReorderUp(e) {
 }
 
 function onGridStackPointerDown(e) {
+  if (state.customImageRemoveMode) return;
   if (_ptrDrag.active) return;
   if (e.button !== 0) return;
   const tile = e.target.closest(".tile");
@@ -6707,6 +6805,7 @@ function installGridPointerReorder() {
 
 function enableDragDrop() {
   installGridPointerReorder();
+  syncCustomImageRemoveButtons();
 }
 
 // ---------- Entry wrapper bridge (/flexgrid/app.html → /flexgrid/site/) ----------
@@ -8712,13 +8811,7 @@ function toggleStageLayoutSection() {
 
   const gridRemoveImportedBtn = $("gridRemoveImportedBtn");
   if (gridRemoveImportedBtn) {
-    gridRemoveImportedBtn.addEventListener("click", () => {
-      if (!state.customImages?.length) {
-        setStatus("No imported images to remove");
-        return;
-      }
-      clearAllCustomImages();
-    });
+    gridRemoveImportedBtn.addEventListener("click", () => toggleCustomImageRemoveMode());
   }
 
   const gridShuffleBtn = $("gridShuffleBtn");

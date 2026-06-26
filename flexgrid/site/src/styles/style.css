@@ -675,6 +675,38 @@ body{
       user-select:none;
       -webkit-user-drag:none;
     }
+    .tile-removeBtn{
+      position:absolute;
+      top:6px;
+      right:6px;
+      z-index:5;
+      width:30px;
+      height:30px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,0.95);
+      background:rgba(210, 35, 35, 0.94);
+      color:#fff;
+      font-size:22px;
+      line-height:1;
+      font-weight:900;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+      box-shadow:0 4px 14px rgba(0,0,0,0.28);
+      touch-action:manipulation;
+    }
+    .tile-removeBtn:hover{ filter:brightness(1.08); }
+    .tile-removeBtn:active{ transform:scale(0.96); }
+    .gridStack--customRemoveMode .tile:has(.tile-removeBtn){
+      outline:2px solid rgba(255,221,85,0.55);
+      outline-offset:-2px;
+    }
+    .btn.btn--removeModeActive{
+      background:linear-gradient(180deg, #ffe566, #ffd84d);
+      color:#1a1400;
+    }
     .fillerText{
       width:100%; height:100%;
       display:flex;
