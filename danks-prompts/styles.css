@@ -26,6 +26,7 @@
   --danks-glow-green: 0 0 22px rgba(94, 234, 94, 0.35);
   --danks-radius-blob: 32px 38px 30px 36px / 36px 30px 38px 32px;
   --danks-font: "Fredoka", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --danks-header-max: 884px; /* 680px × 1.3 */
   margin: 0;
   min-height: 100dvh;
   font-family: var(--danks-font);
@@ -148,12 +149,12 @@
 /* ── Hero ── */
 .danks-hero {
   text-align: center;
-  padding: clamp(20px, 5vw, 48px) 0 clamp(32px, 6vw, 56px);
+  padding: clamp(20px, 5vw, 48px) 0 clamp(44px, 7vw, 72px);
 }
 
 .danks-hero__title-slot {
   margin: 0 auto clamp(16px, 3vw, 28px);
-  max-width: min(680px, 98vw);
+  max-width: min(var(--danks-header-max), 98vw);
   overflow: visible;
 }
 
@@ -193,7 +194,7 @@
   max-width: 100%;
   margin: 0 auto;
   /* Padding gives the SVG filter room to paint outside the PNG bounds */
-  padding: clamp(44px, 11vw, 76px);
+  padding: clamp(57px, 14.3vw, 99px);
   overflow: visible;
   background: transparent;
   box-sizing: border-box;
@@ -253,7 +254,7 @@
 }
 
 .danks-splash__inner {
-  width: min(720px, 96vw);
+  width: min(936px, 98vw);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -265,7 +266,7 @@
 .danks-splash__logo {
   position: relative;
   z-index: 60;
-  width: min(680px, 94vw);
+  width: min(var(--danks-header-max), 96vw);
   margin: 0 auto;
   overflow: visible;
   pointer-events: none;
@@ -303,7 +304,7 @@
 .danks-hero__header-landed {
   position: relative;
   z-index: auto;
-  width: min(680px, 94vw);
+  width: min(var(--danks-header-max), 98vw);
   max-width: 100%;
   margin: 0 auto;
   overflow: visible;
@@ -363,7 +364,13 @@
   opacity: 0;
 }
 
-.danks-main--content-visible .danks-powered-by {
+.danks-main--content-visible .danks-powered-by--under-header {
+  animation: danks-content-in 0.5s ease forwards;
+  animation-delay: 0.04s;
+  opacity: 0;
+}
+
+.danks-main--content-visible .danks-powered-by--footer {
   animation: danks-content-in 0.5s ease forwards;
   animation-delay: 0.48s;
   opacity: 0;
@@ -749,6 +756,15 @@
   box-shadow: 0 4px 12px rgba(94, 234, 94, 0.4);
 }
 
+.danks-prompt-card--featured .danks-ba-frame {
+  padding: clamp(8px, 1.2vw, 10px);
+}
+
+.danks-prompt-card--featured .danks-ba {
+  max-width: 100%;
+  width: 100%;
+}
+
 .danks-prompt-card--glow {
   animation: danks-card-glow 1.2s ease-in-out 2;
 }
@@ -845,6 +861,7 @@
   z-index: 1;
   padding: clamp(10px, 2.5vw, 14px);
   border-radius: 20px;
+  overflow: visible;
   background:
     linear-gradient(180deg, rgba(4, 16, 40, 0.15) 0%, rgba(4, 16, 40, 0.35) 100%),
     var(--danks-gloop-bg) center / cover no-repeat;
@@ -857,6 +874,10 @@
 @media (min-width: 640px) {
   .danks-vault-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .danks-vault-grid .danks-ba {
+    max-width: 100%;
   }
 }
 
@@ -879,7 +900,6 @@
   user-select: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: ew-resize;
-  z-index: 1;
   background:
     radial-gradient(ellipse 90% 90% at 50% 45%, rgba(30, 80, 150, 0.25), rgba(4, 16, 40, 0.88));
 }
@@ -1140,19 +1160,44 @@
 }
 
 .danks-powered-by {
-  margin: clamp(40px, 8vw, 64px) auto 0;
-  padding: 0 0 max(20px, env(safe-area-inset-bottom));
+  padding: 0;
   text-align: center;
 }
 
+.danks-hero__title-slot:has(+ .danks-powered-by--under-header) {
+  margin-bottom: 0;
+}
+
+.danks-powered-by--under-header {
+  position: relative;
+  z-index: 2;
+  margin: clamp(-108px, -15vw, -80px) auto clamp(44px, 7vw, 60px);
+}
+
+.danks-powered-by--footer {
+  margin: clamp(40px, 8vw, 64px) auto 0;
+  padding: 0 0 max(20px, env(safe-area-inset-bottom));
+}
+
 .danks-powered-by a {
-  font-size: 0.8125rem;
-  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--danks-muted);
   text-decoration: none;
   transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.danks-powered-by--footer a {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.danks-powered-by.danks-powered-by--under-header a {
+  font-size: clamp(1.35rem, 3.5vw, 1.5rem);
+  font-weight: 800;
+  color: rgba(236, 245, 255, 0.92);
+  letter-spacing: 0.05em;
+  text-transform: none;
 }
 
 .danks-powered-by a:hover {

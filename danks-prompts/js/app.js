@@ -202,17 +202,17 @@ function createBeforeAfterHtml(prompt, labelPrefix = "") {
   const beforeAlt = `${labelPrefix}${prompt.title} — before example`;
   const afterAlt = `${labelPrefix}${prompt.title} — after example`;
   return `
-    <div class="danks-ba" role="group" aria-label="${prompt.title} before and after comparison">
-      <img class="danks-ba__after" src="${assetUrl(prompt.afterImage)}" alt="${afterAlt}" decoding="async" />
-      <div class="danks-ba__clip">
-        <img class="danks-ba__before" src="${assetUrl(prompt.beforeImage)}" alt="${beforeAlt}" decoding="async" />
+      <div class="danks-ba" role="group" aria-label="${prompt.title} before and after comparison">
+        <img class="danks-ba__after" src="${assetUrl(prompt.afterImage)}" alt="${afterAlt}" decoding="async" />
+        <div class="danks-ba__clip">
+          <img class="danks-ba__before" src="${assetUrl(prompt.beforeImage)}" alt="${beforeAlt}" decoding="async" />
+        </div>
+        <div class="danks-ba__handle" role="slider" aria-label="Drag to compare before and after" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0">
+          <span class="danks-ba__knob" aria-hidden="true"></span>
+        </div>
+        <span class="danks-ba__tag danks-ba__tag--before">Before</span>
+        <span class="danks-ba__tag danks-ba__tag--after">After</span>
       </div>
-      <div class="danks-ba__handle" role="slider" aria-label="Drag to compare before and after" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="0">
-        <span class="danks-ba__knob" aria-hidden="true"></span>
-      </div>
-      <span class="danks-ba__tag danks-ba__tag--before">Before</span>
-      <span class="danks-ba__tag danks-ba__tag--after">After</span>
-    </div>
   `;
 }
 
