@@ -300,36 +300,49 @@
     width 1.05s cubic-bezier(0.33, 1, 0.38, 1);
 }
 
-.danks-main--content-hidden .danks-hero__title-slot {
-  visibility: hidden;
+.danks-hero__header-landed {
+  position: relative;
+  z-index: auto;
+  width: min(680px, 94vw);
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: visible;
+  pointer-events: none;
 }
 
-.danks-main--content-hidden .danks-hero__tagline,
-.danks-main--content-hidden .danks-hero__intro,
+.danks-main--content-hidden .danks-hero__title-slot:empty {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.danks-page--revealing .danks-splash--hidden {
+  transition: none;
+}
+
+.danks-main--content-hidden .danks-hero__copy,
 .danks-main--content-hidden .danks-hero__actions,
 .danks-main--content-hidden .danks-goo-divider,
 .danks-main--content-hidden .danks-section,
-.danks-main--content-hidden .danks-back-btn {
+.danks-main--content-hidden .danks-back-btn,
+.danks-main--content-hidden .danks-powered-by {
   opacity: 0;
   visibility: hidden;
 }
 
-.danks-main--content-visible .danks-hero__tagline,
-.danks-main--content-visible .danks-hero__intro,
+.danks-main--content-visible .danks-hero__copy,
 .danks-main--content-visible .danks-hero__actions {
   animation: danks-content-in 0.65s cubic-bezier(0.33, 1, 0.38, 1) forwards;
 }
 
-.danks-main--content-visible .danks-hero__tagline {
+.danks-main--content-visible .danks-hero__copy {
   animation-delay: 0.05s;
-}
-
-.danks-main--content-visible .danks-hero__intro {
-  animation-delay: 0.12s;
+  opacity: 0;
 }
 
 .danks-main--content-visible .danks-hero__actions {
   animation-delay: 0.2s;
+  opacity: 0;
 }
 
 .danks-main--content-visible .danks-goo-divider {
@@ -347,6 +360,12 @@
 .danks-main--content-visible .danks-back-btn {
   animation: danks-content-in 0.45s ease forwards;
   animation-delay: 0.08s;
+  opacity: 0;
+}
+
+.danks-main--content-visible .danks-powered-by {
+  animation: danks-content-in 0.5s ease forwards;
+  animation-delay: 0.48s;
   opacity: 0;
 }
 
@@ -444,22 +463,39 @@
   pointer-events: none;
 }
 
+.danks-hero__copy {
+  max-width: min(40em, 94vw);
+  margin: 0 auto 24px;
+  padding: clamp(20px, 4vw, 28px) clamp(22px, 4.5vw, 32px);
+  border-radius: 24px;
+  text-align: center;
+  background: rgba(4, 18, 48, 0.88);
+  border: 1px solid rgba(140, 200, 255, 0.28);
+  box-shadow:
+    0 12px 40px rgba(0, 12, 40, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 .danks-hero__tagline {
-  margin: 0 0 14px;
-  font-size: clamp(1.3rem, 4.2vw, 1.75rem);
-  font-weight: 700;
-  color: var(--danks-gloop-bright);
+  margin: 0 0 16px;
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #9dff8a;
   text-shadow:
-    0 0 18px rgba(94, 234, 94, 0.55),
-    0 2px 8px rgba(0, 30, 80, 0.6);
+    0 2px 0 rgba(10, 50, 20, 0.65),
+    0 0 20px rgba(94, 234, 94, 0.4);
 }
 
 .danks-hero__intro {
-  margin: 0 auto 28px;
-  max-width: 38em;
-  font-size: clamp(1.05rem, 3vw, 1.2rem);
-  color: var(--danks-muted);
-  text-shadow: 0 1px 10px rgba(0, 20, 60, 0.65);
+  margin: 0;
+  font-size: clamp(1.125rem, 3.4vw, 1.35rem);
+  font-weight: 600;
+  line-height: 1.65;
+  color: #f4f8ff;
+  text-shadow: 0 1px 2px rgba(0, 12, 40, 0.8);
 }
 
 .danks-hero__actions {
@@ -578,6 +614,7 @@
 /* ── Sections ── */
 .danks-section {
   padding: clamp(32px, 6vw, 56px) 0;
+  text-align: center;
 }
 
 .danks-section__title {
@@ -598,7 +635,7 @@
   display: block;
   width: 48px;
   height: 10px;
-  margin: 6px 0 0;
+  margin: 6px auto 0;
   border-radius: 0 0 60% 60% / 0 0 100% 100%;
   background: linear-gradient(180deg, var(--danks-gloop-bright), var(--danks-gloop));
   box-shadow: 0 4px 12px rgba(94, 234, 94, 0.45);
@@ -611,11 +648,19 @@
 }
 
 .danks-section__sub {
-  margin: 12px 0 24px;
-  max-width: 36em;
-  color: var(--danks-gloop-text-soft);
-  font-size: clamp(1.05rem, 2.8vw, 1.125rem);
-  text-shadow: 0 1px 8px rgba(0, 20, 60, 0.5);
+  margin: 12px auto 24px;
+  max-width: 38em;
+  padding: 14px 20px;
+  border-radius: 16px;
+  text-align: center;
+  color: #f0f7ff;
+  font-size: clamp(1.125rem, 3.2vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.6;
+  background: rgba(4, 18, 48, 0.78);
+  border: 1px solid rgba(120, 190, 255, 0.22);
+  text-shadow: 0 1px 2px rgba(0, 12, 40, 0.7);
+  box-shadow: 0 8px 24px rgba(0, 12, 40, 0.35);
 }
 
 .danks-donation .danks-section__sub {
@@ -726,6 +771,7 @@
 .danks-prompt-card__head {
   position: relative;
   z-index: 1;
+  text-align: center;
 }
 
 .danks-prompt-card__title {
@@ -740,9 +786,11 @@
 
 .danks-prompt-card__desc {
   margin: 0;
-  color: var(--danks-gloop-text-soft);
-  font-size: clamp(1.02rem, 2.8vw, 1.1rem);
-  line-height: 1.55;
+  color: #e8f4ff;
+  font-size: clamp(1.1rem, 3vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(0, 12, 40, 0.5);
 }
 
 .danks-prompt-card__actions {
@@ -1029,11 +1077,12 @@
 }
 
 .danks-donation__box > p:first-child {
-  color: var(--danks-gloop-text-soft);
+  color: #f0f7ff;
   margin: 0;
-  font-size: clamp(1.02rem, 2.8vw, 1.1rem);
-  line-height: 1.55;
-  text-shadow: 0 1px 6px rgba(0, 20, 60, 0.4);
+  font-size: clamp(1.125rem, 3.2vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.65;
+  text-shadow: 0 1px 2px rgba(0, 12, 40, 0.6);
 }
 
 .danks-donation__wallet {
@@ -1088,6 +1137,33 @@
   color: var(--danks-gloop-bright);
   font-size: 1.0625rem;
   text-shadow: 0 0 16px rgba(94, 234, 94, 0.4);
+}
+
+.danks-powered-by {
+  margin: clamp(40px, 8vw, 64px) auto 0;
+  padding: 0 0 max(20px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.danks-powered-by a {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--danks-muted);
+  text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.danks-powered-by a:hover {
+  color: var(--danks-gloop-text-soft);
+  text-shadow: 0 0 12px rgba(94, 234, 94, 0.35);
+}
+
+.danks-powered-by a:focus-visible {
+  outline: 2px solid var(--danks-gloop-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 /* ── Modal ── */
@@ -1161,8 +1237,7 @@
   .danks-splash,
   .danks-goo-curtain,
   .danks-header--flying,
-  .danks-main--content-visible .danks-hero__tagline,
-  .danks-main--content-visible .danks-hero__intro,
+  .danks-main--content-visible .danks-hero__copy,
   .danks-main--content-visible .danks-hero__actions,
   .danks-main--content-visible .danks-goo-divider,
   .danks-main--content-visible .danks-section,

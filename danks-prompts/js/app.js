@@ -11,7 +11,7 @@ import {
   getAllPrompts,
 } from "./prompts.js";
 import { playGooEnterTransition } from "./goo-transition.js";
-import { beginLabReveal, resetLabRevealState } from "./lab-reveal.js";
+import { beginLabReveal, mountHeaderInHero, resetLabRevealState } from "./lab-reveal.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -299,7 +299,7 @@ function applyPageAssets() {
 
   const headerSlot = $("#danks-header-image");
   if (headerSlot && headerHtml) {
-    headerSlot.innerHTML = headerHtml;
+    headerSlot.innerHTML = "";
     headerSlot.classList.remove("danks-hero__title-placeholder");
     page?.classList.add("danks-page--has-art");
   }
@@ -340,7 +340,7 @@ function showMainApp() {
   const splash = $("#danks-splash");
   const main = $("#danks-main");
   applyLabBackground();
-  resetLabRevealState();
+  mountHeaderInHero();
   document.body.classList.remove("danks-page--splash", "danks-page--entering", "danks-page--revealing");
   splash?.classList.add("danks-splash--hidden");
   splash?.classList.remove("danks-splash--melting");

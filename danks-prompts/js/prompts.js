@@ -30,6 +30,17 @@ export const FEATURED_PROMPT = {
 
 export const VAULT_PROMPTS = [
   {
+    id: "gloop-samurai-bloom",
+    title: "Gloop Samurai Bloom",
+    category: "Scene",
+    description:
+      "From gloop portrait to a full cinematic sakura scene — kimono, katana, and golden-hour petals.",
+    beforeImage: "assets/DankSamuraiBefore.png",
+    afterImage: "assets/DankSamuraiAfter.png",
+    promptText:
+      "[PLACEHOLDER] Transform the gloop character into a melancholic samurai seated beneath cherry blossom trees in full bloom. Purple kimono with geometric patterns, conical hat with hanging tags, katana across the lap, carpet of pink petals, warm golden-hour light, cinematic depth of field, highly detailed 3D illustration style. Keep the character's gloop skull identity and BEAR WITH US shirt recognizable in the transformation.",
+  },
+  {
     id: "gloop-beast-mode",
     title: "Gloop Beast Mode",
     category: "Character",
