@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a2332"/>
+      <stop offset="100%" stop-color="#0d1219"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <text x="400" y="290" text-anchor="middle" fill="#6b7f99" font-family="system-ui,sans-serif" font-size="42" font-weight="700">BEFORE</text>
+  <text x="400" y="340" text-anchor="middle" fill="#4a5a6e" font-family="system-ui,sans-serif" font-size="18">Replace with real before image</text>
+</svg>

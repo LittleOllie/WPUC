@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f3d2e"/>
+      <stop offset="50%" stop-color="#1a5c44"/>
+      <stop offset="100%" stop-color="#0a1f18"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <text x="400" y="290" text-anchor="middle" fill="#5dffb8" font-family="system-ui,sans-serif" font-size="42" font-weight="700" filter="url(#glow)">AFTER</text>
+  <text x="400" y="340" text-anchor="middle" fill="#3dcc8f" font-family="system-ui,sans-serif" font-size="18">Replace with real after image</text>
+</svg>

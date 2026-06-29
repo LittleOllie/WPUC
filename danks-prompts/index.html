@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Danks Prompts — Gloop Lab</title>
+    <meta
+      name="description"
+      content="AI image prompts cooked in the gloop lab. Browse Danks' prompt vault, copy prompts, and support the creator."
+    />
+    <meta name="theme-color" content="#0a2d6e" />
+    <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="danks-page">
+    <!-- REPLACE LATER: background image is set via PAGE_ASSETS.backgroundImage in js/prompts.js -->
+    <div class="danks-page__bg" aria-hidden="true">
+      <div class="danks-bubbles" id="danks-bubbles"></div>
+    </div>
+
+    <div class="danks-wrap">
+      <!-- ── 1. Hero ── -->
+      <header class="danks-hero" id="danks-hero">
+        <!-- REPLACE LATER: real Danks Prompts title/header image — set PAGE_ASSETS.headerImage in js/prompts.js -->
+        <div class="danks-hero__title-slot danks-hero__title-placeholder" id="danks-header-image">
+          <span>Danks Prompts</span>
+        </div>
+
+        <p class="danks-hero__tagline">AI image prompts cooked in the gloop lab.</p>
+        <p class="danks-hero__intro">
+          Danks creates wild AI image prompts that help turn characters, NFTs, and ideas into fresh new visuals.
+          Browse the prompt vault, copy what you like, and show some love if his prompts help you create something
+          cool.
+        </p>
+        <div class="danks-hero__actions">
+          <button type="button" class="danks-btn danks-btn--blob" data-scroll-to="danks-vault">
+            Enter the Prompt Vault
+          </button>
+          <button type="button" class="danks-btn danks-btn--outline" data-scroll-to="danks-donation">
+            Support Danks
+          </button>
+        </div>
+      </header>
+
+      <div class="danks-goo-divider" aria-hidden="true"></div>
+
+      <!-- ── 2. Featured prompt ── -->
+      <section class="danks-section" id="danks-featured" aria-labelledby="danks-featured-heading">
+        <h2 class="danks-section__title" id="danks-featured-heading">Featured Prompt</h2>
+        <p class="danks-section__sub">A taste of what&apos;s bubbling in the lab.</p>
+        <div id="danks-featured-mount"></div>
+      </section>
+
+      <div class="danks-goo-divider" aria-hidden="true"></div>
+
+      <!-- ── 3. Prompt vault ── -->
+      <section class="danks-section" id="danks-vault" aria-labelledby="danks-vault-heading">
+        <h2 class="danks-section__title" id="danks-vault-heading">Prompt Vault</h2>
+        <p class="danks-section__sub">Copy, remix, and create. Drag the slider on each card to compare before &amp; after.</p>
+
+        <div class="danks-vault-toolbar">
+          <button type="button" class="danks-btn danks-btn--neon" id="danks-random-btn">
+            🎲 Random Danks Prompt
+          </button>
+        </div>
+
+        <div class="danks-vault-grid" id="danks-vault-grid"></div>
+      </section>
+
+      <div class="danks-goo-divider" aria-hidden="true"></div>
+
+      <!-- ── 8. Community creations ── -->
+      <section class="danks-section" id="danks-community" aria-labelledby="danks-community-heading">
+        <h2 class="danks-section__title" id="danks-community-heading">Created With Danks Prompts</h2>
+        <p class="danks-section__sub">Community examples coming soon — placeholders for now.</p>
+        <div class="danks-community-grid" id="danks-community-grid"></div>
+      </section>
+
+      <div class="danks-goo-divider" aria-hidden="true"></div>
+
+      <!-- ── 7. Donation ── -->
+      <section class="danks-section danks-donation" id="danks-donation" aria-labelledby="danks-donation-heading">
+        <h2 class="danks-section__title" id="danks-donation-heading">Support Danks</h2>
+        <div class="danks-donation__box">
+          <p>
+            Danks shares prompts to help creators make cooler AI art. If one of his prompts helps you create something
+            you love, you can send him a little thank you.
+          </p>
+          <code class="danks-donation__wallet" id="danks-wallet-address" aria-label="Donation wallet address"></code>
+          <div class="danks-donation__actions">
+            <button type="button" class="danks-btn danks-btn--blob danks-btn--small" data-copy-wallet data-copy-wallet-label="Copy Wallet">
+              Copy Wallet
+            </button>
+            <button type="button" class="danks-btn danks-btn--ghost danks-btn--small" id="danks-donated-btn">
+              I Donated
+            </button>
+          </div>
+          <p class="danks-donation__note">Donations are optional — always appreciated, never required.</p>
+          <div class="danks-donation__qr" aria-label="QR code placeholder">QR code coming soon</div>
+          <p class="danks-donation__thanks" id="danks-donated-msg" hidden></p>
+        </div>
+      </section>
+    </div>
+
+    <!-- Expand prompt modal -->
+    <dialog class="danks-modal" id="danks-prompt-modal" aria-labelledby="danks-modal-title">
+      <div class="danks-modal__inner">
+        <h3 class="danks-modal__title" id="danks-modal-title">Prompt</h3>
+        <pre class="danks-modal__body" id="danks-modal-body"></pre>
+        <div class="danks-modal__actions">
+          <button type="button" class="danks-btn danks-btn--blob danks-btn--small" id="danks-modal-copy" data-copy-prompt-id="">
+            Copy Prompt
+          </button>
+          <button type="button" class="danks-btn danks-btn--ghost danks-btn--small" id="danks-modal-close">
+            Close
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
