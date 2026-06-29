@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  Gloop Beast Mode placeholder">
+  <rect width="800" height="600" fill="#1c2430"/>
+  <rect x="0" y="480" width="800" height="120" fill="#121820"/>
+  <circle cx="400" cy="240" r="48" fill="#6b7280"/>
+  <rect x="360" y="288" width="80" height="100" rx="16" fill="#5b6370"/>
+  <rect x="340" y="300" width="28" height="80" rx="10" fill="#525a66"/>
+  <rect x="432" y="300" width="28" height="80" rx="10" fill="#525a66"/>
+  <text x="400" y="70" text-anchor="middle" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="26" font-weight="700">BEFORE</text>
+  <text x="400" y="555" text-anchor="middle" fill="#6b7585" font-family="system-ui,sans-serif" font-size="14">Gloop Beast Mode</text>
+</svg>

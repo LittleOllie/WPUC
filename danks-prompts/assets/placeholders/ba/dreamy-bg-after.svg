@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After  Dreamy Background placeholder">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a9eff"/>
+      <stop offset="40%" stop-color="#7b5cff"/>
+      <stop offset="100%" stop-color="#0a2d6e"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="150" cy="120" r="50" fill="#5eea5e" opacity="0.35"/>
+  <circle cx="650" cy="180" r="70" fill="#7dff6a" opacity="0.25"/>
+  <circle cx="500" cy="80" r="35" fill="#fff" opacity="0.2"/>
+  <ellipse cx="400" cy="500" rx="300" ry="80" fill="#3dffb0" opacity="0.2"/>
+  <circle cx="400" cy="300" r="48" fill="#4a5568"/>
+  <rect x="358" y="348" width="84" height="100" rx="18" fill="#434d5e"/>
+  <text x="400" y="80" text-anchor="middle" fill="#d8ffe8" font-family="system-ui,sans-serif" font-size="24" font-weight="700">AFTER</text>
+  <text x="400" y="555" text-anchor="middle" fill="#b8f0c8" font-family="system-ui,sans-serif" font-size="14">Dreamy Background Blast</text>
+</svg>

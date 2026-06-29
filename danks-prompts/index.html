@@ -2,6 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      (function () {
+        var loc = window.location;
+        var p = loc.pathname;
+        if (/\/danks-prompts$/i.test(p)) {
+          loc.replace(loc.origin + p + "/" + loc.search + loc.hash);
+          return;
+        }
+        // Absolute base = folder this page lives in (fixes preview + Live Server + GitHub Pages)
+        var baseHref = loc.href;
+        if (/\.html?$/i.test(baseHref)) {
+          baseHref = baseHref.replace(/[^/]*$/, "");
+        } else if (!/\/$/.test(baseHref)) {
+          baseHref += "/";
+        }
+        var b = document.createElement("base");
+        b.href = baseHref;
+        var head = document.head;
+        var after = head.querySelector("meta[charset]");
+        head.insertBefore(b, after ? after.nextSibling : head.firstChild);
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
     <title>Danks Prompts — Gloop Lab</title>
@@ -10,7 +32,9 @@
       content="AI image prompts cooked in the gloop lab. Browse Danks' prompt vault, copy prompts, and support the creator."
     />
     <meta name="theme-color" content="#0a2d6e" />
-    <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" sizes="any" />
+    <link rel="shortcut icon" href="assets/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,6 +42,33 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <!-- SVG glow filter — expanded region so white halo is not clipped at PNG edges -->
+    <svg class="danks-svg-defs" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="danks-header-glow" color-interpolation-filters="sRGB" x="-45%" y="-45%" width="190%" height="190%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2.5" result="blurTight" />
+          <feFlood flood-color="#ffffff" flood-opacity="0.95" result="whiteTight" />
+          <feComposite in="whiteTight" in2="blurTight" operator="in" result="glowTight" />
+          <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blurMid" />
+          <feFlood flood-color="#ffffff" flood-opacity="0.55" result="whiteMid" />
+          <feComposite in="whiteMid" in2="blurMid" operator="in" result="glowMid" />
+          <feGaussianBlur in="SourceAlpha" stdDeviation="22" result="blurWide" />
+          <feFlood flood-color="#ffffff" flood-opacity="0.28" result="whiteWide" />
+          <feComposite in="whiteWide" in2="blurWide" operator="in" result="glowWide" />
+          <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blurDepth" />
+          <feOffset in="blurDepth" dx="0" dy="10" result="depthOff" />
+          <feFlood flood-color="#001848" flood-opacity="0.45" result="depthColor" />
+          <feComposite in="depthColor" in2="depthOff" operator="in" result="depthShadow" />
+          <feMerge>
+            <feMergeNode in="depthShadow" />
+            <feMergeNode in="glowWide" />
+            <feMergeNode in="glowMid" />
+            <feMergeNode in="glowTight" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
   </head>
   <body class="danks-page">
     <!-- REPLACE LATER: background image is set via PAGE_ASSETS.backgroundImage in js/prompts.js -->
@@ -25,6 +76,23 @@
       <div class="danks-bubbles" id="danks-bubbles"></div>
     </div>
 
+    <!-- Splash — first screen -->
+    <div id="danks-splash" class="danks-splash" role="banner">
+      <div class="danks-splash__inner">
+        <div id="danks-splash-header" class="danks-splash__logo"></div>
+        <button type="button" id="danks-enter-btn" class="danks-btn danks-btn--blob danks-splash__enter">
+          ENTER GLOOP LAB
+        </button>
+      </div>
+    </div>
+
+    <!-- Goo drip transition when entering the lab -->
+    <div id="danks-goo-curtain" class="danks-goo-curtain" aria-hidden="true"></div>
+
+    <main id="danks-main" class="danks-main danks-main--hidden" aria-hidden="true">
+    <button type="button" id="danks-back-btn" class="danks-back-btn" aria-label="Back to Gloop Lab entrance">
+      ← Gloop Lab
+    </button>
     <div class="danks-wrap">
       <!-- ── 1. Hero ── -->
       <header class="danks-hero" id="danks-hero">
@@ -108,6 +176,7 @@
         </div>
       </section>
     </div>
+    </main>
 
     <!-- Expand prompt modal -->
     <dialog class="danks-modal" id="danks-prompt-modal" aria-labelledby="danks-modal-title">

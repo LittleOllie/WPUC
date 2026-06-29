@@ -1,17 +1,17 @@
 /**
  * DANKS PROMPTS — placeholder content
- * Replace paths, text, and add/remove entries here when you have real assets.
+ * Replace paths, text, and add/remove entries when you have real assets.
+ *
+ * Before/after placeholders: assets/placeholders/ba/*.png
  */
 
 /** Donation wallet (Ethereum) */
 export const DANKS_WALLET = "0x383163566df884ba3ab68d6cb7d4ee30f80a05c8";
 
-/**
- * REPLACE LATER: hero title/header image
- * Set `headerImage` to your real title art path, e.g. "assets/danks-prompts-title.png"
- */
 export const PAGE_ASSETS = {
+  /** Transparent header — replace assets/GloopHeader.png then bump headerVersion */
   headerImage: "assets/GloopHeader.png",
+  headerVersion: 2,
   backgroundImage: "assets/placeholders/GloopBG.png",
 };
 
@@ -22,26 +22,20 @@ export const FEATURED_PROMPT = {
   category: "Featured",
   description:
     "Danks' signature gloop transformation — turn any character into a neon slime masterpiece.",
-  // REPLACE LATER: swap for real before/after image paths
-  beforeImage: "assets/placeholders/before.svg",
-  afterImage: "assets/placeholders/after.svg",
-  // REPLACE LATER: paste the real prompt text
+  beforeImage: "assets/LODankBefore.jpg",
+  afterImage: "assets/LODankAfter.PNG",
   promptText:
     "[PLACEHOLDER] Transform the subject into a hyper-detailed gloop creature with neon slime textures, dripping highlights, and a dark lab background. Keep the original pose and silhouette recognizable. Cinematic lighting, wet surface reflections, vibrant green and cyan accents, 8k detail.",
 };
 
-/**
- * Prompt vault — edit this array to add real prompts.
- * Each entry needs: id, title, category, description, beforeImage, afterImage, promptText
- */
 export const VAULT_PROMPTS = [
   {
     id: "gloop-beast-mode",
     title: "Gloop Beast Mode",
     category: "Character",
     description: "Unleash a wild gloop beast version of your character.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/gloop-beast-before.png",
+    afterImage: "assets/placeholders/ba/gloop-beast-after.png",
     promptText:
       "[PLACEHOLDER] Reimagine the character as a powerful gloop beast with exaggerated muscles, slime fur, glowing veins, and fierce expression. Moody atmosphere, neon rim light.",
   },
@@ -50,8 +44,8 @@ export const VAULT_PROMPTS = [
     title: "Cyber Toon Upgrade",
     category: "Style",
     description: "Cartoon meets cyberpunk — bold outlines and holographic flair.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/cyber-toon-before.png",
+    afterImage: "assets/placeholders/ba/cyber-toon-after.png",
     promptText:
       "[PLACEHOLDER] Upgrade to a cyber-toon style: thick ink outlines, holographic UI accents, saturated colors, retro-future city bokeh background.",
   },
@@ -60,8 +54,8 @@ export const VAULT_PROMPTS = [
     title: "Dreamy Background Blast",
     category: "Background",
     description: "Swap boring backgrounds for dreamy gloop skies.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/dreamy-bg-before.png",
+    afterImage: "assets/placeholders/ba/dreamy-bg-after.png",
     promptText:
       "[PLACEHOLDER] Replace background with a dreamy gloop sky: floating bubbles, soft gradients, aurora slime clouds, keep subject sharp in foreground.",
   },
@@ -70,8 +64,8 @@ export const VAULT_PROMPTS = [
     title: "NFT Glow-Up",
     category: "NFT",
     description: "Give your PFP a premium collector-grade glow-up.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/nft-glow-before.png",
+    afterImage: "assets/placeholders/ba/nft-glow-after.png",
     promptText:
       "[PLACEHOLDER] Premium NFT glow-up: enhanced lighting, sharper details, subtle animated-feel highlights, collector card framing, no identity change.",
   },
@@ -80,8 +74,8 @@ export const VAULT_PROMPTS = [
     title: "Action Scene Builder",
     category: "Scene",
     description: "Drop your character into a high-energy action moment.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/action-scene-before.png",
+    afterImage: "assets/placeholders/ba/action-scene-after.png",
     promptText:
       "[PLACEHOLDER] Place character in dynamic action scene: motion blur accents, debris, dramatic angle, cinematic color grade, gloop energy effects.",
   },
@@ -90,45 +84,40 @@ export const VAULT_PROMPTS = [
     title: "Retro Arcade Remix",
     category: "Retro",
     description: "Pixel-arcade vibes with a modern gloop twist.",
-    beforeImage: "assets/placeholders/before.svg",
-    afterImage: "assets/placeholders/after.svg",
+    beforeImage: "assets/placeholders/ba/retro-arcade-before.png",
+    afterImage: "assets/placeholders/ba/retro-arcade-after.png",
     promptText:
       "[PLACEHOLDER] Retro arcade remix: 16-bit pixel art style with modern neon gloop overlays, arcade cabinet glow, scanline texture, vibrant palette.",
   },
 ];
 
-/**
- * Community creations gallery — replace with real examples later.
- * Each: image, creator, promptUsed
- */
 export const COMMUNITY_CREATIONS = [
   {
     id: "cc-1",
-    image: "assets/placeholders/after.svg",
+    image: "assets/placeholders/ba/gloop-beast-after.png",
     creator: "@creator",
     promptUsed: "Gloop Beast Mode",
   },
   {
     id: "cc-2",
-    image: "assets/placeholders/after.svg",
+    image: "assets/placeholders/ba/cyber-toon-after.png",
     creator: "@gloopfan",
     promptUsed: "Cyber Toon Upgrade",
   },
   {
     id: "cc-3",
-    image: "assets/placeholders/after.svg",
+    image: "assets/placeholders/ba/nft-glow-after.png",
     creator: "@nftartist",
     promptUsed: "NFT Glow-Up",
   },
   {
     id: "cc-4",
-    image: "assets/placeholders/after.svg",
+    image: "assets/placeholders/ba/dreamy-bg-after.png",
     creator: "@slimedrop",
     promptUsed: "Dreamy Background Blast",
   },
 ];
 
-/** All browsable prompts (featured + vault) for random picker */
 export function getAllPrompts() {
   return [FEATURED_PROMPT, ...VAULT_PROMPTS];
 }

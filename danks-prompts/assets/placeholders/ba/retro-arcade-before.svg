@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  Retro Arcade placeholder">
+  <rect width="800" height="600" fill="#c8ccd4"/>
+  <rect x="300" y="200" width="200" height="200" fill="#9aa3b0"/>
+  <rect x="320" y="220" width="40" height="40" fill="#6b7280"/>
+  <rect x="380" y="220" width="40" height="40" fill="#6b7280"/>
+  <rect x="340" y="300" width="120" height="30" fill="#5a6370"/>
+  <text x="400" y="100" text-anchor="middle" fill="#5a6370" font-family="monospace" font-size="22" font-weight="700">BEFORE</text>
+  <text x="400" y="130" text-anchor="middle" fill="#6b7280" font-family="monospace" font-size="12">8-BIT FLAT</text>
+  <text x="400" y="555" text-anchor="middle" fill="#6b7585" font-family="system-ui,sans-serif" font-size="14">Retro Arcade Remix</text>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After  Retro Arcade placeholder">
+  <rect width="800" height="600" fill="#0a0a20"/>
+  <line x1="0" y1="100" x2="800" y2="100" stroke="#5eea5e" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="200" x2="800" y2="200" stroke="#5eea5e" stroke-width="1" opacity="0.2"/>
+  <rect x="290" y="190" width="220" height="220" fill="#1a1a40" stroke="#7dff6a" stroke-width="4"/>
+  <rect x="315" y="215" width="45" height="45" fill="#00ffcc"/>
+  <rect x="375" y="215" width="45" height="45" fill="#ff00aa"/>
+  <rect x="335" y="300" width="130" height="35" fill="#5eea5e"/>
+  <ellipse cx="400" cy="450" rx="120" ry="20" fill="#3dffb0" opacity="0.4"/>
+  <text x="400" y="100" text-anchor="middle" fill="#7dff6a" font-family="monospace" font-size="22" font-weight="700">AFTER</text>
+  <text x="400" y="130" text-anchor="middle" fill="#00ffcc" font-family="monospace" font-size="12">GLOOP REMIX</text>
+  <text x="400" y="555" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="14">Retro Arcade Remix</text>
+</svg>

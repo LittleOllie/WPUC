@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After  NFT Glow-Up placeholder">
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5eea5e"/>
+      <stop offset="50%" stop-color="#4a9eff"/>
+      <stop offset="100%" stop-color="#7b5cff"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="800" height="600" fill="#061428"/>
+  <rect x="230" y="100" width="340" height="340" rx="20" fill="none" stroke="url(#frame)" stroke-width="6" filter="url(#glow)"/>
+  <rect x="250" y="120" width="300" height="300" rx="16" fill="#1a3050"/>
+  <circle cx="400" cy="230" r="50" fill="#5eea5e" filter="url(#glow)"/>
+  <rect x="348" y="280" width="104" height="85" rx="12" fill="#3dffb0" opacity="0.9"/>
+  <text x="400" y="90" text-anchor="middle" fill="#7dff6a" font-family="system-ui,sans-serif" font-size="26" font-weight="700">AFTER</text>
+  <text x="400" y="470" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="13">collector-grade glow &</text>
+  <text x="400" y="555" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="14">NFT Glow-Up</text>
+</svg>

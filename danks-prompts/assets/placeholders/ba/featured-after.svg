@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After  gloop transformation placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a2d6e"/>
+      <stop offset="100%" stop-color="#061428"/>
+    </linearGradient>
+    <linearGradient id="slime" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7dff6a"/>
+      <stop offset="50%" stop-color="#3dffb0"/>
+      <stop offset="100%" stop-color="#1a9e5c"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="120" cy="100" r="40" fill="#4a9eff" opacity="0.2"/>
+  <circle cx="680" cy="480" r="60" fill="#5eea5e" opacity="0.15"/>
+  <ellipse cx="400" cy="520" rx="150" ry="20" fill="#5eea5e" opacity="0.25"/>
+  <!-- gloop character -->
+  <circle cx="400" cy="215" r="58" fill="url(#slime)" filter="url(#glow)"/>
+  <ellipse cx="385" cy="205" rx="10" ry="14" fill="#061428"/>
+  <ellipse cx="415" cy="205" rx="10" ry="14" fill="#061428"/>
+  <path d="M352 280 Q400 340 448 280 L440 400 Q400 420 360 400 Z" fill="url(#slime)" filter="url(#glow)"/>
+  <path d="M320 300 Q300 380 310 420" stroke="#7dff6a" stroke-width="22" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <path d="M480 300 Q500 380 490 420" stroke="#7dff6a" stroke-width="22" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <!-- drips -->
+  <ellipse cx="370" cy="450" rx="14" ry="28" fill="#3dffb0" opacity="0.85"/>
+  <ellipse cx="430" cy="465" rx="10" ry="22" fill="#5eea5e" opacity="0.8"/>
+  <path d="M200 80 Q210 120 205 160 Q200 140 195 100 Z" fill="#4a9eff" opacity="0.5"/>
+  <text x="400" y="88" text-anchor="middle" fill="#7dff6a" font-family="system-ui,sans-serif" font-size="28" font-weight="700" filter="url(#glow)">AFTER</text>
+  <text x="400" y="560" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="15">Gloop Lab Special · replace later</text>
+</svg>

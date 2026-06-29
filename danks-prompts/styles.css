@@ -63,6 +63,27 @@
   background-position: center top;
 }
 
+/* Splash — plain gloop blue, no artwork (gloop pours in on enter) */
+.danks-page__bg--splash {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(110, 200, 255, 0.22), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 12% 85%, rgba(30, 111, 212, 0.18), transparent 52%),
+    radial-gradient(ellipse 65% 40% at 88% 78%, rgba(20, 80, 180, 0.14), transparent 50%),
+    linear-gradient(180deg, #0b3a8a 0%, #1e6fd4 38%, #0a2d6e 72%, #061428 100%);
+  background-size: cover;
+  background-position: center;
+}
+
+.danks-page--splash .danks-bubble {
+  opacity: 0.35;
+}
+
+.danks-page--entering .danks-splash__enter--hide {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
 @media (min-width: 768px) {
   .danks-page__bg--image {
     background-position: center center;
@@ -133,6 +154,7 @@
 .danks-hero__title-slot {
   margin: 0 auto clamp(16px, 3vw, 28px);
   max-width: min(680px, 98vw);
+  overflow: visible;
 }
 
 .danks-hero__title-placeholder {
@@ -157,12 +179,269 @@
   filter: drop-shadow(0 4px 12px rgba(30, 100, 220, 0.45));
 }
 
-.danks-hero__title-img {
+.danks-svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.danks-gloop-header-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  /* Padding gives the SVG filter room to paint outside the PNG bounds */
+  padding: clamp(44px, 11vw, 76px);
+  overflow: visible;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.danks-gloop-header-img {
+  position: relative;
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 0;
-  filter: drop-shadow(0 12px 32px rgba(0, 20, 60, 0.55));
+  filter: url(#danks-header-glow);
+}
+
+/* ── Splash entrance ── */
+.danks-page--splash {
+  height: 100dvh;
+  overflow: clip;
+}
+
+.danks-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+  overflow: visible;
+  background: transparent;
+  pointer-events: none;
+}
+
+.danks-page--entering .danks-splash,
+.danks-page--revealing .danks-splash {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.danks-splash--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.danks-splash--melting {
+  animation: danks-splash-melt 0.35s ease forwards;
+}
+
+@keyframes danks-splash-melt {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+.danks-splash__inner {
+  width: min(720px, 96vw);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 6vw, 44px);
+  overflow: visible;
+}
+
+.danks-splash__logo {
+  position: relative;
+  z-index: 60;
+  width: min(680px, 94vw);
+  margin: 0 auto;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.danks-splash__enter {
+  position: relative;
+  z-index: 51;
+  min-width: min(100%, 320px);
+  font-size: clamp(1.05rem, 3.5vw, 1.15rem);
+  letter-spacing: 0.06em;
+  padding: 16px 36px;
+  pointer-events: auto;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.danks-splash__enter--hide {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+/* Header flies from splash center to hero slot */
+.danks-header--flying {
+  position: fixed !important;
+  z-index: 70 !important;
+  margin: 0 !important;
+  pointer-events: none;
+  transition:
+    top 1.05s cubic-bezier(0.33, 1, 0.38, 1),
+    left 1.05s cubic-bezier(0.33, 1, 0.38, 1),
+    width 1.05s cubic-bezier(0.33, 1, 0.38, 1);
+}
+
+.danks-main--content-hidden .danks-hero__title-slot {
+  visibility: hidden;
+}
+
+.danks-main--content-hidden .danks-hero__tagline,
+.danks-main--content-hidden .danks-hero__intro,
+.danks-main--content-hidden .danks-hero__actions,
+.danks-main--content-hidden .danks-goo-divider,
+.danks-main--content-hidden .danks-section,
+.danks-main--content-hidden .danks-back-btn {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.danks-main--content-visible .danks-hero__tagline,
+.danks-main--content-visible .danks-hero__intro,
+.danks-main--content-visible .danks-hero__actions {
+  animation: danks-content-in 0.65s cubic-bezier(0.33, 1, 0.38, 1) forwards;
+}
+
+.danks-main--content-visible .danks-hero__tagline {
+  animation-delay: 0.05s;
+}
+
+.danks-main--content-visible .danks-hero__intro {
+  animation-delay: 0.12s;
+}
+
+.danks-main--content-visible .danks-hero__actions {
+  animation-delay: 0.2s;
+}
+
+.danks-main--content-visible .danks-goo-divider {
+  animation: danks-content-in 0.55s ease forwards;
+  animation-delay: 0.28s;
+  opacity: 0;
+}
+
+.danks-main--content-visible .danks-section {
+  animation: danks-content-in 0.6s ease forwards;
+  animation-delay: 0.34s;
+  opacity: 0;
+}
+
+.danks-main--content-visible .danks-back-btn {
+  animation: danks-content-in 0.45s ease forwards;
+  animation-delay: 0.08s;
+  opacity: 0;
+}
+
+@keyframes danks-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+
+.danks-main--hidden {
+  display: none;
+}
+
+.danks-page--revealing .danks-main {
+  display: block;
+}
+
+.danks-main {
+  position: relative;
+  z-index: 30;
+}
+
+/* Small back control — returns to splash / ENTER GLOOP LAB */
+.danks-back-btn {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(220, 235, 255, 0.45);
+  background: rgba(8, 32, 76, 0.72);
+  color: var(--danks-ink);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 20, 60, 0.35);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.danks-back-btn:hover {
+  background: rgba(30, 80, 150, 0.78);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.danks-back-btn:active {
+  transform: scale(0.97);
+}
+
+.danks-back-btn:focus-visible {
+  outline: 3px solid var(--danks-gloop-bright);
+  outline-offset: 2px;
+}
+
+/* ── Goo drip enter transition (canvas) — behind header ── */
+.danks-goo-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.danks-goo-curtain--active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: none;
+  background: #0a2d6e;
+}
+
+.danks-goo-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .danks-hero__tagline {
@@ -539,33 +818,38 @@
   }
 }
 
-/* ── Before / After slider (keep as-is — user favorite) ── */
+/* ── Before / After slider — square NFT frame, contain for mixed aspect ratios ── */
 .danks-ba {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  max-width: min(100%, 480px);
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
   border-radius: 16px;
   overflow: hidden;
   touch-action: none;
   user-select: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: ew-resize;
   z-index: 1;
+  background:
+    radial-gradient(ellipse 90% 90% at 50% 45%, rgba(30, 80, 150, 0.25), rgba(4, 16, 40, 0.88));
 }
 
 .danks-ba__after,
 .danks-ba__before {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   pointer-events: none;
+  object-fit: contain;
+  object-position: center;
 }
 
 .danks-ba__after {
   position: absolute;
   inset: 0;
   z-index: 1;
+  width: 100%;
+  height: 100%;
 }
 
 .danks-ba__clip {
@@ -582,8 +866,18 @@
   position: absolute;
   top: 0;
   left: 0;
-  height: 100%;
   max-width: none;
+  /* width + height set in JS to match square frame for aligned clip */
+}
+
+.danks-ba__img--contain {
+  object-fit: contain;
+  object-position: center;
+}
+
+.danks-ba__img--cover {
+  object-fit: cover;
+  object-position: center;
 }
 
 .danks-ba__handle {
@@ -863,7 +1157,17 @@
 
   .danks-btn,
   .danks-prompt-card,
-  .danks-community-card {
+  .danks-community-card,
+  .danks-splash,
+  .danks-goo-curtain,
+  .danks-header--flying,
+  .danks-main--content-visible .danks-hero__tagline,
+  .danks-main--content-visible .danks-hero__intro,
+  .danks-main--content-visible .danks-hero__actions,
+  .danks-main--content-visible .danks-goo-divider,
+  .danks-main--content-visible .danks-section,
+  .danks-main--content-visible .danks-back-btn {
     transition: none;
+    animation: none !important;
   }
 }

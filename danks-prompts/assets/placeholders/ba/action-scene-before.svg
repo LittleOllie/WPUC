@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  Action Scene placeholder">
+  <rect width="800" height="600" fill="#d4d8de"/>
+  <line x1="0" y1="450" x2="800" y2="450" stroke="#b8bec8" stroke-width="2"/>
+  <circle cx="400" cy="280" r="42" fill="#8a929e"/>
+  <rect x="365" y="322" width="70" height="90" rx="14" fill="#7a828e"/>
+  <text x="400" y="80" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="26" font-weight="700">BEFORE</text>
+  <text x="400" y="555" text-anchor="middle" fill="#8892a0" font-family="system-ui,sans-serif" font-size="14">Action Scene Builder</text>
+</svg>

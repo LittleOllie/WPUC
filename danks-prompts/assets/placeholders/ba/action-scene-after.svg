@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="After  Action Scene placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff6b35" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#0a2d6e"/>
+      <stop offset="100%" stop-color="#061428"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <line x1="100" y1="200" x2="700" y2="400" stroke="#5eea5e" stroke-width="3" opacity="0.5"/>
+  <line x1="700" y1="180" x2="200" y2="420" stroke="#ff6b35" stroke-width="2" opacity="0.4"/>
+  <polygon points="400,180 450,320 350,320" fill="#3dffb0" opacity="0.9"/>
+  <circle cx="400" cy="250" r="35" fill="#7dff6a"/>
+  <rect x="375" y="290" width="50" height="70" rx="10" fill="#5eea5e"/>
+  <text x="400" y="80" text-anchor="middle" fill="#ffaa77" font-family="system-ui,sans-serif" font-size="26" font-weight="700">AFTER</text>
+  <text x="400" y="555" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="14">Action Scene Builder</text>
+</svg>

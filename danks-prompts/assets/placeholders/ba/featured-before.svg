@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  plain character placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2a3344"/>
+      <stop offset="100%" stop-color="#151b26"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <ellipse cx="400" cy="520" rx="140" ry="18" fill="#0a0e14" opacity="0.6"/>
+  <!-- plain character -->
+  <circle cx="400" cy="220" r="52" fill="#5a6478"/>
+  <rect x="352" y="272" width="96" height="120" rx="24" fill="#4a5568"/>
+  <rect x="330" y="290" width="36" height="100" rx="14" fill="#434d5e"/>
+  <rect x="434" y="290" width="36" height="100" rx="14" fill="#434d5e"/>
+  <rect x="368" y="390" width="32" height="90" rx="12" fill="#3d4654"/>
+  <rect x="400" y="390" width="32" height="90" rx="12" fill="#3d4654"/>
+  <text x="400" y="88" text-anchor="middle" fill="#8a96a8" font-family="system-ui,sans-serif" font-size="28" font-weight="700">BEFORE</text>
+  <text x="400" y="560" text-anchor="middle" fill="#5c6878" font-family="system-ui,sans-serif" font-size="15">Gloop Lab Special · replace later</text>
+</svg>

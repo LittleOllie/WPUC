@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  NFT Glow-Up placeholder">
+  <rect width="800" height="600" fill="#2a3038"/>
+  <rect x="250" y="120" width="300" height="300" rx="16" fill="#3d4450" stroke="#555f6d" stroke-width="2"/>
+  <circle cx="400" cy="230" r="45" fill="#6b7280"/>
+  <rect x="350" y="280" width="100" height="80" rx="12" fill="#5a6370"/>
+  <text x="400" y="90" text-anchor="middle" fill="#9aa3b2" font-family="system-ui,sans-serif" font-size="26" font-weight="700">BEFORE</text>
+  <text x="400" y="470" text-anchor="middle" fill="#6b7585" font-family="system-ui,sans-serif" font-size="13">flat PFP · dull lighting</text>
+  <text x="400" y="555" text-anchor="middle" fill="#6b7585" font-family="system-ui,sans-serif" font-size="14">NFT Glow-Up</text>
+</svg>

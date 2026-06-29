@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Before  Cyber Toon placeholder">
+  <rect width="800" height="600" fill="#e8eaed"/>
+  <rect x="280" y="160" width="240" height="280" rx="8" fill="#c5cad3" stroke="#9aa3b0" stroke-width="3"/>
+  <circle cx="400" cy="260" r="40" fill="#a8b0bc"/>
+  <rect x="340" y="310" width="120" height="80" rx="8" fill="#98a2b0"/>
+  <text x="400" y="90" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="26" font-weight="700">BEFORE</text>
+  <text x="400" y="555" text-anchor="middle" fill="#8892a0" font-family="system-ui,sans-serif" font-size="14">Cyber Toon Upgrade</text>
+</svg>
