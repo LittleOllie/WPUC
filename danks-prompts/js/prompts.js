@@ -87,22 +87,127 @@ export const FEATURED_PROMPT = {
   category: "Featured",
   description:
     "Reinterpret your character as cinematic anime key art — dramatic worm's-eye fisheye on a Japanese city street.",
-  beforeImage: "assets/LODankBefore.jpg",
+  beforeImage: "assets/DankSamuraiBefore.png",
   afterImage: "assets/AfterAnimePrompt.png",
   promptText: ANIME_FISHEYE_PROMPT_TEXT,
 };
 
 export const VAULT_PROMPTS = [
   {
-    id: "gloop-samurai-bloom",
-    title: "Gloop Samurai Bloom",
+    id: "water-reflection-duality",
+    title: "Water Reflection Duality",
     category: "Scene",
     description:
-      "From gloop portrait to a full cinematic sakura scene — kimono, katana, and golden-hour petals.",
+      "Two characters divided by water — one above, one reflected below. Manga-cover mood, identity and inner conflict.",
     beforeImage: "assets/DankSamuraiBefore.png",
-    afterImage: "assets/DankSamuraiAfter.png",
-    promptText:
-      "[PLACEHOLDER] Transform the gloop character into a melancholic samurai seated beneath cherry blossom trees in full bloom. Purple kimono with geometric patterns, conical hat with hanging tags, katana across the lap, carpet of pink petals, warm golden-hour light, cinematic depth of field, highly detailed 3D illustration style. Keep the character's gloop skull identity and BEAR WITH US shirt recognizable in the transformation.",
+    afterImage: "assets/DankSamuraiReflectionAfter.png",
+    promptText: `Use the uploaded images as character references.
+
+The FIRST uploaded character becomes the character above the water.
+
+The SECOND uploaded character becomes the reflection character below the water.
+
+Preserve all character traits exactly:
+
+head shape
+eyes
+facial features
+clothing
+colors
+accessories
+symbols
+proportions
+expression
+
+IMPORTANT:
+
+Do NOT create a realistic image.
+
+Do NOT create a 3D render.
+
+Do NOT create a cinematic movie poster.
+
+Do NOT create photorealism.
+
+Create the image in the style of a modern Japanese anime illustration.
+
+Match the composition style of contemporary manga cover art and Japanese character posters.
+
+Scene:
+
+The top character sits above the water in a contemplative pose.
+
+One hand reaches toward the water surface.
+
+The reflection below is a completely different character created from the second uploaded reference.
+
+The reflection occupies most of the lower half of the image.
+
+The water acts as a symbolic divide between the two characters.
+
+Composition:
+
+tall vertical poster format
+centered character
+large negative space
+simple background
+reflection perfectly aligned beneath the top character
+dramatic symmetry
+
+Art Style:
+
+anime illustration
+painterly shading
+clean linework
+stylized anatomy
+graphic composition
+subtle smoke effects
+contemporary Japanese illustration
+manga cover aesthetic
+character-focused artwork
+minimal environmental details
+soft gradients
+emotional visual storytelling
+
+Background:
+
+Deep burgundy to black gradient.
+
+Subtle circular water ripples.
+
+Thin smoke trails drifting upward.
+
+Mood:
+
+Melancholic.
+
+Introspective.
+
+Psychological.
+
+Dreamlike.
+
+The image should feel like a manga volume cover exploring duality, identity, or inner conflict.`,
+  },
+  {
+    id: "peaceful-night-camp",
+    title: "Peaceful Night Camp",
+    category: "Scene",
+    description:
+      "A cozy nighttime moment from your character's world — dreamy storybook lighting, uplifting quote, and a hidden GORGEZ Easter egg.",
+    beforeImage: "assets/DankSamuraiBefore.png",
+    afterImage: "assets/DankSamuraiCampingAfter.png",
+    promptText: `Transform the uploaded character into a peaceful, emotional nighttime illustration while preserving all original character traits exactly (face, colors, clothing, accessories, symbols, proportions, and identity).
+
+Create a unique scene inspired by the character's design, colors, personality, and overall vibe. The environment, lighting, mood, and composition should feel like a natural extension of the character's world and should be different each time.
+
+Include a short handwritten positive quote generated specifically for the scene. The quote should be simple, uplifting, and emotionally fitting, such as encouragement, hope, perseverance, peace, friendship, or self-belief. Generate a different quote every time.
+
+Hide a subtle "GORGEZ" Easter egg somewhere in the artwork that is small, clever, and easy to miss on first viewing.
+
+Dreamy storybook atmosphere, painterly lighting, cinematic composition, soft glow, rich shadows, floating particles, highly detailed digital painting, cozy emotional vibe.
+
+No character redesigns. No altered traits. No extra limbs. The final image should feel like a comforting moment captured from the character's own universe.`,
   },
   {
     id: "gloop-beast-mode",
