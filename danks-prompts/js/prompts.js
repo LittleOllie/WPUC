@@ -16,19 +16,94 @@ export const PAGE_ASSETS = {
 };
 
 /** Featured prompt shown above the vault grid */
+const ANIME_FISHEYE_PROMPT_TEXT = `Create an ultra-detailed anime illustration using the UPLOADED CHARACTER as the subject.
+
+IMPORTANT:
+• Do NOT copy the uploaded artwork directly.
+• Reinterpret the uploaded character into a highly polished anime style while preserving ALL defining traits:
+  - Face/head shape
+  - Colors
+  - Clothing
+  - Accessories
+  - Symbols, hats, masks, horns, markings
+  - Eye design and expressions
+  - Any unique character elements
+
+STYLE:
+• Modern cinematic anime illustration.
+• Clean, bold linework with highly refined edges.
+• Rich cel-shading mixed with soft painterly rendering.
+• Vibrant colors with high contrast.
+• Slightly exaggerated proportions for a stylized anime look.
+• Professional key art quality.
+
+COMPOSITION:
+• Square composition (1:1).
+• Extreme low-angle worm's-eye perspective.
+• Camera positioned directly on the ground.
+• Character crouching over the camera.
+• One fist extended toward the lens in an aggressive foreshortened pose.
+• Fist should dominate the foreground and appear massive.
+• Feet positioned near the bottom corners of the frame.
+• Character looking directly down toward the camera.
+
+LENS:
+• Ultra-wide 10mm fisheye lens effect.
+• Strong perspective distortion.
+• Buildings and power lines bending toward the edges of the frame.
+• Dramatic sense of scale.
+
+ENVIRONMENT:
+• Busy Japanese city street.
+• Narrow alley lined with shops and signs.
+• Utility poles and power lines overhead.
+• Bright blue sky with soft white clouds.
+• Small pedestrians in the distance for scale.
+
+LIGHTING:
+• Midday sunlight.
+• Bright, crisp shadows.
+• Warm sunlight bouncing from the street.
+• Subtle rim lighting around the character.
+
+CLOTHING:
+• Modern streetwear adapted from the uploaded character.
+• Loose cargo pants or baggy pants.
+• Skate-style sneakers inspired by early Nike SB Janoski silhouettes.
+• Clothing should naturally match the character's color palette.
+
+DETAILS:
+• Keep the uploaded character's personality and identity completely recognizable.
+• Preserve all signature traits.
+• Make the character feel gigantic and imposing due to the camera angle.
+• Add subtle environmental reflections and atmospheric depth.
+
+FINAL RESULT:
+A cinematic, highly detailed anime poster of the uploaded character towering above the viewer in a dramatic fisheye street scene, with bold linework, dynamic perspective, and professional anime key-art rendering.`;
+
 export const FEATURED_PROMPT = {
-  id: "featured-gloop-lab-special",
-  title: "Gloop Lab Special",
+  id: "anime-fisheye-street",
+  title: "Anime Fisheye Street",
   category: "Featured",
   description:
-    "Danks' signature gloop transformation — turn any character into a neon slime masterpiece.",
+    "Reinterpret your character as cinematic anime key art — dramatic worm's-eye fisheye on a Japanese city street.",
   beforeImage: "assets/LODankBefore.jpg",
-  afterImage: "assets/LODankAfter.PNG",
-  promptText:
-    "[PLACEHOLDER] Transform the subject into a hyper-detailed gloop creature with neon slime textures, dripping highlights, and a dark lab background. Keep the original pose and silhouette recognizable. Cinematic lighting, wet surface reflections, vibrant green and cyan accents, 8k detail.",
+  afterImage: "assets/AfterAnimePrompt.png",
+  promptText: ANIME_FISHEYE_PROMPT_TEXT,
 };
 
 export const VAULT_PROMPTS = [
+  {
+    id: "featured-gloop-lab-special",
+    title: "Gloop Lab Special",
+    category: "Character",
+    description:
+      "Danks' signature gloop transformation — turn any character into a neon slime masterpiece.",
+    beforeImage: "assets/LODankBefore.jpg",
+    afterImage: "assets/LODankAfter.PNG",
+    promptText:
+      "Transform the subject into a hyper-detailed gloop creature with neon slime textures, dripping highlights, and a dark lab background. Keep the original pose and silhouette recognizable. Cinematic lighting, wet surface reflections, vibrant green and cyan accents, 8k detail.",
+  },
   {
     id: "gloop-samurai-bloom",
     title: "Gloop Samurai Bloom",
