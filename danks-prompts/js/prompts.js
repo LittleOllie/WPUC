@@ -6,7 +6,7 @@
  */
 
 /** Donation wallet (Ethereum) */
-export const DANKS_WALLET = "0x383163566df884ba3ab68d6cb7d4ee30f80a05c8";
+export const DANKS_WALLET = "0xFd6F2f52D9fC66d242a4F6f0953Ae55b98eA321d";
 
 export const PAGE_ASSETS = {
   /** Transparent header — replace assets/GloopHeader.png then bump headerVersion */
@@ -93,17 +93,6 @@ export const FEATURED_PROMPT = {
 };
 
 export const VAULT_PROMPTS = [
-  {
-    id: "featured-gloop-lab-special",
-    title: "Gloop Lab Special",
-    category: "Character",
-    description:
-      "Danks' signature gloop transformation — turn any character into a neon slime masterpiece.",
-    beforeImage: "assets/LODankBefore.jpg",
-    afterImage: "assets/LODankAfter.PNG",
-    promptText:
-      "Transform the subject into a hyper-detailed gloop creature with neon slime textures, dripping highlights, and a dark lab background. Keep the original pose and silhouette recognizable. Cinematic lighting, wet surface reflections, vibrant green and cyan accents, 8k detail.",
-  },
   {
     id: "gloop-samurai-bloom",
     title: "Gloop Samurai Bloom",
