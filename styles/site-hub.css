@@ -299,7 +299,7 @@ body {
 }
 
 .playground-hub__logo {
-  width: min(50vw, 300px);
+  width: min(58vw, 360px);
   margin: 0 auto clamp(12px, 3vw, 18px);
   pointer-events: none;
 }
@@ -511,6 +511,19 @@ body {
 .playground-hub__nav-btn {
   width: 100%;
   margin-top: 0;
+  background: var(--lo-gradient-yellow);
+  color: var(--lo-ink);
+  box-shadow: var(--lo-shadow-btn-yellow-sm);
+  border: 1px solid rgba(76, 111, 255, 0.22);
+}
+
+.playground-hub__nav-btn:hover {
+  background: linear-gradient(180deg, #fff0a8 0%, var(--lo-yellow) 90%);
+  box-shadow: var(--lo-shadow-btn-yellow-sm-hover);
+}
+
+.playground-hub__nav-btn:active {
+  box-shadow: var(--lo-shadow-btn-active);
 }
 
 .playground-hub__foot {
@@ -551,7 +564,7 @@ body {
 
 @media (max-width: 480px) {
   .playground-hub__logo {
-    width: min(75vw, 280px);
+    width: min(82vw, 330px);
   }
 
   .playground-hub__shell {

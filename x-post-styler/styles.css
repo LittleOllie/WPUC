@@ -10,6 +10,8 @@
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  /* Fredoka lacks many math Unicode glyphs — use a math font for styled post text */
+  --xps-styled-font: "Noto Sans Math", "Cambria Math", "STIX Two Math", "Latin Modern Math", var(--lo-font), serif;
 }
 
 .xps-page *,
@@ -88,13 +90,141 @@
   background: linear-gradient(90deg, var(--lo-blue) 0%, var(--lo-bg-top) 35%, var(--lo-yellow) 65%, var(--lo-yellow-light) 100%);
 }
 
+.xps-hero__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
 .xps-hero__title {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: var(--lo-text-hero);
   font-weight: 800;
   line-height: 1.15;
   color: var(--lo-blue-dark);
   text-shadow: 0 1px 0 rgba(255, 221, 85, 0.45);
+}
+
+.xps-info-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid rgba(76, 111, 255, 0.45);
+  border-radius: 50%;
+  background: var(--lo-gradient-yellow);
+  color: var(--lo-blue-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 2px 0 rgba(76, 111, 255, 0.15);
+}
+
+.xps-info-btn:hover {
+  background: linear-gradient(180deg, #fff0a8 0%, var(--lo-yellow) 90%);
+  transform: translateY(-1px);
+}
+
+.xps-info-btn:focus-visible {
+  outline: 3px solid var(--lo-blue);
+  outline-offset: 2px;
+}
+
+/* Info dialog */
+.xps-info-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+.xps-info-dialog[hidden] {
+  display: none;
+}
+
+.xps-info-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 18, 48, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.xps-info-dialog__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  max-height: min(85vh, 560px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 20px 18px;
+  border-radius: var(--lo-radius-card);
+  background: linear-gradient(165deg, #fff 0%, #f4f8ff 50%, #fff9e6 100%);
+  border: 2px solid rgba(76, 111, 255, 0.3);
+  box-shadow: var(--lo-shadow-card);
+}
+
+.xps-info-dialog__panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--lo-radius-card) var(--lo-radius-card) 0 0;
+  background: linear-gradient(90deg, var(--lo-blue) 0%, var(--lo-yellow) 100%);
+}
+
+.xps-info-dialog__title {
+  margin: 0 0 14px;
+  font-size: var(--lo-text-title);
+  font-weight: 800;
+  color: var(--lo-blue-dark);
+}
+
+.xps-info-dialog__steps {
+  margin: 0 0 14px;
+  padding-left: 1.25rem;
+  font-size: var(--lo-text-sm);
+  line-height: 1.55;
+  color: var(--lo-ink-soft);
+}
+
+.xps-info-dialog__steps li {
+  margin-bottom: 10px;
+}
+
+.xps-info-dialog__steps li:last-child {
+  margin-bottom: 0;
+}
+
+.xps-info-dialog__steps strong {
+  color: var(--lo-blue-dark);
+}
+
+.xps-info-dialog__note {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  font-size: var(--lo-text-xs);
+  line-height: 1.5;
+  color: var(--lo-ink-muted);
+  border-radius: var(--lo-radius-sm);
+  background: rgba(255, 221, 85, 0.25);
+  border: 1px solid rgba(76, 111, 255, 0.12);
+}
+
+.xps-info-dialog__close {
+  width: 100%;
+  min-height: 48px;
 }
 
 .xps-hero__sub {
@@ -227,7 +357,7 @@
   padding: 10px 14px;
   border: none;
   background: transparent;
-  font-family: var(--lo-font);
+  font-family: var(--xps-styled-font);
   font-size: max(16px, 1.05rem);
   line-height: 1.6;
   color: var(--lo-ink);
@@ -362,6 +492,7 @@
 .xps-style-row__sample {
   flex: 1;
   min-width: 0;
+  font-family: var(--xps-styled-font);
   font-size: 1.1rem;
   line-height: 1.2;
   color: var(--lo-ink);
@@ -642,5 +773,9 @@
 
   body.xps-editing .xps-label {
     margin-bottom: 6px;
+  }
+
+  body.xps-info-open {
+    overflow: hidden;
   }
 }

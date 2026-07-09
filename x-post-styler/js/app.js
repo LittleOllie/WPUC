@@ -836,6 +836,56 @@
     }
   }
 
+  function openInfoDialog() {
+    var dialog = $("xps-info-dialog");
+    var btn = $("xps-info-btn");
+    if (!dialog) return;
+    dialog.hidden = false;
+    document.body.classList.add("xps-info-open");
+    if (btn) btn.setAttribute("aria-expanded", "true");
+    var closeBtn = $("xps-info-close");
+    if (closeBtn) closeBtn.focus({ preventScroll: true });
+  }
+
+  function closeInfoDialog() {
+    var dialog = $("xps-info-dialog");
+    var btn = $("xps-info-btn");
+    if (!dialog) return;
+    dialog.hidden = true;
+    document.body.classList.remove("xps-info-open");
+    if (btn) {
+      btn.setAttribute("aria-expanded", "false");
+      btn.focus({ preventScroll: true });
+    }
+  }
+
+  function bindInfoDialog() {
+    var btn = $("xps-info-btn");
+    var dialog = $("xps-info-dialog");
+    var closeBtn = $("xps-info-close");
+    if (!btn || !dialog) return;
+
+    btn.addEventListener("click", function () {
+      if (dialog.hidden) openInfoDialog();
+      else closeInfoDialog();
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", closeInfoDialog);
+    }
+
+    dialog.querySelectorAll("[data-close-info]").forEach(function (el) {
+      el.addEventListener("click", closeInfoDialog);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && dialog && !dialog.hidden) {
+        e.preventDefault();
+        closeInfoDialog();
+      }
+    });
+  }
+
   function bindEvents() {
     var linesContainer = $("xps-lines");
 
@@ -1046,6 +1096,7 @@
     renderStyleGrid();
     refreshFromState();
     bindEvents();
+    bindInfoDialog();
 
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () {

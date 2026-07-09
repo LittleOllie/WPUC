@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Noto+Sans+Math&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../styles/site-brand.css" />
   <link rel="stylesheet" href="../styles/site-labs-bg.css" />
   <link rel="stylesheet" href="styles.css" />
@@ -29,7 +29,10 @@
     <a href="../links/" class="xps-back">← Playground Labs</a>
 
     <header class="xps-hero">
-      <h1 class="xps-hero__title">X Post Styler ✨</h1>
+      <div class="xps-hero__head">
+        <h1 class="xps-hero__title">X Post Styler ✨</h1>
+        <button type="button" id="xps-info-btn" class="xps-info-btn" aria-label="How it works" aria-haspopup="dialog" aria-controls="xps-info-dialog" aria-expanded="false">i</button>
+      </div>
       <p class="xps-hero__sub">Paste your post, highlight words or tap line numbers, pick a style — then copy.</p>
     </header>
 
@@ -77,6 +80,21 @@
   </div>
 
   <div id="xps-toast" class="xps-toast" hidden role="status" aria-live="polite"></div>
+
+  <div id="xps-info-dialog" class="xps-info-dialog" hidden>
+    <div class="xps-info-dialog__backdrop" data-close-info tabindex="-1" aria-hidden="true"></div>
+    <div class="xps-info-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="xps-info-title">
+      <h2 id="xps-info-title" class="xps-info-dialog__title">How it works</h2>
+      <ol class="xps-info-dialog__steps">
+        <li><strong>Paste your post</strong> — plain text or text you’ve already styled elsewhere. Emojis stay as they are.</li>
+        <li><strong>Select what to style</strong> — highlight words with your mouse or finger, or tap the line numbers on the left to pick whole lines (shift-tap for multiple lines).</li>
+        <li><strong>Pick a style</strong> — the font list appears when something is selected. Tap a style to apply it. Your selection stays put so you can try different looks.</li>
+        <li><strong>Copy &amp; post</strong> — hit <em>Copy Styled Post</em>, then paste straight into X. The fancy Unicode fonts travel with your text.</li>
+      </ol>
+      <p class="xps-info-dialog__note">Hashtags and @mentions can stay normal using the toggles below the editor. The character counter is an estimate — X may count some styled characters differently.</p>
+      <button type="button" id="xps-info-close" class="xps-btn xps-btn--primary xps-info-dialog__close">Got it ✨</button>
+    </div>
+  </div>
 
   <script src="js/utils/unicodeTextStyles.js"></script>
   <script src="js/utils/postBuilder.js"></script>

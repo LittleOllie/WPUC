@@ -88,6 +88,14 @@ const DOUBLE_UPPER_CPS = [
 ];
 const DOUBLE_LOWER_BASE = 0x1d552;
 const DOUBLE_DIGIT_BASE = 0x1d7d8;
+/** Italic lowercase skips U+1D455 (unassigned); h uses U+210E instead. */
+const ITALIC_LOWER_CPS = [
+  0x1d44e, 0x1d44f, 0x1d450, 0x1d451, 0x1d452, 0x1d453, 0x1d454,
+  0x210e,
+  0x1d456, 0x1d457, 0x1d458, 0x1d459, 0x1d45a, 0x1d45b, 0x1d45c, 0x1d45d,
+  0x1d45e, 0x1d45f, 0x1d460, 0x1d461, 0x1d462, 0x1d463, 0x1d464, 0x1d465, 0x1d466, 0x1d467,
+];
+const ITALIC_UPPER_BASE = 0x1d434;
 
 let graphemeSegmenter;
 
@@ -110,6 +118,8 @@ const GOTHIC_LOWER = buildContiguousAlphabet(GOTHIC_LOWER_BASE, 26);
 const DOUBLE_UPPER = buildAlphabetFromCodePoints(DOUBLE_UPPER_CPS);
 const DOUBLE_LOWER = buildContiguousAlphabet(DOUBLE_LOWER_BASE, 26);
 const DOUBLE_DIGITS = buildContiguousAlphabet(DOUBLE_DIGIT_BASE, 10);
+const ITALIC_UPPER = buildContiguousAlphabet(ITALIC_UPPER_BASE, 26);
+const ITALIC_LOWER = buildAlphabetFromCodePoints(ITALIC_LOWER_CPS);
 
 function splitGraphemes(text) {
   if (!text) return [];
@@ -212,6 +222,10 @@ function toUppercase(char) {
   return char;
 }
 
+function toUppercaseBold(char) {
+  return mapAlphaNum(toUppercase(char), BOLD);
+}
+
 function toUpsideDown(char) {
   return UPSIDE_DOWN[char] ?? char;
 }
@@ -237,11 +251,12 @@ function applyStrikethrough(char) {
 const STYLE_TRANSFORMERS = {
   normal: (char) => char,
   bold: (char) => mapAlphaNum(char, BOLD),
-  italic: (char) => mapAlphaNum(char, ITALIC, ITALIC_EXCEPTIONS),
+  italic: createAlphabetMapper(ITALIC_UPPER, ITALIC_LOWER),
   boldItalic: (char) => mapAlphaNum(char, BOLD_ITALIC, BOLD_ITALIC_EXCEPTIONS),
   monospace: (char) => mapAlphaNum(char, MONO),
   smallCaps: (char) => toSmallCaps(char),
   uppercase: (char) => toUppercase(char),
+  uppercaseBold: (char) => toUppercaseBold(char),
   fullwidth: (char) => toFullwidth(char),
   gothic: createAlphabetMapper(GOTHIC_UPPER, GOTHIC_LOWER),
   gothicBold: (char) => mapAlphaNum(char, GOTHIC_BOLD),
@@ -264,6 +279,7 @@ const STYLE_CATEGORIES = [
     styles: [
       { id: "normal", label: "Normal" },
       { id: "uppercase", label: "All Caps" },
+      { id: "uppercaseBold", label: "All Caps Bold" },
       { id: "bold", label: "Bold" },
       { id: "italic", label: "Italic" },
       { id: "sansItalic", label: "Sans Italic" },
@@ -331,7 +347,6 @@ function buildReverseCharMap() {
 
   const tableDefs = [
     { table: BOLD, exceptions: {} },
-    { table: ITALIC, exceptions: ITALIC_EXCEPTIONS },
     { table: BOLD_ITALIC, exceptions: BOLD_ITALIC_EXCEPTIONS },
     { table: MONO, exceptions: {} },
     { table: GOTHIC_BOLD, exceptions: {} },
@@ -362,6 +377,14 @@ function buildReverseCharMap() {
     if (map[styled] === undefined) map[styled] = plain;
   }
 
+  for (const char of plainChars) {
+    const capsBold = transformText(char, "uppercaseBold");
+    if (capsBold !== char && map[capsBold] === undefined) {
+      map[capsBold] = char;
+    }
+  }
+
+  addAlphabetToReverseMap(map, ITALIC_UPPER, ITALIC_LOWER, null, true);
   addAlphabetToReverseMap(map, SCRIPT_UPPER, SCRIPT_LOWER, null, true);
   addAlphabetToReverseMap(map, GOTHIC_UPPER, GOTHIC_LOWER, null, true);
   addAlphabetToReverseMap(map, DOUBLE_UPPER, DOUBLE_LOWER, DOUBLE_DIGITS, true);
@@ -415,9 +438,13 @@ function buildStyledCharLookup() {
   const styleIds = Object.keys(STYLE_TRANSFORMERS).filter(function (id) {
     return id !== "normal" && id !== "littleOllie";
   });
+  // Combined styles before base styles that share the same glyphs (e.g. 𝐇)
+  const ordered = ["uppercaseBold"].concat(styleIds.filter(function (id) {
+    return id !== "uppercaseBold";
+  }));
 
-  for (let s = 0; s < styleIds.length; s++) {
-    const styleId = styleIds[s];
+  for (let s = 0; s < ordered.length; s++) {
+    const styleId = ordered[s];
     for (let i = 0; i < plainChars.length; i++) {
       const plain = plainChars.charAt(i);
       const styled = transformText(plain, styleId);
