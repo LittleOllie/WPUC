@@ -115,13 +115,39 @@
 
   function updateCounter() {
     var counter = $("xps-char-count");
-    if (!counter) return;
+    var compact = $("xps-char-count-compact");
     var count = calculateCharacterEstimate(state.text || "");
-    counter.textContent = count + " / 280";
-    counter.classList.remove("xps-counter--calm", "xps-counter--close", "xps-counter--warn");
-    if (count <= 240) counter.classList.add("xps-counter--calm");
-    else if (count <= 280) counter.classList.add("xps-counter--close");
-    else counter.classList.add("xps-counter--warn");
+    var text = count + " / 280";
+    var level = "xps-counter--calm";
+    if (count > 280) level = "xps-counter--warn";
+    else if (count > 240) level = "xps-counter--close";
+
+    if (counter) {
+      counter.textContent = text;
+      counter.classList.remove("xps-counter--calm", "xps-counter--close", "xps-counter--warn");
+      counter.classList.add(level);
+    }
+    if (compact) {
+      compact.textContent = text;
+      compact.classList.remove("xps-counter--calm", "xps-counter--close", "xps-counter--warn");
+      compact.classList.add(level);
+    }
+  }
+
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: 480px)").matches;
+  }
+
+  function setEditingMode(editing) {
+    document.body.classList.toggle("xps-editing", editing && isMobileLayout());
+    var bar = $("xps-editing-bar");
+    if (bar) bar.hidden = !(editing && isMobileLayout());
+  }
+
+  function exitEditingMode() {
+    var input = $("xps-input");
+    if (input) input.blur();
+    setEditingMode(false);
   }
 
   function restoreTextareaSelection(input, sStart, sEnd) {
@@ -345,6 +371,14 @@
     var input = $("xps-input");
 
     if (input) {
+      input.addEventListener("focus", function () {
+        if (isMobileLayout()) {
+          setEditingMode(true);
+          requestAnimationFrame(function () {
+            input.scrollIntoView({ block: "center", behavior: "smooth" });
+          });
+        }
+      });
       input.addEventListener("input", onTextInput);
       input.addEventListener("select", scheduleSelectionUI);
       input.addEventListener("mouseup", scheduleSelectionUI);
@@ -367,11 +401,24 @@
           var active = document.activeElement;
           if (active && active.closest && active.closest("#xps-style-grid")) return;
           if (active && active.closest && active.closest("#xps-toolbar")) return;
+          if (active && active.id === "xps-done-editing") return;
           state.savedSelection = null;
           hideToolbar();
+          if (isMobileLayout()) setEditingMode(false);
         }, 180);
       });
     }
+
+    var doneBtn = $("xps-done-editing");
+    if (doneBtn) {
+      doneBtn.addEventListener("click", function () {
+        exitEditingMode();
+      });
+    }
+
+    window.addEventListener("resize", function () {
+      if (!isMobileLayout()) setEditingMode(false);
+    });
 
     document.addEventListener("selectionchange", function () {
       var input = $("xps-input");

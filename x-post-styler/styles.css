@@ -336,6 +336,35 @@
   color: var(--lo-ink-muted);
 }
 
+/* Compact bar shown only while typing on mobile */
+.xps-editing-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.xps-char-count-compact {
+  font-size: var(--lo-text-sm);
+  padding: 4px 10px;
+}
+
+.xps-done-btn {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--lo-radius-sm);
+  background: rgba(76, 111, 255, 0.14);
+  color: var(--lo-blue-dark);
+  font-family: inherit;
+  font-size: var(--lo-text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
 /* Buttons */
 .xps-btn {
   display: inline-flex;
@@ -419,12 +448,12 @@
   }
 
   .xps-textarea {
-    min-height: 180px;
+    min-height: 160px;
     padding: 14px;
   }
 
   .xps-style-scroll {
-    max-height: min(220px, 34vh);
+    max-height: min(200px, 30vh);
   }
 
   .xps-style-row {
@@ -442,12 +471,34 @@
   }
 
   .xps-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
     margin-top: 16px;
     padding-top: 14px;
     padding-bottom: max(4px, env(safe-area-inset-bottom));
-    background: var(--lo-surface-light);
+  }
+
+  /* While the keyboard is open, hide bulky chrome and show a slim editing bar */
+  body.xps-editing .xps-hero,
+  body.xps-editing .xps-footer,
+  body.xps-editing .xps-toggles,
+  body.xps-editing .xps-btn-row--mini {
+    display: none;
+  }
+
+  body.xps-editing .xps-editing-bar {
+    display: flex;
+  }
+
+  body.xps-editing .xps-back {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    font-size: var(--lo-text-xs);
+  }
+
+  body.xps-editing .xps-card {
+    padding: 12px;
+  }
+
+  body.xps-editing .xps-label {
+    margin-bottom: 6px;
   }
 }

@@ -58,70 +58,27 @@ html, body {
 }
 
 .hero-cta {
-    width: min(92vw, 440px);
+    width: 100%;
     flex-shrink: 0;
     margin-top: auto;
     box-sizing: border-box;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    align-items: stretch;
-}
-
-.hero-promo {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
-    padding: 16px 20px;
-    border-radius: var(--lo-radius-lg);
-    text-decoration: none;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.92);
-    color: var(--lo-ink);
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35), 0 16px 32px rgba(0, 0, 0, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hero-promo:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 11px 0 rgba(0, 0, 0, 0.4), 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-.hero-promo:active {
-    transform: translateY(0);
-    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35), 0 12px 24px rgba(0, 0, 0, 0.35);
-}
-
-.hero-promo:focus-visible {
-    outline: 3px solid var(--lo-yellow);
-    outline-offset: 3px;
-}
-
-.hero-promo__title {
-    font-size: clamp(1rem, 2.5vw, 1.15rem);
-    font-weight: 800;
-    line-height: 1.25;
-}
-
-.hero-promo__sub {
-    font-size: clamp(0.8rem, 2vw, 0.9rem);
-    font-weight: 500;
-    color: var(--lo-ink-soft);
-    line-height: 1.35;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 .hero-cta__btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    min-height: 56px;
-    padding: 16px 28px;
+    width: auto;
+    min-width: min(72vw, 300px);
+    min-height: 44px;
+    padding: 10px 28px;
     border-radius: var(--lo-radius-lg);
     font-family: var(--lo-font);
-    font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+    font-size: clamp(0.95rem, 2.4vw, 1.1rem);
     font-weight: 800;
     text-decoration: none;
     letter-spacing: 0.02em;
@@ -185,14 +142,16 @@ html, body {
     }
 
     .hero-cta {
-        width: min(88vw, 360px);
+        width: 100%;
         margin-top: auto;
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     }
 
     .hero-cta__btn {
-        min-height: 52px;
-        font-size: 1.05rem;
-        padding: 14px 24px;
+        min-width: min(80vw, 280px);
+        min-height: 40px;
+        font-size: 0.95rem;
+        padding: 8px 22px;
         white-space: normal;
         text-align: center;
         line-height: 1.2;

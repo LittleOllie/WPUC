@@ -35,6 +35,10 @@
 
     <section class="xps-card xps-editor" aria-label="Post editor">
       <label class="xps-label" for="xps-input">Your post</label>
+      <div id="xps-editing-bar" class="xps-editing-bar" hidden>
+        <span id="xps-char-count-compact" class="xps-char-count-compact xps-counter xps-counter--calm">0 / 280</span>
+        <button type="button" id="xps-done-editing" class="xps-done-btn">Done</button>
+      </div>
       <textarea
         id="xps-input"
         class="xps-textarea"
