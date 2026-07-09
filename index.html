@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Little Ollie – Under Construction</title>
+<title>Little Ollie Labs</title>
 <link rel="icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
 <link rel="shortcut icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" />
 <link rel="apple-touch-icon" href="flexgrid/site/src/assets/images/LO.png" />
 
 <!-- Open Graph -->
-<meta property="og:title" content="Under Construction – Little Ollie Game" />
-<meta property="og:description" content="Jump, dodge and survive in this construction-themed endless runner!" />
+<meta property="og:title" content="Little Ollie Labs" />
+<meta property="og:description" content="Where little ideas are tested and brought to life. Games, stories &amp; digital collectibles from the Little Ollie Playground Labs." />
 <meta property="og:image" content="https://littleollielabs.com/preview.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -19,8 +19,8 @@
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Under Construction – Little Ollie Game" />
-<meta name="twitter:description" content="Jump, dodge and survive in this construction-themed endless runner!" />
+<meta name="twitter:title" content="Little Ollie Labs" />
+<meta name="twitter:description" content="Where little ideas are tested and brought to life." />
 <meta name="twitter:image" content="https://littleollielabs.com/preview.jpg" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,21 +33,34 @@
 <body>
 
     <div class="sky">
-        <img src="assets/cloud1.webp" class="cloud cloud-1" alt="" aria-hidden="true" />
-        <img src="assets/cloud2.webp" class="cloud cloud-2" alt="" aria-hidden="true" />
-        <img src="assets/cloud3.webp" class="cloud cloud-3" alt="" aria-hidden="true" />
+        <div class="hero-bg" aria-hidden="true"></div>
 
-        <img src="assets/websitelogo.webp" class="logo" />
-        <img src="assets/cranehook.webp" class="hook" />
-        
-        <div class="button-area">
-            <button id="enterBtn">ENTER THE SITE →</button>
+        <div class="hero-clouds" aria-hidden="true">
+            <img src="assets/cloud1.webp" class="cloud cloud-1" alt="" />
+            <img src="assets/cloud2.webp" class="cloud cloud-2" alt="" />
+            <img src="assets/cloud3.webp" class="cloud cloud-3" alt="" />
         </div>
-    
-    </div>
-    
 
-<script src="home.js"></script>
+        <main class="hero-content">
+            <div class="hero-intro">
+                <div class="hero-logo">
+                    <img src="assets/websitemainlogo.png" class="hero-logo__img" alt="Little Ollie — Where little ideas are tested and brought to life." decoding="async" />
+                </div>
+            </div>
+
+            <div class="hero-cta">
+                <a href="x-post-styler/" class="hero-promo" id="xPostStylerLink">
+                    <span class="hero-promo__title">Try the X Post Styler ✨</span>
+                    <span class="hero-promo__sub">Make your posts pop with styled text, sections, and one-tap copy.</span>
+                </a>
+                <a href="links/" class="hero-cta__btn" id="playgroundLink">Enter the Playground Labs</a>
+            </div>
+        </main>
+
+        <div id="home-liquid-curtain" class="home-liquid-curtain" aria-hidden="true"></div>
+    </div>
+
+<script type="module" src="home.js"></script>
 
 </body>
 </html>

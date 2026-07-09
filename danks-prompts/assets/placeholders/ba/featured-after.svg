@@ -27,5 +27,5 @@
   <ellipse cx="430" cy="465" rx="10" ry="22" fill="#5eea5e" opacity="0.8"/>
   <path d="M200 80 Q210 120 205 160 Q200 140 195 100 Z" fill="#4a9eff" opacity="0.5"/>
   <text x="400" y="88" text-anchor="middle" fill="#7dff6a" font-family="system-ui,sans-serif" font-size="28" font-weight="700" filter="url(#glow)">AFTER</text>
-  <text x="400" y="560" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="15">Gloop Lab Special · replace later</text>
+  <text x="400" y="560" text-anchor="middle" fill="#8dffa0" font-family="system-ui,sans-serif" font-size="15">Gloop Lab Special ï¿½ replace later</text>
 </svg>

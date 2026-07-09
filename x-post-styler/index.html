@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>X Post Styler — Little Ollie Labs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Paste your X post, highlight text, pick a Unicode style, and copy — ready for X." />
+  <meta name="theme-color" content="#4c6fff" />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/site-brand.css" />
+  <link rel="stylesheet" href="../styles/site-labs-bg.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="xps-page">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-clouds" aria-hidden="true">
+    <img src="../assets/cloud1.webp" class="cloud cloud-1" alt="" />
+    <img src="../assets/cloud2.webp" class="cloud cloud-2" alt="" />
+    <img src="../assets/cloud3.webp" class="cloud cloud-3" alt="" />
+  </div>
+  <div class="playground-bg-dim" aria-hidden="true"></div>
+
+  <div class="xps-wrap">
+    <a href="../links/" class="xps-back">← Playground Labs</a>
+
+    <header class="xps-hero">
+      <h1 class="xps-hero__title">X Post Styler ✨</h1>
+      <p class="xps-hero__sub">Paste your post, highlight words, tap a style — then copy.</p>
+    </header>
+
+    <section class="xps-card xps-editor" aria-label="Post editor">
+      <label class="xps-label" for="xps-input">Your post</label>
+      <textarea
+        id="xps-input"
+        class="xps-textarea"
+        rows="10"
+        placeholder="Paste your X post here…"
+        spellcheck="true"
+        autocapitalize="sentences"
+        autocomplete="off"
+        autocorrect="on"
+        enterkeyhint="done"
+      ></textarea>
+
+      <p id="xps-toolbar-idle" class="xps-hint">Highlight any text in your post to pick a style.</p>
+
+      <div id="xps-toolbar" class="xps-toolbar" hidden>
+        <p class="xps-toolbar__title">Pick a style for: <strong id="xps-selection-text">—</strong></p>
+        <div id="xps-style-grid" class="xps-style-scroll" role="listbox" aria-label="Text styles"></div>
+      </div>
+
+      <div class="xps-toggles">
+        <label class="xps-toggle">
+          <input type="checkbox" id="xps-keep-hashtags" checked />
+          <span>Keep hashtags normal</span>
+        </label>
+        <label class="xps-toggle">
+          <input type="checkbox" id="xps-keep-mentions" checked />
+          <span>Keep @mentions normal</span>
+        </label>
+      </div>
+
+      <div class="xps-btn-row xps-btn-row--mini">
+        <button type="button" id="xps-example" class="xps-btn xps-btn--ghost xps-btn--sm">Paste example</button>
+        <button type="button" id="xps-reset-styles" class="xps-btn xps-btn--ghost xps-btn--sm">Reset styles</button>
+        <button type="button" id="xps-clear" class="xps-btn xps-btn--ghost xps-btn--sm">Clear all</button>
+      </div>
+
+      <div class="xps-footer">
+        <div class="xps-counter-wrap">
+          <span class="xps-counter-label">X character estimate</span>
+          <span id="xps-char-count" class="xps-counter xps-counter--calm">0 / 280</span>
+          <span class="xps-counter-note">X may count some characters differently.</span>
+        </div>
+        <button type="button" id="xps-copy-styled" class="xps-btn xps-btn--primary xps-btn--block">Copy Styled Post</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="xps-toast" class="xps-toast" hidden role="status" aria-live="polite"></div>
+
+  <script src="js/utils/unicodeTextStyles.js"></script>
+  <script src="js/utils/postBuilder.js"></script>
+  <script src="js/utils/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

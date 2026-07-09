@@ -5,8 +5,15 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** Production base path. Default `/` for custom domain (blackwater-labs.com). Override for subpath deploys. */
+const deployBase = process.env.VITE_BASE_PATH
+  ? process.env.VITE_BASE_PATH.endsWith("/")
+    ? process.env.VITE_BASE_PATH
+    : `${process.env.VITE_BASE_PATH}/`
+  : "/";
+
 export default defineConfig(({ command }) => ({
-  base: command === "build" ? "/ratzilla2/" : "/",
+  base: command === "build" ? deployBase : "/",
   plugins: [
     react(),
     command === "serve" && {

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BlackwaterXLink from "../components/BlackwaterXLink";
 import OutbreakStatus from "../components/OutbreakStatus";
 import { useRatzilla2Boot } from "../hooks/useRatzilla2Boot";
 
@@ -86,6 +87,11 @@ export default function Transmission() {
             <span className="rz2-soon__text" id="rz2Soon" />
             <span className="rz2-cursor" id="rz2Cursor" aria-hidden="true" />
           </p>
+
+          <nav className="rz-bw-socials" aria-label="Blackwater media">
+            <BlackwaterXLink />
+          </nav>
+
           <p className="rz2-powered">
             Powered by Little Ollie Labs for BlackWater Labs
           </p>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { useTunnelRats } from "../hooks/useTunnelRats";
 
 interface RzAmbientStageProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ export default function RzAmbientStage({
   live = true,
 }: RzAmbientStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
+  useTunnelRats();
 
   useEffect(() => {
     document.documentElement.classList.add("rz2-page-scroll");
@@ -68,6 +70,21 @@ export default function RzAmbientStage({
               <div className="rz2-lights__dim rz2-lights__dim--a" />
               <div className="rz2-lights__dim rz2-lights__dim--b" />
               <div className="rz2-lights__tunnel" />
+            </div>
+            <div className="rz2-tunnel-track" id="rz2TunnelTrack" aria-hidden="true">
+              <canvas
+                id="rz2RatSource"
+                className="rz2-tunnel-track__source"
+                aria-hidden="true"
+              />
+              <video
+                id="rz2RatVideo"
+                className="rz2-tunnel-track__video"
+                playsInline
+                muted
+                loop
+                preload="auto"
+              />
             </div>
           </div>
         </div>

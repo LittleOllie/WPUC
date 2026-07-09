@@ -2,82 +2,133 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Little Ollie Labs – Links</title>
+  <title>The Playground – Little Ollie Labs</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="description" content="Choose your lab — games, NFT tools, and creative apps from Little Ollie Playground Labs." />
   <link rel="canonical" href="https://littleollielabs.com/links/" />
   <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
   <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
   <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../styles/site-brand.css" />
+  <link rel="stylesheet" href="../styles/site-labs-bg.css" />
   <link rel="stylesheet" href="../styles/site-hub.css" />
 </head>
 <body>
-  <div class="links-page">
-    <div class="links-bg"></div>
-    <div class="links-bg-overlay"></div>
+  <div class="links-page links-page--playground">
+    <div class="hero-bg" aria-hidden="true"></div>
 
-    <div class="links-content">
-      <div class="links-card">
-        <div class="logo-wrapper">
-          <img src="../assets/websitelogo.webp" alt="Little Ollie Labs" class="logo" />
-        </div>
-        <p class="tagline">Building games, stories &amp; digital collectibles.</p>
+    <div class="hero-clouds" aria-hidden="true">
+      <img src="../assets/cloud1.webp" class="cloud cloud-1" alt="" />
+      <img src="../assets/cloud2.webp" class="cloud cloud-2" alt="" />
+      <img src="../assets/cloud3.webp" class="cloud cloud-3" alt="" />
+    </div>
 
-        <div class="links-stack">
-          <a href="../games.html" class="link-btn link-btn-blue" id="gamesLink">
-            <span>GAMES</span>
-          </a>
-          <a href="../lo-logic/" class="link-btn link-btn-yellow">
-            <span>LO LOGIC</span>
-          </a>
-          <a href="../proof-of-grass/" class="link-btn link-btn-blue">
-            <span>PROOF OF GRASS</span>
-          </a>
-          <a href="../flexgrid/site/index.html" class="link-btn link-btn-yellow">
-            <span>FLEXGRID</span>
-          </a>
-          <a href="../ddg-gorgez/" class="link-btn link-btn-blue">
-            <span>DDG GORGEZ</span>
-          </a>
-          <a href="../dopeornope/" class="link-btn link-btn-yellow">
-            <span>DOPE OR NOPE</span>
-          </a>
-          <a href="../collection-overlap/" class="link-btn link-btn-blue">
-            <span>COLLECTION OVERLAP</span>
-          </a>
-          <a href="../nft-twin-finder/" class="link-btn link-btn-yellow">
-            <span>NFT TWIN FINDER</span>
-          </a>
-          <a href="../quirkies/" class="link-btn link-btn-blue">
-            <span>QUIRKS SET CHECKER</span>
-          </a>
-          <a href="../OGT/" class="link-btn link-btn-yellow">
-            <span>OGENIE X CERT CHECKER</span>
-          </a>
-          <a href="https://www.amazon.com/dp/B0DC5N4B1W?binding=paperback&amp;ref=dbs_dp_rwt_sb_unkn_tpbk" class="link-btn link-btn-blue" target="_blank" rel="noopener noreferrer">
-            <span>COLORING BOOKS</span>
-          </a>
-          <a href="https://www.instagram.com/littleolliedaily" class="link-btn link-btn-yellow" target="_blank" rel="noopener noreferrer">
-            <span>LITTLE OLLIE DAILY</span>
-          </a>
-          <a href="https://x.com/LittleOllieNFT" class="link-btn link-btn-blue" target="_blank" rel="noopener noreferrer">
-            <span>TWITTER / X</span>
-          </a>
-          <a href="../about.html" class="link-btn link-btn-yellow">
-            <span>ABOUT LITTLE OLLIE LABS</span>
-          </a>
+    <div class="playground-bg-dim" aria-hidden="true"></div>
+
+    <div id="playground-enter-curtain" class="playground-enter-curtain" aria-hidden="true" hidden></div>
+
+    <div class="links-content links-content--playground">
+      <div class="playground-hub">
+        <div class="playground-hub__logo">
+          <img
+            src="../assets/websitemainlogo.png"
+            class="playground-hub__logo-img"
+            alt="Little Ollie — Where little ideas are tested and brought to life."
+            decoding="async"
+          />
         </div>
 
-        <a href="../index.html" class="btn-back">← Back</a>
+        <div class="playground-hub__shell">
+          <header class="playground-hub__head" id="playgroundHead">
+            <p class="playground-hub__eyebrow">Little Ollie Playground Labs</p>
+            <h1 class="playground-hub__title">Choose Your Lab</h1>
+            <p class="playground-hub__tagline">Pick a playground zone and start exploring.</p>
+          </header>
 
-        <div class="footnote">
-          Little Ollie Labs • Version 0.1
+          <div class="lab-grid" id="categoryMenu">
+            <button type="button" class="lab-card lab-card--blue" data-category="games" aria-expanded="false">
+              <span class="lab-card__icon" aria-hidden="true">🎮</span>
+              <span class="lab-card__text">
+                <span class="lab-card__title">Games Lab</span>
+                <span class="lab-card__sub">Play, guess and explore.</span>
+              </span>
+            </button>
+            <button type="button" class="lab-card lab-card--yellow" data-category="nft" aria-expanded="false">
+              <span class="lab-card__icon" aria-hidden="true">🧪</span>
+              <span class="lab-card__text">
+                <span class="lab-card__title">NFT Tools Lab</span>
+                <span class="lab-card__sub">Collect, compare and discover.</span>
+              </span>
+            </button>
+            <button type="button" class="lab-card lab-card--blue" data-category="creative" aria-expanded="false">
+              <span class="lab-card__icon" aria-hidden="true">🎨</span>
+              <span class="lab-card__text">
+                <span class="lab-card__title">Creative Lab</span>
+                <span class="lab-card__sub">Stories, books and Little Ollie ideas.</span>
+              </span>
+            </button>
+            <button type="button" class="lab-card lab-card--yellow" data-category="community" aria-expanded="false">
+              <span class="lab-card__icon" aria-hidden="true">🌈</span>
+              <span class="lab-card__text">
+                <span class="lab-card__title">Community Lab</span>
+                <span class="lab-card__sub">Follow, connect and join the journey.</span>
+              </span>
+            </button>
+          </div>
+
+          <section class="lab-panel" id="category-games" data-category-panel="games" hidden>
+            <h2 class="lab-panel__title"><span aria-hidden="true">🎮</span> Games Lab</h2>
+            <p class="lab-panel__sub">Play, guess and explore.</p>
+            <div class="links-stack links-stack--compact">
+              <a href="../game.html" class="link-btn link-btn-yellow link-btn--compact"><span>One Button Hero</span></a>
+              <a href="../games/slider-puzzle/index.html" class="link-btn link-btn-blue link-btn--compact"><span>Slider Puzzle</span></a>
+              <a href="../ddg/index.html" class="link-btn link-btn-blue link-btn--compact"><span>DDG</span></a>
+              <a href="../proof-of-grass/" class="link-btn link-btn-yellow link-btn--compact"><span>Proof of Grass</span></a>
+              <a href="../dopeornope/" class="link-btn link-btn-blue link-btn--compact"><span>Dope or Nope</span></a>
+            </div>
+          </section>
+
+          <section class="lab-panel" id="category-nft" data-category-panel="nft" hidden>
+            <h2 class="lab-panel__title"><span aria-hidden="true">🧪</span> NFT Tools Lab</h2>
+            <p class="lab-panel__sub">Collect, compare and discover.</p>
+            <div class="links-stack links-stack--compact">
+              <a href="../flexgrid/site/index.html" class="link-btn link-btn-yellow link-btn--compact"><span>FlexGrid</span></a>
+              <a href="../ddg-gorgez/" class="link-btn link-btn-blue link-btn--compact"><span>DDG Gorgez</span></a>
+              <a href="../collection-overlap/" class="link-btn link-btn-yellow link-btn--compact"><span>Collection Overlap</span></a>
+              <a href="../nft-twin-finder/" class="link-btn link-btn-blue link-btn--compact"><span>NFT Twin Finder</span></a>
+              <a href="../quirkies/" class="link-btn link-btn-yellow link-btn--compact"><span>Quirks Set Checker</span></a>
+              <a href="../OGT/" class="link-btn link-btn-blue link-btn--compact"><span>Ogenie X Cert Checker</span></a>
+            </div>
+          </section>
+
+          <section class="lab-panel" id="category-creative" data-category-panel="creative" hidden>
+            <h2 class="lab-panel__title"><span aria-hidden="true">🎨</span> Creative Lab</h2>
+            <p class="lab-panel__sub">Stories, books and Little Ollie ideas.</p>
+            <div class="links-stack links-stack--compact">
+              <a href="../x-post-styler/" class="link-btn link-btn-yellow link-btn--compact"><span>X Post Styler ✨</span></a>
+              <a href="https://www.amazon.com/dp/B0DC5N4B1W?binding=paperback&amp;ref=dbs_dp_rwt_sb_unkn_tpbk" class="link-btn link-btn-yellow link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Coloring Books</span></a>
+              <a href="https://www.instagram.com/littleolliedaily" class="link-btn link-btn-blue link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Little Ollie Daily</span></a>
+            </div>
+          </section>
+
+          <section class="lab-panel" id="category-community" data-category-panel="community" hidden>
+            <h2 class="lab-panel__title"><span aria-hidden="true">🌈</span> Community Lab</h2>
+            <p class="lab-panel__sub">Follow, connect and join the journey.</p>
+            <div class="links-stack links-stack--compact">
+              <a href="https://x.com/LittleOllieNFT" class="link-btn link-btn-blue link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Twitter / X</span></a>
+            </div>
+          </section>
         </div>
+
+        <div class="playground-hub__nav">
+          <a href="../about.html" class="btn-back playground-hub__nav-btn">About</a>
+          <a href="../index.html" class="btn-back playground-hub__nav-btn">← Back to Home</a>
+        </div>
+        <p class="footnote playground-hub__foot">Little Ollie Labs • The Playground</p>
       </div>
     </div>
   </div>

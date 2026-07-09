@@ -1,0 +1,1 @@
+import{i as e,n as t,r as n,t as r}from"./index.vite-DSQ58M_-.js";async function i(i){let a=n(r,`infection-shares/${`${Date.now()}-${Math.random().toString(36).slice(2,10)}`}.png`);return await e(a,i,{contentType:`image/png`,cacheControl:`public,max-age=604800`}),t(a)}export{i as uploadInfectedShareImage};

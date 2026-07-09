@@ -1,13 +1,28 @@
+import { playPurpleLiquidTransition } from "./js/home-liquid-transition.js";
+import { initBgCoverTracking } from "./js/bg-cover-point.js";
+
 document.addEventListener("DOMContentLoaded", function () {
-  const enterBtn = document.getElementById("enterBtn");
-  if (!enterBtn) return;
+  initBgCoverTracking();
 
-  enterBtn.addEventListener("click", () => {
-    document.body.style.transition = "opacity 0.5s";
-    document.body.style.opacity = "0";
+  const playgroundLink = document.getElementById("playgroundLink");
+  if (!playgroundLink) return;
 
-    setTimeout(() => {
-      window.location.href = "links/";
-    }, 500);
+  let transitioning = false;
+
+  playgroundLink.addEventListener("click", function (e) {
+    if (transitioning) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
+    const href = playgroundLink.getAttribute("href");
+    if (!href) return;
+
+    e.preventDefault();
+    transitioning = true;
+    playgroundLink.setAttribute("aria-disabled", "true");
+    playgroundLink.style.pointerEvents = "none";
+
+    playPurpleLiquidTransition(() => {
+      window.location.href = href;
+    });
   });
 });

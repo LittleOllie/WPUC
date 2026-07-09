@@ -1,4 +1,5 @@
 /* Tokens: load styles/site-brand.css before this file (see index.html). */
+@import url("styles/site-labs-bg.css");
 
 html, body {
     margin: 0;
@@ -13,187 +14,187 @@ html, body {
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
-    background-image: url("assets/mainbg.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     position: relative;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
-/* Clouds – move left across screen, wrap from right when off left (all pages) */
-.cloud {
-    position: absolute;
-    z-index: 0;
+/* Main content — above clouds */
+.hero-content {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding:
+        max(14px, env(safe-area-inset-top, 0px))
+        max(16px, env(safe-area-inset-right, 0px))
+        max(32px, env(safe-area-inset-bottom, 0px))
+        max(16px, env(safe-area-inset-left, 0px));
+}
+
+.hero-intro {
+    width: 50vw;
+    margin: 0 auto;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.hero-logo {
+    width: 100%;
+    margin: 0 auto;
     pointer-events: none;
 }
-.cloud-1 { top: 4%;  left: 100%; width: 36vw;  max-width: 400px; animation: cloudMoveLeft 52s linear infinite; animation-delay: 0s;   }
-.cloud-2 { top: 8%;  left: 100%; width: 28vw;  max-width: 320px; animation: cloudMoveLeft 58s linear infinite; animation-delay: -15s; }
-.cloud-3 { top: 2%;  left: 100%; width: 32vw;  max-width: 360px; animation: cloudMoveLeft 48s linear infinite; animation-delay: -28s; }
 
-@keyframes cloudMoveLeft {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-140vw); }
+.hero-logo__img {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
-/* LOGO POSITION – 2x size with subtle float (above clouds) */
-.logo {
-    position: absolute;
-    z-index: 1;
-    top: 18%;
-    left: 35%;
-    transform: translate(-50%, -50%);
-    width: 72vw;
-    max-width: 1120px;
-    min-width: 400px;
-    animation: logoFloat 3s ease-in-out infinite;
+.hero-cta {
+    width: min(92vw, 440px);
+    flex-shrink: 0;
+    margin-top: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
 }
 
-
-/* CRANE HOOK POSITION (above clouds) */
-.hook {
-    position: absolute;
-    z-index: 1;
-    top: -10px;
-    right: 8%;
-    width: 14vw;
-    max-width: 220px;
-    min-width: 120px;
-    transform-origin: top center;
-    animation: swing 4s ease-in-out infinite alternate;
-}
-
-/* ENTER BUTTON – bottom right (above clouds) */
-.button-area {
-    position: absolute;
-    z-index: 1;
-    bottom: 40px;
-    right: 40px;
-}
-
-#enterBtn {
-    font-family: var(--lo-font);
-    background: var(--lo-gradient-yellow);
-    color: var(--lo-ink);
-    border: none;
-    padding: 18px 48px;
-    font-size: clamp(1.1rem, 2.8vw, 1.375rem);
-    font-weight: 800;
+.hero-promo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    padding: 16px 20px;
     border-radius: var(--lo-radius-lg);
-    cursor: pointer;
-    box-shadow: var(--lo-shadow-btn);
+    text-decoration: none;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--lo-ink);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35), 0 16px 32px rgba(0, 0, 0, 0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    letter-spacing: 0.02em;
-    min-height: 52px;
 }
 
-#enterBtn:hover {
-    transform: scale(1.06);
-    box-shadow: var(--lo-shadow-btn-hover);
+.hero-promo:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 11px 0 rgba(0, 0, 0, 0.4), 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
-#enterBtn:active {
-    transform: scale(1.02);
-    box-shadow: var(--lo-shadow-btn-active);
+.hero-promo:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35), 0 12px 24px rgba(0, 0, 0, 0.35);
 }
 
-#enterBtn:focus-visible {
+.hero-promo:focus-visible {
     outline: 3px solid var(--lo-yellow);
     outline-offset: 3px;
 }
 
-/* Swing animation */
-@keyframes swing {
-    0% { transform: rotate(-4deg); }
-    100% { transform: rotate(4deg); }
+.hero-promo__title {
+    font-size: clamp(1rem, 2.5vw, 1.15rem);
+    font-weight: 800;
+    line-height: 1.25;
 }
 
-/* Logo gentle float */
-@keyframes logoFloat {
-    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-    50% { transform: translate(-50%, -50%) translateY(-10px); }
+.hero-promo__sub {
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+    font-weight: 500;
+    color: var(--lo-ink-soft);
+    line-height: 1.35;
 }
+
+.hero-cta__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 16px 28px;
+    border-radius: var(--lo-radius-lg);
+    font-family: var(--lo-font);
+    font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+    font-weight: 800;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    background: var(--lo-gradient-yellow);
+    color: var(--lo-ink);
+    box-shadow: var(--lo-shadow-btn);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
+}
+
+.hero-cta__btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--lo-shadow-btn-hover);
+}
+
+.hero-cta__btn:active {
+    transform: translateY(0);
+    box-shadow: var(--lo-shadow-btn-active);
+}
+
+.hero-cta__btn:focus-visible {
+    outline: 3px solid var(--lo-yellow);
+    outline-offset: 3px;
+}
+
+.home-liquid-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.home-liquid-curtain--active {
+    pointer-events: auto;
+    opacity: 1;
+    transition: none;
+}
+
+.home-liquid-curtain canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 /* =================================
-   DESKTOP DEFAULT STYLES
-================================= */
-
-
-/* Logo */
-.logo {
-    top: 18%;
-    left: 45%;
-    width: 960px;
-    max-width: 80vw;
-    transform: translate(-50%, -50%);
-}
-
-/* Crane Hook */
-.hook {
-    right: 8%;
-    width: 240px;
-}
-
-/* Button Area */
-.button-area {
-    bottom: 32px;
-    right: 32px;
-}
-
-
-/* =================================
-   MOBILE STYLES
+   MOBILE
 ================================= */
 
 @media (max-width: 768px) {
-
-    /* Fill viewport on iPhone – avoid white bars and cut-off */
-    html, body {
-        min-height: 100vh;
-        min-height: 100dvh;
-    }
-    .sky {
-        min-height: 100vh;
-        min-height: 100dvh;
-        height: 100%;
-        background-image: url("assets/iphonemainbg.webp");
-        background-size: cover;
-        background-position: 58% center;
+    .hero-intro {
+        width: 75vw;
+        max-width: 80vw;
     }
 
-    /* Clouds at slightly different levels, all moving left (same as desktop) */
-    .cloud-1 { top: 2%;  left: 100%; width: 44vw;  animation: cloudMoveLeft 50s linear infinite; animation-delay: 0s;   }
-    .cloud-2 { top: 10%; left: 100%; width: 40vw;  animation: cloudMoveLeft 55s linear infinite; animation-delay: -18s; }
-    .cloud-3 { top: 5%;  left: 100%; width: 48vw;  animation: cloudMoveLeft 48s linear infinite; animation-delay: -30s; }
-
-    /* Logo under crane hook – no min-width so it fits narrow viewports */
-    .logo {
-        top: 30%;
-        left: 50%;
-        width: 90vw;
-        max-width: 520px;
-        min-width: 0;
-        transform: translate(-50%, -50%);
+    .hero-logo {
+        width: 100%;
+        max-width: none;
     }
 
-    /* Crane hook – smaller so it fits on screen, inset from edge */
-    .hook {
-        right: 4%;
-        width: 24vw;
-        max-width: 100px;
+    .hero-cta {
+        width: min(88vw, 360px);
+        margin-top: auto;
     }
 
-    /* Enter button centered, near bottom of viewport */
-    .button-area {
-        left: 50%;
-        right: auto;
-        bottom: max(24px, env(safe-area-inset-bottom, 0px));
-        transform: translateX(-50%);
-    }
-
-    #enterBtn {
+    .hero-cta__btn {
+        min-height: 52px;
         font-size: 1.05rem;
-        padding: 14px 32px;
-        white-space: nowrap;
-        min-height: 48px;
+        padding: 14px 24px;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.2;
     }
 }

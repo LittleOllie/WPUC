@@ -1,14 +1,8 @@
-# RATZILLA2 — deploy to GitHub / littleollielabs.com
+# BlackWater Infection — GitHub Pages deploy
 
-## The `main.tsx` 404 error
+Live site: **https://blackwater-labs.com/**
 
-Your live site is serving the **dev** HTML file, which contains:
-
-```html
-<script type="module" src="/src/main.tsx"></script>
-```
-
-Browsers cannot run that on GitHub. You must deploy the **built** files instead.
+Custom domain via `CNAME` → `blackwater-labs.com`. Production build uses base path `/`.
 
 ## Deploy steps (every time you update)
 
@@ -17,22 +11,35 @@ cd ratzilla2
 npm run publish
 ```
 
-Then **commit and push** these files (not `src/` or `index.vite.html`):
+Then **commit and push** these files to the **root** of your GitHub Pages repo:
 
-- `ratzilla2/index.html`
-- `ratzilla2/404.html`
-- `ratzilla2/assets/` (whole folder)
+- `index.html`
+- `404.html`
+- `CNAME`
+- `assets/` (whole folder — includes hashed `.js` / `.css` **and** images/video)
 
-Open: **https://littleollielabs.com/ratzilla2/** (must include `/ratzilla2/`)
+Do **not** push `src/` or `index.vite.html` (dev only).
 
-## Dev vs production files
+## Subpath deploy (legacy)
+
+If hosting under a subfolder (e.g. `/blackwaterinfection/`):
+
+```bash
+VITE_BASE_PATH=/blackwaterinfection/ npm run publish
+```
+
+## Dev vs production
 
 | File | Purpose |
 |------|---------|
 | `index.vite.html` | Local dev only (`npm run dev`) |
-| `index.html` | **Production** — created by `npm run publish` |
-| `src/` | Source code — not needed on the server |
+| `index.html` | Production — created by `npm run publish` |
+| `src/` | Source code — not needed on GitHub Pages |
 
-## CSP / `eval` warning in DevTools
+## SPA routes
 
-If you see **"Content Security Policy blocks eval"** with `lockdown-install.js`, that comes from a **browser extension** (e.g. MetaMask), not from RATZILLA2. The production build does not use `eval`. You can ignore it, or test in a private/incognito window with extensions disabled.
+`404.html` is a copy of `index.html` so `/infection` works after refresh on GitHub Pages.
+
+## X share
+
+Tap **DOWNLOAD INFECTED IMAGE**, then **REPORT TO X** — opens X directly (website on desktop, X app on phone) with your message pre-filled. Attach the downloaded image in your post, then publish.

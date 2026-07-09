@@ -720,6 +720,151 @@ body {
   }
 }
 
+/* ═══ Blackwater X — lore transmission CTA ═══ */
+.rz-bw-socials {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.rz-bw-x {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.42rem;
+  max-width: min(100%, 26.5rem);
+  padding: 0.78rem 1.2rem 0.66rem;
+  border: 1px solid rgba(90, 140, 70, 0.28);
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 12, 8, 0.72) 0%,
+      rgba(4, 6, 4, 0.88) 100%
+    );
+  color: rgba(175, 210, 155, 0.88);
+  font: inherit;
+  font-size: clamp(0.7rem, 2.64vw, 0.82rem);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 0 18px rgba(40, 80, 30, 0.06);
+  opacity: 0;
+  animation: rz-bw-x-in 1.8s ease 6.2s forwards;
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.rz2-stage.is-live .rz-bw-x {
+  opacity: 1;
+  animation: none;
+}
+
+.rz-bw-x__eyebrow {
+  font-size: 0.52em;
+  letter-spacing: 0.22em;
+  color: rgba(140, 180, 110, 0.55);
+  text-shadow: 0 0 10px rgba(60, 120, 40, 0.2);
+}
+
+.rz-bw-x__row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.54rem;
+}
+
+.rz-bw-x__icon {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  opacity: 0.75;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.rz-bw-x__label {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rz-bw-x__arrow {
+  opacity: 0.5;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.rz-bw-x__hint {
+  font-size: 0.48em;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(130, 160, 115, 0.42);
+}
+
+.rz-bw-x:hover,
+.rz-bw-x:focus-visible {
+  color: rgba(210, 245, 185, 0.98);
+  border-color: rgba(120, 200, 80, 0.45);
+  box-shadow:
+    0 0 20px rgba(60, 120, 40, 0.22),
+    0 0 40px rgba(40, 80, 30, 0.08),
+    inset 0 0 24px rgba(60, 120, 40, 0.1);
+  transform: translateY(-2px);
+}
+
+.rz-bw-x:hover .rz-bw-x__icon,
+.rz-bw-x:focus-visible .rz-bw-x__icon {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+.rz-bw-x:hover .rz-bw-x__arrow,
+.rz-bw-x:focus-visible .rz-bw-x__arrow {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+.rz-bw-x:focus-visible {
+  outline: 1px solid rgba(120, 200, 80, 0.5);
+  outline-offset: 3px;
+}
+
+@keyframes rz-bw-x-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rz-bw-x {
+    animation: none;
+    opacity: 1;
+  }
+
+  .rz-bw-x:hover,
+  .rz-bw-x:focus-visible {
+    transform: none;
+  }
+
+  .rz-bw-x:hover .rz-bw-x__arrow,
+  .rz-bw-x:focus-visible .rz-bw-x__arrow {
+    transform: none;
+  }
+}
+
 .rz2-rat-mark {
   display: flex;
   flex-direction: column;

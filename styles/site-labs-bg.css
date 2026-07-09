@@ -1,0 +1,74 @@
+/**
+ * Little Ollie Labs — shared playground background + clouds
+ * Used by homepage and The Playground hub.
+ */
+
+.hero-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-color: #7ec8f0;
+    background-image: url("../assets/websiteComputerBG.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+.hero-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 40, 90, 0.1) 0%,
+        transparent 30%,
+        transparent 55%,
+        rgba(0, 30, 70, 0.12) 100%
+    );
+    pointer-events: none;
+}
+
+.hero-clouds {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.cloud {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.88;
+    filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.35));
+}
+
+.cloud-1 { top: 4%;  left: 100%; width: 36vw;  max-width: 400px; animation: cloudMoveLeft 52s linear infinite; animation-delay: 0s;   }
+.cloud-2 { top: 8%;  left: 100%; width: 28vw;  max-width: 320px; animation: cloudMoveLeft 58s linear infinite; animation-delay: -15s; }
+.cloud-3 { top: 2%;  left: 100%; width: 32vw;  max-width: 360px; animation: cloudMoveLeft 48s linear infinite; animation-delay: -28s; }
+
+@keyframes cloudMoveLeft {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-140vw); }
+}
+
+@media (max-width: 768px) {
+    .hero-bg {
+        background-image: url("../assets/iphoneWebsiteBG.png");
+        background-position: center bottom;
+    }
+
+    .hero-bg::after {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 40, 90, 0.08) 0%,
+            transparent 25%,
+            transparent 65%,
+            rgba(0, 30, 70, 0.1) 100%
+        );
+    }
+
+    .cloud-1 { top: 2%;  left: 100%; width: 44vw;  animation: cloudMoveLeft 50s linear infinite; animation-delay: 0s;   }
+    .cloud-2 { top: 10%; left: 100%; width: 40vw;  animation: cloudMoveLeft 55s linear infinite; animation-delay: -18s; }
+    .cloud-3 { top: 5%;  left: 100%; width: 48vw;  animation: cloudMoveLeft 48s linear infinite; animation-delay: -30s; }
+}

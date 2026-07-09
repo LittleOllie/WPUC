@@ -96,12 +96,84 @@ export async function copyBlobToClipboard(blob: Blob): Promise<void> {
     throw new Error("Clipboard image copy is not supported.");
   }
 
+  const pngBlob =
+    blob.type === "image/png" ? blob : new Blob([blob], { type: "image/png" });
+
   await navigator.clipboard.write([
-    new ClipboardItem({ "image/png": blob }),
+    new ClipboardItem({
+      "image/png": Promise.resolve(pngBlob),
+    }),
   ]);
 }
 
-export function shareOnX(text: string): void {
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
+/** Phone / tablet — used for download-first share UX copy. */
+export function isMobileDevice(): boolean {
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) return true;
+  if (/iPhone|iPod|iPad/i.test(ua)) return true;
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+  return false;
+}
+
+/** @deprecated Use isMobileDevice */
+export const prefersMobileXShare = isMobileDevice;
+
+export const X_INFECTION_SHARE_TEXT = `⚠️ INFECTION CONFIRMED ⚠️
+
+I have been registered as a Blackwater Subject.
+
+Containment protocols have failed.
+
+How many more have been exposed?
+
+@Blackwater_Z26
+
+#BLACKWATERINFECTION`;
+
+function buildXIntentUrl(text: string): string {
+  return `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * Opens X compose with pre-filled message.
+ * Desktop: x.com in a new tab. Mobile: X app via deep link, then web intent fallback.
+ */
+export function openXCompose(text: string): void {
+  const webUrl = buildXIntentUrl(text);
+
+  if (isMobileDevice()) {
+    const appUrl = `twitter://post?message=${encodeURIComponent(text)}`;
+    let fallbackTimer = 0;
+
+    const clearFallback = () => {
+      if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+    };
+
+    const onHide = () => {
+      if (document.hidden) clearFallback();
+    };
+
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide, { once: true });
+
+    fallbackTimer = window.setTimeout(() => {
+      clearFallback();
+      window.location.assign(webUrl);
+    }, 900);
+
+    window.location.href = appUrl;
+    return;
+  }
+
+  const opened = window.open(webUrl, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.assign(webUrl);
+}
+
+/** Opens X compose — image is attached manually after download. */
+export function shareInfectedToX(
+  text: string = X_INFECTION_SHARE_TEXT,
+): void {
+  openXCompose(text);
 }
