@@ -131,16 +131,29 @@ function buildStyledDocument(plainText, spans, opts = {}) {
     return { styled: "", styledToPlain: [] };
   }
 
+  const splitGraphemes = window.XPStyler.splitGraphemes;
+  const isEmojiGrapheme = window.XPStyler.isEmojiGrapheme;
+  const graphemes = splitGraphemes ? splitGraphemes(plainText) : Array.from(plainText);
+
   let styled = "";
   const styledToPlain = [];
+  let plainIdx = 0;
 
-  for (let p = 0; p < plainText.length; p++) {
-    const styleId = getStyleAtIndex(p, spans);
-    const out = applyTextStyle(plainText[p], styleId, opts);
-    for (let i = 0; i < [...out].length; i++) {
-      styledToPlain.push(p);
+  for (const grapheme of graphemes) {
+    const styleId = getStyleAtIndex(plainIdx, spans);
+    const out = isEmojiGrapheme && isEmojiGrapheme(grapheme)
+      ? grapheme
+      : applyTextStyle(grapheme, styleId, opts);
+
+    const graphemeLen = grapheme.length;
+    for (let i = 0; i < out.length; i++) {
+      const mappedPlainIdx = graphemeLen === out.length
+        ? plainIdx + i
+        : plainIdx + Math.min(i, graphemeLen - 1);
+      styledToPlain.push(mappedPlainIdx);
     }
     styled += out;
+    plainIdx += graphemeLen;
   }
 
   return { styled, styledToPlain };

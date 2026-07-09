@@ -1,5 +1,6 @@
 /**
  * X Post Styler — paste, highlight, style in place, copy.
+ * Row-based editor: one line number + textarea per line (always aligned).
  */
 (function () {
   "use strict";
@@ -20,8 +21,8 @@
   var remapSpans = XP.remapSpans;
   var applySpanStyle = XP.applySpanStyle;
   var styledRangeToPlain = XP.styledRangeToPlain;
-  var inferPlainCursorAfterEdit = XP.inferPlainCursorAfterEdit;
   var plainRangeToStyled = XP.plainRangeToStyled;
+  var parseStyledDocument = XP.parseStyledDocument;
 
   var STYLE_SAMPLE = "Aa Bb";
   var PREVIEW_MAX = 36;
@@ -38,6 +39,9 @@
     text: "",
     plainOriginal: "",
     savedSelection: null,
+    selectionMode: "text",
+    selectedLines: [],
+    swipeLine: -1,
     settings: { keepHashtagsNormal: true, keepMentionsNormal: true },
   };
 
@@ -145,59 +149,448 @@
   }
 
   function exitEditingMode() {
-    var input = $("xps-input");
-    if (input) input.blur();
+    var active = document.activeElement;
+    if (active && active.classList && active.classList.contains("xps-line-input")) {
+      active.blur();
+    }
     setEditingMode(false);
   }
 
-  function restoreTextareaSelection(input, sStart, sEnd) {
+  function getLineRanges(plainText) {
+    var lines = [];
+    var start = 0;
+    var text = plainText || "";
+    for (var i = 0; i <= text.length; i++) {
+      if (i === text.length || text.charAt(i) === "\n") {
+        lines.push({ index: lines.length, start: start, end: i });
+        start = i + 1;
+      }
+    }
+    if (!lines.length) {
+      lines.push({ index: 0, start: 0, end: 0 });
+    }
+    return lines;
+  }
+
+  function getLineStyledToPlain(lineRange, styledToPlain) {
+    var len = lineRange.end - lineRange.start;
+    if (!styledToPlain.length) {
+      var arr = [];
+      for (var i = 0; i < len; i++) arr.push(i);
+      return arr;
+    }
+    var sRange = plainRangeToStyled(styledToPlain, lineRange.start, lineRange.end);
+    var slice = styledToPlain.slice(sRange.sStart, sRange.sEnd);
+    var out = [];
+    for (var j = 0; j < slice.length; j++) {
+      out.push(slice[j] - lineRange.start);
+    }
+    return out;
+  }
+
+  function splitStyledByPlainLines(plainText, styled, styledToPlain) {
+    var lines = [];
+    var lineStart = 0;
+    if (!plainText) return [""];
+    for (var p = 0; p <= plainText.length; p++) {
+      if (p === plainText.length || plainText.charAt(p) === "\n") {
+        var sRange = plainRangeToStyled(styledToPlain, lineStart, p);
+        lines.push(styled.slice(sRange.sStart, sRange.sEnd));
+        lineStart = p + 1;
+      }
+    }
+    return lines.length ? lines : [""];
+  }
+
+  function autoResizeLine(ta) {
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  }
+
+  function buildRowHtml(lineIdx) {
+    var placeholder = lineIdx === 0 ? ' placeholder="Paste your X post here…"' : "";
+    return (
+      '<div class="xps-line-row" data-line="' + lineIdx + '">' +
+      '<button type="button" class="xps-line-btn" data-line="' + lineIdx + '" aria-label="Select line ' + (lineIdx + 1) + '">' + (lineIdx + 1) + "</button>" +
+      '<textarea class="xps-line-input" rows="1" data-line="' + lineIdx + '"' + placeholder + "></textarea>" +
+      "</div>"
+    );
+  }
+
+  function ensureLineRows() {
+    var container = $("xps-lines");
+    if (!container) return;
+    var lineRanges = getLineRanges(state.plainText);
+    var existing = container.querySelectorAll(".xps-line-row");
+
+    if (existing.length !== lineRanges.length) {
+      var html = "";
+      for (var i = 0; i < lineRanges.length; i++) {
+        html += buildRowHtml(i);
+      }
+      container.innerHTML = html;
+    } else {
+      for (var j = 0; j < lineRanges.length; j++) {
+        var row = existing[j];
+        var btn = row.querySelector(".xps-line-btn");
+        if (btn) {
+          btn.textContent = String(j + 1);
+          btn.setAttribute("data-line", String(j));
+          btn.setAttribute("aria-label", "Select line " + (j + 1));
+        }
+        var input = row.querySelector(".xps-line-input");
+        if (input) input.setAttribute("data-line", String(j));
+        row.setAttribute("data-line", String(j));
+      }
+    }
+  }
+
+  function updateRowSelectionClasses() {
+    var container = $("xps-lines");
+    if (!container) return;
+    var lineRanges = getLineRanges(state.plainText);
+    var rows = container.querySelectorAll(".xps-line-row");
+
+    for (var i = 0; i < rows.length; i++) {
+      var selected = state.selectedLines.indexOf(i) >= 0;
+      var swipe = state.swipeLine === i;
+      var empty = !lineRanges[i] || lineRanges[i].end <= lineRanges[i].start;
+
+      rows[i].classList.toggle("xps-line-row--selected", selected);
+      rows[i].classList.toggle("xps-line-row--swipe", swipe && selected);
+
+      var btn = rows[i].querySelector(".xps-line-btn");
+      if (btn) {
+        btn.classList.toggle("xps-line-btn--selected", selected);
+        btn.classList.toggle("xps-line-btn--empty", empty);
+        btn.disabled = empty;
+      }
+    }
+    state.swipeLine = -1;
+  }
+
+  function focusLineInput(lineIdx, plainCursor, plainSelEnd) {
+    var container = $("xps-lines");
+    if (!container) return;
+    var ta = container.querySelector('.xps-line-input[data-line="' + lineIdx + '"]');
+    if (!ta) return;
+
     requestAnimationFrame(function () {
       try {
-        input.focus({ preventScroll: true });
-        input.setSelectionRange(sStart, sEnd);
-      } catch (e) { /* iOS may reject in edge cases */ }
+        ta.focus({ preventScroll: true });
+        if (typeof plainCursor === "number") {
+          var lineRanges = getLineRanges(state.plainText);
+          var lr = lineRanges[lineIdx];
+          if (lr) {
+            var lineMap = getLineStyledToPlain(lr, state.styledToPlain);
+            var range = plainRangeToStyled(
+              lineMap,
+              plainCursor - lr.start,
+              (typeof plainSelEnd === "number" ? plainSelEnd : plainCursor) - lr.start
+            );
+            ta.setSelectionRange(range.sStart, range.sEnd);
+          }
+        }
+      } catch (e) { /* iOS edge cases */ }
       isRefreshing = false;
     });
   }
 
-  function refreshTextareaFromState(plainCursor, plainSelEnd) {
-    var input = $("xps-input");
-    if (!input) return;
+  function refreshFromState(focusLineIdx, plainCursor, plainSelEnd) {
+    var container = $("xps-lines");
+    if (!container) return;
 
     isRefreshing = true;
     var doc = buildStyledDocument(state.plainText, state.spans, getOpts());
     state.text = doc.styled;
     state.styledToPlain = doc.styledToPlain;
-    input.value = doc.styled;
 
-    if (typeof plainCursor === "number") {
-      var range = plainRangeToStyled(doc.styledToPlain, plainCursor, plainSelEnd || plainCursor);
-      restoreTextareaSelection(input, range.sStart, range.sEnd);
+    ensureLineRows();
+    var styledLines = splitStyledByPlainLines(state.plainText, doc.styled, doc.styledToPlain);
+    var inputs = container.querySelectorAll(".xps-line-input");
+
+    for (var i = 0; i < inputs.length; i++) {
+      inputs[i].value = styledLines[i] || "";
+      autoResizeLine(inputs[i]);
+    }
+
+    updateRowSelectionClasses();
+    updateCounter();
+
+    if (typeof focusLineIdx === "number") {
+      focusLineInput(focusLineIdx, plainCursor, plainSelEnd);
     } else {
       isRefreshing = false;
     }
-
-    updateCounter();
   }
 
-  function setPlainContent(plainText, spans, plainCursor, plainSelEnd) {
+  function flattenInputLines(inputs) {
+    var lines = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var parts = inputs[i].value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      for (var j = 0; j < parts.length; j++) {
+        lines.push(parts[j]);
+      }
+    }
+    return lines;
+  }
+
+  function linesToPlainAndSpans(lines) {
+    var plainLines = [];
+    var spans = [];
+    var offset = 0;
+
+    for (var i = 0; i < lines.length; i++) {
+      var parsed = parseStyledDocument(lines[i]);
+      plainLines.push(parsed.plainText);
+      for (var s = 0; s < parsed.spans.length; s++) {
+        var sp = parsed.spans[s];
+        spans.push({
+          start: offset + sp.start,
+          end: offset + sp.end,
+          styleId: sp.styleId,
+        });
+      }
+      offset += parsed.plainText.length;
+      if (i < lines.length - 1) offset += 1;
+    }
+
+    return { plainText: plainLines.join("\n"), spans: spans };
+  }
+
+  function applyImportedContent(parsed, focusLineIdx) {
+    state.plainText = parsed.plainText;
+    state.spans = parsed.spans;
+    state.plainOriginal = parsed.plainText;
+    state.savedSelection = null;
+    clearLineSelection();
+    refreshFromState(typeof focusLineIdx === "number" ? focusLineIdx : 0);
+    showToast(parsed.spans.length ? "Pasted with styles ✨" : "Pasted ✨");
+  }
+
+  function syncPlainFromRows(changedLineIdx) {
+    var container = $("xps-lines");
+    if (!container) return;
+
+    var inputs = container.querySelectorAll(".xps-line-input");
+    var built = linesToPlainAndSpans(flattenInputLines(inputs));
+
+    state.plainText = built.plainText;
+    state.spans = built.spans;
+
+    if (!state.plainOriginal && state.plainText) {
+      state.plainOriginal = state.plainText;
+    }
+
+    refreshFromState(changedLineIdx);
+  }
+
+  function insertLineAfter(lineIdx, styledCursorStart, styledCursorEnd) {
+    var lineRanges = getLineRanges(state.plainText);
+    var lr = lineRanges[lineIdx];
+    if (!lr) return;
+
+    var linePlain = state.plainText.slice(lr.start, lr.end);
+    var lineMap = getLineStyledToPlain(lr, state.styledToPlain);
+    var local = styledRangeToPlain(lineMap, styledCursorStart, styledCursorEnd, linePlain.length);
+
+    var before = linePlain.slice(0, local.pStart);
+    var after = linePlain.slice(local.pEnd);
+    var lines = state.plainText.split("\n");
+    lines[lineIdx] = before;
+    lines.splice(lineIdx + 1, 0, after);
+
+    var oldPlain = state.plainText;
+    state.plainText = lines.join("\n");
+    state.spans = remapSpans(oldPlain, state.plainText, state.spans);
+    clearLineSelection();
+    refreshFromState(lineIdx + 1, lineRanges[lineIdx].start + local.pStart, lineRanges[lineIdx].start + local.pStart);
+  }
+
+  function mergeLineWithPrevious(lineIdx) {
+    if (lineIdx <= 0) return;
+    var lines = state.plainText.split("\n");
+    var cursor = lines[lineIdx - 1].length;
+    lines[lineIdx - 1] += lines[lineIdx];
+    lines.splice(lineIdx, 1);
+
+    var oldPlain = state.plainText;
+    state.plainText = lines.join("\n");
+    state.spans = remapSpans(oldPlain, state.plainText, state.spans);
+
+    var lineRanges = getLineRanges(state.plainText);
+    var focusPos = lineRanges[lineIdx - 1] ? lineRanges[lineIdx - 1].start + cursor : cursor;
+    refreshFromState(lineIdx - 1, focusPos, focusPos);
+  }
+
+  function mergeLineWithNext(lineIdx) {
+    var lines = state.plainText.split("\n");
+    if (lineIdx >= lines.length - 1) return;
+    var cursor = lines[lineIdx].length;
+    lines[lineIdx] += lines[lineIdx + 1];
+    lines.splice(lineIdx + 1, 1);
+
+    var oldPlain = state.plainText;
+    state.plainText = lines.join("\n");
+    state.spans = remapSpans(oldPlain, state.plainText, state.spans);
+
+    var lineRanges = getLineRanges(state.plainText);
+    var focusPos = lineRanges[lineIdx] ? lineRanges[lineIdx].start + cursor : cursor;
+    refreshFromState(lineIdx, focusPos, focusPos);
+  }
+
+  function getRangesFromSelectedLines(indices) {
+    var lineRanges = getLineRanges(state.plainText);
+    var ranges = [];
+    var sorted = indices.slice().sort(function (a, b) { return a - b; });
+    for (var i = 0; i < sorted.length; i++) {
+      var line = lineRanges[sorted[i]];
+      if (line && line.end > line.start) {
+        ranges.push({ pStart: line.start, pEnd: line.end });
+      }
+    }
+    return ranges;
+  }
+
+  function updateSavedSelectionFromLines() {
+    var ranges = getRangesFromSelectedLines(state.selectedLines);
+    if (!ranges.length) {
+      state.savedSelection = null;
+      return;
+    }
+    state.savedSelection = {
+      pStart: ranges[0].pStart,
+      pEnd: ranges[ranges.length - 1].pEnd,
+      ranges: ranges,
+    };
+  }
+
+  function getActiveSelectionRanges() {
+    if (state.selectionMode === "lines" && state.selectedLines.length) {
+      return getRangesFromSelectedLines(state.selectedLines);
+    }
+    var sel = getActiveSelection();
+    if (sel && sel.pEnd > sel.pStart) {
+      return [{ pStart: sel.pStart, pEnd: sel.pEnd }];
+    }
+    if (state.savedSelection && state.savedSelection.ranges && state.savedSelection.ranges.length) {
+      return state.savedSelection.ranges;
+    }
+    if (state.savedSelection && state.savedSelection.pEnd > state.savedSelection.pStart) {
+      return [{ pStart: state.savedSelection.pStart, pEnd: state.savedSelection.pEnd }];
+    }
+    return [];
+  }
+
+  function clearLineSelection() {
+    state.selectedLines = [];
+    if (state.selectionMode === "lines") {
+      state.selectionMode = "text";
+    }
+    updateRowSelectionClasses();
+  }
+
+  function showSelectionToolbar(labelText, shouldScroll) {
+    var toolbar = $("xps-toolbar");
+    var idle = $("xps-toolbar-idle");
+    var label = $("xps-selection-text");
+    if (toolbar) toolbar.hidden = false;
+    if (idle) idle.hidden = true;
+    if (label) label.textContent = labelText;
+    renderStyleGrid();
+    if (shouldScroll !== false) scrollToolbarIntoView();
+  }
+
+  function toggleLineSelection(lineIndex, shiftKey) {
+    var lines = getLineRanges(state.plainText);
+    if (lineIndex < 0 || lineIndex >= lines.length) return;
+    if (lines[lineIndex].end <= lines[lineIndex].start) return;
+
+    var alreadyOn = state.selectedLines.indexOf(lineIndex) >= 0;
+    state.selectionMode = "lines";
+
+    if (shiftKey && state.selectedLines.length) {
+      var anchor = state.selectedLines[state.selectedLines.length - 1];
+      var from = Math.min(anchor, lineIndex);
+      var to = Math.max(anchor, lineIndex);
+      state.selectedLines = [];
+      for (var j = from; j <= to; j++) {
+        if (lines[j].end > lines[j].start) state.selectedLines.push(j);
+      }
+      state.swipeLine = lineIndex;
+    } else {
+      var pos = state.selectedLines.indexOf(lineIndex);
+      if (pos >= 0) {
+        state.selectedLines.splice(pos, 1);
+      } else {
+        state.selectedLines.push(lineIndex);
+        state.swipeLine = lineIndex;
+      }
+      state.selectedLines.sort(function (a, b) { return a - b; });
+    }
+
+    if (alreadyOn && state.selectedLines.indexOf(lineIndex) < 0) {
+      state.swipeLine = -1;
+    }
+
+    updateSavedSelectionFromLines();
+    updateRowSelectionClasses();
+
+    if (state.selectedLines.length) {
+      var preview = getSelectedPlainText().replace(/\n/g, " ");
+      showSelectionToolbar('"' + truncate(preview, 40) + '"', false);
+    } else {
+      state.savedSelection = null;
+      hideToolbar();
+    }
+  }
+
+  function restoreSelectionAfterStyle() {
+    if (state.selectionMode === "lines" && state.selectedLines.length) {
+      updateRowSelectionClasses();
+      return;
+    }
+
+    var ranges = getActiveSelectionRanges();
+    if (!ranges.length) return;
+
+    var pStart = ranges[0].pStart;
+    var pEnd = ranges[ranges.length - 1].pEnd;
+    state.savedSelection = { pStart: pStart, pEnd: pEnd, ranges: ranges };
+
+    var lineRanges = getLineRanges(state.plainText);
+    var focusLine = 0;
+    for (var i = 0; i < lineRanges.length; i++) {
+      if (pStart >= lineRanges[i].start && pStart <= lineRanges[i].end) {
+        focusLine = i;
+        break;
+      }
+    }
+    focusLineInput(focusLine, pStart, pEnd);
+  }
+
+  function setPlainContent(plainText, spans) {
     state.plainText = plainText || "";
     state.spans = spans || [];
     if (!state.plainOriginal && state.plainText) {
       state.plainOriginal = state.plainText;
     }
-    refreshTextareaFromState(plainCursor, plainSelEnd);
+    refreshFromState();
   }
 
   function getPlainSelection() {
-    var input = $("xps-input");
-    if (!input || input.selectionEnd <= input.selectionStart) return null;
-    return styledRangeToPlain(
-      state.styledToPlain,
-      input.selectionStart,
-      input.selectionEnd,
-      state.plainText.length
-    );
+    var active = document.activeElement;
+    if (!active || !active.classList || !active.classList.contains("xps-line-input")) return null;
+    if (active.selectionEnd <= active.selectionStart) return null;
+
+    var lineIdx = parseInt(active.getAttribute("data-line"), 10);
+    var lineRanges = getLineRanges(state.plainText);
+    var lr = lineRanges[lineIdx];
+    if (!lr) return null;
+
+    var lineMap = getLineStyledToPlain(lr, state.styledToPlain);
+    var local = styledRangeToPlain(lineMap, active.selectionStart, active.selectionEnd, lr.end - lr.start);
+    return { pStart: lr.start + local.pStart, pEnd: lr.start + local.pEnd };
   }
 
   function hideToolbar() {
@@ -218,7 +611,11 @@
   function saveSelectionFromInput() {
     var sel = getPlainSelection();
     if (sel && sel.pEnd > sel.pStart) {
-      state.savedSelection = { pStart: sel.pStart, pEnd: sel.pEnd };
+      state.savedSelection = {
+        pStart: sel.pStart,
+        pEnd: sel.pEnd,
+        ranges: [{ pStart: sel.pStart, pEnd: sel.pEnd }],
+      };
     }
   }
 
@@ -237,9 +634,13 @@
   }
 
   function getSelectedPlainText() {
-    var sel = getActiveSelection();
-    if (!sel) return "";
-    return state.plainText.slice(sel.pStart, sel.pEnd);
+    var ranges = getActiveSelectionRanges();
+    if (!ranges.length) return "";
+    var parts = [];
+    for (var i = 0; i < ranges.length; i++) {
+      parts.push(state.plainText.slice(ranges[i].pStart, ranges[i].pEnd));
+    }
+    return parts.join("\n");
   }
 
   function renderStyleGrid() {
@@ -272,140 +673,262 @@
   }
 
   function updateSelectionUI() {
-    var input = $("xps-input");
-    var toolbar = $("xps-toolbar");
-    var idle = $("xps-toolbar-idle");
-    var label = $("xps-selection-text");
-    if (!input || !toolbar) return;
+    var active = document.activeElement;
+    var isLineInput = active && active.classList && active.classList.contains("xps-line-input");
 
-    var start = input.selectionStart;
-    var end = input.selectionEnd;
-    var hasSelection = end > start;
-
-    if (hasSelection) {
-      var selected = state.text.slice(start, end);
+    if (isLineInput && active.selectionEnd > active.selectionStart) {
+      state.selectionMode = "text";
+      clearLineSelection();
+      var lineIdx = parseInt(active.getAttribute("data-line"), 10);
+      var selected = active.value.slice(active.selectionStart, active.selectionEnd);
       saveSelectionFromInput();
-      toolbar.hidden = false;
-      if (idle) idle.hidden = true;
-      if (label) label.textContent = '"' + truncate(selected.replace(/\n/g, " "), 40) + '"';
-      renderStyleGrid();
-      scrollToolbarIntoView();
-    } else if (!state.savedSelection) {
-      hideToolbar();
+      showSelectionToolbar('"' + truncate(selected.replace(/\n/g, " "), 40) + '"');
+      return;
     }
+
+    if (state.selectionMode === "lines" && state.selectedLines.length) {
+      var linePreview = getSelectedPlainText().replace(/\n/g, " ");
+      showSelectionToolbar('"' + truncate(linePreview, 40) + '"', false);
+      return;
+    }
+
+    if (state.savedSelection && state.savedSelection.pEnd > state.savedSelection.pStart) {
+      var savedPreview = state.plainText.slice(state.savedSelection.pStart, state.savedSelection.pEnd);
+      showSelectionToolbar('"' + truncate(savedPreview.replace(/\n/g, " "), 40) + '"');
+      return;
+    }
+
+    hideToolbar();
   }
 
   function applyStyleToSelection(styleId) {
-    var input = $("xps-input");
-    if (!input) return;
-
-    var sel = getActiveSelection();
-    if (!sel || sel.pEnd <= sel.pStart) {
+    var ranges = getActiveSelectionRanges();
+    if (!ranges.length) {
       showToast("Highlight some text first ✨");
       return;
     }
 
-    state.spans = applySpanStyle(state.spans, sel.pStart, sel.pEnd, styleId);
-    state.savedSelection = null;
-    refreshTextareaFromState(sel.pEnd, sel.pEnd);
-    hideToolbar();
+    for (var i = 0; i < ranges.length; i++) {
+      var r = ranges[i];
+      if (r.pEnd > r.pStart) {
+        state.spans = applySpanStyle(state.spans, r.pStart, r.pEnd, styleId);
+      }
+    }
+
+    state.savedSelection = {
+      pStart: ranges[0].pStart,
+      pEnd: ranges[ranges.length - 1].pEnd,
+      ranges: ranges,
+    };
+
+    refreshFromState();
+    restoreSelectionAfterStyle();
+
+    var preview = getSelectedPlainText().replace(/\n/g, " ");
+    showSelectionToolbar('"' + truncate(preview, 40) + '"', state.selectionMode !== "lines");
 
     if (styleId === "normal") {
       showToast("Back to normal text ✨");
     } else {
-      showToast("Applied " + getStyleLabel(styleId) + " ✨");
+      showToast("Applied " + getStyleLabel(styleId) + " — try another style ✨");
     }
   }
 
-  function onTextInput() {
+  function onLineInput(e) {
     if (isRefreshing || isComposing) return;
-
-    var input = $("xps-input");
-    if (!input) return;
-
-    var oldPlain = state.plainText;
-
-    // No styles yet — keep the textarea as-is (1:1 plain text, no cursor juggling)
-    if (!state.spans.length) {
-      state.plainText = input.value;
-      state.text = input.value;
-      state.styledToPlain = [];
-      for (var i = 0; i < state.plainText.length; i++) {
-        state.styledToPlain.push(i);
-      }
-      if (!state.plainOriginal && state.plainText) {
-        state.plainOriginal = state.plainText;
-      }
-      state.savedSelection = null;
-      updateCounter();
-      return;
-    }
-
-    var styledCursor = input.selectionStart;
-    var newPlain = normalizeToPlain(input.value);
-    var plainCursor = inferPlainCursorAfterEdit(
-      oldPlain,
-      newPlain,
-      state.styledToPlain,
-      styledCursor
-    );
-
-    state.spans = remapSpans(oldPlain, newPlain, state.spans);
-    state.plainText = newPlain;
-
-    if (!state.plainOriginal && state.plainText) {
-      state.plainOriginal = state.plainText;
-    }
-
-    refreshTextareaFromState(plainCursor, plainCursor);
+    var lineIdx = parseInt(e.target.getAttribute("data-line"), 10);
+    clearLineSelection();
+    state.savedSelection = null;
+    syncPlainFromRows(lineIdx);
     scheduleSelectionUI();
   }
 
-  function preventStyleGridBlur(e) {
-    if (e.target.closest("[data-style]")) {
+  function mergePasteIntoDocument(beforeEnd, afterStart, pasted) {
+    var beforePlain = state.plainText.slice(0, beforeEnd);
+    var afterPlain = state.plainText.slice(afterStart);
+    var inserted = parseStyledDocument(pasted);
+
+    var keptBefore = state.spans.filter(function (s) { return s.end <= beforeEnd; });
+    var keptAfter = state.spans
+      .filter(function (s) { return s.start >= afterStart; })
+      .map(function (s) {
+        var shift = beforePlain.length + inserted.plainText.length - afterStart;
+        return {
+          start: s.start + shift,
+          end: s.end + shift,
+          styleId: s.styleId,
+        };
+      });
+    var insertedSpans = inserted.spans.map(function (s) {
+      return {
+        start: s.start + beforePlain.length,
+        end: s.end + beforePlain.length,
+        styleId: s.styleId,
+      };
+    });
+
+    return {
+      plainText: beforePlain + inserted.plainText + afterPlain,
+      spans: keptBefore.concat(insertedSpans).concat(keptAfter),
+    };
+  }
+
+  function onLinePaste(e) {
+    var pasted = e.clipboardData && (e.clipboardData.getData("text/plain") || e.clipboardData.getData("text"));
+    if (!pasted) return;
+
+    pasted = pasted.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var ta = e.target;
+    var lineIdx = parseInt(ta.getAttribute("data-line"), 10);
+    var hasNewlines = pasted.indexOf("\n") >= 0;
+    var isFullReplace = ta.selectionStart === 0 && ta.selectionEnd === ta.value.length;
+    var isEmptyDoc = !state.plainText && state.spans.length === 0;
+
+    if (!hasNewlines && !isFullReplace) return;
+
+    e.preventDefault();
+
+    if (hasNewlines && (isEmptyDoc || isFullReplace)) {
+      applyImportedContent(parseStyledDocument(pasted), 0);
+      return;
+    }
+
+    var lineRanges = getLineRanges(state.plainText);
+    var lr = lineRanges[lineIdx];
+    if (!lr) return;
+
+    var lineMap = getLineStyledToPlain(lr, state.styledToPlain);
+    var local = styledRangeToPlain(lineMap, ta.selectionStart, ta.selectionEnd, lr.end - lr.start);
+    var beforeEnd = lr.start + local.pStart;
+    var afterStart = lr.start + local.pEnd;
+    var merged = mergePasteIntoDocument(beforeEnd, afterStart, pasted);
+    applyImportedContent(merged, lineIdx + pasted.split("\n").length - 1);
+  }
+
+  function onLineKeydown(e) {
+    var ta = e.target;
+    var lineIdx = parseInt(ta.getAttribute("data-line"), 10);
+
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      insertLineAfter(lineIdx, ta.selectionStart, ta.selectionEnd);
+      return;
+    }
+
+    if (e.key === "Backspace" && ta.selectionStart === 0 && ta.selectionEnd === 0 && lineIdx > 0) {
+      e.preventDefault();
+      mergeLineWithPrevious(lineIdx);
+      return;
+    }
+
+    if (e.key === "Delete" && ta.selectionStart === ta.value.length && ta.selectionEnd === ta.value.length) {
+      var lineRanges = getLineRanges(state.plainText);
+      if (lineIdx < lineRanges.length - 1) {
+        e.preventDefault();
+        mergeLineWithNext(lineIdx);
+      }
+    }
+  }
+
+  function preventToolbarBlur(e) {
+    if (e.target.closest("[data-style]") || e.target.closest(".xps-line-btn")) {
       e.preventDefault();
     }
   }
 
   function bindEvents() {
-    var input = $("xps-input");
+    var linesContainer = $("xps-lines");
 
-    if (input) {
-      input.addEventListener("focus", function () {
+    if (linesContainer) {
+      linesContainer.addEventListener("focusin", function (e) {
+        if (!e.target.classList.contains("xps-line-input")) return;
         if (isMobileLayout()) {
           setEditingMode(true);
           requestAnimationFrame(function () {
-            input.scrollIntoView({ block: "center", behavior: "smooth" });
+            e.target.scrollIntoView({ block: "center", behavior: "smooth" });
           });
         }
       });
-      input.addEventListener("input", onTextInput);
-      input.addEventListener("select", scheduleSelectionUI);
-      input.addEventListener("mouseup", scheduleSelectionUI);
-      input.addEventListener("touchend", scheduleSelectionUI);
-      input.addEventListener("keyup", function (e) {
+
+      linesContainer.addEventListener("input", function (e) {
+        if (e.target.classList.contains("xps-line-input")) {
+          autoResizeLine(e.target);
+          onLineInput(e);
+        }
+      });
+
+      linesContainer.addEventListener("keydown", function (e) {
+        if (e.target.classList.contains("xps-line-input")) {
+          onLineKeydown(e);
+        }
+      });
+
+      linesContainer.addEventListener("paste", function (e) {
+        if (e.target.classList.contains("xps-line-input")) {
+          onLinePaste(e);
+        }
+      });
+
+      linesContainer.addEventListener("select", function (e) {
+        if (e.target.classList.contains("xps-line-input")) scheduleSelectionUI();
+      });
+
+      linesContainer.addEventListener("mouseup", function (e) {
+        if (e.target.classList.contains("xps-line-input")) scheduleSelectionUI();
+      });
+
+      linesContainer.addEventListener("touchend", function (e) {
+        if (e.target.classList.contains("xps-line-input")) scheduleSelectionUI();
+      });
+
+      linesContainer.addEventListener("keyup", function (e) {
+        if (!e.target.classList.contains("xps-line-input")) return;
         if (e.shiftKey || e.key === "Shift" || (e.key && e.key.indexOf("Arrow") === 0)) {
           scheduleSelectionUI();
         }
       });
-      input.addEventListener("compositionstart", function () {
-        isComposing = true;
+
+      linesContainer.addEventListener("compositionstart", function (e) {
+        if (e.target.classList.contains("xps-line-input")) isComposing = true;
       });
-      input.addEventListener("compositionend", function () {
+
+      linesContainer.addEventListener("compositionend", function (e) {
+        if (!e.target.classList.contains("xps-line-input")) return;
         isComposing = false;
-        onTextInput();
+        onLineInput(e);
       });
-      input.addEventListener("blur", function () {
+
+      linesContainer.addEventListener("blur", function (e) {
+        if (!e.target.classList.contains("xps-line-input")) return;
         clearTimeout(selectionTimer);
         setTimeout(function () {
           var active = document.activeElement;
           if (active && active.closest && active.closest("#xps-style-grid")) return;
           if (active && active.closest && active.closest("#xps-toolbar")) return;
+          if (active && active.closest && active.closest(".xps-line-btn")) return;
           if (active && active.id === "xps-done-editing") return;
+          if (active && active.classList && active.classList.contains("xps-line-input")) return;
           state.savedSelection = null;
+          clearLineSelection();
           hideToolbar();
           if (isMobileLayout()) setEditingMode(false);
         }, 180);
+      }, true);
+
+      linesContainer.addEventListener("mousedown", preventToolbarBlur);
+      linesContainer.addEventListener("pointerdown", function (e) {
+        var btn = e.target.closest(".xps-line-btn");
+        if (btn) {
+          e.preventDefault();
+        } else {
+          preventToolbarBlur(e);
+        }
+      });
+
+      linesContainer.addEventListener("click", function (e) {
+        var btn = e.target.closest(".xps-line-btn");
+        if (!btn || btn.disabled) return;
+        toggleLineSelection(parseInt(btn.getAttribute("data-line"), 10), e.shiftKey);
       });
     }
 
@@ -418,11 +941,15 @@
 
     window.addEventListener("resize", function () {
       if (!isMobileLayout()) setEditingMode(false);
+      var inputs = $("xps-lines");
+      if (inputs) {
+        inputs.querySelectorAll(".xps-line-input").forEach(autoResizeLine);
+      }
     });
 
     document.addEventListener("selectionchange", function () {
-      var input = $("xps-input");
-      if (input && document.activeElement === input) {
+      var active = document.activeElement;
+      if (active && active.classList && active.classList.contains("xps-line-input")) {
         scheduleSelectionUI();
       }
     });
@@ -436,8 +963,8 @@
 
     var grid = $("xps-style-grid");
     if (grid) {
-      grid.addEventListener("mousedown", preventStyleGridBlur);
-      grid.addEventListener("pointerdown", preventStyleGridBlur);
+      grid.addEventListener("mousedown", preventToolbarBlur);
+      grid.addEventListener("pointerdown", preventToolbarBlur);
       grid.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-style]");
         if (!btn) return;
@@ -450,6 +977,7 @@
       exampleBtn.addEventListener("click", function () {
         state.plainOriginal = EXAMPLE_POST;
         state.savedSelection = null;
+        clearLineSelection();
         setPlainContent(EXAMPLE_POST, []);
         showToast("Example pasted ✨");
       });
@@ -460,6 +988,7 @@
       clearBtn.addEventListener("click", function () {
         state.plainOriginal = "";
         state.savedSelection = null;
+        clearLineSelection();
         setPlainContent("", []);
         hideToolbar();
         showToast("Cleared");
@@ -475,6 +1004,7 @@
         }
         setPlainContent(state.plainOriginal, []);
         state.savedSelection = null;
+        clearLineSelection();
         hideToolbar();
         showToast("Styles reset ✨");
       });
@@ -497,7 +1027,7 @@
     if (keepHash) {
       keepHash.addEventListener("change", function (e) {
         state.settings.keepHashtagsNormal = e.target.checked;
-        refreshTextareaFromState();
+        refreshFromState();
         updateSelectionUI();
       });
     }
@@ -506,7 +1036,7 @@
     if (keepMention) {
       keepMention.addEventListener("change", function (e) {
         state.settings.keepMentionsNormal = e.target.checked;
-        refreshTextareaFromState();
+        refreshFromState();
         updateSelectionUI();
       });
     }
@@ -514,10 +1044,19 @@
 
   function init() {
     renderStyleGrid();
+    refreshFromState();
     bindEvents();
 
-    if (XP.clearDraft) XP.clearDraft();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        var container = $("xps-lines");
+        if (container) {
+          container.querySelectorAll(".xps-line-input").forEach(autoResizeLine);
+        }
+      });
+    }
 
+    if (XP.clearDraft) XP.clearDraft();
     updateCounter();
   }
 

@@ -30,28 +30,18 @@
 
     <header class="xps-hero">
       <h1 class="xps-hero__title">X Post Styler ✨</h1>
-      <p class="xps-hero__sub">Paste your post, highlight words, tap a style — then copy.</p>
+      <p class="xps-hero__sub">Paste your post, highlight words or tap line numbers, pick a style — then copy.</p>
     </header>
 
     <section class="xps-card xps-editor" aria-label="Post editor">
-      <label class="xps-label" for="xps-input">Your post</label>
+      <p class="xps-label">Your post</p>
       <div id="xps-editing-bar" class="xps-editing-bar" hidden>
         <span id="xps-char-count-compact" class="xps-char-count-compact xps-counter xps-counter--calm">0 / 280</span>
         <button type="button" id="xps-done-editing" class="xps-done-btn">Done</button>
       </div>
-      <textarea
-        id="xps-input"
-        class="xps-textarea"
-        rows="10"
-        placeholder="Paste your X post here…"
-        spellcheck="true"
-        autocapitalize="sentences"
-        autocomplete="off"
-        autocorrect="on"
-        enterkeyhint="done"
-      ></textarea>
+      <div id="xps-lines" class="xps-lines" aria-label="Post lines"></div>
 
-      <p id="xps-toolbar-idle" class="xps-hint">Highlight any text in your post to pick a style.</p>
+      <p id="xps-toolbar-idle" class="xps-hint">Highlight text, or tap a line number on the left — then pick a style.</p>
 
       <div id="xps-toolbar" class="xps-toolbar" hidden>
         <p class="xps-toolbar__title">Pick a style for: <strong id="xps-selection-text">—</strong></p>
