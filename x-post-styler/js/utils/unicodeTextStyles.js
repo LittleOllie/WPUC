@@ -536,6 +536,36 @@ function parseStyledDocument(text) {
   return { plainText: plainText, spans: mergeAdjacentSpans(spanParts) };
 }
 
+/**
+ * Keep original upper/lower casing when styled Unicode round-trips to the same letters.
+ * @param {string} parsedPlain
+ * @param {string} previousPlain
+ */
+function preservePlainCase(parsedPlain, previousPlain) {
+  if (!previousPlain || !parsedPlain) return parsedPlain;
+  if (parsedPlain === previousPlain) return parsedPlain;
+  if (parsedPlain.toLowerCase() === previousPlain.toLowerCase()) return previousPlain;
+
+  var prefix = 0;
+  var pLen = parsedPlain.length;
+  var prevLen = previousPlain.length;
+  while (
+    prefix < pLen &&
+    prefix < prevLen &&
+    parsedPlain.charAt(prefix).toLowerCase() === previousPlain.charAt(prefix).toLowerCase()
+  ) {
+    prefix++;
+  }
+
+  var result = "";
+  var i;
+  for (i = 0; i < prefix; i++) {
+    result += previousPlain.charAt(i);
+  }
+  result += parsedPlain.slice(prefix);
+  return result;
+}
+
 Object.assign(window.XPStyler = window.XPStyler || {}, {
   STYLE_CATEGORIES,
   ALL_STYLES,
@@ -544,6 +574,7 @@ Object.assign(window.XPStyler = window.XPStyler || {}, {
   transformText,
   normalizeToPlain,
   parseStyledDocument,
+  preservePlainCase,
   splitGraphemes,
   isEmojiGrapheme,
 });

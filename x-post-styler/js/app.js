@@ -23,6 +23,7 @@
   var styledRangeToPlain = XP.styledRangeToPlain;
   var plainRangeToStyled = XP.plainRangeToStyled;
   var parseStyledDocument = XP.parseStyledDocument;
+  var preservePlainCase = XP.preservePlainCase;
 
   var STYLE_SAMPLE = "Aa Bb";
   var PREVIEW_MAX = 36;
@@ -368,14 +369,32 @@
     showToast(parsed.spans.length ? "Pasted with styles ✨" : "Pasted ✨");
   }
 
+  function rowsMatchCurrentStyledState(inputs) {
+    if (!state.plainText && state.spans.length === 0) return false;
+    var doc = buildStyledDocument(state.plainText, state.spans, getOpts());
+    var expectedLines = splitStyledByPlainLines(state.plainText, doc.styled, doc.styledToPlain);
+    var actualLines = flattenInputLines(inputs);
+    if (actualLines.length !== expectedLines.length) return false;
+    for (var i = 0; i < actualLines.length; i++) {
+      if (actualLines[i] !== expectedLines[i]) return false;
+    }
+    return true;
+  }
+
   function syncPlainFromRows(changedLineIdx) {
     var container = $("xps-lines");
     if (!container) return;
 
     var inputs = container.querySelectorAll(".xps-line-input");
+    if (rowsMatchCurrentStyledState(inputs)) {
+      updateCounter();
+      return;
+    }
+
+    var previousPlain = state.plainText;
     var built = linesToPlainAndSpans(flattenInputLines(inputs));
 
-    state.plainText = built.plainText;
+    state.plainText = preservePlainCase(built.plainText, previousPlain);
     state.spans = built.spans;
 
     if (!state.plainOriginal && state.plainText) {
