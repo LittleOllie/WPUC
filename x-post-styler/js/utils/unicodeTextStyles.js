@@ -69,11 +69,8 @@ const SMALL_CAPS_MAP = {
 const GLITCH_MARKS = ["\u0300", "\u0301", "\u0308", "\u0315", "\u0336"];
 
 /** Correct alphabets — Unicode math blocks have gaps; offsets alone produce wrong glyphs. */
-const SCRIPT_UPPER_CPS = [
-  0x1d49c, 0x212c, 0x1d49e, 0x1d4a0, 0x1d4a2, 0x1d4a4, 0x1d4a6, 0x1d4a8, 0x1d4aa, 0x1d4ac,
-  0x1d4ae, 0x1d4b0, 0x1d4b2, 0x1d4b4, 0x1d4b6, 0x1d4b8, 0x1d4ba, 0x1d4bc, 0x1d4be, 0x1d4c0,
-  0x1d4c2, 0x1d4c4, 0x1d4c6, 0x1d4c8, 0x1d4ca, 0x1d4cc,
-];
+/** Script capitals share glyphs with unrelated lowercase letters in Unicode; use bold-script capitals. */
+const SCRIPT_UPPER_BASE = 0x1d4d0;
 const SCRIPT_LOWER_BASE = 0x1d4b6;
 const GOTHIC_UPPER_CPS = [
   0x1d504, 0x1d505, 0x212d, 0x1d507, 0x1d508, 0x1d509, 0x1d50a, 0x210c, 0x2111, 0x1d50d,
@@ -111,7 +108,7 @@ function buildContiguousAlphabet(base, count) {
   return chars.join("");
 }
 
-const SCRIPT_UPPER = buildAlphabetFromCodePoints(SCRIPT_UPPER_CPS);
+const SCRIPT_UPPER = buildContiguousAlphabet(SCRIPT_UPPER_BASE, 26);
 const SCRIPT_LOWER = buildContiguousAlphabet(SCRIPT_LOWER_BASE, 26);
 const GOTHIC_UPPER = buildAlphabetFromCodePoints(GOTHIC_UPPER_CPS);
 const GOTHIC_LOWER = buildContiguousAlphabet(GOTHIC_LOWER_BASE, 26);
@@ -133,7 +130,13 @@ function splitGraphemes(text) {
 }
 
 function isEmojiGrapheme(grapheme) {
-  return /\p{Extended_Pictographic}/u.test(grapheme);
+  if (!/\p{Extended_Pictographic}/u.test(grapheme)) return false;
+  if (grapheme.length === 1) {
+    const cp = grapheme.codePointAt(0);
+    // Circled letters (Ⓜ is miscategorized as emoji in some Unicode versions)
+    if (cp >= 0x24b6 && cp <= 0x24e9) return false;
+  }
+  return true;
 }
 
 function createAlphabetMapper(upper, lower, digits) {
@@ -208,12 +211,13 @@ function toBubble(char) {
 function toSquare(char) {
   const code = char.charCodeAt(0);
   if (code >= 65 && code <= 90) return String.fromCodePoint(SQUARE_BASE + (code - 65));
+  if (code >= 97 && code <= 122) return String.fromCodePoint(SQUARE_BASE + 26 + (code - 97));
   return char;
 }
 
 function toSmallCaps(char) {
-  if (SMALL_CAPS_MAP[char]) return SMALL_CAPS_MAP[char];
-  if (char >= "A" && char <= "Z") return char;
+  const key = char >= "A" && char <= "Z" ? char.toLowerCase() : char;
+  if (SMALL_CAPS_MAP[key]) return SMALL_CAPS_MAP[key];
   return char;
 }
 
@@ -368,9 +372,11 @@ function buildReverseCharMap() {
     const circledU = String.fromCodePoint(BUBBLE_BASE + i);
     const circledL = String.fromCodePoint(BUBBLE_LOWER_BASE + i);
     const squaredU = String.fromCodePoint(SQUARE_BASE + i);
+    const squaredL = String.fromCodePoint(SQUARE_BASE + 26 + i);
     if (map[circledU] === undefined) map[circledU] = String.fromCharCode(65 + i);
     if (map[circledL] === undefined) map[circledL] = String.fromCharCode(97 + i);
     if (map[squaredU] === undefined) map[squaredU] = String.fromCharCode(65 + i);
+    if (map[squaredL] === undefined) map[squaredL] = String.fromCharCode(97 + i);
   }
 
   for (const [plain, styled] of Object.entries(SMALL_CAPS_MAP)) {
@@ -434,21 +440,22 @@ const STYLED_CHAR_LOOKUP = buildStyledCharLookup();
 
 function buildStyledCharLookup() {
   const lookup = Object.create(null);
-  const plainChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const plainChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const skipStyles = { normal: true, littleOllie: true, uppercase: true };
   const styleIds = Object.keys(STYLE_TRANSFORMERS).filter(function (id) {
-    return id !== "normal" && id !== "littleOllie";
+    return !skipStyles[id];
   });
-  // Combined styles before base styles that share the same glyphs (e.g. 𝐇)
-  const ordered = ["uppercaseBold"].concat(styleIds.filter(function (id) {
-    return id !== "uppercaseBold";
-  }));
+  const ordered = ["bold"].concat(styleIds.filter(function (id) {
+    return id !== "bold" && id !== "uppercaseBold";
+  })).concat(["uppercaseBold"]);
 
   for (let s = 0; s < ordered.length; s++) {
     const styleId = ordered[s];
     for (let i = 0; i < plainChars.length; i++) {
       const plain = plainChars.charAt(i);
       const styled = transformText(plain, styleId);
-      if (styled !== plain && lookup[styled] === undefined) {
+      if (styled === plain) continue;
+      if (lookup[styled] === undefined) {
         lookup[styled] = { plain: plain, styleId: styleId };
       }
     }
@@ -472,6 +479,29 @@ function mergeAdjacentSpans(spans) {
   return out;
 }
 
+function resolveStyledGrapheme(grapheme) {
+  if (STYLED_CHAR_LOOKUP[grapheme]) {
+    const entry = STYLED_CHAR_LOOKUP[grapheme];
+    if (
+      grapheme.length === 1 &&
+      entry.plain.length === 1 &&
+      /^[A-Za-z]$/.test(grapheme) &&
+      grapheme !== entry.plain &&
+      grapheme.toLowerCase() === entry.plain.toLowerCase()
+    ) {
+      return { plainChunk: grapheme, styleId: "normal" };
+    }
+    return { plainChunk: entry.plain, styleId: entry.styleId };
+  }
+
+  const denormed = normalizeToPlain(grapheme);
+  if (denormed !== grapheme) {
+    return { plainChunk: denormed, styleId: "normal" };
+  }
+
+  return { plainChunk: grapheme, styleId: "normal" };
+}
+
 /**
  * Import pasted/typed styled Unicode into plain text + span ranges.
  * @param {string} text
@@ -489,16 +519,12 @@ function parseStyledDocument(text) {
     let plainChunk = grapheme;
     let styleId = "normal";
 
-    if (isEmojiGrapheme(grapheme)) {
+    if (isEmojiGrapheme(grapheme) && !STYLED_CHAR_LOOKUP[grapheme]) {
       plainChunk = grapheme;
-    } else if (STYLED_CHAR_LOOKUP[grapheme]) {
-      plainChunk = STYLED_CHAR_LOOKUP[grapheme].plain;
-      styleId = STYLED_CHAR_LOOKUP[grapheme].styleId;
     } else {
-      const denormed = normalizeToPlain(grapheme);
-      if (denormed !== grapheme) {
-        plainChunk = denormed;
-      }
+      const resolved = resolveStyledGrapheme(grapheme);
+      plainChunk = resolved.plainChunk;
+      styleId = resolved.styleId;
     }
 
     plainText += plainChunk;
