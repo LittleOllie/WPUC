@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>The Playground – Little Ollie Labs</title>
+  <title>Choose Your Lab — Little Ollie Labs</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="description" content="Choose your lab — games, NFT tools, and creative apps from Little Ollie Playground Labs." />
+  <meta name="description" content="Choose your lab — games, NFT tools, creative apps and community from Little Ollie Playground Labs." />
   <link rel="canonical" href="https://littleollielabs.com/links/" />
   <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
   <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
@@ -12,126 +12,124 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../styles/site-brand.css" />
-  <link rel="stylesheet" href="../styles/site-labs-bg.css" />
-  <link rel="stylesheet" href="../styles/site-hub.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/lo-playground.css" />
 </head>
-<body>
-  <div class="links-page links-page--playground">
-    <div class="hero-bg" aria-hidden="true"></div>
+<body class="lo-playground">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../webpageassets/labplayground.png"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
+  </div>
 
-    <div class="hero-clouds" aria-hidden="true">
-      <img src="../assets/cloud1.webp" class="cloud cloud-1" alt="" />
-      <img src="../assets/cloud2.webp" class="cloud cloud-2" alt="" />
-      <img src="../assets/cloud3.webp" class="cloud cloud-3" alt="" />
-    </div>
+  <div id="playground-enter-curtain" class="lo-playground__curtain" aria-hidden="true" hidden></div>
 
-    <div class="playground-bg-dim" aria-hidden="true"></div>
-
-    <div id="playground-enter-curtain" class="playground-enter-curtain" aria-hidden="true" hidden></div>
-
-    <div class="links-content links-content--playground">
-      <div class="playground-hub">
-        <div class="playground-hub__logo">
+  <main class="lo-playground__content">
+    <div class="lo-playground__shell">
+      <div class="lo-playground__brand">
+        <a href="../index.html#labs" aria-label="Little Ollie World — Labs">
           <img
-            src="../assets/websitemainlogo.png"
-            class="playground-hub__logo-img"
-            alt="Little Ollie — Where little ideas are tested and brought to life."
+            src="../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
             decoding="async"
           />
-        </div>
-
-        <div class="playground-hub__shell">
-          <header class="playground-hub__head" id="playgroundHead">
-            <p class="playground-hub__eyebrow">Little Ollie Playground Labs</p>
-            <h1 class="playground-hub__title">Choose Your Lab</h1>
-            <p class="playground-hub__tagline">Pick a playground zone and start exploring.</p>
-          </header>
-
-          <div class="lab-grid" id="categoryMenu">
-            <button type="button" class="lab-card" data-category="games" aria-expanded="false">
-              <span class="lab-card__icon" aria-hidden="true">🎮</span>
-              <span class="lab-card__text">
-                <span class="lab-card__title">Games Lab</span>
-                <span class="lab-card__sub">Play, guess and explore.</span>
-              </span>
-            </button>
-            <button type="button" class="lab-card" data-category="nft" aria-expanded="false">
-              <span class="lab-card__icon" aria-hidden="true">🧪</span>
-              <span class="lab-card__text">
-                <span class="lab-card__title">NFT Tools Lab</span>
-                <span class="lab-card__sub">Collect, compare and discover.</span>
-              </span>
-            </button>
-            <button type="button" class="lab-card" data-category="creative" aria-expanded="false">
-              <span class="lab-card__icon" aria-hidden="true">🎨</span>
-              <span class="lab-card__text">
-                <span class="lab-card__title">Creative Lab</span>
-                <span class="lab-card__sub">Stories, books and Little Ollie ideas.</span>
-              </span>
-            </button>
-            <button type="button" class="lab-card" data-category="community" aria-expanded="false">
-              <span class="lab-card__icon" aria-hidden="true">🌈</span>
-              <span class="lab-card__text">
-                <span class="lab-card__title">Community Lab</span>
-                <span class="lab-card__sub">Follow, connect and join the journey.</span>
-              </span>
-            </button>
-          </div>
-
-          <section class="lab-panel" id="category-games" data-category-panel="games" hidden>
-            <h2 class="lab-panel__title"><span aria-hidden="true">🎮</span> Games Lab</h2>
-            <p class="lab-panel__sub">Play, guess and explore.</p>
-            <div class="links-stack links-stack--compact">
-              <a href="../game.html" class="link-btn link-btn--compact"><span>One Button Hero</span></a>
-              <a href="../games/slider-puzzle/index.html" class="link-btn link-btn--compact"><span>Slider Puzzle</span></a>
-              <a href="../ddg/index.html" class="link-btn link-btn--compact"><span>DDG</span></a>
-              <a href="../proof-of-grass/" class="link-btn link-btn--compact"><span>Proof of Grass</span></a>
-              <a href="../dopeornope/" class="link-btn link-btn--compact"><span>Dope or Nope</span></a>
-            </div>
-          </section>
-
-          <section class="lab-panel" id="category-nft" data-category-panel="nft" hidden>
-            <h2 class="lab-panel__title"><span aria-hidden="true">🧪</span> NFT Tools Lab</h2>
-            <p class="lab-panel__sub">Collect, compare and discover.</p>
-            <div class="links-stack links-stack--compact">
-              <a href="../flexgrid/site/index.html" class="link-btn link-btn--compact"><span>FlexGrid</span></a>
-              <a href="../ddg-gorgez/" class="link-btn link-btn--compact"><span>DDG Gorgez</span></a>
-              <a href="../collection-overlap/" class="link-btn link-btn--compact"><span>Collection Overlap</span></a>
-              <a href="../nft-twin-finder/" class="link-btn link-btn--compact"><span>NFT Twin Finder</span></a>
-              <a href="../quirkies/" class="link-btn link-btn--compact"><span>Quirks Set Checker</span></a>
-              <a href="../OGT/" class="link-btn link-btn--compact"><span>Ogenie X Cert Checker</span></a>
-            </div>
-          </section>
-
-          <section class="lab-panel" id="category-creative" data-category-panel="creative" hidden>
-            <h2 class="lab-panel__title"><span aria-hidden="true">🎨</span> Creative Lab</h2>
-            <p class="lab-panel__sub">Stories, books and Little Ollie ideas.</p>
-            <div class="links-stack links-stack--compact">
-              <a href="../x-post-styler/" class="link-btn link-btn--compact"><span>X Post Styler ✨</span></a>
-              <a href="https://www.amazon.com/dp/B0DC5N4B1W?binding=paperback&amp;ref=dbs_dp_rwt_sb_unkn_tpbk" class="link-btn link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Coloring Books</span></a>
-              <a href="https://www.instagram.com/littleollie.world" class="link-btn link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Little Ollie World on IG</span></a>
-            </div>
-          </section>
-
-          <section class="lab-panel" id="category-community" data-category-panel="community" hidden>
-            <h2 class="lab-panel__title"><span aria-hidden="true">🌈</span> Community Lab</h2>
-            <p class="lab-panel__sub">Follow, connect and join the journey.</p>
-            <div class="links-stack links-stack--compact">
-              <a href="https://x.com/LittleOllieNFT" class="link-btn link-btn--compact" target="_blank" rel="noopener noreferrer"><span>Twitter / X</span></a>
-            </div>
-          </section>
-        </div>
-
-        <div class="playground-hub__nav">
-          <a href="../about.html" class="btn-back playground-hub__nav-btn">About</a>
-          <a href="../index.html" class="btn-back playground-hub__nav-btn">← Back to Home</a>
-        </div>
-        <p class="footnote playground-hub__foot">Little Ollie Labs • The Playground</p>
+        </a>
       </div>
+
+      <div class="lo-playground__card">
+        <header>
+          <p class="lo-playground__eyebrow">Little Ollie Playground Labs</p>
+          <h1 class="lo-playground__title">
+            Choose Your <span class="lo-playground__title-accent">Lab</span>
+          </h1>
+          <p class="lo-playground__lead">Pick a playground zone and start exploring.</p>
+        </header>
+
+        <div class="lo-playground__grid" id="categoryMenu" role="group" aria-label="Lab categories">
+          <button type="button" class="lo-playground__lab lo-playground__lab--blue" data-category="games" aria-expanded="false" aria-controls="category-games">
+            <span class="lo-playground__lab-icon" aria-hidden="true">🎮</span>
+            <span class="lo-playground__lab-title">Games Lab</span>
+            <span class="lo-playground__lab-sub">Play, guess and explore.</span>
+          </button>
+          <button type="button" class="lo-playground__lab lo-playground__lab--yellow" data-category="nft" aria-expanded="false" aria-controls="category-nft">
+            <span class="lo-playground__lab-icon" aria-hidden="true">🧪</span>
+            <span class="lo-playground__lab-title">NFT Tools Lab</span>
+            <span class="lo-playground__lab-sub">Collect, compare and discover.</span>
+          </button>
+          <button type="button" class="lo-playground__lab lo-playground__lab--blue" data-category="creative" aria-expanded="false" aria-controls="category-creative">
+            <span class="lo-playground__lab-icon" aria-hidden="true">🎨</span>
+            <span class="lo-playground__lab-title">Creative Lab</span>
+            <span class="lo-playground__lab-sub">Stories, books and Little Ollie ideas.</span>
+          </button>
+          <button type="button" class="lo-playground__lab lo-playground__lab--yellow" data-category="community" aria-expanded="false" aria-controls="category-community">
+            <span class="lo-playground__lab-icon" aria-hidden="true">🌈</span>
+            <span class="lo-playground__lab-title">Community Lab</span>
+            <span class="lo-playground__lab-sub">Follow, connect and join the journey.</span>
+          </button>
+        </div>
+
+        <section class="lo-playground__panel" id="category-games" data-category-panel="games" hidden>
+          <h2 class="lo-playground__panel-title"><span aria-hidden="true">🎮</span> Games Lab</h2>
+          <p class="lo-playground__panel-sub">Play, guess and explore.</p>
+          <ul class="lo-playground__links">
+            <li><a href="../game.html" class="lo-playground__link"><span>One Button Hero</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../games/slider-puzzle/index.html" class="lo-playground__link"><span>Slider Puzzle</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../ddg/index.html" class="lo-playground__link"><span>DDG</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../proof-of-grass/" class="lo-playground__link"><span>Proof of Grass</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../dopeornope/" class="lo-playground__link"><span>Dope or Nope</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </section>
+
+        <section class="lo-playground__panel" id="category-nft" data-category-panel="nft" hidden>
+          <h2 class="lo-playground__panel-title"><span aria-hidden="true">🧪</span> NFT Tools Lab</h2>
+          <p class="lo-playground__panel-sub">Collect, compare and discover.</p>
+          <ul class="lo-playground__links">
+            <li><a href="../flexgrid/site/index.html" class="lo-playground__link"><span>FlexGrid</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../ddg-gorgez/" class="lo-playground__link"><span>DDG Gorgez</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../collection-overlap/" class="lo-playground__link"><span>Collection Overlap</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../nft-twin-finder/" class="lo-playground__link"><span>NFT Twin Finder</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../quirkies/" class="lo-playground__link"><span>Quirks Set Checker</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="../OGT/" class="lo-playground__link"><span>Ogenie X Cert Checker</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </section>
+
+        <section class="lo-playground__panel" id="category-creative" data-category-panel="creative" hidden>
+          <h2 class="lo-playground__panel-title"><span aria-hidden="true">🎨</span> Creative Lab</h2>
+          <p class="lo-playground__panel-sub">Stories, books and Little Ollie ideas.</p>
+          <ul class="lo-playground__links">
+            <li><a href="../x-post-styler/" class="lo-playground__link"><span>X Post Styler ✨</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="https://www.amazon.com/dp/B0DC5N4B1W?binding=paperback&amp;ref=dbs_dp_rwt_sb_unkn_tpbk" class="lo-playground__link" target="_blank" rel="noopener noreferrer"><span>Coloring Books</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="https://www.instagram.com/littleollie.world" class="lo-playground__link" target="_blank" rel="noopener noreferrer"><span>Little Ollie World on IG</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </section>
+
+        <section class="lo-playground__panel" id="category-community" data-category-panel="community" hidden>
+          <h2 class="lo-playground__panel-title"><span aria-hidden="true">🌈</span> Community Lab</h2>
+          <p class="lo-playground__panel-sub">Follow, connect and join the journey.</p>
+          <ul class="lo-playground__links">
+            <li><a href="https://x.com/LittleOllieNFT" class="lo-playground__link" target="_blank" rel="noopener noreferrer"><span>Twitter / X</span><span class="lo-playground__link-arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </section>
+
+        <nav class="lo-playground__nav" aria-label="Playground navigation">
+          <a href="../index.html#labs" class="lo-playground__nav-btn lo-playground__nav-btn--primary">← Back to Home</a>
+          <a href="../about.html" class="lo-playground__nav-btn lo-playground__nav-btn--ghost">About</a>
+        </nav>
+      </div>
+
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
     </div>
-  </div>
+  </main>
 
   <script src="../links.js" defer></script>
 </body>

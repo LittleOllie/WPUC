@@ -1,0 +1,60 @@
+Little Ollie homepage images — drop files here using these names.
+
+BRAND
+  logo-nav.webp       Navigation bar logo (small)
+  logo-footer.png     Footer wordmark
+  favicon.png         Browser tab icon
+
+═══════════════════════════════════════════════════════════
+FULL-VIEWPORT STAGES (home.js → stageAssets)
+Each stage uses the SAME layout:
+  1) *-bg.png     full-bleed background
+  2) *-chars.png  transparent character layer (right side)
+  3) five bottom journey-style cards (images optional)
+
+HOME
+  playground.png              ✅ current home background (flipped)
+  hero-dad-and-ollie.png      ✅ current home characters
+  (optional later: home-bg.png / home-chars.png)
+
+FAMILY
+  family-bg.png               preferred family background
+  picnic-background-family.png  ✅ interim fallback
+  family.jpeg                 ✅ second fallback
+  meet-the-family.png         ✅ family character layer (same pose slot as home)
+  ollie.png / dad.png / mum.png / lily.png / jack.png
+                              ✅ bottom character cards
+
+STORIES
+  library.png                 ✅ stories stage background
+  library-ollie-lily.png      ✅ stories character layer (Ollie + Lily)
+  websiteBG.png               interim bg fallback
+  Courage / Kindness / Friendship / Creativity / Resilience.png
+                              ✅ bottom theme cards
+
+BOOKS
+  books-bg.png                ✅ books stage background
+  lobookhold.png              ✅ books character layer (Ollie holding book)
+  BookCover.jpg               ✅ bottom card + Amazon
+  spark.png / Believe in Yourself.png  available extras
+
+LABS
+  labplayground.png           ✅ labs stage background
+  dadolliesamlab.png          ✅ labs character layer (Dad, Ollie, Sam)
+  websiteComputerBG.png       fallback
+
+JOURNEY
+  journey-bg.png
+  journey-chars.png
+  journey.png                 ✅ interim bg fallback
+
+HOME JOURNEY CARDS (under Home only — home.js → heroAssets)
+  family.jpeg / BookCover.jpg / Friendship.png /
+  Creativity.png / Resilience.png
+
+SKY (optional decorative leftovers)
+  cloud1.webp / cloud2.webp / cloud3.webp
+
+To tune character size/position later, edit home.css:
+  .lo-stage__chars
+  .lo-stage--home .lo-stage__chars

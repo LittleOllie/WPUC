@@ -1,62 +1,835 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Little Ollie Labs</title>
-<link rel="icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
-<link rel="shortcut icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" />
-<link rel="apple-touch-icon" href="flexgrid/site/src/assets/images/LO.png" />
+  <meta charset="utf-8" />
+  <title>Little Ollie World — Stories, Characters &amp; Creative Adventures</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="A growing universe of stories, characters, creativity and big little lessons for kids and families — from Little Ollie World and Little Ollie Labs." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="webpageassets/favicon.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="webpageassets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="webpageassets/favicon.png" />
 
-<!-- Open Graph -->
-<meta property="og:title" content="Little Ollie Labs" />
-<meta property="og:description" content="Where little ideas are tested and brought to life. Games, stories &amp; digital collectibles from the Little Ollie Playground Labs." />
-<meta property="og:image" content="https://littleollielabs.com/preview.jpg" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:url" content="https://littleollielabs.com/" />
-<meta property="og:type" content="website" />
+  <meta property="og:title" content="Little Ollie World" />
+  <meta property="og:description" content="A little world full of big ideas — stories, characters, creativity and meaningful adventures for kids and families." />
+  <meta property="og:image" content="https://littleollielabs.com/preview.jpg" />
+  <meta property="og:url" content="https://littleollielabs.com/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Little Ollie World" />
+  <meta name="twitter:description" content="A little world full of big ideas for kids and families." />
+  <meta name="twitter:image" content="https://littleollielabs.com/preview.jpg" />
 
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Little Ollie Labs" />
-<meta name="twitter:description" content="Where little ideas are tested and brought to life." />
-<meta name="twitter:image" content="https://littleollielabs.com/preview.jpg" />
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles/site-brand.css" />
-<link rel="stylesheet" href="home.css" />
-
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="home.css" />
 </head>
-<body>
+<body class="home-page">
+  <a class="home-skip" href="#home">Skip to content</a>
 
-    <div class="sky">
-        <div class="hero-bg" aria-hidden="true"></div>
+  <header class="home-nav" id="site-nav">
+    <div class="home-nav__inner">
+      <a class="home-nav__brand" href="#home" aria-label="Little Ollie World — Home">
+        <img src="webpageassets/logo-nav.webp" alt="" class="home-nav__logo" width="140" height="40" decoding="async" />
+      </a>
 
-        <div class="hero-clouds" aria-hidden="true">
-            <img src="assets/cloud1.webp" class="cloud cloud-1" alt="" />
-            <img src="assets/cloud2.webp" class="cloud cloud-2" alt="" />
-            <img src="assets/cloud3.webp" class="cloud cloud-3" alt="" />
+      <nav class="home-nav__links" id="nav-links" aria-label="Main navigation">
+        <a href="#home" class="home-nav__link">Home</a>
+        <a href="#family" class="home-nav__link">Meet the Family</a>
+        <a href="#stories" class="home-nav__link">Stories</a>
+        <a href="#book" class="home-nav__link">Books</a>
+        <a href="#labs" class="home-nav__link">Little Ollie Labs</a>
+        <a href="#journey" class="home-nav__link">Our Journey</a>
+        <a href="#stories" class="home-nav__cta home-nav__cta--mobile">Explore the World</a>
+      </nav>
+
+      <a href="#stories" class="home-nav__cta home-nav__cta--desktop">Explore the World</a>
+
+      <button type="button" class="home-nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="home-nav-backdrop" id="nav-backdrop" hidden aria-hidden="true"></div>
+
+  <main id="main-content">
+    <div class="lo-stage lo-stage--home" id="home" data-stage="home">
+      <div class="lo-stage__world">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg lo-stage__bg--flip"
+            data-stage-layer="bg"
+            alt=""
+            width="1536"
+            height="1024"
+            sizes="100vw"
+            decoding="async"
+            fetchpriority="high"
+            hidden
+          />
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt="Dad and Little Ollie standing together and smiling"
+            width="1024"
+            height="1536"
+            sizes="28vw"
+            decoding="async"
+            fetchpriority="high"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add home-bg.png and home-chars.png</span>
+          </div>
         </div>
+      </div>
 
-        <main class="hero-content">
-            <div class="hero-intro">
-                <div class="hero-logo">
-                    <img src="assets/websitemainlogo.png" class="hero-logo__img" alt="Little Ollie — Where little ideas are tested and brought to life." decoding="async" />
-                </div>
+      <section class="lo-stage__panel" aria-labelledby="hero-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">Welcome to Little Ollie World</p>
+            <h1 class="home-hero__title" id="hero-heading">
+              A Little World<br />
+              Full of <span class="home-hero__title-accent">Big&nbsp;Ideas</span>
+            </h1>
+            <p class="home-hero__desc">Stories to share, friends to meet, and creative adventures that spark imagination — made for kids and the grown-ups who join them.</p>
+            <div class="home-hero__actions">
+              <a href="#family" class="home-btn home-btn--primary">Explore the World</a>
+              <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
             </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
 
-            <div class="hero-cta">
-                <a href="links/" class="hero-cta__btn" id="playgroundLink">Enter the Playground Labs</a>
-            </div>
-        </main>
-
-        <div id="home-liquid-curtain" class="home-liquid-curtain" aria-hidden="true"></div>
+      <nav class="journey-cards lo-stage__cards" aria-label="Start your Little Ollie journey">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--family" href="#family">
+                <span class="journey-card__icon" data-card-icon="family">
+                  <img data-hero-asset="cardFamily" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">♥</span> Meet the Family</span>
+                  <span class="journey-card__desc">Get to know Ollie, his family and friends.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--school" href="#stories">
+                <span class="journey-card__icon" data-card-icon="school">
+                  <img data-hero-asset="cardSchool" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Visit the Library</span>
+                  <span class="journey-card__desc">Browse big little lessons in the library.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--stories" href="#book">
+                <span class="journey-card__icon" data-card-icon="stories">
+                  <img data-hero-asset="cardStories" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📘</span> Read the Stories</span>
+                  <span class="journey-card__desc">Magical stories with big little lessons.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--labs" href="#labs">
+                <span class="journey-card__icon" data-card-icon="labs">
+                  <img data-hero-asset="cardLabs" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">💡</span> Explore the Labs</span>
+                  <span class="journey-card__desc">Fun tools, games and creative experiments.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--adventure" href="#journey">
+                <span class="journey-card__icon" data-card-icon="adventure">
+                  <img data-hero-asset="cardAdventure" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">✩</span> Join the Adventure</span>
+                  <span class="journey-card__desc">Be part of a growing world of imagination.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </div>
 
-<script type="module" src="home.js"></script>
+    <div class="lo-stage lo-stage--family" id="family" data-stage="family">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-stage-layer="bg"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            hidden
+          />
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt="The Little Ollie family together"
+            width="1024"
+            height="1536"
+            sizes="28vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add family-bg.png and meet-the-family.png</span>
+          </div>
+        </div>
+      </div>
 
+      <section class="lo-stage__panel" aria-labelledby="family-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">The Heart of Little Ollie World</p>
+            <h2 class="home-hero__title" id="family-heading">
+              Come Meet<br />
+              the <span class="home-hero__title-accent">Family</span>
+            </h2>
+            <p class="home-hero__desc">They’re the heart of every story, adventure and big little lesson.</p>
+            <div class="home-hero__actions">
+              <a href="#stories" class="home-btn home-btn--primary">Explore Their Stories</a>
+              <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Meet each family member">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--ollie" href="#family">
+                <span class="journey-card__icon is-loaded" data-card-icon="ollie">
+                  <img src="webpageassets/ollie.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Ollie</span>
+                  <span class="journey-card__desc">Curious, creative and always ready for the next adventure.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--dad" href="#family">
+                <span class="journey-card__icon is-loaded" data-card-icon="dad">
+                  <img src="webpageassets/dad.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Dad</span>
+                  <span class="journey-card__desc">A supportive dad, builder of ideas and Ollie’s biggest teammate.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--mum" href="#family">
+                <span class="journey-card__icon is-loaded" data-card-icon="mum">
+                  <img src="webpageassets/mum.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Mum</span>
+                  <span class="journey-card__desc">Warm, caring and always helping the family find its way.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--lily" href="#family">
+                <span class="journey-card__icon is-loaded" data-card-icon="lily">
+                  <img src="webpageassets/lily.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Lily</span>
+                  <span class="journey-card__desc">Bright, thoughtful and full of imagination.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--jack" href="#family">
+                <span class="journey-card__icon is-loaded" data-card-icon="jack">
+                  <img src="webpageassets/jack.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Jack</span>
+                  <span class="journey-card__desc">The youngest adventurer, bringing energy and mischief everywhere.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="lo-stage lo-stage--stories" id="stories" data-stage="stories">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-stage-layer="bg"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            hidden
+          />
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt="Ollie and Lily reading a book together"
+            width="1536"
+            height="1024"
+            sizes="42vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add library.png and library-ollie-lily.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="stories-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">Stories With Heart</p>
+            <h2 class="home-hero__title" id="stories-heading">
+              Big Little<br />
+              <span class="home-hero__title-accent">Lessons</span>
+            </h2>
+            <p class="home-hero__desc">Every Little Ollie story begins with an adventure — and the most important moments are often the smallest ones.</p>
+            <div class="home-hero__actions">
+              <a href="#book" class="home-btn home-btn--primary">Discover Our Books</a>
+              <a href="#family" class="home-btn home-btn--secondary">Meet the Family</a>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Story themes">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--stories" href="#book">
+                <span class="journey-card__icon is-loaded" data-card-icon="stories">
+                  <img src="webpageassets/Courage.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Courage</span>
+                  <span class="journey-card__desc">Being brave in small, wonderful ways.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--family" href="#book">
+                <span class="journey-card__icon is-loaded" data-card-icon="family">
+                  <img src="webpageassets/Kindness.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Kindness</span>
+                  <span class="journey-card__desc">Choosing care, empathy and gentle hearts.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--school" href="#book">
+                <span class="journey-card__icon is-loaded" data-card-icon="school">
+                  <img src="webpageassets/Friendship.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Friendship</span>
+                  <span class="journey-card__desc">Finding connection and belonging.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--labs" href="#book">
+                <span class="journey-card__icon is-loaded" data-card-icon="labs">
+                  <img src="webpageassets/Creativity.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Creativity</span>
+                  <span class="journey-card__desc">Making, imagining and trying new ideas.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--adventure" href="#book">
+                <span class="journey-card__icon is-loaded" data-card-icon="adventure">
+                  <img src="webpageassets/Resilience.png" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Resilience</span>
+                  <span class="journey-card__desc">Getting back up with a spark still glowing.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="lo-stage lo-stage--book" id="book" data-stage="book">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-stage-layer="bg"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__magic lo-stage__magic--book" aria-hidden="true">
+            <span class="lo-stage__glow lo-stage__glow--core"></span>
+            <span class="lo-stage__glow lo-stage__glow--halo"></span>
+            <span class="lo-stage__glow lo-stage__glow--ring"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__spark"></span>
+            <span class="lo-stage__star"></span>
+            <span class="lo-stage__star"></span>
+            <span class="lo-stage__star"></span>
+            <span class="lo-stage__star"></span>
+            <span class="lo-stage__star"></span>
+            <span class="lo-stage__twinkle"></span>
+            <span class="lo-stage__twinkle"></span>
+            <span class="lo-stage__twinkle"></span>
+            <span class="lo-stage__twinkle"></span>
+            <span class="lo-stage__twinkle"></span>
+            <span class="lo-stage__twinkle"></span>
+          </div>
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt="Little Ollie holding The Spark Inside book"
+            width="1024"
+            height="1536"
+            sizes="28vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add books-bg.png and lobookhold.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="book-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">Our first story</p>
+            <h2 class="home-hero__title" id="book-heading">
+              Little Ollie:<br />
+              The <span class="home-hero__title-accent">Spark</span> Inside
+            </h2>
+            <p class="home-hero__desc">A rhyming story about curiosity, courage, creativity and believing in the little spark inside you.</p>
+            <div class="home-hero__actions">
+              <a href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Buy on Amazon</a>
+              <a href="#stories" class="home-btn home-btn--secondary">More Stories</a>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Books and reading paths">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--stories" href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N">
+                <span class="journey-card__icon is-loaded" data-card-icon="stories">
+                  <img src="webpageassets/BookCover.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">The Spark Inside</span>
+                  <span class="journey-card__desc">Our first picture book — ages 3–8.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--family" href="#book">
+                <span class="journey-card__icon" data-card-icon="family"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Coming Soon</span>
+                  <span class="journey-card__desc">A new adventure is on the way.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--school" href="#book">
+                <span class="journey-card__icon" data-card-icon="school"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Read Aloud</span>
+                  <span class="journey-card__desc">Perfect for bedtime and classrooms.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--labs" href="#book">
+                <span class="journey-card__icon" data-card-icon="labs"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Activities</span>
+                  <span class="journey-card__desc">Creative prompts inspired by the story.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--adventure" href="#book">
+                <span class="journey-card__icon" data-card-icon="adventure"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Collection</span>
+                  <span class="journey-card__desc">More Little Ollie books coming soon.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="lo-stage lo-stage--labs" id="labs" data-stage="labs">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-stage-layer="bg"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__magic lo-stage__magic--labs" aria-hidden="true">
+            <span class="lo-stage__blast lo-stage__blast--core"></span>
+            <span class="lo-stage__blast lo-stage__blast--wave"></span>
+            <span class="lo-stage__blast lo-stage__blast--ring"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__shard"></span>
+            <span class="lo-stage__orb"></span>
+            <span class="lo-stage__orb"></span>
+            <span class="lo-stage__orb"></span>
+            <span class="lo-stage__orb"></span>
+            <span class="lo-stage__orb"></span>
+            <span class="lo-stage__orb"></span>
+          </div>
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt="Dad, Ollie and Sam in lab coats"
+            width="1024"
+            height="1536"
+            sizes="28vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add labplayground.png and dadolliesamlab.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="labs-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">Little Ollie Labs</p>
+            <h2 class="home-hero__title" id="labs-heading">
+              Where Ideas<br />
+              Get to <span class="home-hero__title-accent">Play</span>
+            </h2>
+            <p class="home-hero__desc">From creative apps to playful experiments — every project begins with one question: what could we make next?</p>
+            <div class="home-hero__actions">
+              <a href="links/" class="home-btn home-btn--primary">Enter the Labs</a>
+              <a href="#journey" class="home-btn home-btn--secondary">Our Journey</a>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Labs and playful tools">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track journey-cards__track--labs4">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--stories" href="links/#games">
+                <span class="journey-card__icon" data-card-icon="games"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games Lab</span>
+                  <span class="journey-card__desc">Play, guess and explore.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--adventure" href="links/#nft">
+                <span class="journey-card__icon" data-card-icon="nft"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🧪</span> NFT Tools Lab</span>
+                  <span class="journey-card__desc">Collect, compare and discover.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--stories journey-card--labs-blue" href="links/#creative">
+                <span class="journey-card__icon" data-card-icon="creative"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Creative Lab</span>
+                  <span class="journey-card__desc">Stories, books and Little Ollie ideas.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--adventure" href="links/#community">
+                <span class="journey-card__icon" data-card-icon="community"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🌈</span> Community Lab</span>
+                  <span class="journey-card__desc">Follow, connect and join the journey.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--family" href="links/" aria-disabled="true">
+                <span class="journey-card__icon" data-card-icon="labs"></span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">✨</span> Coming Soon!</span>
+                  <span class="journey-card__desc">More labs are on the way.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="lo-stage lo-stage--journey" id="journey" data-stage="journey">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-stage-layer="bg"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            hidden
+          />
+          <img
+            class="lo-stage__chars"
+            data-stage-layer="chars"
+            alt=""
+            width="1024"
+            height="1536"
+            sizes="28vw"
+            decoding="async"
+            hidden
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder hidden>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add journeypage.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="journey-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal">
+            <p class="home-eyebrow">Our Journey</p>
+            <h2 class="home-hero__title" id="journey-heading">
+              It Started With<br />
+              One Little <span class="home-hero__title-accent">Idea</span>
+            </h2>
+            <p class="home-hero__desc">A dad, his son, and a growing world of stories, lessons, tools and adventures — follow along and come with us.</p>
+            <div class="home-hero__actions">
+              <a href="https://www.instagram.com/littleollie.world" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Follow Along</a>
+              <a href="mailto:littleollienft@gmail.com" class="home-btn home-btn--secondary">Say Hello</a>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Follow Little Ollie on social">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--family journey-card--facebook" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer">
+                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
+                  <img src="webpageassets/facebook.png" alt="" width="512" height="512" decoding="async" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Facebook</span>
+                  <span class="journey-card__desc">Family updates and behind the scenes.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--stories journey-card--instagram" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">
+                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
+                  <img src="webpageassets/instagram.png" alt="" width="512" height="512" decoding="async" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Instagram</span>
+                  <span class="journey-card__desc">Stories, art and little moments.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--labs journey-card--tiktok" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer">
+                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
+                  <img src="webpageassets/tiktok.png" alt="" width="512" height="512" decoding="async" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">TikTok</span>
+                  <span class="journey-card__desc">Fun clips from Little Ollie World.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--school journey-card--email" href="mailto:littleollienft@gmail.com">
+                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
+                  <img src="webpageassets/email.png" alt="" width="512" height="512" decoding="async" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">Email</span>
+                  <span class="journey-card__desc">littleollienft@gmail.com</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--adventure journey-card--x" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer">
+                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
+                  <img src="webpageassets/x-twitter.png" alt="" width="512" height="512" decoding="async" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title">X / Twitter</span>
+                  <span class="journey-card__desc">Quick updates and new adventures.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <footer class="home-footer" aria-label="Site footer">
+      <div class="home-footer__stars" aria-hidden="true"></div>
+      <div class="home-footer__hills" aria-hidden="true">
+        <div class="home-footer__trees"></div>
+      </div>
+
+      <div class="home-container home-footer__inner">
+        <div class="home-footer__brand">
+          <p class="home-footer__eyebrow">The adventure continues</p>
+          <img src="webpageassets/logo-footer.png" alt="Little Ollie World" class="home-footer__logo" width="180" height="54" decoding="async" />
+          <p class="home-footer__tagline">Where little ideas grow into big adventures.</p>
+          <p class="home-footer__credit">Made with imagination by a dad and his little mate.</p>
+        </div>
+
+        <nav class="home-footer__nav" aria-label="Footer navigation">
+          <a href="#home">Home</a>
+          <a href="#family">Meet the Family</a>
+          <a href="#stories">Stories</a>
+          <a href="#book">Books</a>
+          <a href="links/">Little Ollie Labs</a>
+          <a href="#journey">Our Journey</a>
+          <a href="mailto:littleollienft@gmail.com">Contact</a>
+          <a href="about.html">About</a>
+        </nav>
+
+        <div class="home-footer__meta">
+          <div class="home-footer__social">
+            <a href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer">Facebook</a>
+            <a href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer">TikTok</a>
+            <a href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer">X</a>
+            <a href="mailto:littleollienft@gmail.com">Email</a>
+          </div>
+          <div class="home-footer__legal">
+            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Privacy</a>
+            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Terms</a>
+          </div>
+          <p class="home-footer__copy">&copy; <span id="footer-year"></span> Little Ollie Labs. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="home.js" defer></script>
 </body>
 </html>
