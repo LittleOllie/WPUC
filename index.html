@@ -92,16 +92,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="hero-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Welcome to Little Ollie World</p>
-            <h1 class="home-hero__title" id="hero-heading">
-              A Little World<br />
-              Full of <span class="home-hero__title-accent">Big&nbsp;Ideas</span>
-            </h1>
-            <p class="home-hero__desc">Stories to share, friends to meet, and creative adventures that spark imagination — made for kids and the grown-ups who join them.</p>
-            <div class="home-hero__actions">
-              <a href="#family" class="home-btn home-btn--primary">Explore the World</a>
-              <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
+            <div class="home-hero__head">
+              <h1 class="home-hero__title" id="hero-heading">
+                A Little World<br />
+                Full of <span class="home-hero__title-accent">Big&nbsp;Ideas</span>
+              </h1>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-home" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-home">
+              <p class="home-hero__desc">Stories to share, friends to meet, and creative adventures that spark imagination — made for kids and the grown-ups who join them.</p>
+              <div class="home-hero__actions">
+                <a href="#family" class="home-btn home-btn--primary">Explore the World</a>
+                <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>
@@ -208,16 +215,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="family-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">The Heart of Little Ollie World</p>
-            <h2 class="home-hero__title" id="family-heading">
-              Come Meet<br />
-              the <span class="home-hero__title-accent">Family</span>
-            </h2>
-            <p class="home-hero__desc">They’re the heart of every story, adventure and big little lesson.</p>
-            <div class="home-hero__actions">
-              <a href="#stories" class="home-btn home-btn--primary">Explore Their Stories</a>
-              <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="family-heading">
+                Come Meet<br />
+                the <span class="home-hero__title-accent">Family</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-family" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-family">
+              <p class="home-hero__desc">They’re the heart of every story, adventure and big little lesson.</p>
+              <div class="home-hero__actions">
+                <a href="#stories" class="home-btn home-btn--primary">Explore Their Stories</a>
+                <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>
@@ -324,16 +338,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="stories-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Stories With Heart</p>
-            <h2 class="home-hero__title" id="stories-heading">
-              Big Little<br />
-              <span class="home-hero__title-accent">Lessons</span>
-            </h2>
-            <p class="home-hero__desc">Every Little Ollie story begins with an adventure — and the most important moments are often the smallest ones.</p>
-            <div class="home-hero__actions">
-              <a href="#book" class="home-btn home-btn--primary">Discover Our Books</a>
-              <a href="#family" class="home-btn home-btn--secondary">Meet the Family</a>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="stories-heading">
+                Big Little<br />
+                <span class="home-hero__title-accent">Lessons</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-stories" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-stories">
+              <p class="home-hero__desc">Every Little Ollie story begins with an adventure — and the most important moments are often the smallest ones.</p>
+              <div class="home-hero__actions">
+                <a href="#book" class="home-btn home-btn--primary">Discover Our Books</a>
+                <a href="#family" class="home-btn home-btn--secondary">Meet the Family</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>
@@ -468,16 +489,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="book-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Our first story</p>
-            <h2 class="home-hero__title" id="book-heading">
-              Little Ollie:<br />
-              The <span class="home-hero__title-accent">Spark</span> Inside
-            </h2>
-            <p class="home-hero__desc">A rhyming story about curiosity, courage, creativity and believing in the little spark inside you.</p>
-            <div class="home-hero__actions">
-              <a href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Buy on Amazon</a>
-              <a href="#stories" class="home-btn home-btn--secondary">More Stories</a>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="book-heading">
+                Little Ollie:<br />
+                The <span class="home-hero__title-accent">Spark</span> Inside
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-book" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-book">
+              <p class="home-hero__desc">A rhyming story about curiosity, courage, creativity and believing in the little spark inside you.</p>
+              <div class="home-hero__actions">
+                <a href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Buy on Amazon</a>
+                <a href="#stories" class="home-btn home-btn--secondary">More Stories</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>
@@ -601,16 +629,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="labs-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Little Ollie Labs</p>
-            <h2 class="home-hero__title" id="labs-heading">
-              Where Ideas<br />
-              Get to <span class="home-hero__title-accent">Play</span>
-            </h2>
-            <p class="home-hero__desc">From creative apps to playful experiments — every project begins with one question: what could we make next?</p>
-            <div class="home-hero__actions">
-              <a href="links/" class="home-btn home-btn--primary">Enter the Labs</a>
-              <a href="#journey" class="home-btn home-btn--secondary">Our Journey</a>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="labs-heading">
+                Where Ideas<br />
+                Get to <span class="home-hero__title-accent">Play</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-labs" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-labs">
+              <p class="home-hero__desc">From creative apps to playful experiments — every project begins with one question: what could we make next?</p>
+              <div class="home-hero__actions">
+                <a href="links/" class="home-btn home-btn--primary">Enter the Labs</a>
+                <a href="#journey" class="home-btn home-btn--secondary">Our Journey</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>
@@ -699,20 +734,27 @@
 
       <div class="lo-stage__panel our-story__panel">
         <div class="home-container lo-stage__grid our-story__grid">
-          <div class="home-hero__copy our-story__copy reveal">
+          <div class="home-hero__copy our-story__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Where it all began</p>
-            <h2 class="home-hero__title" id="our-story-heading">
-              A Dad, His Son and<br />
-              One Little <span class="home-hero__title-accent">Idea</span>
-            </h2>
-            <p class="home-hero__desc">
-              Little Ollie began with a simple dream shared between a father and his son — and grew into a world of stories, books, tools and adventures.
-            </p>
-            <div class="home-hero__actions">
-              <button type="button" class="home-btn home-btn--primary" id="our-story-play" data-story-play>
-                See Our Journey
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="our-story-heading">
+                A Dad, His Son and<br />
+                One Little <span class="home-hero__title-accent">Idea</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-story" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
               </button>
-              <a href="#journey" class="home-btn home-btn--secondary">Stay Connected</a>
+            </div>
+            <div class="home-hero__body" id="copy-body-story">
+              <p class="home-hero__desc">
+                Little Ollie began with a simple dream shared between a father and his son — and grew into a world of stories, books, tools and adventures.
+              </p>
+              <div class="home-hero__actions">
+                <button type="button" class="home-btn home-btn--primary" id="our-story-play" data-story-play>
+                  See Our Journey
+                </button>
+                <a href="#journey" class="home-btn home-btn--secondary">Stay Connected</a>
+              </div>
             </div>
           </div>
 
@@ -883,16 +925,23 @@
 
       <section class="lo-stage__panel" aria-labelledby="journey-heading">
         <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal">
+          <div class="home-hero__copy reveal" data-copy-panel>
             <p class="home-eyebrow">Stay connected</p>
-            <h2 class="home-hero__title" id="journey-heading">
-              Continue the<br />
-              <span class="home-hero__title-accent">Journey</span>
-            </h2>
-            <p class="home-hero__desc">Follow along, stay connected and see what we create next.</p>
-            <div class="home-hero__actions">
-              <a href="https://www.instagram.com/littleollie.world" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Follow Along</a>
-              <a href="mailto:littleollienft@gmail.com" class="home-btn home-btn--secondary">Say Hello</a>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="journey-heading">
+                Continue the<br />
+                <span class="home-hero__title-accent">Journey</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-journey" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-journey">
+              <p class="home-hero__desc">Follow along, stay connected and see what we create next.</p>
+              <div class="home-hero__actions">
+                <a href="https://www.instagram.com/littleollie.world" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Follow Along</a>
+                <a href="mailto:littleollienft@gmail.com" class="home-btn home-btn--secondary">Say Hello</a>
+              </div>
             </div>
           </div>
           <div class="lo-stage__spacer" aria-hidden="true"></div>

@@ -980,5 +980,35 @@
     });
   })();
 
+  (function initCopyPanels() {
+    var panels = document.querySelectorAll("[data-copy-panel]");
+    if (!panels.length) return;
+
+    function setOpen(panel, open) {
+      var btn = panel.querySelector(".home-hero__expand");
+      panel.classList.toggle("is-open", open);
+      if (!btn) return;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute(
+        "aria-label",
+        open ? "Hide section details" : "Show more about this section"
+      );
+    }
+
+    panels.forEach(function (panel) {
+      var btn = panel.querySelector(".home-hero__expand");
+      if (!btn) return;
+
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        var willOpen = !panel.classList.contains("is-open");
+        panels.forEach(function (other) {
+          if (other !== panel) setOpen(other, false);
+        });
+        setOpen(panel, willOpen);
+      });
+    });
+  })();
+
   /* Locked playground frame — no parallax (keeps characters stuck on zoom). */
 })();
