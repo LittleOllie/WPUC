@@ -1021,10 +1021,8 @@
 
 @media (max-width: 767px) {
   .lo-stage__chars {
-    right: 4%;
-    width: clamp(140px, 38vw, 220px);
-    max-height: min(42vh, 320px);
-    bottom: calc(var(--lo-stage-card-band) + 0.5rem);
+    /* Phone character framing is handled in the 899px stage rules */
+    right: auto;
   }
 
   .lo-stage__panel {
@@ -1288,19 +1286,71 @@
 
 @media (max-width: 899px) {
   .our-story__dock {
-    display: block;
-    width: 100%;
+    display: none;
+    width: auto;
     min-height: 0;
-    margin-top: 0.35rem;
+    margin-top: 0;
+    pointer-events: auto;
+  }
+
+  /* Tap a chapter → dock overlays above the bottom tiles (keeps 5 buttons in place) */
+  .our-story__dock.is-active {
+    display: block;
+    position: absolute;
+    left: var(--lo-phone-gutter, 1rem);
+    right: var(--lo-phone-gutter, 1rem);
+    top: calc(var(--lo-nav-height) + var(--lo-phone-gutter, 1rem));
+    bottom: calc(var(--lo-stage-card-band, 5.15rem) + 4.5rem);
+    z-index: 6;
+    width: auto;
+    max-height: none;
   }
 
   .our-story__dock-hint {
-    min-height: 7.5rem;
+    display: none !important;
   }
 
   .our-story__dock-panel {
     min-height: 0;
-    grid-template-rows: 160px auto;
+    height: 100%;
+    max-height: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    grid-template-rows: minmax(110px, 38%) minmax(0, 1fr);
+  }
+
+  .our-story__bg {
+    object-position: center 28%;
+  }
+
+  .our-story .lo-stage__panel {
+    justify-content: flex-start;
+  }
+
+  .our-story__grid {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .our-story__stage-bar {
+    display: none;
+  }
+
+  .our-story__copy {
+    height: auto;
+    max-width: min(92vw, 22.5rem);
+  }
+
+  .our-story .our-story__emoji {
+    font-size: 1.45rem;
+  }
+
+  .our-story .journey-card__title {
+    font-size: 0.52rem;
+  }
+
+  .our-story__cards {
+    margin-top: auto;
   }
 }
 
@@ -1357,15 +1407,9 @@
   outline-offset: 3px;
 }
 
-/* Match Labs / Books square equal tiles */
+/* Our Story has 5 chapters — always one bottom row (same as other stages) */
 .our-story .journey-cards__track--labs4 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (min-width: 900px) {
-  .our-story .journey-cards__track--labs4 {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .our-story .journey-card {
@@ -4616,6 +4660,9 @@ html.home-page-root {
     padding-top: calc(var(--lo-nav-height) + var(--lo-phone-gutter));
     padding-inline: var(--lo-phone-gutter);
     padding-bottom: 0.25rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .lo-stage__grid {
@@ -4627,21 +4674,20 @@ html.home-page-root {
     margin-inline: 0;
   }
 
-  /* Compact, squarer copy card — slightly top-left */
+  /* Compact copy card — keep readable, don’t crop body text */
   .lo-stage__panel .home-hero__copy {
     padding: 0.85rem 0.9rem;
     border-radius: 20px;
-    max-width: min(86vw, 20.5rem);
+    max-width: min(92vw, 22.5rem);
     margin-left: 0;
     margin-right: auto;
     align-self: start;
-    max-height: min(40vh, 290px);
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    aspect-ratio: 1 / 1;
+    max-height: none;
+    overflow: visible;
+    aspect-ratio: auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .lo-stage__panel .home-hero__copy .home-eyebrow {
@@ -4658,12 +4704,11 @@ html.home-page-root {
 
   .lo-stage__panel .home-hero__desc {
     margin-top: 0.4rem;
-    font-size: 0.84rem;
-    line-height: 1.35;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
   }
 
   .lo-stage__panel .home-hero__actions {
@@ -4684,7 +4729,15 @@ html.home-page-root {
     border-radius: 999px;
   }
 
-  /* Character layers — another ~25% bigger, clear of bottom buttons */
+  /* Character layers — clear of bottom buttons, framed for phone */
+  .lo-stage__bg {
+    object-position: center 22%;
+  }
+
+  .lo-stage--journey .lo-stage__bg {
+    object-position: center 36%;
+  }
+
   .lo-stage--home .lo-stage__chars,
   .lo-stage--family .lo-stage__chars,
   .lo-stage--stories .lo-stage__chars,
@@ -4692,47 +4745,47 @@ html.home-page-root {
   .lo-stage--labs .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book,
   .lo-stage--labs .lo-stage__magic--labs {
-    left: 60%;
-    right: auto;
-    bottom: calc(var(--lo-stage-card-band) + 2.75rem);
-    width: min(120vw, 608px);
-    max-height: min(79vh, 648px);
+    left: auto;
+    right: -6%;
+    bottom: calc(var(--lo-stage-card-band) + 0.85rem);
+    width: min(78vw, 340px);
+    max-height: min(42vh, 340px);
     height: auto;
     opacity: 1;
     pointer-events: none;
-    transform: translateX(-50%);
+    transform: none;
     transform-origin: center bottom;
     z-index: 1;
   }
 
   .lo-stage--book .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book {
-    left: 64%;
-    bottom: calc(var(--lo-stage-card-band) + 6.25rem);
-    width: min(120vw, 570px);
-    max-height: min(76vh, 608px);
+    right: -4%;
+    bottom: calc(var(--lo-stage-card-band) + 1.35rem);
+    width: min(72vw, 300px);
+    max-height: min(38vh, 300px);
     height: auto;
   }
 
   .lo-stage--labs .lo-stage__chars,
   .lo-stage--labs .lo-stage__magic--labs {
-    left: 64%;
-    width: min(125vw, 684px);
-    max-height: min(84vh, 684px);
+    right: -8%;
+    width: min(82vw, 360px);
+    max-height: min(44vh, 360px);
     height: auto;
   }
 
   .lo-stage--stories .lo-stage__chars {
-    left: 62%;
-    bottom: calc(var(--lo-stage-card-band) + 4.75rem);
-    width: min(125vw, 648px);
-    max-height: min(79vh, 648px);
+    right: -5%;
+    bottom: calc(var(--lo-stage-card-band) + 1.15rem);
+    width: min(76vw, 320px);
+    max-height: min(40vh, 320px);
   }
 
   .lo-stage--family .lo-stage__chars {
-    left: 60%;
-    width: min(125vw, 684px);
-    max-height: min(84vh, 684px);
+    right: -7%;
+    width: min(84vw, 360px);
+    max-height: min(44vh, 360px);
   }
 
   /* Keep copy above the middle art */
@@ -4903,17 +4956,19 @@ html.home-page-root {
   }
 
   .lo-stage__panel .home-hero__copy {
-    max-width: min(82vw, 18.5rem);
-    max-height: min(38vh, 265px);
+    max-width: min(90vw, 20rem);
+    max-height: none;
   }
 
   .lo-stage__panel .home-hero__title {
-    font-size: clamp(1.25rem, 6.5vw, 1.55rem);
+    font-size: clamp(1.3rem, 6.5vw, 1.6rem);
   }
 
   .lo-stage__panel .home-hero__desc {
-    font-size: 0.78rem;
-    -webkit-line-clamp: 2;
+    font-size: 0.86rem;
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
   }
 
   .lo-stage__panel .home-hero__actions .home-btn {
@@ -4928,18 +4983,20 @@ html.home-page-root {
   .lo-stage--labs .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book,
   .lo-stage--labs .lo-stage__magic--labs {
-    bottom: calc(var(--lo-stage-card-band) + 2.4rem);
-    width: min(125vw, 570px);
-    max-height: min(72vh, 570px);
+    bottom: calc(var(--lo-stage-card-band) + 0.65rem);
+    width: min(74vw, 300px);
+    max-height: min(38vh, 300px);
   }
 
   .lo-stage--stories .lo-stage__chars {
-    bottom: calc(var(--lo-stage-card-band) + 4.35rem);
+    bottom: calc(var(--lo-stage-card-band) + 1rem);
   }
 
   .lo-stage--book .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book {
-    bottom: calc(var(--lo-stage-card-band) + 5.85rem);
+    bottom: calc(var(--lo-stage-card-band) + 1.25rem);
+    width: min(68vw, 280px);
+    max-height: min(34vh, 270px);
   }
 
   .journey-card {
