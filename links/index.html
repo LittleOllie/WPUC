@@ -56,26 +56,51 @@
         </header>
 
         <div class="lo-playground__grid" id="categoryMenu" role="group" aria-label="Lab categories">
-          <button type="button" class="lo-playground__lab lo-playground__lab--blue" data-category="games" aria-expanded="false" aria-controls="category-games">
-            <span class="lo-playground__lab-icon" aria-hidden="true">🎮</span>
-            <span class="lo-playground__lab-title">Games Lab</span>
-            <span class="lo-playground__lab-sub">Play, guess and explore.</span>
+          <button type="button" class="lo-playground__lab lo-playground__lab--art lo-playground__lab--games" data-category="games" aria-expanded="false" aria-controls="category-games">
+            <span class="lo-playground__lab-thumb" aria-hidden="true">
+              <img src="../webpageassets/games-lab.png" alt="" width="512" height="512" decoding="async" />
+            </span>
+            <span class="lo-playground__lab-copy">
+              <span class="lo-playground__lab-title">Games Lab</span>
+              <span class="lo-playground__lab-sub">Play, guess and explore.</span>
+            </span>
           </button>
-          <button type="button" class="lo-playground__lab lo-playground__lab--yellow" data-category="nft" aria-expanded="false" aria-controls="category-nft">
-            <span class="lo-playground__lab-icon" aria-hidden="true">🧪</span>
-            <span class="lo-playground__lab-title">NFT Tools Lab</span>
-            <span class="lo-playground__lab-sub">Collect, compare and discover.</span>
+          <button type="button" class="lo-playground__lab lo-playground__lab--art lo-playground__lab--nft" data-category="nft" aria-expanded="false" aria-controls="category-nft">
+            <span class="lo-playground__lab-thumb" aria-hidden="true">
+              <img src="../webpageassets/nft-tools-lab.png" alt="" width="512" height="512" decoding="async" />
+            </span>
+            <span class="lo-playground__lab-copy">
+              <span class="lo-playground__lab-title">NFT Tools Lab</span>
+              <span class="lo-playground__lab-sub">Collect, compare and discover.</span>
+            </span>
           </button>
-          <button type="button" class="lo-playground__lab lo-playground__lab--blue" data-category="creative" aria-expanded="false" aria-controls="category-creative">
-            <span class="lo-playground__lab-icon" aria-hidden="true">🎨</span>
-            <span class="lo-playground__lab-title">Creative Lab</span>
-            <span class="lo-playground__lab-sub">Stories, books and Little Ollie ideas.</span>
+          <button type="button" class="lo-playground__lab lo-playground__lab--art lo-playground__lab--creative" data-category="creative" aria-expanded="false" aria-controls="category-creative">
+            <span class="lo-playground__lab-thumb" aria-hidden="true">
+              <img src="../webpageassets/creative-lab.png" alt="" width="512" height="512" decoding="async" />
+            </span>
+            <span class="lo-playground__lab-copy">
+              <span class="lo-playground__lab-title">Creative Lab</span>
+              <span class="lo-playground__lab-sub">Stories, books and Little Ollie ideas.</span>
+            </span>
           </button>
-          <button type="button" class="lo-playground__lab lo-playground__lab--yellow" data-category="community" aria-expanded="false" aria-controls="category-community">
-            <span class="lo-playground__lab-icon" aria-hidden="true">🌈</span>
-            <span class="lo-playground__lab-title">Community Lab</span>
-            <span class="lo-playground__lab-sub">Follow, connect and join the journey.</span>
+          <button type="button" class="lo-playground__lab lo-playground__lab--art lo-playground__lab--community" data-category="community" aria-expanded="false" aria-controls="category-community">
+            <span class="lo-playground__lab-thumb" aria-hidden="true">
+              <img src="../webpageassets/community-lab.png" alt="" width="512" height="512" decoding="async" />
+            </span>
+            <span class="lo-playground__lab-copy">
+              <span class="lo-playground__lab-title">Community Lab</span>
+              <span class="lo-playground__lab-sub">Follow, connect and join the journey.</span>
+            </span>
           </button>
+          <div class="lo-playground__lab lo-playground__lab--art lo-playground__lab--soon" aria-disabled="true">
+            <span class="lo-playground__lab-thumb" aria-hidden="true">
+              <img src="../webpageassets/coming-soon-lab.png" alt="" width="512" height="512" decoding="async" />
+            </span>
+            <span class="lo-playground__lab-copy">
+              <span class="lo-playground__lab-title">Coming Soon</span>
+              <span class="lo-playground__lab-sub">More labs are on the way.</span>
+            </span>
+          </div>
         </div>
 
         <section class="lo-playground__panel" id="category-games" data-category-panel="games" hidden>
@@ -123,7 +148,7 @@
 
         <nav class="lo-playground__nav" aria-label="Playground navigation">
           <a href="../index.html#labs" class="lo-playground__nav-btn lo-playground__nav-btn--primary">← Back to Home</a>
-          <a href="../about.html" class="lo-playground__nav-btn lo-playground__nav-btn--ghost">About</a>
+          <a href="../index.html#our-story" class="lo-playground__nav-btn lo-playground__nav-btn--ghost">Our Story</a>
         </nav>
       </div>
 

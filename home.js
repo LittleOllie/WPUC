@@ -6,9 +6,26 @@
 
   document.documentElement.classList.add("home-page-root", "home-js");
 
-  /* Always open at the top on refresh / revisit (disable browser scroll restore) */
+  /* Prefer deep links (#our-story, #labs, etc.); otherwise open at the top */
   if ("scrollRestoration" in history) {
     history.scrollRestoration = "manual";
+  }
+
+  var SECTION_HASHES = {
+    home: true,
+    family: true,
+    stories: true,
+    book: true,
+    labs: true,
+    "our-story": true,
+    journey: true,
+  };
+
+  var initialHash = (window.location.hash || "").replace(/^#/, "");
+  var deepLinkId = SECTION_HASHES[initialHash] ? initialHash : "";
+
+  if (window.location.hash && !deepLinkId) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
   }
 
   function scrollToTop() {
@@ -17,15 +34,39 @@
     if (document.body) document.body.scrollTop = 0;
   }
 
-  if (window.location.hash) {
-    history.replaceState(null, "", window.location.pathname + window.location.search);
+  function scrollToDeepLink() {
+    if (!deepLinkId) {
+      scrollToTop();
+      return;
+    }
+    var target = document.getElementById(deepLinkId);
+    if (deepLinkId === "our-story") {
+      target =
+        document.querySelector(".our-story__copy") ||
+        document.getElementById("our-story-heading") ||
+        target;
+    }
+    if (!target) {
+      scrollToTop();
+      return;
+    }
+    var navEl = document.getElementById("site-nav");
+    var navHeight = navEl ? navEl.offsetHeight : 84;
+    var top = target.getBoundingClientRect().top + window.scrollY - navHeight - 16;
+    window.scrollTo(0, Math.max(0, top));
   }
 
-  scrollToTop();
-  window.addEventListener("load", scrollToTop);
-  window.addEventListener("pageshow", function () {
+  if (!deepLinkId) {
     scrollToTop();
-  });
+    window.addEventListener("load", scrollToTop);
+    window.addEventListener("pageshow", function () {
+      scrollToTop();
+    });
+  } else {
+    window.addEventListener("load", function () {
+      requestAnimationFrame(scrollToDeepLink);
+    });
+  }
 
   /**
    * Central hero asset map — replace files in webpageassets/ to update the scene.
@@ -307,6 +348,389 @@
 
   initStageScenes();
 
+  /**
+   * Our Story artwork — add files under webpageassets/ to light up placeholders.
+   * Missing files keep the soft fallback (no broken-image icons).
+   */
+  var storyAssets = {
+    heroCharacters: "webpageassets/story-dad-and-ollie.png",
+    beginning: "webpageassets/story-beginning.png",
+    learning: "webpageassets/story-learning.png",
+    community: "webpageassets/story-community.png",
+    books: "webpageassets/story-books.png",
+    future: "webpageassets/story-future.png",
+  };
+
+  function initStoryArt() {
+    document.querySelectorAll("[data-story-art]").forEach(function (slot) {
+      var key = slot.getAttribute("data-story-art");
+      var src = storyAssets[key];
+      var img = slot.querySelector(".our-story__art-img");
+      if (!img || !src) return;
+
+      function show() {
+        slot.classList.add("is-loaded");
+        img.hidden = false;
+        img.removeAttribute("hidden");
+      }
+
+      function hide() {
+        slot.classList.remove("is-loaded");
+        img.hidden = true;
+        img.removeAttribute("src");
+      }
+
+      img.addEventListener("load", show);
+      img.addEventListener("error", hide);
+      img.src = src;
+    });
+  }
+
+  initStoryArt();
+
+  /* Hover/focus a bottom chapter tile → expand beside the intro text box */
+  (function initStoryDock() {
+    var section = document.querySelector("[data-story-section]");
+    var copy = section && section.querySelector(".our-story__copy");
+    var dock = section && section.querySelector("[data-story-dock]");
+    var chapters = section && section.querySelector("[data-story-chapters]");
+    if (!section || !copy || !dock || !chapters) return;
+
+    var cards = Array.prototype.slice.call(chapters.querySelectorAll(".our-story__card"));
+    if (!cards.length) return;
+
+    var hint = dock.querySelector("[data-story-dock-hint]");
+    var panel = dock.querySelector("[data-story-dock-panel]");
+    var media = dock.querySelector("[data-story-dock-media]");
+    var img = dock.querySelector("[data-story-dock-img]");
+    var emoji = dock.querySelector("[data-story-dock-emoji]");
+    var num = dock.querySelector("[data-story-dock-num]");
+    var title = dock.querySelector("[data-story-dock-title]");
+    var body = dock.querySelector("[data-story-dock-copy]");
+    var activeKey = "";
+    var leaveTimer = null;
+
+    function syncDockHeight() {
+      if (window.matchMedia("(max-width: 899px)").matches) {
+        dock.style.minHeight = "";
+        return;
+      }
+      dock.style.minHeight = copy.offsetHeight + "px";
+    }
+
+    function loadDockArt(key) {
+      if (!img || !media) return;
+      var src = storyAssets[key];
+      media.classList.remove("is-loaded");
+      img.hidden = true;
+      img.removeAttribute("src");
+      if (!src) return;
+
+      function show() {
+        media.classList.add("is-loaded");
+        img.hidden = false;
+      }
+
+      function hide() {
+        media.classList.remove("is-loaded");
+        img.hidden = true;
+        img.removeAttribute("src");
+      }
+
+      img.onload = show;
+      img.onerror = hide;
+      img.src = src;
+    }
+
+    function showChapter(card) {
+      if (!card || section.classList.contains("is-presenting")) return;
+      var key = card.getAttribute("data-story-chapter") || "";
+      activeKey = key;
+
+      cards.forEach(function (c) {
+        c.classList.toggle("is-docked", c === card);
+      });
+
+      var emojiEl = card.querySelector(".our-story__emoji");
+      if (emoji) emoji.textContent = emojiEl ? emojiEl.textContent : "✨";
+      if (num) num.textContent = card.getAttribute("data-story-num") || "";
+      if (title) title.textContent = card.getAttribute("data-story-title") || "";
+      if (body) body.textContent = card.getAttribute("data-story-copy") || "";
+
+      if (hint) hint.hidden = true;
+      if (panel) {
+        panel.hidden = false;
+        /* restart slide-up */
+        panel.style.transition = "none";
+        panel.style.transform = "translateY(1.25rem)";
+        panel.style.opacity = "0";
+        void panel.offsetWidth;
+        panel.style.transition = "";
+        panel.style.transform = "";
+        panel.style.opacity = "";
+      }
+      dock.classList.add("is-active");
+      loadDockArt(key);
+      syncDockHeight();
+    }
+
+    function clearDock() {
+      activeKey = "";
+      cards.forEach(function (c) {
+        c.classList.remove("is-docked");
+      });
+      dock.classList.remove("is-active");
+      if (panel) panel.hidden = true;
+      if (hint) hint.hidden = false;
+      if (media) media.classList.remove("is-loaded");
+      if (img) {
+        img.hidden = true;
+        img.removeAttribute("src");
+      }
+    }
+
+    cards.forEach(function (card) {
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("role", "button");
+      card.setAttribute(
+        "aria-label",
+        (card.getAttribute("data-story-title") || "Chapter") + " — show details"
+      );
+
+      card.addEventListener("pointerenter", function () {
+        if (leaveTimer) {
+          window.clearTimeout(leaveTimer);
+          leaveTimer = null;
+        }
+        showChapter(card);
+      });
+
+      card.addEventListener("focus", function () {
+        showChapter(card);
+      });
+
+      card.addEventListener("click", function () {
+        showChapter(card);
+      });
+
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          showChapter(card);
+        }
+      });
+    });
+
+    chapters.addEventListener("pointerleave", function () {
+      leaveTimer = window.setTimeout(function () {
+        if (!section.classList.contains("is-presenting")) clearDock();
+      }, 180);
+    });
+
+    window.addEventListener("resize", syncDockHeight);
+    if ("ResizeObserver" in window) {
+      new ResizeObserver(syncDockHeight).observe(copy);
+    }
+    syncDockHeight();
+  })();
+
+  /* Our Story chapter presentation — each chapter rises to center, expands, then returns */
+  (function initStoryPresentation() {
+    var section = document.querySelector("[data-story-section]");
+    var playBtn = document.querySelector("[data-story-play]");
+    var chapters = document.querySelector("[data-story-chapters]");
+    var theater = document.querySelector("[data-story-theater]");
+    var feature = document.querySelector("[data-story-feature]");
+    if (!section || !playBtn || !chapters || !theater || !feature) return;
+
+    var cards = Array.prototype.slice.call(chapters.querySelectorAll(".our-story__card"));
+    if (!cards.length) return;
+
+    var stageBar = section.querySelector("[data-story-stage-bar]");
+    var stageLabel = section.querySelector("[data-story-stage-label]");
+    var dotsWrap = section.querySelector("[data-story-dots]");
+    var skipBtn = section.querySelector("[data-story-skip]");
+    var featureEmoji = feature.querySelector("[data-story-feature-emoji]");
+    var featureNum = feature.querySelector("[data-story-feature-num]");
+    var featureTitle = feature.querySelector("[data-story-feature-title]");
+    var featureCopy = feature.querySelector("[data-story-feature-copy]");
+    var backdrop = theater.querySelector("[data-story-backdrop]");
+
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var timer = null;
+    var index = 0;
+    var playing = false;
+    var HOLD_MS = reduced ? 2200 : 4800;
+    var EXIT_MS = reduced ? 200 : 650;
+
+    function clearTimer() {
+      if (timer) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    }
+
+    function setDots(i) {
+      if (!dotsWrap) return;
+      Array.prototype.forEach.call(dotsWrap.children, function (dot, dotIndex) {
+        dot.classList.toggle("is-active", dotIndex === i);
+        dot.setAttribute("aria-current", dotIndex === i ? "true" : "false");
+      });
+    }
+
+    function fillFeature(card) {
+      var emojiEl = card.querySelector(".our-story__emoji");
+      if (featureEmoji) featureEmoji.textContent = emojiEl ? emojiEl.textContent : "";
+      if (featureNum) featureNum.textContent = card.getAttribute("data-story-num") || "";
+      if (featureTitle) featureTitle.textContent = card.getAttribute("data-story-title") || "";
+      if (featureCopy) featureCopy.textContent = card.getAttribute("data-story-copy") || "";
+    }
+
+    function highlightTile(i) {
+      cards.forEach(function (card, cardIndex) {
+        card.classList.toggle("is-spotlight", cardIndex === i);
+      });
+      setDots(i);
+      if (stageLabel) {
+        stageLabel.textContent = "Chapter " + (i + 1) + " of " + cards.length;
+      }
+    }
+
+    function openTheater() {
+      theater.hidden = false;
+      section.classList.add("is-presenting");
+      chapters.classList.add("is-presenting");
+      chapters.classList.remove("is-complete");
+      document.body.classList.add("our-story-lock");
+      requestAnimationFrame(function () {
+        theater.classList.add("is-open");
+      });
+    }
+
+    function closeTheater() {
+      theater.classList.remove("is-open");
+      feature.classList.remove("is-in", "is-out");
+      window.setTimeout(function () {
+        theater.hidden = true;
+      }, reduced ? 0 : 400);
+      document.body.classList.remove("our-story-lock");
+      section.classList.remove("is-presenting");
+    }
+
+    function finish() {
+      playing = false;
+      clearTimer();
+      feature.classList.remove("is-in");
+      feature.classList.add("is-out");
+      cards.forEach(function (card) {
+        card.classList.remove("is-spotlight");
+      });
+      window.setTimeout(function () {
+        closeTheater();
+        chapters.classList.remove("is-presenting");
+        chapters.classList.add("is-complete");
+        if (stageBar) stageBar.hidden = true;
+        if (skipBtn) skipBtn.hidden = true;
+        playBtn.textContent = "See Our Journey Again";
+        playBtn.disabled = false;
+        playBtn.setAttribute("aria-pressed", "false");
+      }, EXIT_MS);
+    }
+
+    function showChapter(i, then) {
+      index = i;
+      var card = cards[i];
+      highlightTile(i);
+      fillFeature(card);
+      feature.classList.remove("is-out", "is-in");
+
+      /* Force reflow so enter animation restarts */
+      void feature.offsetWidth;
+      feature.classList.add("is-in");
+
+      clearTimer();
+      timer = window.setTimeout(function () {
+        feature.classList.remove("is-in");
+        feature.classList.add("is-out");
+        timer = window.setTimeout(function () {
+          if (typeof then === "function") then();
+        }, EXIT_MS);
+      }, HOLD_MS);
+    }
+
+    function playFrom(startIndex) {
+      clearTimer();
+      playing = true;
+      index = startIndex || 0;
+      if (stageBar) stageBar.hidden = false;
+      if (skipBtn) skipBtn.hidden = false;
+      playBtn.textContent = "Playing…";
+      playBtn.disabled = true;
+      playBtn.setAttribute("aria-pressed", "true");
+
+      /* Stay on the current view — present chapters in-place over this section */
+      openTheater();
+
+      function next() {
+        if (!playing) return;
+        if (index >= cards.length - 1) {
+          finish();
+          return;
+        }
+        showChapter(index + 1, next);
+      }
+
+      window.setTimeout(function () {
+        showChapter(index, next);
+      }, reduced ? 50 : 280);
+    }
+
+    if (dotsWrap) {
+      cards.forEach(function (_card, i) {
+        var dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "our-story__dot";
+        dot.setAttribute("aria-label", "Show chapter " + (i + 1));
+        dot.addEventListener("click", function () {
+          if (!playing) {
+            playFrom(i);
+            return;
+          }
+          clearTimer();
+          showChapter(i, function next() {
+            if (index >= cards.length - 1) finish();
+            else showChapter(index + 1, next);
+          });
+        });
+        dotsWrap.appendChild(dot);
+      });
+    }
+
+    playBtn.addEventListener("click", function () {
+      if (playing) return;
+      playFrom(0);
+    });
+
+    if (skipBtn) {
+      skipBtn.addEventListener("click", function () {
+        if (!playing) return;
+        finish();
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener("click", function () {
+        if (!playing) return;
+        finish();
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (!playing) return;
+      if (e.key === "Escape") finish();
+    });
+  })();
+
   var nav = document.getElementById("site-nav");
   var navToggle = document.getElementById("nav-toggle");
   var navLinks = document.getElementById("nav-links");
@@ -451,9 +875,17 @@
       var target = document.querySelector(id);
       if (!target) return;
 
+      /* Our Story: land on the padded intro panel, not the section sky padding */
+      if (id === "#our-story") {
+        target =
+          document.querySelector(".our-story__copy") ||
+          document.getElementById("our-story-heading") ||
+          target;
+      }
+
       e.preventDefault();
       var navHeight = nav ? nav.offsetHeight : 0;
-      var top = target.getBoundingClientRect().top + window.scrollY - navHeight - 12;
+      var top = target.getBoundingClientRect().top + window.scrollY - navHeight - 16;
 
       window.scrollTo({
         top: Math.max(0, top),
@@ -464,6 +896,7 @@
         history.replaceState(null, "", id);
       }
 
+      /* Move focus to the landed section for a11y, without a visible mouse focus ring */
       target.setAttribute("tabindex", "-1");
       target.focus({ preventScroll: true });
     });

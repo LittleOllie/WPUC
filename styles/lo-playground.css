@@ -198,13 +198,69 @@
   color: var(--lo-navy);
 }
 
-.lo-playground__lab--active.lo-playground__lab--blue {
+.lo-playground__lab--art {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 0;
+  padding: 0.75rem 1rem 0.75rem 0.75rem;
+  color: #fff;
+}
+
+.lo-playground__lab--games {
+  background:
+    linear-gradient(135deg, rgba(90, 70, 170, 0.35) 0%, transparent 55%),
+    linear-gradient(160deg, #6b5bd6 0%, #4a7fd4 48%, #3d92d4 100%);
+}
+
+.lo-playground__lab--nft {
+  background:
+    linear-gradient(135deg, rgba(60, 180, 255, 0.28) 0%, transparent 55%),
+    linear-gradient(160deg, #2f6fd4 0%, #1f8fe8 48%, #3db8ff 100%);
+}
+
+.lo-playground__lab--creative {
+  background:
+    linear-gradient(135deg, rgba(255, 220, 90, 0.35) 0%, transparent 55%),
+    linear-gradient(160deg, #f0c43a 0%, #ffd84d 48%, #ffe57a 100%);
+  color: var(--lo-navy);
+}
+
+.lo-playground__lab--community {
+  background:
+    linear-gradient(135deg, rgba(255, 150, 200, 0.3) 0%, transparent 50%),
+    linear-gradient(160deg, #c45fd4 0%, #e878b0 48%, #f0a060 100%);
+  color: #fff;
+}
+
+.lo-playground__lab--soon {
+  grid-column: 1 / -1;
+  cursor: default;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 216, 77, 0.22) 0%, transparent 50%),
+    linear-gradient(160deg, #5a3d8f 0%, #3d2f6e 48%, #2a2458 100%);
+  color: #fff;
+  opacity: 0.96;
+}
+
+@media (min-width: 640px) {
+  .lo-playground__lab--soon {
+    max-width: none;
+  }
+}
+
+.lo-playground__lab--active.lo-playground__lab--blue,
+.lo-playground__lab--active.lo-playground__lab--games,
+.lo-playground__lab--active.lo-playground__lab--nft,
+.lo-playground__lab--active.lo-playground__lab--community {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.85),
     0 14px 28px rgba(17, 52, 89, 0.22);
 }
 
-.lo-playground__lab--active.lo-playground__lab--yellow {
+.lo-playground__lab--active.lo-playground__lab--yellow,
+.lo-playground__lab--active.lo-playground__lab--creative {
   box-shadow:
     0 0 0 3px var(--lo-deep-blue),
     0 14px 28px rgba(17, 52, 89, 0.22);
@@ -213,6 +269,34 @@
 .lo-playground__lab-icon {
   font-size: 1.75rem;
   line-height: 1;
+}
+
+.lo-playground__lab-thumb {
+  flex: 0 0 auto;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 6px 14px rgba(20, 24, 60, 0.28);
+  background: #2a1f55;
+}
+
+.lo-playground__lab-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+}
+
+.lo-playground__lab-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
 .lo-playground__lab-title {
