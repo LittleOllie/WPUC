@@ -431,10 +431,10 @@
 .home-nav__inner {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  max-width: 1220px;
+  gap: 0.65rem;
+  max-width: min(1480px, calc(100% - 1.5rem));
   margin-inline: auto;
-  padding: 0.55rem 0.85rem 0.55rem 1.05rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.9rem;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -611,6 +611,18 @@
 @media (min-width: 1024px) {
   .home-nav__links {
     display: flex;
+    flex-wrap: nowrap;
+    gap: 0.12rem;
+    min-width: 0;
+  }
+
+  .home-nav__brand {
+    max-width: 132px;
+  }
+
+  .home-page .home-nav__logo {
+    height: 38px;
+    max-height: 38px;
   }
 
   .home-nav__cta--desktop {
@@ -626,27 +638,56 @@
   }
 
   .home-nav__link {
-    padding: 0.5rem 0.72rem;
-    font-size: 0.98rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.86rem;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .home-nav__cta {
+    min-height: 40px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-nav__brand {
+    max-width: 148px;
+  }
+
+  .home-page .home-nav__logo {
+    height: 42px;
+    max-height: 42px;
+  }
+
+  .home-nav__links {
+    gap: 0.2rem;
+  }
+
+  .home-nav__link {
+    padding: 0.45rem 0.68rem;
+    font-size: 0.94rem;
+  }
+
+  .home-nav__cta {
+    min-height: 44px;
+    padding: 0.5rem 1.15rem;
+    font-size: 0.96rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .home-nav__link {
+    padding: 0.5rem 0.78rem;
+    font-size: 1rem;
   }
 
   .home-nav__cta {
     min-height: 46px;
-    padding: 0.55rem 1.2rem;
+    padding: 0.55rem 1.25rem;
     font-size: 1rem;
-  }
-}
-
-@media (min-width: 1200px) {
-  .home-nav__link {
-    padding: 0.55rem 0.9rem;
-    font-size: 1.05rem;
-  }
-
-  .home-nav__cta {
-    min-height: 50px;
-    padding: 0.65rem 1.4rem;
-    font-size: 1.08rem;
   }
 }
 
@@ -891,6 +932,12 @@
   object-fit: cover;
   object-position: center center;
   z-index: 0;
+}
+
+/* Phone composite scenes already include characters — hide the char layer */
+.lo-stage.is-phone-composite .lo-stage__chars,
+.lo-stage.is-phone-composite .lo-stage__magic {
+  display: none !important;
 }
 
 .lo-stage__bg--flip {
@@ -1300,7 +1347,7 @@
     left: var(--lo-phone-gutter, 1rem);
     right: var(--lo-phone-gutter, 1rem);
     top: calc(var(--lo-nav-height) + var(--lo-phone-gutter, 1rem));
-    bottom: calc(var(--lo-stage-card-band, 5.15rem) + 4.5rem);
+    bottom: calc(var(--lo-stage-card-band, 6.35rem) + 0.75rem);
     z-index: 6;
     width: auto;
     max-height: none;
@@ -1346,7 +1393,8 @@
   }
 
   .our-story .journey-card__title {
-    font-size: 0.52rem;
+    font-size: 0.58rem;
+    line-height: 1.15;
   }
 
   .our-story__cards {
@@ -1419,6 +1467,13 @@
   cursor: pointer;
 }
 
+@media (max-width: 899px) {
+  .our-story .journey-card {
+    aspect-ratio: auto;
+    height: auto;
+  }
+}
+
 .our-story .journey-card.is-docked {
   box-shadow:
     0 14px 28px rgba(17, 52, 89, 0.18),
@@ -1443,8 +1498,10 @@
   padding-top: 0.75rem;
 }
 
-.our-story .journey-card__title {
-  font-size: clamp(0.85rem, 1.5vw, 1rem);
+@media (min-width: 900px) {
+  .our-story .journey-card__title {
+    font-size: clamp(0.85rem, 1.5vw, 1rem);
+  }
 }
 
 .our-story .journey-card__desc,
@@ -1754,6 +1811,14 @@ body.our-story-lock {
 }
 
 /* Family bottom cards: portrait crop at rest; full figure slides up on hover */
+.lo-stage--family .lo-stage__panel {
+  z-index: 2;
+}
+
+.lo-stage--family .lo-stage__cards {
+  z-index: 6;
+}
+
 .lo-stage--family .lo-stage__cards,
 .lo-stage--family .journey-cards__inner,
 .lo-stage--family .journey-cards__track,
@@ -1769,16 +1834,14 @@ body.our-story-lock {
 .lo-stage--family .journey-card:hover,
 .lo-stage--family .journey-card:focus-visible,
 .lo-stage--family .journey-card.is-popped {
-  z-index: 6;
+  z-index: 8;
   transform: none; /* box stays put — character moves, not the card */
   box-shadow: 0 10px 28px rgba(17, 52, 89, 0.12);
 }
 
 .lo-stage--family .journey-card__icon {
   overflow: hidden; /* clip resting portraits inside the square */
-  background:
-    radial-gradient(ellipse 90% 70% at 50% 20%, rgba(255, 255, 255, 0.7) 0%, transparent 65%),
-    linear-gradient(180deg, #fffaf3 0%, #eef6fb 100%);
+  background: #eaf6ff;
 }
 
 .lo-stage--family .journey-card:hover .journey-card__icon,
@@ -1789,22 +1852,30 @@ body.our-story-lock {
 
 .lo-stage--family .journey-card__text {
   z-index: 4;
-  /* Match inner card radius so name bar doesn't poke past rounded corners
-     (family cards use overflow:visible for hover rise) */
+  /* Solid name plate so bodies read cleanly behind the wording */
   border-radius: 0 0 20px 20px;
   overflow: hidden;
+  background: #fffef9;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.lo-stage--family .journey-card__desc,
+.lo-stage--family .journey-card__arrow {
+  display: none;
 }
 
 .home-page .lo-stage--family .journey-card__icon img,
 .lo-stage--family .journey-card__icon img {
   left: 50%;
   right: auto;
-  top: 8%;
+  top: -4%;
   bottom: auto;
-  width: 74% !important;
-  height: 74% !important;
+  width: 92% !important;
+  /* Tall crop so torso continues under the solid name plate */
+  height: 118% !important;
   object-fit: cover;
-  object-position: center 40%;
+  object-position: center 18%;
   transform: translateX(-50%);
   transform-origin: center bottom;
   transition:
@@ -1816,47 +1887,48 @@ body.our-story-lock {
     object-position 0.45s ease,
     filter 0.4s ease;
   will-change: transform;
+  z-index: 1;
 }
 
-/* Per-character resting crop — Ollie is the height reference.
-   Dad/Mum fill their PNGs (heads near top). Lily/Jack have empty space above. */
+/* Per-character resting crop — face-first framing.
+   Dad/Mum fill their art from the top. Ollie/Lily/Jack sit lower in tall PNGs. */
 .home-page .lo-stage--family .journey-card--ollie .journey-card__icon img,
 .lo-stage--family .journey-card--ollie .journey-card__icon img {
-  object-position: center 30%;
+  object-position: center 34%;
+  transform: translateX(-50%) translateY(-6%);
 }
 
 .home-page .lo-stage--family .journey-card--dad .journey-card__icon img,
 .lo-stage--family .journey-card--dad .journey-card__icon img {
-  object-position: center 4%;
-  transform: translateX(-50%) translateY(5%);
+  object-position: center 2%;
+  transform: translateX(-50%) translateY(2%);
 }
 
 .home-page .lo-stage--family .journey-card--mum .journey-card__icon img,
 .lo-stage--family .journey-card--mum .journey-card__icon img {
-  object-position: center 6%;
-  transform: translateX(-50%) translateY(5%);
+  object-position: center 4%;
+  transform: translateX(-50%) translateY(2%);
 }
 
 .home-page .lo-stage--family .journey-card--lily .journey-card__icon img,
 .lo-stage--family .journey-card--lily .journey-card__icon img {
-  object-position: center 54%;
-  transform: translateX(-50%) translateY(8%);
+  object-position: center 48%;
+  transform: translateX(-50%) translateY(-10%);
 }
 
 .home-page .lo-stage--family .journey-card--jack .journey-card__icon img,
 .lo-stage--family .journey-card--jack .journey-card__icon img {
-  /* Same box as Lily — crop on Jack’s face (he sits lower in the PNG) */
-  top: 8%;
+  top: -4%;
   bottom: auto;
-  width: 74% !important;
-  height: 74% !important;
+  width: 92% !important;
+  height: 118% !important;
   aspect-ratio: auto;
   object-fit: cover;
-  object-position: center 64%;
-  transform: translateX(-50%) translateY(8%);
+  object-position: center 62%;
+  transform: translateX(-50%) translateY(-14%);
 }
 
-/* Hover / tap: same width-scale, full body, bouncy stand-up */
+/* Hover / tap: full body can rise in front of the text panels */
 .home-page .lo-stage--family .journey-card:hover .journey-card__icon img,
 .home-page .lo-stage--family .journey-card:focus-visible .journey-card__icon img,
 .home-page .lo-stage--family .journey-card.is-popped .journey-card__icon img,
@@ -1868,10 +1940,10 @@ body.our-story-lock {
   width: 74% !important;
   height: auto !important;
   aspect-ratio: 527 / 1366;
-  max-height: none !important;
+  max-height: min(52vh, 420px) !important;
   object-fit: contain;
   object-position: center bottom;
-  transform: translateX(-50%) scale(1.04);
+  transform: translateX(-50%) translateY(-6%) scale(1.04);
   filter: drop-shadow(0 12px 18px rgba(17, 52, 89, 0.26));
   z-index: 3;
   animation: family-char-stand 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -1879,17 +1951,17 @@ body.our-story-lock {
 
 @keyframes family-char-stand {
   0% {
-    transform: translateX(-50%) translateY(18%) scale(0.92);
+    transform: translateX(-50%) translateY(12%) scale(0.92);
     filter: drop-shadow(0 2px 6px rgba(17, 52, 89, 0.1));
   }
   55% {
-    transform: translateX(-50%) translateY(-6%) scale(1.06);
+    transform: translateX(-50%) translateY(-12%) scale(1.07);
   }
   75% {
-    transform: translateX(-50%) translateY(2%) scale(1.02);
+    transform: translateX(-50%) translateY(-2%) scale(1.02);
   }
   100% {
-    transform: translateX(-50%) translateY(0) scale(1.04);
+    transform: translateX(-50%) translateY(-6%) scale(1.04);
     filter: drop-shadow(0 12px 18px rgba(17, 52, 89, 0.26));
   }
 }
@@ -1904,29 +1976,149 @@ body.our-story-lock {
 .lo-stage--family .journey-card:hover .journey-card__text,
 .lo-stage--family .journey-card:focus-visible .journey-card__text,
 .lo-stage--family .journey-card.is-popped .journey-card__text {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.8) 28%,
-    rgba(255, 255, 255, 0.94) 100%
-  );
+  background: #fffef9;
 }
 
 
 .lo-stage--family .journey-card--ollie .journey-card__icon {
-  background: linear-gradient(180deg, #eaf6ff 0%, #d7ecfb 100%);
+  background: #eaf6ff;
 }
 .lo-stage--family .journey-card--dad .journey-card__icon {
-  background: linear-gradient(180deg, #eef8e6 0%, #d8efc8 100%);
+  background: #eef8e6;
 }
 .lo-stage--family .journey-card--mum .journey-card__icon {
-  background: linear-gradient(180deg, #fdf0f7 0%, #f7d6ec 100%);
+  background: #fdf0f7;
 }
 .lo-stage--family .journey-card--lily .journey-card__icon {
-  background: linear-gradient(180deg, #fff8e0 0%, #ffe9a8 100%);
+  background: #fff8e0;
 }
 .lo-stage--family .journey-card--jack .journey-card__icon {
-  background: linear-gradient(180deg, #fff2e4 0%, #ffe0c2 100%);
+  background: #fff2e4;
+}
+
+/* Family character write-up — sits beside the main text box on desktop */
+.lo-stage--family .lo-stage__grid {
+  align-items: start;
+}
+
+.family-bio {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: 9;
+  align-self: start;
+  width: min(100%, 22rem);
+  max-width: 100%;
+  margin: 0;
+  padding: 1.05rem 1.2rem 1.15rem;
+  border-radius: 22px;
+  background: #fffef8;
+  border: 2.5px solid rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.16),
+    0 2px 0 rgba(255, 216, 77, 0.45);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: translateY(10px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.28s ease,
+    transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1),
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.family-bio--ollie {
+  background: #eaf6ff;
+  border-color: #cfe8ff;
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.14),
+    0 2px 0 rgba(111, 186, 230, 0.45);
+}
+
+.family-bio--dad {
+  background: #eef8e6;
+  border-color: #d4efc8;
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.14),
+    0 2px 0 rgba(120, 180, 90, 0.45);
+}
+
+.family-bio--mum {
+  background: #fdf0f7;
+  border-color: #f7d6ec;
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.14),
+    0 2px 0 rgba(210, 120, 180, 0.4);
+}
+
+.family-bio--lily {
+  background: #fff8e0;
+  border-color: #ffe9a8;
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.14),
+    0 2px 0 rgba(230, 180, 60, 0.45);
+}
+
+.family-bio--jack {
+  background: #fff2e4;
+  border-color: #ffe0c2;
+  box-shadow:
+    0 14px 32px rgba(17, 52, 89, 0.14),
+    0 2px 0 rgba(230, 150, 90, 0.4);
+}
+
+.family-bio.is-visible,
+.family-bio:not([hidden]) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.family-bio[hidden] {
+  display: none !important;
+}
+
+.family-bio__eyebrow {
+  margin: 0 0 0.2rem;
+  font-family: var(--lo-font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(22, 48, 79, 0.55);
+}
+
+.family-bio__name {
+  margin: 0 0 0.4rem;
+  font-family: var(--lo-font-display);
+  font-size: clamp(1.35rem, 2.4vw, 1.7rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--lo-deep-blue);
+}
+
+.family-bio__copy {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: rgba(22, 48, 79, 0.88);
+}
+
+@media (min-width: 900px) {
+  .family-bio {
+    margin: 0 0 0 0.25rem;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 899px) {
+  .family-bio {
+    width: min(92vw, 24rem);
+    margin-inline: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1934,6 +2126,10 @@ body.our-story-lock {
   .lo-stage--family .journey-card__icon img {
     transition: none;
     animation: none !important;
+  }
+
+  .family-bio {
+    transition: none;
   }
 }
 
@@ -1952,6 +2148,13 @@ body.our-story-lock {
   transition: filter 0.35s ease;
 }
 
+/* Home + Family: nudge characters left and down toward the text / cards */
+.lo-stage--home .lo-stage__chars,
+.lo-stage--family .lo-stage__chars {
+  right: 9%;
+  bottom: calc(var(--lo-stage-card-band) - 1.35rem);
+}
+
 /* Ollie + Lily sit wider — size up for the library scene */
 .lo-stage--stories .lo-stage__chars {
   right: 22%;
@@ -1962,19 +2165,21 @@ body.our-story-lock {
 
 /* Labs: trio size + purple hover blast */
 .lo-stage--labs .lo-stage__chars {
-  right: 14%;
-  width: clamp(300px, 34vw, 560px);
-  max-height: min(70vh, 680px);
+  right: 10%;
+  width: clamp(340px, 40vw, 620px);
+  max-height: min(72vh, 720px);
   z-index: 2;
   transition: filter 0.35s ease;
+  opacity: 1;
+  visibility: visible;
 }
 
 .lo-stage--labs .lo-stage__magic--labs {
   position: absolute;
-  right: 14%;
+  right: 10%;
   bottom: var(--lo-stage-card-band);
-  width: clamp(300px, 34vw, 560px);
-  height: min(70vh, 680px);
+  width: clamp(340px, 40vw, 620px);
+  height: min(72vh, 720px);
   z-index: 1;
   pointer-events: none;
   opacity: 0;
@@ -2126,12 +2331,12 @@ body.our-story-lock {
   100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1.4); }
 }
 
-/* Books: Ollie more central + warm grade to match the night-room light */
+/* Books: Ollie more central + warm grade to match the night-room light (~15% smaller) */
 .lo-stage--book .lo-stage__chars {
   right: 28%;
   bottom: calc(var(--lo-stage-card-band) + 4.5rem);
-  width: clamp(280px, 30vw, 500px);
-  max-height: min(68vh, 660px);
+  width: clamp(238px, 25.5vw, 425px);
+  max-height: min(58vh, 560px);
   filter:
     sepia(0.26) saturate(1.18) hue-rotate(-10deg) brightness(0.98) contrast(1.04)
     drop-shadow(0 22px 28px rgba(28, 12, 6, 0.55))
@@ -2143,8 +2348,8 @@ body.our-story-lock {
   position: absolute;
   right: 28%;
   bottom: calc(var(--lo-stage-card-band) + 4.5rem);
-  width: clamp(280px, 30vw, 500px);
-  height: min(68vh, 660px);
+  width: clamp(238px, 25.5vw, 425px);
+  height: min(58vh, 560px);
   z-index: 1;
   pointer-events: none;
   opacity: 0;
@@ -2390,6 +2595,14 @@ body.our-story-lock {
   pointer-events: auto;
 }
 
+/* Solid wording cards so stage/popped characters stay visually behind the text */
+.lo-stage--home .home-hero__copy,
+.lo-stage--family .home-hero__copy {
+  background: #fffef9;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .lo-stage--home .lo-stage__chars:hover,
 .lo-stage--family .lo-stage__chars:hover,
 .lo-stage--stories .lo-stage__chars:hover {
@@ -2486,21 +2699,27 @@ body.our-story-lock {
     width: clamp(160px, 42vw, 240px);
   }
 
+  .lo-stage--home .lo-stage__chars,
+  .lo-stage--family .lo-stage__chars {
+    right: 2%;
+    bottom: calc(var(--lo-stage-card-band) - 0.65rem);
+  }
+
   .lo-stage--book .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book {
     right: 18%;
     bottom: calc(var(--lo-stage-card-band) + 3rem);
-    width: clamp(170px, 48vw, 260px);
-    max-height: min(50vh, 380px);
-    height: min(50vh, 380px);
+    width: clamp(145px, 41vw, 220px);
+    max-height: min(42vh, 320px);
+    height: min(42vh, 320px);
   }
 
   .lo-stage--labs .lo-stage__chars,
   .lo-stage--labs .lo-stage__magic--labs {
-    right: 4%;
-    width: clamp(200px, 62vw, 340px);
-    max-height: min(52vh, 400px);
-    height: min(52vh, 400px);
+    right: 2%;
+    width: clamp(240px, 72vw, 380px);
+    max-height: min(56vh, 440px);
+    height: auto;
   }
 
   .lo-stage--stories .lo-stage__chars {
@@ -4689,7 +4908,7 @@ html.home-page-root {
 
   /* Each stage = one full phone screen */
   .lo-stage:not(.lo-stage--compact) {
-    --lo-stage-card-band: 5.15rem;
+    --lo-stage-card-band: 6.35rem;
     height: 100svh;
     height: 100dvh;
     min-height: 100svh;
@@ -4822,13 +5041,33 @@ html.home-page-root {
     margin-top: 0;
   }
 
-  /* Character layers — clear of bottom buttons, framed for phone */
-  .lo-stage__bg {
-    object-position: center 22%;
+  /* Phone composite BGs — nudge framing (browser layered art keeps default center) */
+  .lo-stage.is-phone-composite .lo-stage__bg {
+    object-position: 68% 14%;
   }
 
-  .lo-stage--journey .lo-stage__bg {
-    object-position: center 36%;
+  .lo-stage.is-phone-composite.lo-stage--home .lo-stage__bg {
+    object-position: 70% 12%;
+  }
+
+  .lo-stage.is-phone-composite.lo-stage--family .lo-stage__bg {
+    object-position: 66% 16%;
+  }
+
+  .lo-stage.is-phone-composite.lo-stage--stories .lo-stage__bg {
+    object-position: 64% 14%;
+  }
+
+  .lo-stage.is-phone-composite.lo-stage--book .lo-stage__bg {
+    object-position: 46% 18%;
+  }
+
+  .lo-stage.is-phone-composite.lo-stage--labs .lo-stage__bg {
+    object-position: 70% 12%;
+  }
+
+  .lo-stage.is-phone-composite.lo-stage--journey .lo-stage__bg {
+    object-position: 60% 28%;
   }
 
   .lo-stage--home .lo-stage__chars,
@@ -4855,17 +5094,19 @@ html.home-page-root {
   .lo-stage--book .lo-stage__magic--book {
     right: -4%;
     bottom: calc(var(--lo-stage-card-band) + 1.35rem);
-    width: min(72vw, 300px);
-    max-height: min(38vh, 300px);
+    width: min(61vw, 255px);
+    max-height: min(32vh, 255px);
     height: auto;
   }
 
   .lo-stage--labs .lo-stage__chars,
   .lo-stage--labs .lo-stage__magic--labs {
-    right: -8%;
-    width: min(82vw, 360px);
-    max-height: min(44vh, 360px);
+    right: -2%;
+    width: min(88vw, 400px);
+    max-height: min(48vh, 400px);
     height: auto;
+    opacity: 1;
+    visibility: visible;
   }
 
   .lo-stage--stories .lo-stage__chars {
@@ -4875,8 +5116,14 @@ html.home-page-root {
     max-height: min(40vh, 320px);
   }
 
+  .lo-stage--home .lo-stage__chars,
   .lo-stage--family .lo-stage__chars {
-    right: -7%;
+    right: -10%;
+    bottom: calc(var(--lo-stage-card-band) + 0.35rem);
+  }
+
+  .lo-stage--family .lo-stage__chars {
+    right: -11%;
     width: min(84vw, 360px);
     max-height: min(44vh, 360px);
   }
@@ -4926,14 +5173,23 @@ html.home-page-root {
   .journey-card {
     min-height: 0;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    /* Square picture on top + title bar below = slightly taller rectangle */
+    aspect-ratio: auto;
     height: auto;
+    display: flex;
+    flex-direction: column;
     border-width: 3px;
     border-radius: 14px;
+    overflow: hidden;
   }
 
   .journey-card__icon {
-    border-radius: 11px;
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 11px 11px 0 0;
   }
 
   .journey-card__icon::before {
@@ -4941,14 +5197,16 @@ html.home-page-root {
   }
 
   .journey-card__text {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    flex: 0 0 auto;
     gap: 0;
     padding: 0.28rem 0.2rem 0.35rem;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.82) 35%,
-      rgba(255, 255, 255, 0.94) 100%
-    );
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .journey-card__title {
@@ -4963,6 +5221,10 @@ html.home-page-root {
     overflow: hidden;
   }
 
+  .our-story .journey-card__title {
+    font-size: 0.58rem;
+  }
+
   .journey-card__badge,
   .journey-card__arrow,
   .journey-card__desc {
@@ -4975,7 +5237,36 @@ html.home-page-root {
 
   .lo-stage--journey .journey-card {
     height: auto;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: auto;
+  }
+
+  .family-bio {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: min(100%, 22rem);
+    max-width: 100%;
+    margin: 0.5rem auto 0;
+    transform: translateY(8px) scale(0.98);
+    padding: 0.85rem 1rem 0.9rem;
+  }
+
+  .family-bio.is-visible,
+  .family-bio:not([hidden]) {
+    transform: translateY(0) scale(1);
+  }
+
+  .family-bio__eyebrow {
+    font-size: 0.68rem;
+  }
+
+  .family-bio__name {
+    font-size: 1.15rem;
+  }
+
+  .family-bio__copy {
+    font-size: 0.88rem;
   }
 
   .lo-stage--journey .journey-card__social-mark {
@@ -5003,6 +5294,11 @@ html.home-page-root {
 
   .lo-stage--family .journey-card__icon {
     overflow: hidden;
+    border-radius: 11px 11px 0 0;
+  }
+
+  .lo-stage--family .journey-card__text {
+    border-radius: 0 0 11px 11px;
   }
 
   .lo-stage--family .journey-card:hover .journey-card__icon,
@@ -5018,15 +5314,20 @@ html.home-page-root {
   .lo-stage--family .journey-card:focus-visible .journey-card__icon img,
   .lo-stage--family .journey-card.is-popped .journey-card__icon img {
     bottom: 1.45rem;
-    width: 92% !important;
+    width: 82% !important;
+    max-height: min(44vh, 340px) !important;
   }
 
   .lo-stage--family .journey-card__text {
     border-radius: 0 0 11px 11px;
   }
 
+  .lo-stage--family .lo-stage__panel {
+    z-index: 2;
+  }
+
   .lo-stage--family .lo-stage__cards {
-    z-index: 5;
+    z-index: 6;
   }
 
   .lo-stage--community,
@@ -5045,7 +5346,7 @@ html.home-page-root {
 
 @media (max-width: 479px) {
   .lo-stage:not(.lo-stage--compact) {
-    --lo-stage-card-band: 4.85rem;
+    --lo-stage-card-band: 5.95rem;
   }
 
   .lo-stage__panel .home-hero__copy {
@@ -5077,8 +5378,15 @@ html.home-page-root {
   .lo-stage--book .lo-stage__magic--book,
   .lo-stage--labs .lo-stage__magic--labs {
     bottom: calc(var(--lo-stage-card-band) + 0.65rem);
-    width: min(74vw, 300px);
-    max-height: min(38vh, 300px);
+    width: min(78vw, 320px);
+    max-height: min(40vh, 320px);
+  }
+
+  .lo-stage--labs .lo-stage__chars,
+  .lo-stage--labs .lo-stage__magic--labs {
+    right: 0;
+    width: min(90vw, 360px);
+    max-height: min(46vh, 360px);
   }
 
   .lo-stage--stories .lo-stage__chars {
@@ -5088,8 +5396,8 @@ html.home-page-root {
   .lo-stage--book .lo-stage__chars,
   .lo-stage--book .lo-stage__magic--book {
     bottom: calc(var(--lo-stage-card-band) + 1.25rem);
-    width: min(68vw, 280px);
-    max-height: min(34vh, 270px);
+    width: min(58vw, 238px);
+    max-height: min(29vh, 230px);
   }
 
   .journey-card {

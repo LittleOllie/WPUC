@@ -78,16 +78,16 @@
   var heroAssets = {
     // Dad + Ollie standing together (main visual focus)
     characters: {
-      src: "webpageassets/hero-dad-and-ollie.png",
+      src: "webpageassets/hero-dad-and-ollie.webp",
       critical: true,
     },
     // Optional book glow layer (not used with standing pose art)
     book: {
       src: "webpageassets/hero-open-book.png",
     },
-    // Distant hills / scenery (currently using playground.png)
+    // Distant hills / scenery (currently using playground)
     hills: {
-      src: "webpageassets/playground.png",
+      src: "webpageassets/playground.jpg",
       critical: true,
     },
     // Foreground grass / flowers / near clouds
@@ -102,11 +102,11 @@
     magicStar: { src: "webpageassets/magic-star.png" },
     magicPlane: { src: "webpageassets/magic-paper-plane.png" },
     // Journey cards
-    cardFamily: { src: "webpageassets/family.jpeg" },
+    cardFamily: { src: "webpageassets/family.jpg" },
     cardStories: { src: "webpageassets/BookCover.jpg" },
-    cardSchool: { src: "webpageassets/Friendship.png" },
-    cardLabs: { src: "webpageassets/Creativity.png" },
-    cardAdventure: { src: "webpageassets/Resilience.png" },
+    cardSchool: { src: "webpageassets/Friendship.jpg" },
+    cardLabs: { src: "webpageassets/Creativity.jpg" },
+    cardAdventure: { src: "webpageassets/Resilience.jpg" },
   };
 
   function hideHeroImage(img) {
@@ -225,36 +225,88 @@
    * Per-stage layered art — drop files into webpageassets/ using these names.
    * bg = full-bleed background, chars = transparent character layer on the right.
    * Fallbacks keep the layout working until final art arrives.
+   *
+   * Phone (≤899px): use *_phone.jpg composites (characters baked in, char layer hidden).
+   * Browser/desktop (≥900px): layered bg + separate char layers.
    */
   var stageAssets = {
     home: {
-      bg: "webpageassets/playground.png",
-      chars: "webpageassets/hero-dad-and-ollie.png",
+      bg: "webpageassets/BrowserPlayground.png",
+      hideChars: true,
+      noFlip: true,
     },
     family: {
-      bg: "webpageassets/picnic-background-family.png",
-      bgFallback: "webpageassets/family.jpeg",
-      chars: "webpageassets/meet-the-family.png",
+      bg: "webpageassets/BrowserMeetthefamily.jpg",
+      hideChars: true,
     },
     stories: {
-      bg: "webpageassets/library.png",
-      bgFallback: "webpageassets/websiteBG.png",
-      chars: "webpageassets/library-ollie-lily.png",
+      bg: "webpageassets/BrowserLibrary.jpg",
+      hideChars: true,
     },
     book: {
-      bg: "webpageassets/books-bg.png",
-      chars: "webpageassets/lobookhold.png",
+      bg: "webpageassets/BrowserBook.jpg",
+      hideChars: true,
     },
     labs: {
-      bg: "webpageassets/labplayground.png",
-      bgFallback: "webpageassets/websiteComputerBG.png",
-      chars: "webpageassets/dadolliesamlab.png",
+      bg: "webpageassets/BrowserLab.jpg",
+      hideChars: true,
     },
     journey: {
-      bg: "webpageassets/journeypage.png",
-      bgFallback: "webpageassets/journey.png",
+      bg: "webpageassets/journeypage.jpg",
+      bgFallback: "webpageassets/journey.jpg",
     },
   };
+
+  /* Phone-only full-scene backgrounds (named to match each page) */
+  var phoneStageAssets = {
+    home: {
+      bg: "webpageassets/playground_phone.jpg",
+      hideChars: true,
+      noFlip: true,
+    },
+    family: {
+      bg: "webpageassets/family_phone.jpg",
+      hideChars: true,
+    },
+    stories: {
+      bg: "webpageassets/library_phone.jpg",
+      hideChars: true,
+    },
+    book: {
+      bg: "webpageassets/book_phone.jpg",
+      hideChars: true,
+    },
+    labs: {
+      bg: "webpageassets/lab_phone.jpg",
+      hideChars: true,
+    },
+  };
+
+  var phoneStageMedia = window.matchMedia("(max-width: 899px)");
+
+  function isPhoneViewport() {
+    return phoneStageMedia.matches;
+  }
+
+  function getStageMode() {
+    return isPhoneViewport() ? "phone" : "browser";
+  }
+
+  function resolveStageAssets(key) {
+    var base = stageAssets[key];
+    if (!base) return null;
+    if (!isPhoneViewport() || !phoneStageAssets[key]) return base;
+    var phone = phoneStageAssets[key];
+    return {
+      bg: phone.bg || base.bg,
+      bgFallback: base.bg,
+      bgFallback2: base.bgFallback,
+      chars: phone.hideChars ? null : base.chars,
+      charsFallback: phone.hideChars ? null : base.charsFallback,
+      hideChars: !!phone.hideChars,
+      noFlip: !!phone.noFlip,
+    };
+  }
 
   function loadStageImage(img, sources, onDone) {
     if (!img || !sources || !sources.length) {
@@ -304,49 +356,176 @@
       /* lazy + hidden never fetches — force eager when we manage the load */
       img.loading = "eager";
       img.removeAttribute("loading");
+
+      var absoluteSrc = src;
+      try {
+        absoluteSrc = new URL(src, window.location.href).href;
+      } catch (err) {
+        /* keep relative src */
+      }
+
+      /* Same src already decoded — load event will not fire again */
+      if (img.getAttribute("src") === src || img.src === absoluteSrc) {
+        if (img.complete && img.naturalWidth > 0) {
+          onLoad();
+          return;
+        }
+        if (img.complete && img.naturalWidth === 0) {
+          onError();
+          return;
+        }
+      }
+
       img.src = src;
     }
 
     tryNext();
   }
 
-  function initStageScenes() {
-    document.querySelectorAll(".lo-stage[data-stage]").forEach(function (stage) {
-      var key = stage.getAttribute("data-stage");
-      var assets = stageAssets[key];
-      if (!assets) return;
+  function resetStage(stage) {
+    if (!stage) return;
+    stage.removeAttribute("data-stage-loaded");
+    stage.removeAttribute("data-stage-mode");
+    stage.classList.remove("is-phone-composite", "is-bg-loaded", "is-placeholder");
 
-      var bg = stage.querySelector('[data-stage-layer="bg"]');
-      var chars = stage.querySelector('[data-stage-layer="chars"]');
-      var placeholder = stage.querySelector("[data-stage-placeholder]");
-      var pending = 2;
-      var anyLoaded = false;
+    var bg = stage.querySelector('[data-stage-layer="bg"]');
+    var chars = stage.querySelector('[data-stage-layer="chars"]');
+    var placeholder = stage.querySelector("[data-stage-placeholder]");
 
-      function finish() {
-        pending -= 1;
-        if (pending > 0) return;
-        stage.classList.toggle("is-bg-loaded", anyLoaded);
-        stage.classList.toggle("is-placeholder", !anyLoaded);
-        if (placeholder) placeholder.hidden = anyLoaded;
+    if (bg) {
+      bg.hidden = true;
+      bg.removeAttribute("src");
+      bg.classList.toggle("lo-stage__bg--flip", stage.getAttribute("data-stage") === "home");
+    }
+
+    if (chars) {
+      chars.hidden = true;
+      chars.removeAttribute("src");
+    }
+
+    if (placeholder) placeholder.hidden = false;
+  }
+
+  function loadStage(stage) {
+    if (!stage) return;
+    var mode = getStageMode();
+    var loadedMode = stage.getAttribute("data-stage-mode");
+    if (stage.getAttribute("data-stage-loaded") === "1" && loadedMode === mode) return;
+    if (loadedMode && loadedMode !== mode) resetStage(stage);
+
+    var key = stage.getAttribute("data-stage");
+    var assets = resolveStageAssets(key);
+    if (!assets) return;
+    stage.setAttribute("data-stage-loaded", "1");
+    stage.setAttribute("data-stage-mode", mode);
+
+    var bg = stage.querySelector('[data-stage-layer="bg"]');
+    var chars = stage.querySelector('[data-stage-layer="chars"]');
+    var placeholder = stage.querySelector("[data-stage-placeholder]");
+    var pending = 2;
+    var anyLoaded = false;
+
+    stage.classList.remove("is-phone-composite");
+
+    if (bg && assets.noFlip) {
+      bg.classList.remove("lo-stage__bg--flip");
+    } else if (bg && key === "home") {
+      bg.classList.add("lo-stage__bg--flip");
+    }
+
+    if (assets.hideChars) {
+      stage.classList.add("is-phone-composite");
+    }
+
+    function finish() {
+      pending -= 1;
+      if (pending > 0) return;
+      stage.classList.toggle("is-bg-loaded", anyLoaded);
+      stage.classList.toggle("is-placeholder", !anyLoaded);
+      if (placeholder) placeholder.hidden = anyLoaded;
+    }
+
+    loadStageImage(
+      bg,
+      assets.hideChars
+        ? [assets.bg].filter(Boolean)
+        : [assets.bg, assets.bgFallback, assets.bgFallback2].filter(Boolean),
+      function (ok) {
+        if (ok) anyLoaded = true;
+        finish();
       }
+    );
 
-      loadStageImage(
-        bg,
-        [assets.bg, assets.bgFallback, assets.bgFallback2].filter(Boolean),
-        function (ok) {
-          if (ok) anyLoaded = true;
-          finish();
-        }
-      );
-
+    if (assets.hideChars || !assets.chars) {
+      if (chars) {
+        chars.hidden = true;
+        chars.removeAttribute("src");
+      }
+      finish();
+    } else {
+      if (chars) chars.hidden = false;
       loadStageImage(chars, [assets.chars, assets.charsFallback].filter(Boolean), function (ok) {
         if (ok) anyLoaded = true;
         finish();
       });
+    }
+  }
+
+  function reloadStagesForViewport() {
+    var stages = document.querySelectorAll(".lo-stage[data-stage]");
+    Array.prototype.forEach.call(stages, function (stage) {
+      var loadedMode = stage.getAttribute("data-stage-mode");
+      if (!loadedMode || loadedMode === getStageMode()) return;
+      resetStage(stage);
+      loadStage(stage);
+    });
+  }
+
+  function initStageScenes() {
+    var stages = Array.prototype.slice.call(document.querySelectorAll(".lo-stage[data-stage]"));
+    if (!stages.length) return;
+
+    /* Home first — everything else waits until near the viewport (big phone win) */
+    stages.forEach(function (stage) {
+      if (stage.getAttribute("data-stage") === "home") loadStage(stage);
+    });
+
+    if (!("IntersectionObserver" in window)) {
+      stages.forEach(loadStage);
+      return;
+    }
+
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          loadStage(entry.target);
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "280px 0px", threshold: 0.01 }
+    );
+
+    stages.forEach(function (stage) {
+      if (stage.getAttribute("data-stage") === "home") return;
+      io.observe(stage);
     });
   }
 
   initStageScenes();
+
+  var stageViewportTimer;
+  function scheduleStageViewportReload() {
+    window.clearTimeout(stageViewportTimer);
+    stageViewportTimer = window.setTimeout(reloadStagesForViewport, 180);
+  }
+
+  if (typeof phoneStageMedia.addEventListener === "function") {
+    phoneStageMedia.addEventListener("change", scheduleStageViewportReload);
+  } else if (typeof phoneStageMedia.addListener === "function") {
+    phoneStageMedia.addListener(scheduleStageViewportReload);
+  }
+  window.addEventListener("orientationchange", scheduleStageViewportReload);
 
   /**
    * Our Story artwork — add files under webpageassets/ to light up placeholders.
@@ -950,23 +1129,107 @@
     });
   }
 
-  /* Family cards: tap to pop character up on touch devices */
+  /* Family cards: tap/hover to pop character + show short write-up */
   (function initFamilyCardPop() {
-    var familyCards = document.querySelectorAll(".lo-stage--family .journey-card");
+    var stage = document.querySelector(".lo-stage--family");
+    var familyCards = stage
+      ? stage.querySelectorAll(".journey-card")
+      : [];
+    var bio = stage && stage.querySelector("[data-family-bio]");
+    var bioName = bio && bio.querySelector("[data-family-bio-name]");
+    var bioCopy = bio && bio.querySelector("[data-family-bio-copy]");
     if (!familyCards.length) return;
 
+    function cardMeta(card) {
+      var titleEl = card.querySelector(".journey-card__title");
+      var descEl = card.querySelector(".journey-card__desc");
+      return {
+        name: titleEl ? titleEl.textContent.trim() : "",
+        copy: descEl ? descEl.textContent.trim() : "",
+      };
+    }
+
+    function showBio(card) {
+      if (!bio || !bioName || !bioCopy || !card) return;
+      var meta = cardMeta(card);
+      if (!meta.name || !meta.copy) return;
+      var who = "ollie";
+      if (card.classList.contains("journey-card--dad")) who = "dad";
+      else if (card.classList.contains("journey-card--mum")) who = "mum";
+      else if (card.classList.contains("journey-card--lily")) who = "lily";
+      else if (card.classList.contains("journey-card--jack")) who = "jack";
+      else if (card.classList.contains("journey-card--ollie")) who = "ollie";
+
+      bio.classList.remove(
+        "family-bio--ollie",
+        "family-bio--dad",
+        "family-bio--mum",
+        "family-bio--lily",
+        "family-bio--jack"
+      );
+      bio.classList.add("family-bio--" + who);
+      bioName.textContent = meta.name;
+      bioCopy.textContent = meta.copy;
+      bio.hidden = false;
+      bio.classList.add("is-visible");
+    }
+
+    function hideBio() {
+      if (!bio) return;
+      bio.classList.remove("is-visible");
+      bio.classList.remove(
+        "family-bio--ollie",
+        "family-bio--dad",
+        "family-bio--mum",
+        "family-bio--lily",
+        "family-bio--jack"
+      );
+      bio.hidden = true;
+      if (bioName) bioName.textContent = "";
+      if (bioCopy) bioCopy.textContent = "";
+    }
+
+    function clearPopped() {
+      familyCards.forEach(function (card) {
+        card.classList.remove("is-popped");
+      });
+    }
+
     familyCards.forEach(function (card) {
+      card.addEventListener("mouseenter", function () {
+        if (!window.matchMedia("(min-width: 900px)").matches) return;
+        showBio(card);
+      });
+      card.addEventListener("mouseleave", function () {
+        if (!window.matchMedia("(min-width: 900px)").matches) return;
+        if (!stage.querySelector(".journey-card:hover, .journey-card:focus-visible")) {
+          hideBio();
+        }
+      });
+      card.addEventListener("focus", function () {
+        showBio(card);
+      });
+      card.addEventListener("blur", function () {
+        if (!window.matchMedia("(min-width: 900px)").matches) return;
+        window.setTimeout(function () {
+          if (!stage.querySelector(".journey-card:focus-visible, .journey-card:hover")) {
+            hideBio();
+          }
+        }, 0);
+      });
+
       card.addEventListener("click", function (e) {
         if (window.matchMedia("(min-width: 900px)").matches) return;
 
         var alreadyPopped = card.classList.contains("is-popped");
-        familyCards.forEach(function (other) {
-          other.classList.remove("is-popped");
-        });
+        clearPopped();
 
         if (!alreadyPopped) {
           e.preventDefault();
           card.classList.add("is-popped");
+          showBio(card);
+        } else {
+          hideBio();
         }
       });
     });
@@ -974,9 +1237,9 @@
     document.addEventListener("click", function (e) {
       if (window.matchMedia("(min-width: 900px)").matches) return;
       if (e.target.closest(".lo-stage--family .journey-card")) return;
-      familyCards.forEach(function (card) {
-        card.classList.remove("is-popped");
-      });
+      if (e.target.closest("[data-family-bio]")) return;
+      clearPopped();
+      hideBio();
     });
   })();
 

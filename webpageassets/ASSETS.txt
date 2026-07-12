@@ -13,35 +13,27 @@ Each stage uses the SAME layout:
   3) five bottom journey-style cards (images optional)
 
 HOME
-  playground.png              ✅ current home background (flipped)
-  hero-dad-and-ollie.png      ✅ current home characters
-  (optional later: home-bg.png / home-chars.png)
+  BrowserPlayground.png         ✅ browser/desktop background (characters baked in)
+  playground_phone.jpg          ✅ phone composite
 
 FAMILY
-  family-bg.png               preferred family background
-  picnic-background-family.png  ✅ interim fallback
-  family.jpeg                 ✅ second fallback
-  meet-the-family.png         ✅ family character layer (same pose slot as home)
-  ollie.png / dad.png / mum.png / lily.png / jack.png
-                              ✅ bottom character cards
+  BrowserMeetthefamily.jpg      ✅ browser/desktop background (characters baked in)
+  family_phone.jpg              ✅ phone composite
+  ollie / dad / mum / lily / jack.webp
+                                ✅ bottom character cards
 
 STORIES
-  library.png                 ✅ stories stage background
-  library-ollie-lily.png      ✅ stories character layer (Ollie + Lily)
-  websiteBG.png               interim bg fallback
-  Courage / Kindness / Friendship / Creativity / Resilience.png
-                              ✅ bottom theme cards
+  BrowserLibrary.jpg            ✅ browser/desktop background (characters baked in)
+  library_phone.jpg             ✅ phone composite
 
 BOOKS
-  books-bg.png                ✅ books stage background
-  lobookhold.png              ✅ books character layer (Ollie holding book)
-  BookCover.jpg               ✅ bottom card + Amazon
-  spark.png / Believe in Yourself.png  available extras
+  BrowserBook.jpg               ✅ browser/desktop background (characters baked in)
+  book_phone.jpg                ✅ phone composite
 
 LABS
-  labplayground.png           ✅ labs stage background
-  dadolliesamlab.png          ✅ labs character layer (Dad, Ollie, Sam)
-  websiteComputerBG.png       fallback
+  BrowserLab.jpg                ✅ browser/desktop background (characters baked in)
+  lab_phone.jpg                 ✅ phone composite
+  websiteComputerBG.jpg       fallback
 
 JOURNEY
   journey-bg.png
