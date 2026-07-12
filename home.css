@@ -1079,7 +1079,22 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
-    padding: clamp(1rem, 2vw, 1.45rem) clamp(1rem, 2vw, 1.55rem);
+    padding: clamp(0.85rem, 1.6vw, 1.2rem) clamp(1rem, 2vw, 1.45rem);
+  }
+
+  .lo-stage__panel .home-hero__copy .home-eyebrow {
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .lo-stage__panel .home-hero__title {
+    font-size: clamp(1.65rem, 2.3vw, 2.15rem);
+    line-height: 1.06;
+    max-width: none;
+  }
+
+  .lo-stage__panel .home-hero__head {
+    gap: 0.5rem;
   }
 
   .lo-stage__panel .home-hero__copy::-webkit-scrollbar {
@@ -1101,7 +1116,7 @@
     max-width: none;
     font-size: clamp(1rem, 1.15vw, 1.12rem);
     line-height: 1.44;
-    margin-top: 0.65rem;
+    margin-top: 0.5rem;
   }
 
   .lo-stage__panel .home-hero__desc + .home-hero__desc {
@@ -1255,11 +1270,11 @@
 }
 
 .our-story__invite-title {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.6rem;
   font-family: var(--lo-font-display);
-  font-size: clamp(1.45rem, 2.8vw, 1.85rem);
+  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
   color: var(--lo-deep-blue);
 }
 
@@ -5315,8 +5330,8 @@ html.home-page-root {
   }
 
   .lo-stage__panel .home-hero__title {
-    font-size: clamp(1.35rem, 5.8vw, 1.7rem);
-    line-height: 1.12;
+    font-size: clamp(1.2rem, 5.2vw, 1.55rem);
+    line-height: 1.08;
     max-width: none;
   }
 
@@ -5652,7 +5667,7 @@ html.home-page-root {
   }
 
   .lo-stage__panel .home-hero__title {
-    font-size: clamp(1.3rem, 6.5vw, 1.6rem);
+    font-size: clamp(1.15rem, 5.8vw, 1.45rem);
   }
 
   .lo-stage__panel .home-hero__desc {
