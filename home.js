@@ -587,8 +587,20 @@
     var stageNum = stageContent.querySelector("[data-story-stage-num]");
     var stageTitle = stageContent.querySelector("[data-story-stage-title]");
     var stageCopy = stageContent.querySelector("[data-story-stage-copy]");
+    var storyCopyPanel = section.querySelector(".our-story__copy");
+    var phoneMq = window.matchMedia("(max-width: 899px)");
     var activeIndex = -1;
     var storyStarted = false;
+
+    function collapseStoryCopy() {
+      if (!phoneMq.matches || !storyCopyPanel) return;
+      storyCopyPanel.classList.remove("is-open");
+      var expandBtn = storyCopyPanel.querySelector(".home-hero__expand");
+      if (expandBtn) {
+        expandBtn.setAttribute("aria-expanded", "false");
+        expandBtn.setAttribute("aria-label", "Show more about this section");
+      }
+    }
 
     function storyParagraphs(raw) {
       if (!raw) return "";
@@ -638,10 +650,16 @@
 
       updateNav(index);
 
-      if (opts.scrollPanel !== false && window.matchMedia("(max-width: 899px)").matches) {
+      if (stageContent.scrollTop) {
+        stageContent.scrollTop = 0;
+      }
+
+      if (opts.scrollPanel !== false && !phoneMq.matches) {
         stageContent.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
-      card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      if (!phoneMq.matches) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
     }
 
     function setPlayButtonsPlaying() {
@@ -653,11 +671,9 @@
 
     function startStory(fromIndex) {
       storyStarted = true;
+      collapseStoryCopy();
       setPlayButtonsPlaying();
-      showChapter(typeof fromIndex === "number" ? fromIndex : 0, { scrollPanel: true });
-      if (window.matchMedia("(max-width: 899px)").matches) {
-        chapters.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+      showChapter(typeof fromIndex === "number" ? fromIndex : 0, { scrollPanel: false });
     }
 
     function goPrev() {
@@ -671,9 +687,10 @@
     cards.forEach(function (card, index) {
       card.addEventListener("click", function () {
         storyStarted = true;
+        collapseStoryCopy();
         if (stageNav) stageNav.hidden = false;
         setPlayButtonsPlaying();
-        showChapter(index);
+        showChapter(index, { scrollPanel: false });
       });
 
       card.addEventListener("keydown", function (e) {

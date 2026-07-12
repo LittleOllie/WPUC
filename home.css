@@ -1606,6 +1606,106 @@
   .our-story__cards {
     margin-top: auto;
   }
+
+  /* Phone: collapse intro card and let chapter panel fill the middle */
+  .our-story.has-stage-open .our-story__panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .our-story.has-stage-open .our-story__grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .our-story.has-stage-open .our-story__copy {
+    flex: 0 0 auto;
+  }
+
+  .our-story.has-stage-open .our-story__copy .home-eyebrow,
+  .our-story.has-stage-open .our-story__copy .home-hero__body {
+    display: none !important;
+  }
+
+  .our-story.has-stage-open .our-story__copy.is-open {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .our-story.has-stage-open .our-story__stage-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    overflow: hidden;
+    padding: 0.75rem 0.85rem 0.65rem;
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .our-story.has-stage-open .our-story__stage-content-inner {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .our-story.has-stage-open .our-story__stage-emoji {
+    margin: 0 0 0.2rem;
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .our-story.has-stage-open .our-story__stage-num {
+    margin: 0 0 0.2rem;
+    font-size: 0.68rem;
+  }
+
+  .our-story.has-stage-open .our-story__stage-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    line-height: 1.1;
+  }
+
+  .our-story.has-stage-open .our-story__stage-copy {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .our-story.has-stage-open .our-story__stage-copy p {
+    margin: 0 0 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.36;
+  }
+
+  .our-story.has-stage-open .our-story__stage-copy p:last-child {
+    margin-bottom: 0;
+  }
+
+  .our-story.has-stage-open .our-story__stage-nav {
+    flex: 0 0 auto;
+    margin-top: 0.45rem;
+    padding-top: 0.45rem;
+  }
+
+  .our-story.has-stage-open .our-story__stage-arrow {
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 1.1rem;
+  }
+
+  .our-story.has-stage-open .our-story__stage-progress {
+    font-size: 0.76rem;
+  }
 }
 
 .our-story__cards {
@@ -5372,7 +5472,7 @@ html.home-page-root {
   }
 
   .lo-stage.is-phone-composite.lo-stage--labs .lo-stage__bg {
-    object-position: 50% 14%;
+    object-position: 66% 14%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--journey .lo-stage__bg {
