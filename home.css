@@ -2025,24 +2025,6 @@ button.our-story__card:focus-visible {
   opacity: 1;
 }
 
-@media (max-width: 899px) {
-  .our-story .journey-cards__track--labs4.our-story__chapters {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.45rem;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 0.15rem;
-  }
-
-  .our-story__chapters .journey-cards__item {
-    flex: 0 0 min(34vw, 7.35rem);
-    scroll-snap-align: center;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .our-story__stage-content-inner {
     transition: none;
