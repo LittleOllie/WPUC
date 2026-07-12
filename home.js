@@ -717,10 +717,16 @@
   (function initStoryPresentation() {
     var section = document.querySelector("[data-story-section]");
     var playBtn = document.querySelector("[data-story-play]");
+    var playCenterBtn = document.querySelector("[data-story-play-center]");
     var chapters = document.querySelector("[data-story-chapters]");
     var theater = document.querySelector("[data-story-theater]");
     var feature = document.querySelector("[data-story-feature]");
-    if (!section || !playBtn || !chapters || !theater || !feature) return;
+    if (!section || !chapters || !theater || !feature) return;
+    if (!playBtn && !playCenterBtn) return;
+
+    var playBtns = Array.prototype.slice.call(
+      document.querySelectorAll("[data-story-play], [data-story-play-center]")
+    );
 
     var cards = Array.prototype.slice.call(chapters.querySelectorAll(".our-story__card"));
     if (!cards.length) return;
@@ -739,8 +745,28 @@
     var timer = null;
     var index = 0;
     var playing = false;
-    var HOLD_MS = reduced ? 2200 : 4800;
-    var EXIT_MS = reduced ? 200 : 650;
+    var HOLD_MS = reduced ? 3630 : 7920;
+    var EXIT_MS = reduced ? 330 : 1070;
+
+    function isPhoneStoryView() {
+      return window.matchMedia("(max-width: 899px)").matches;
+    }
+
+    function setPlayButtons(label, disabled, pressed) {
+      playBtns.forEach(function (btn) {
+        btn.textContent = label;
+        btn.disabled = !!disabled;
+        btn.setAttribute("aria-pressed", pressed ? "true" : "false");
+        btn.classList.toggle("is-playing", !!pressed);
+      });
+    }
+
+    function resetPlayButtons() {
+      var againLabel = isPhoneStoryView()
+        ? "Press to see the story again"
+        : "See Our Journey Again";
+      setPlayButtons(againLabel, false, false);
+    }
 
     function clearTimer() {
       if (timer) {
@@ -810,9 +836,7 @@
         chapters.classList.add("is-complete");
         if (stageBar) stageBar.hidden = true;
         if (skipBtn) skipBtn.hidden = true;
-        playBtn.textContent = "See Our Journey Again";
-        playBtn.disabled = false;
-        playBtn.setAttribute("aria-pressed", "false");
+        resetPlayButtons();
       }, EXIT_MS);
     }
 
@@ -843,9 +867,7 @@
       index = startIndex || 0;
       if (stageBar) stageBar.hidden = false;
       if (skipBtn) skipBtn.hidden = false;
-      playBtn.textContent = "Playing…";
-      playBtn.disabled = true;
-      playBtn.setAttribute("aria-pressed", "true");
+      setPlayButtons(isPhoneStoryView() ? "Playing the story…" : "Playing…", true, true);
 
       /* Stay on the current view — present chapters in-place over this section */
       openTheater();
@@ -885,9 +907,11 @@
       });
     }
 
-    playBtn.addEventListener("click", function () {
-      if (playing) return;
-      playFrom(0);
+    playBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (playing) return;
+        playFrom(0);
+      });
     });
 
     if (skipBtn) {

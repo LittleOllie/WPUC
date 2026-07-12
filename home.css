@@ -1115,6 +1115,7 @@
 .our-story {
   background: #f2c97a;
   scroll-margin-top: 0;
+  position: relative;
 }
 
 .our-story__world {
@@ -1400,6 +1401,68 @@
   .our-story__cards {
     margin-top: auto;
   }
+
+  .our-story__play-center {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    top: 54%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    min-height: 3.1rem;
+    padding: 0.85rem 1.35rem;
+    border: 2.5px solid rgba(255, 255, 255, 0.98);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fffef9 0%, #fff6dc 100%);
+    box-shadow:
+      0 14px 32px rgba(17, 52, 89, 0.18),
+      0 2px 0 rgba(255, 216, 77, 0.55);
+    font-family: var(--lo-font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--lo-deep-blue);
+    cursor: pointer;
+    text-align: center;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.25s ease;
+  }
+
+  .our-story__play-center:hover,
+  .our-story__play-center:focus-visible {
+    transform: translate(-50%, -52%);
+    box-shadow:
+      0 18px 36px rgba(17, 52, 89, 0.22),
+      0 2px 0 rgba(255, 216, 77, 0.65);
+    outline: none;
+  }
+
+  .our-story__play-center:focus-visible {
+    outline: 3px solid rgba(23, 52, 95, 0.35);
+    outline-offset: 3px;
+  }
+
+  .our-story__play-center:active {
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+
+  .our-story.is-presenting .our-story__play-center,
+  .our-story__play-center.is-playing {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .our-story .home-hero__actions [data-story-play] {
+    display: none;
+  }
+
+  .our-story.is-presenting .our-story__stage-bar {
+    display: flex;
+  }
 }
 
 .our-story__cards {
@@ -1529,6 +1592,10 @@
 .our-story__skip:focus-visible {
   outline: 2px solid var(--lo-deep-blue);
   outline-offset: 3px;
+}
+
+.our-story__play-center {
+  display: none;
 }
 
 body.our-story-lock {
@@ -5047,11 +5114,11 @@ html.home-page-root {
   }
 
   .lo-stage.is-phone-composite.lo-stage--home .lo-stage__bg {
-    object-position: 70% 12%;
+    object-position: 64% 17%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--family .lo-stage__bg {
-    object-position: 66% 16%;
+    object-position: 62% 21%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--stories .lo-stage__bg {
@@ -5063,7 +5130,7 @@ html.home-page-root {
   }
 
   .lo-stage.is-phone-composite.lo-stage--labs .lo-stage__bg {
-    object-position: 70% 12%;
+    object-position: 76% 12%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--journey .lo-stage__bg {
