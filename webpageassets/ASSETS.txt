@@ -6,39 +6,34 @@ BRAND
   favicon.png         Browser tab icon
 
 ═══════════════════════════════════════════════════════════
-FULL-VIEWPORT STAGES (home.js → stageAssets)
-Each stage uses the SAME layout:
-  1) *-bg.png     full-bleed background
-  2) *-chars.png  transparent character layer (right side)
-  3) five bottom journey-style cards (images optional)
+FULL-VIEWPORT STAGES (home.js → stageAssets / phoneStageAssets)
+Naming: Browser{Page} = desktop (≥900px), Phone{Page} = phone (≤899px)
 
 HOME
-  BrowserPlayground.png         ✅ browser/desktop background (characters baked in)
-  playground_phone.jpg          ✅ phone composite
+  BrowserHome.png             ✅ browser/desktop background
+  PhoneHome.jpg               ✅ phone composite
 
 FAMILY
-  BrowserMeetthefamily.jpg      ✅ browser/desktop background (characters baked in)
-  family_phone.jpg              ✅ phone composite
+  BrowserFamily.jpg           ✅ browser/desktop background
+  PhoneFamily.jpg             ✅ phone composite
   ollie / dad / mum / lily / jack.webp
-                                ✅ bottom character cards
+                              ✅ bottom character cards
 
 STORIES
-  BrowserLibrary.jpg            ✅ browser/desktop background (characters baked in)
-  library_phone.jpg             ✅ phone composite
+  BrowserStories.jpg          ✅ browser/desktop background
+  PhoneStories.jpg            ✅ phone composite
 
 BOOKS
-  BrowserBook.jpg               ✅ browser/desktop background (characters baked in)
-  book_phone.jpg                ✅ phone composite
+  BrowserBook.jpg             ✅ browser/desktop background
+  PhoneBook.jpg               ✅ phone composite
 
 LABS
-  BrowserLab.jpg                ✅ browser/desktop background (characters baked in)
-  lab_phone.jpg                 ✅ phone composite
-  websiteComputerBG.jpg       fallback
+  BrowserLabs.jpg             ✅ browser/desktop background
+  PhoneLabs.jpg               ✅ phone composite
 
 JOURNEY
-  journey-bg.png
-  journey-chars.png
-  journey.png                 ✅ interim bg fallback
+  BrowserJourney.jpg          ✅ browser/desktop background
+  journey.jpg                 fallback
 
 HOME JOURNEY CARDS (under Home only — home.js → heroAssets)
   family.jpeg / BookCover.jpg / Friendship.png /

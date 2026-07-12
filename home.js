@@ -231,16 +231,16 @@
    */
   var stageAssets = {
     home: {
-      bg: "webpageassets/BrowserPlayground.png",
+      bg: "webpageassets/BrowserHome.png",
       hideChars: true,
       noFlip: true,
     },
     family: {
-      bg: "webpageassets/BrowserMeetthefamily.jpg",
+      bg: "webpageassets/BrowserFamily.jpg",
       hideChars: true,
     },
     stories: {
-      bg: "webpageassets/BrowserLibrary.jpg",
+      bg: "webpageassets/BrowserStories.jpg",
       hideChars: true,
     },
     book: {
@@ -248,11 +248,11 @@
       hideChars: true,
     },
     labs: {
-      bg: "webpageassets/BrowserLab.jpg",
+      bg: "webpageassets/BrowserLabs.jpg",
       hideChars: true,
     },
     journey: {
-      bg: "webpageassets/journeypage.jpg",
+      bg: "webpageassets/BrowserJourney.jpg",
       bgFallback: "webpageassets/journey.jpg",
     },
   };
@@ -260,24 +260,24 @@
   /* Phone-only full-scene backgrounds (named to match each page) */
   var phoneStageAssets = {
     home: {
-      bg: "webpageassets/playground_phone.jpg",
+      bg: "webpageassets/PhoneHome.jpg",
       hideChars: true,
       noFlip: true,
     },
     family: {
-      bg: "webpageassets/family_phone.jpg",
+      bg: "webpageassets/PhoneFamily.jpg",
       hideChars: true,
     },
     stories: {
-      bg: "webpageassets/library_phone.jpg",
+      bg: "webpageassets/PhoneStories.jpg",
       hideChars: true,
     },
     book: {
-      bg: "webpageassets/book_phone.jpg",
+      bg: "webpageassets/PhoneBook.jpg",
       hideChars: true,
     },
     labs: {
-      bg: "webpageassets/lab_phone.jpg",
+      bg: "webpageassets/PhoneLabs.jpg",
       hideChars: true,
     },
   };
@@ -567,370 +567,133 @@
 
   initStoryArt();
 
-  /* Hover/focus a bottom chapter tile → expand beside the intro text box */
-  (function initStoryDock() {
+  /* Our Story — inline chapter panel with sequential play + arrows */
+  (function initOurStoryStages() {
     var section = document.querySelector("[data-story-section]");
-    var copy = section && section.querySelector(".our-story__copy");
-    var dock = section && section.querySelector("[data-story-dock]");
-    var chapters = section && section.querySelector("[data-story-chapters]");
-    if (!section || !copy || !dock || !chapters) return;
+    var playBtns = Array.prototype.slice.call(document.querySelectorAll("[data-story-play]"));
+    var chapters = document.querySelector("[data-story-chapters]");
+    var stageContent = document.querySelector("[data-story-stage-content]");
+    var stageInner = document.querySelector("[data-story-stage-inner]");
+    var stageNav = document.querySelector("[data-story-stage-nav]");
+    var prevBtn = document.querySelector("[data-story-prev]");
+    var nextBtn = document.querySelector("[data-story-next]");
+    var progressEl = document.querySelector("[data-story-progress]");
+    if (!section || !chapters || !stageContent || !stageInner) return;
 
     var cards = Array.prototype.slice.call(chapters.querySelectorAll(".our-story__card"));
     if (!cards.length) return;
 
-    var hint = dock.querySelector("[data-story-dock-hint]");
-    var panel = dock.querySelector("[data-story-dock-panel]");
-    var media = dock.querySelector("[data-story-dock-media]");
-    var img = dock.querySelector("[data-story-dock-img]");
-    var emoji = dock.querySelector("[data-story-dock-emoji]");
-    var num = dock.querySelector("[data-story-dock-num]");
-    var title = dock.querySelector("[data-story-dock-title]");
-    var body = dock.querySelector("[data-story-dock-copy]");
-    var activeKey = "";
-    var leaveTimer = null;
+    var stageEmoji = stageContent.querySelector("[data-story-stage-emoji]");
+    var stageNum = stageContent.querySelector("[data-story-stage-num]");
+    var stageTitle = stageContent.querySelector("[data-story-stage-title]");
+    var stageCopy = stageContent.querySelector("[data-story-stage-copy]");
+    var activeIndex = -1;
+    var storyStarted = false;
 
-    function syncDockHeight() {
-      if (window.matchMedia("(max-width: 899px)").matches) {
-        dock.style.minHeight = "";
-        return;
-      }
-      dock.style.minHeight = copy.offsetHeight + "px";
+    function storyParagraphs(raw) {
+      if (!raw) return "";
+      return raw
+        .split("|||")
+        .map(function (part) {
+          return "<p>" + part.trim() + "</p>";
+        })
+        .join("");
     }
 
-    function loadDockArt(key) {
-      if (!img || !media) return;
-      var src = storyAssets[key];
-      media.classList.remove("is-loaded");
-      img.hidden = true;
-      img.removeAttribute("src");
-      if (!src) return;
-
-      function show() {
-        media.classList.add("is-loaded");
-        img.hidden = false;
+    function updateNav(index) {
+      if (progressEl) {
+        progressEl.textContent = "Chapter " + (index + 1) + " of " + cards.length;
       }
-
-      function hide() {
-        media.classList.remove("is-loaded");
-        img.hidden = true;
-        img.removeAttribute("src");
-      }
-
-      img.onload = show;
-      img.onerror = hide;
-      img.src = src;
+      if (prevBtn) prevBtn.disabled = index <= 0;
+      if (nextBtn) nextBtn.disabled = index >= cards.length - 1;
     }
 
-    function showChapter(card) {
-      if (!card || section.classList.contains("is-presenting")) return;
-      var key = card.getAttribute("data-story-chapter") || "";
-      activeKey = key;
+    function showChapter(index, options) {
+      var opts = options || {};
+      if (index < 0 || index >= cards.length) return;
+      activeIndex = index;
+      var card = cards[index];
 
-      cards.forEach(function (c) {
-        c.classList.toggle("is-docked", c === card);
+      cards.forEach(function (c, i) {
+        var on = i === index;
+        c.setAttribute("aria-selected", on ? "true" : "false");
+        c.classList.toggle("is-active", on);
       });
+
+      stageContent.hidden = false;
+      if (stageNav) stageNav.hidden = false;
+      if (card.id) stageContent.setAttribute("aria-labelledby", card.id);
+      section.classList.add("has-stage-open");
 
       var emojiEl = card.querySelector(".our-story__emoji");
-      if (emoji) emoji.textContent = emojiEl ? emojiEl.textContent : "✨";
-      if (num) num.textContent = card.getAttribute("data-story-num") || "";
-      if (title) title.textContent = card.getAttribute("data-story-title") || "";
-      if (body) body.textContent = card.getAttribute("data-story-copy") || "";
+      if (stageEmoji) stageEmoji.textContent = emojiEl ? emojiEl.textContent : "";
+      if (stageNum) stageNum.textContent = card.getAttribute("data-story-num") || "";
+      if (stageTitle) stageTitle.textContent = card.getAttribute("data-story-title") || "";
+      if (stageCopy) stageCopy.innerHTML = storyParagraphs(card.getAttribute("data-story-copy"));
 
-      if (hint) hint.hidden = true;
-      if (panel) {
-        panel.hidden = false;
-        /* restart slide-up */
-        panel.style.transition = "none";
-        panel.style.transform = "translateY(1.25rem)";
-        panel.style.opacity = "0";
-        void panel.offsetWidth;
-        panel.style.transition = "";
-        panel.style.transform = "";
-        panel.style.opacity = "";
+      stageInner.classList.remove("is-visible");
+      window.requestAnimationFrame(function () {
+        stageInner.classList.add("is-visible");
+      });
+
+      updateNav(index);
+
+      if (opts.scrollPanel !== false && window.matchMedia("(max-width: 899px)").matches) {
+        stageContent.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
-      dock.classList.add("is-active");
-      loadDockArt(key);
-      syncDockHeight();
+      card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
     }
 
-    function clearDock() {
-      activeKey = "";
-      cards.forEach(function (c) {
-        c.classList.remove("is-docked");
+    function setPlayButtonsPlaying() {
+      playBtns.forEach(function (btn) {
+        btn.textContent = "Reading our Story…";
+        btn.setAttribute("aria-pressed", "true");
       });
-      dock.classList.remove("is-active");
-      if (panel) panel.hidden = true;
-      if (hint) hint.hidden = false;
-      if (media) media.classList.remove("is-loaded");
-      if (img) {
-        img.hidden = true;
-        img.removeAttribute("src");
+    }
+
+    function startStory(fromIndex) {
+      storyStarted = true;
+      setPlayButtonsPlaying();
+      showChapter(typeof fromIndex === "number" ? fromIndex : 0, { scrollPanel: true });
+      if (window.matchMedia("(max-width: 899px)").matches) {
+        chapters.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }
 
-    cards.forEach(function (card) {
-      card.setAttribute("tabindex", "0");
-      card.setAttribute("role", "button");
-      card.setAttribute(
-        "aria-label",
-        (card.getAttribute("data-story-title") || "Chapter") + " — show details"
-      );
+    function goPrev() {
+      if (activeIndex > 0) showChapter(activeIndex - 1);
+    }
 
-      card.addEventListener("pointerenter", function () {
-        if (leaveTimer) {
-          window.clearTimeout(leaveTimer);
-          leaveTimer = null;
-        }
-        showChapter(card);
-      });
+    function goNext() {
+      if (activeIndex < cards.length - 1) showChapter(activeIndex + 1);
+    }
 
-      card.addEventListener("focus", function () {
-        showChapter(card);
-      });
-
+    cards.forEach(function (card, index) {
       card.addEventListener("click", function () {
-        showChapter(card);
+        storyStarted = true;
+        if (stageNav) stageNav.hidden = false;
+        setPlayButtonsPlaying();
+        showChapter(index);
       });
 
       card.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           e.preventDefault();
-          showChapter(card);
+          goNext();
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          goPrev();
         }
       });
     });
 
-    chapters.addEventListener("pointerleave", function () {
-      leaveTimer = window.setTimeout(function () {
-        if (!section.classList.contains("is-presenting")) clearDock();
-      }, 180);
-    });
-
-    window.addEventListener("resize", syncDockHeight);
-    if ("ResizeObserver" in window) {
-      new ResizeObserver(syncDockHeight).observe(copy);
-    }
-    syncDockHeight();
-  })();
-
-  /* Our Story chapter presentation — each chapter rises to center, expands, then returns */
-  (function initStoryPresentation() {
-    var section = document.querySelector("[data-story-section]");
-    var playBtn = document.querySelector("[data-story-play]");
-    var playCenterBtn = document.querySelector("[data-story-play-center]");
-    var chapters = document.querySelector("[data-story-chapters]");
-    var theater = document.querySelector("[data-story-theater]");
-    var feature = document.querySelector("[data-story-feature]");
-    if (!section || !chapters || !theater || !feature) return;
-    if (!playBtn && !playCenterBtn) return;
-
-    var playBtns = Array.prototype.slice.call(
-      document.querySelectorAll("[data-story-play], [data-story-play-center]")
-    );
-
-    var cards = Array.prototype.slice.call(chapters.querySelectorAll(".our-story__card"));
-    if (!cards.length) return;
-
-    var stageBar = section.querySelector("[data-story-stage-bar]");
-    var stageLabel = section.querySelector("[data-story-stage-label]");
-    var dotsWrap = section.querySelector("[data-story-dots]");
-    var skipBtn = section.querySelector("[data-story-skip]");
-    var featureEmoji = feature.querySelector("[data-story-feature-emoji]");
-    var featureNum = feature.querySelector("[data-story-feature-num]");
-    var featureTitle = feature.querySelector("[data-story-feature-title]");
-    var featureCopy = feature.querySelector("[data-story-feature-copy]");
-    var backdrop = theater.querySelector("[data-story-backdrop]");
-
-    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var timer = null;
-    var index = 0;
-    var playing = false;
-    var HOLD_MS = reduced ? 3630 : 7920;
-    var EXIT_MS = reduced ? 330 : 1070;
-
-    function isPhoneStoryView() {
-      return window.matchMedia("(max-width: 899px)").matches;
-    }
-
-    function setPlayButtons(label, disabled, pressed) {
-      playBtns.forEach(function (btn) {
-        btn.textContent = label;
-        btn.disabled = !!disabled;
-        btn.setAttribute("aria-pressed", pressed ? "true" : "false");
-        btn.classList.toggle("is-playing", !!pressed);
-      });
-    }
-
-    function resetPlayButtons() {
-      var againLabel = isPhoneStoryView()
-        ? "Press to see the story again"
-        : "See Our Journey Again";
-      setPlayButtons(againLabel, false, false);
-    }
-
-    function clearTimer() {
-      if (timer) {
-        window.clearTimeout(timer);
-        timer = null;
-      }
-    }
-
-    function setDots(i) {
-      if (!dotsWrap) return;
-      Array.prototype.forEach.call(dotsWrap.children, function (dot, dotIndex) {
-        dot.classList.toggle("is-active", dotIndex === i);
-        dot.setAttribute("aria-current", dotIndex === i ? "true" : "false");
-      });
-    }
-
-    function fillFeature(card) {
-      var emojiEl = card.querySelector(".our-story__emoji");
-      if (featureEmoji) featureEmoji.textContent = emojiEl ? emojiEl.textContent : "";
-      if (featureNum) featureNum.textContent = card.getAttribute("data-story-num") || "";
-      if (featureTitle) featureTitle.textContent = card.getAttribute("data-story-title") || "";
-      if (featureCopy) featureCopy.textContent = card.getAttribute("data-story-copy") || "";
-    }
-
-    function highlightTile(i) {
-      cards.forEach(function (card, cardIndex) {
-        card.classList.toggle("is-spotlight", cardIndex === i);
-      });
-      setDots(i);
-      if (stageLabel) {
-        stageLabel.textContent = "Chapter " + (i + 1) + " of " + cards.length;
-      }
-    }
-
-    function openTheater() {
-      theater.hidden = false;
-      section.classList.add("is-presenting");
-      chapters.classList.add("is-presenting");
-      chapters.classList.remove("is-complete");
-      document.body.classList.add("our-story-lock");
-      requestAnimationFrame(function () {
-        theater.classList.add("is-open");
-      });
-    }
-
-    function closeTheater() {
-      theater.classList.remove("is-open");
-      feature.classList.remove("is-in", "is-out");
-      window.setTimeout(function () {
-        theater.hidden = true;
-      }, reduced ? 0 : 400);
-      document.body.classList.remove("our-story-lock");
-      section.classList.remove("is-presenting");
-    }
-
-    function finish() {
-      playing = false;
-      clearTimer();
-      feature.classList.remove("is-in");
-      feature.classList.add("is-out");
-      cards.forEach(function (card) {
-        card.classList.remove("is-spotlight");
-      });
-      window.setTimeout(function () {
-        closeTheater();
-        chapters.classList.remove("is-presenting");
-        chapters.classList.add("is-complete");
-        if (stageBar) stageBar.hidden = true;
-        if (skipBtn) skipBtn.hidden = true;
-        resetPlayButtons();
-      }, EXIT_MS);
-    }
-
-    function showChapter(i, then) {
-      index = i;
-      var card = cards[i];
-      highlightTile(i);
-      fillFeature(card);
-      feature.classList.remove("is-out", "is-in");
-
-      /* Force reflow so enter animation restarts */
-      void feature.offsetWidth;
-      feature.classList.add("is-in");
-
-      clearTimer();
-      timer = window.setTimeout(function () {
-        feature.classList.remove("is-in");
-        feature.classList.add("is-out");
-        timer = window.setTimeout(function () {
-          if (typeof then === "function") then();
-        }, EXIT_MS);
-      }, HOLD_MS);
-    }
-
-    function playFrom(startIndex) {
-      clearTimer();
-      playing = true;
-      index = startIndex || 0;
-      if (stageBar) stageBar.hidden = false;
-      if (skipBtn) skipBtn.hidden = false;
-      setPlayButtons(isPhoneStoryView() ? "Playing the story…" : "Playing…", true, true);
-
-      /* Stay on the current view — present chapters in-place over this section */
-      openTheater();
-
-      function next() {
-        if (!playing) return;
-        if (index >= cards.length - 1) {
-          finish();
-          return;
-        }
-        showChapter(index + 1, next);
-      }
-
-      window.setTimeout(function () {
-        showChapter(index, next);
-      }, reduced ? 50 : 280);
-    }
-
-    if (dotsWrap) {
-      cards.forEach(function (_card, i) {
-        var dot = document.createElement("button");
-        dot.type = "button";
-        dot.className = "our-story__dot";
-        dot.setAttribute("aria-label", "Show chapter " + (i + 1));
-        dot.addEventListener("click", function () {
-          if (!playing) {
-            playFrom(i);
-            return;
-          }
-          clearTimer();
-          showChapter(i, function next() {
-            if (index >= cards.length - 1) finish();
-            else showChapter(index + 1, next);
-          });
-        });
-        dotsWrap.appendChild(dot);
-      });
-    }
+    if (prevBtn) prevBtn.addEventListener("click", goPrev);
+    if (nextBtn) nextBtn.addEventListener("click", goNext);
 
     playBtns.forEach(function (btn) {
       btn.addEventListener("click", function () {
-        if (playing) return;
-        playFrom(0);
+        startStory(0);
       });
-    });
-
-    if (skipBtn) {
-      skipBtn.addEventListener("click", function () {
-        if (!playing) return;
-        finish();
-      });
-    }
-
-    if (backdrop) {
-      backdrop.addEventListener("click", function () {
-        if (!playing) return;
-        finish();
-      });
-    }
-
-    document.addEventListener("keydown", function (e) {
-      if (!playing) return;
-      if (e.key === "Escape") finish();
     });
   })();
 
@@ -1161,28 +924,19 @@
       : [];
     var bio = stage && stage.querySelector("[data-family-bio]");
     var bioName = bio && bio.querySelector("[data-family-bio-name]");
-    var bioCopy = bio && bio.querySelector("[data-family-bio-copy]");
+    var bioBody = bio && bio.querySelector("[data-family-bio-body]");
     if (!familyCards.length) return;
 
-    function cardMeta(card) {
-      var titleEl = card.querySelector(".journey-card__title");
-      var descEl = card.querySelector(".journey-card__desc");
-      return {
-        name: titleEl ? titleEl.textContent.trim() : "",
-        copy: descEl ? descEl.textContent.trim() : "",
-      };
-    }
-
     function showBio(card) {
-      if (!bio || !bioName || !bioCopy || !card) return;
-      var meta = cardMeta(card);
-      if (!meta.name || !meta.copy) return;
+      if (!bio || !bioName || !bioBody || !card) return;
+      var source = card.querySelector(".family-bio__source");
+      var titleEl = card.querySelector(".journey-card__title");
+      if (!source || !titleEl) return;
       var who = "ollie";
       if (card.classList.contains("journey-card--dad")) who = "dad";
       else if (card.classList.contains("journey-card--mum")) who = "mum";
       else if (card.classList.contains("journey-card--lily")) who = "lily";
       else if (card.classList.contains("journey-card--jack")) who = "jack";
-      else if (card.classList.contains("journey-card--ollie")) who = "ollie";
 
       bio.classList.remove(
         "family-bio--ollie",
@@ -1192,8 +946,8 @@
         "family-bio--jack"
       );
       bio.classList.add("family-bio--" + who);
-      bioName.textContent = meta.name;
-      bioCopy.textContent = meta.copy;
+      bioName.textContent = titleEl.textContent.trim();
+      bioBody.innerHTML = source.innerHTML;
       bio.hidden = false;
       bio.classList.add("is-visible");
     }
@@ -1210,7 +964,7 @@
       );
       bio.hidden = true;
       if (bioName) bioName.textContent = "";
-      if (bioCopy) bioCopy.textContent = "";
+      if (bioBody) bioBody.innerHTML = "";
     }
 
     function clearPopped() {
