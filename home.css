@@ -5356,11 +5356,11 @@ html.home-page-root {
   }
 
   .lo-stage.is-phone-composite.lo-stage--home .lo-stage__bg {
-    object-position: 56% 18%;
+    object-position: 72% 18%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--family .lo-stage__bg {
-    object-position: 54% 22%;
+    object-position: 70% 22%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--stories .lo-stage__bg {
@@ -5372,7 +5372,7 @@ html.home-page-root {
   }
 
   .lo-stage.is-phone-composite.lo-stage--labs .lo-stage__bg {
-    object-position: 82% 12%;
+    object-position: 50% 14%;
   }
 
   .lo-stage.is-phone-composite.lo-stage--journey .lo-stage__bg {
