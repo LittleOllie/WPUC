@@ -1,0 +1,225 @@
+{
+  "slug": "the-spark-inside",
+  "title": "Little Ollie and the Spark Inside",
+  "author": "Little Ollie World",
+  "pageCount": 26,
+  "coverPage": 0,
+  "coverSrc": "../../webpageassets/BookCover.jpg",
+  "coverSeparate": true,
+  "spreadLayout": "first-right",
+  "readingDirection": "ltr",
+  "desktopDisplay": "spread",
+  "mobileDisplay": "single",
+  "placeholder": false,
+  "amazonUrl": "https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N",
+  "pages": [
+    {
+      "number": 1,
+      "role": "interior",
+      "side": "right-first",
+      "src": "pages/page-001.webp",
+      "mobileSrc": "pages-mobile/page-001.webp",
+      "alt": "Page 1 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 2,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-002.webp",
+      "mobileSrc": "pages-mobile/page-002.webp",
+      "alt": "Page 2 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 3,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-003.webp",
+      "mobileSrc": "pages-mobile/page-003.webp",
+      "alt": "Page 3 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 4,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-004.webp",
+      "mobileSrc": "pages-mobile/page-004.webp",
+      "alt": "Page 4 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 5,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-005.webp",
+      "mobileSrc": "pages-mobile/page-005.webp",
+      "alt": "Page 5 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 6,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-006.webp",
+      "mobileSrc": "pages-mobile/page-006.webp",
+      "alt": "Page 6 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 7,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-007.webp",
+      "mobileSrc": "pages-mobile/page-007.webp",
+      "alt": "Page 7 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 8,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-008.webp",
+      "mobileSrc": "pages-mobile/page-008.webp",
+      "alt": "Page 8 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 9,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-009.webp",
+      "mobileSrc": "pages-mobile/page-009.webp",
+      "alt": "Page 9 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 10,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-010.webp",
+      "mobileSrc": "pages-mobile/page-010.webp",
+      "alt": "Page 10 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 11,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-011.webp",
+      "mobileSrc": "pages-mobile/page-011.webp",
+      "alt": "Page 11 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 12,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-012.webp",
+      "mobileSrc": "pages-mobile/page-012.webp",
+      "alt": "Page 12 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 13,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-013.webp",
+      "mobileSrc": "pages-mobile/page-013.webp",
+      "alt": "Page 13 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 14,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-014.webp",
+      "mobileSrc": "pages-mobile/page-014.webp",
+      "alt": "Page 14 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 15,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-015.webp",
+      "mobileSrc": "pages-mobile/page-015.webp",
+      "alt": "Page 15 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 16,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-016.webp",
+      "mobileSrc": "pages-mobile/page-016.webp",
+      "alt": "Page 16 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 17,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-017.webp",
+      "mobileSrc": "pages-mobile/page-017.webp",
+      "alt": "Page 17 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 18,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-018.webp",
+      "mobileSrc": "pages-mobile/page-018.webp",
+      "alt": "Page 18 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 19,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-019.webp",
+      "mobileSrc": "pages-mobile/page-019.webp",
+      "alt": "Page 19 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 20,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-020.webp",
+      "mobileSrc": "pages-mobile/page-020.webp",
+      "alt": "Page 20 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 21,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-021.webp",
+      "mobileSrc": "pages-mobile/page-021.webp",
+      "alt": "Page 21 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 22,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-022.webp",
+      "mobileSrc": "pages-mobile/page-022.webp",
+      "alt": "Page 22 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 23,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-023.webp",
+      "mobileSrc": "pages-mobile/page-023.webp",
+      "alt": "Page 23 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 24,
+      "role": "interior",
+      "side": "text",
+      "src": "pages/page-024.webp",
+      "mobileSrc": "pages-mobile/page-024.webp",
+      "alt": "Page 24 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 25,
+      "role": "interior",
+      "side": "image",
+      "src": "pages/page-025.webp",
+      "mobileSrc": "pages-mobile/page-025.webp",
+      "alt": "Page 25 of Little Ollie and the Spark Inside"
+    },
+    {
+      "number": 26,
+      "role": "back-cover",
+      "side": "text",
+      "src": "pages/page-026.webp",
+      "mobileSrc": "pages-mobile/page-026.webp",
+      "alt": "Page 26 of Little Ollie and the Spark Inside"
+    }
+  ]
+}

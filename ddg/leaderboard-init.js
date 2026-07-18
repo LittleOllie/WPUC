@@ -10,7 +10,6 @@
  * unsubscribes on close so listeners never stack or leak.
  */
 
-import { db, isFirebaseConfigured } from "./firebase-config.js";
 import {
   attachFirestore,
   submitScore,
@@ -18,7 +17,9 @@ import {
   generateRunId,
   fetchTop5Scores,
   renderLeaderboard,
-} from "./leaderboard.js";
+} from "./leaderboard-local-storage.js";
+import { LOCAL_LEADERBOARD_NOTE } from "../scripts/labs-config.js";
+import { setStoredPlayerName as savePlayerName } from "../scripts/labs-leaderboard-ui.js";
 
 /** Unsubscribe for the modal Top 50 listener — null when modal closed. */
 let top50Unsubscribe = null;
@@ -55,34 +56,20 @@ function triggerLeaderboardFireworks() {
   }, 2600);
 }
 
-/** Same storage keys as shell.js (X handle). */
-function readStoredHandle() {
-  try {
-    const STORAGE_KEY = "frappybrew_xhandle";
-    const LEGACY_KEYS = ["frappy_brew_x_handle"];
-    let v = localStorage.getItem(STORAGE_KEY);
-    if (!v) {
-      for (let i = 0; i < LEGACY_KEYS.length; i++) {
-        const old = localStorage.getItem(LEGACY_KEYS[i]);
-        if (old) {
-          v = old;
-          break;
-        }
-      }
-    }
-    return typeof v === "string"
-      ? v.replace(/^@+/, "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 15)
-      : "";
-  } catch (_) {
-    return "";
-  }
+function setStoredPlayerName(name) {
+  const normalized = String(name ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 15);
+  if (normalized.length < 2) return;
+  savePlayerName(normalized, 15);
 }
 
 function normalizeLeaderboardName(raw) {
   return String(raw ?? "")
     .trim()
-    .replace(/^@+/, "")
-    .slice(0, 16);
+    .replace(/\s+/g, " ")
+    .slice(0, 15);
 }
 
 function setSubmitMessage(el, text, isError) {
@@ -94,8 +81,7 @@ function setSubmitMessage(el, text, isError) {
 function updateSubmitButtonState() {
   const submitBtn = document.getElementById("leaderboardSubmitBtn");
   if (!submitBtn) return;
-  const disabled = !isFirebaseConfigured || currentScore < 1;
-  submitBtn.disabled = disabled;
+  submitBtn.disabled = currentScore < 1;
 }
 
 /**
@@ -112,17 +98,20 @@ function handleGameOver(finalScore) {
   const statusEl = document.getElementById("leaderboardStatus");
 
   if (nameInput) {
-    const h = readStoredHandle();
-    if (h.length >= 2) nameInput.value = h;
+    nameInput.value = "";
+    nameInput.readOnly = false;
+    nameInput.disabled = false;
+    nameInput.removeAttribute("readonly");
+    requestAnimationFrame(function () {
+      if (typeof nameInput.focus === "function") nameInput.focus();
+    });
   }
 
   if (statusEl) {
-    if (!isFirebaseConfigured) {
-      setSubmitMessage(statusEl, "Configure firebase-config.js to submit scores.", true);
-    } else if (currentScore < 1) {
-      setSubmitMessage(statusEl, "Score a point or more to submit.", false);
+    if (currentScore < 1) {
+      setSubmitMessage(statusEl, "Score a point or more to save.", false);
     } else {
-      setSubmitMessage(statusEl, "", false);
+      setSubmitMessage(statusEl, LOCAL_LEADERBOARD_NOTE, false);
     }
   }
 
@@ -144,19 +133,11 @@ function loadGameOverTop5() {
   }
   listEl.innerHTML = "";
 
-  fetchTop5Scores(db).then(function (result) {
+  fetchTop5Scores().then(function (result) {
     if (!document.getElementById("gameOverTop5List")) return;
-    if (result.offline) {
-      if (statusEl) {
-        statusEl.textContent = "Configure firebase-config.js to see rankings.";
-        statusEl.classList.add("leaderboard-status--error");
-      }
-      listEl.innerHTML = "";
-      return;
-    }
     if (result.error) {
       if (statusEl) {
-        statusEl.textContent = "Could not load leaderboard.";
+        statusEl.textContent = "Could not load your scores.";
         statusEl.classList.add("leaderboard-status--error");
       }
       listEl.innerHTML = "";
@@ -181,7 +162,7 @@ async function onSubmitClick() {
     setSubmitMessage(statusEl, "Enter at least 2 characters for your name.", true);
     return;
   }
-  if (!isFirebaseConfigured || currentScore < 1) return;
+  if (currentScore < 1) return;
 
   if (submitBtn) submitBtn.disabled = true;
   setSubmitMessage(statusEl, "Submitting…", false);
@@ -191,7 +172,8 @@ async function onSubmitClick() {
   updateSubmitButtonState();
 
   if (result.ok) {
-    setSubmitMessage(statusEl, "Score saved!", false);
+    setStoredPlayerName(name);
+    setSubmitMessage(statusEl, "Score saved on this device!", false);
     loadGameOverTop5();
     openLeaderboardModal({ focusRunId: result.runId, celebrate: true });
     return;
@@ -201,7 +183,7 @@ async function onSubmitClick() {
     return;
   }
   if (result.reason === "bad_name") {
-    setSubmitMessage(statusEl, "Use 2–16 characters for your name.", true);
+    setSubmitMessage(statusEl, "Use 2–15 characters for your name.", true);
     return;
   }
   setSubmitMessage(statusEl, "Could not submit. Try again.", true);
@@ -238,21 +220,10 @@ function openLeaderboardModal(opts) {
   }
 
   top50Unsubscribe = startTop50Listener({
-    db,
     listEl,
     statusEl,
     onError: function () {},
     focusRunId: focusRunId,
-    onFocusRunMissing:
-      focusRunId
-        ? function () {
-            const s = document.getElementById("leaderboardModalStatus");
-            if (s && !s.classList.contains("leaderboard-status--error")) {
-              s.textContent =
-                "Score saved! Your row may still be syncing — or your rank might be outside the Top 50.";
-            }
-          }
-        : undefined,
   });
 
   requestAnimationFrame(function () {
@@ -285,7 +256,7 @@ if (typeof window !== "undefined") {
  * One-time DOM wiring: modal open/close, browse from game over / splash, submit panel.
  */
 function boot() {
-  attachFirestore(db);
+  attachFirestore();
 
   const openBtn = document.getElementById("leaderboardOpenBtn");
   if (openBtn) {
@@ -305,6 +276,13 @@ function boot() {
   if (submitBtn) {
     submitBtn.addEventListener("click", function () {
       void onSubmitClick();
+    });
+  }
+
+  const nameInput = document.getElementById("leaderboardNameInput");
+  if (nameInput) {
+    nameInput.addEventListener("input", function () {
+      updateSubmitButtonState();
     });
   }
 

@@ -1,0 +1,9 @@
+Drop printable coloring pages here (PDF or PNG).
+
+Then add each file to ../coloring-pages.json — copy an entry from the example block at the bottom of that file.
+
+Suggested naming:
+  my-page.pdf              — the printable file
+  my-page-thumb.png        — optional preview (square-ish works best)
+
+Paths in coloring-pages.json are relative to the creative-lab/ folder, e.g. "pages/my-page.pdf".

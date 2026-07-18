@@ -1,22 +1,20 @@
 :root {
   /* Set by shell from chosen character (matches canvas bg). */
   --frappy-bg-page: url("assets/bg01.png");
-  --lo-blue: #4C6FFF;
-  --lo-yellow: #FFDD55;
-  --lo-bg-top: #6DE0FF;
-  --lo-bg-bottom: #4C6FFF;
-  --lo-blue-start: #6DE0FF;
-  --lo-blue-end: #4C6FFF;
-  --game-aspect: 480 / 640; /* portrait frame; CSS sizes wrap to this ratio */
-}
-
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  text-transform: uppercase;
+  --lo-blue: #6fd3f2;
+  --lo-deep-blue: #17345f;
+  --lo-navy: #0d2142;
+  --lo-yellow: #ffd84d;
+  --lo-green: #8fd36c;
+  --lo-text: #16304f;
+  --lo-cream: #fffaf0;
+  --lo-card-radius: 28px;
+  --lo-font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --lo-font-display: "Fredoka", var(--lo-font-body);
+  --lo-btn-primary-bg: linear-gradient(180deg, #ffe57a 0%, var(--lo-yellow) 55%, #f5c83a 100%);
+  --lo-btn-primary-shadow: 0 5px 0 rgba(196, 140, 20, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+  --lo-btn-primary-shadow-hover: 0 7px 0 rgba(196, 140, 20, 0.45), 0 12px 22px rgba(17, 52, 89, 0.16);
+  --game-aspect: 480 / 640;
 }
 
 html {
@@ -30,6 +28,11 @@ html {
   height: -webkit-fill-available;
 }
 
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -39,10 +42,14 @@ body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow: hidden;
-  font-family: "Fredoka", sans-serif;
-  /* Fallback: same gradient as Frappy Brew / links when image hasn’t loaded */
-  background: linear-gradient(180deg, var(--lo-bg-top) 0%, var(--lo-bg-bottom) 100%);
-  color: #ffffff;
+  font-family: var(--lo-font-body);
+  background: #6ec0ea;
+  color: var(--lo-text);
+}
+
+body.lo-playground.ddg-page {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .page {
@@ -83,13 +90,9 @@ body {
   min-height: 100dvh;
   min-height: 100lvh;
   min-height: -webkit-fill-available;
-  /* Very light tint — keeps art bright */
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.03) 0%,
-    rgba(0, 0, 0, 0.05) 50%,
-    rgba(0, 0, 0, 0.08) 100%
-  );
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 20%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(20, 50, 90, 0.12) 0%, rgba(20, 50, 90, 0.28) 55%, rgba(15, 40, 70, 0.38) 100%);
 }
 
 @media (max-width: 480px) {
@@ -127,15 +130,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background-color: #0a1830;
-  background-image: linear-gradient(
-    180deg,
-    rgba(10, 24, 48, 0.98) 0%,
-    rgba(20, 50, 90, 0.95) 45%,
-    rgba(12, 32, 64, 0.98) 100%
-  );
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   pointer-events: auto;
+}
+
+.intro-splash-world {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.intro-splash-dim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(20, 50, 90, 0.18) 0%, rgba(20, 50, 90, 0.35) 55%, rgba(15, 40, 70, 0.5) 100%);
 }
 
 .intro-splash:not(.hidden) ~ .game-top-bar,
@@ -150,70 +163,63 @@ body {
   display: none;
 }
 
-/* LO Arcade — leave DDG splash */
+/* LO Arcade — leave DDG splash (legacy corner link; use .labs-back-to-hub in card) */
 .intro-back-to-arcade {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top, 0px));
-  left: max(12px, env(safe-area-inset-left, 0px));
-  z-index: 2;
-  display: inline-flex;
+  display: none;
+}
+
+.intro-splash-brand-row {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.95);
-  text-decoration: none;
-  background: rgba(0, 0, 0, 0.4);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  transition: background 0.15s ease, transform 0.12s ease;
-  touch-action: manipulation;
+  gap: clamp(8px, 2.5vw, 16px);
+  width: 100%;
+  flex-wrap: nowrap;
 }
 
-.intro-back-to-arcade:hover {
-  background: rgba(255, 255, 255, 0.12);
+.intro-splash-brand-row .intro-splash-lo {
+  width: min(38vw, 190px);
+  max-height: min(20vh, 110px);
+  margin: 0;
 }
 
-.intro-back-to-arcade:active {
-  transform: scale(0.98);
+.intro-splash-brand-row .intro-splash-x {
+  flex-shrink: 0;
+  font-size: clamp(24px, 6vw, 34px);
 }
 
-.intro-back-to-arcade:focus-visible {
-  outline: 2px solid var(--lo-yellow, #ffdd55);
-  outline-offset: 2px;
+.intro-splash-brand-row .ddg-skull-wrap--intro {
+  width: min(36vw, 120px);
+  height: min(36vw, 120px);
 }
 
 .intro-splash-inner {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 3vh, 20px);
-  width: 100%;
-  max-width: 420px;
+  gap: clamp(10px, 2.2vh, 16px);
+  width: min(420px, 100%);
+  padding: clamp(1.25rem, 4vw, 1.75rem) clamp(1.1rem, 4vw, 1.5rem);
   text-align: center;
 }
 
 .intro-splash-lo {
   display: block;
-  width: min(88vw, 360px);
+  width: min(78vw, 300px);
   height: auto;
-  max-height: min(38vh, 280px);
+  max-height: min(28vh, 200px);
   object-fit: contain;
-  /* Transparent PNG — no fill behind logo */
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 6px 16px rgba(17, 52, 89, 0.18));
 }
 
 .intro-splash-x {
-  font-size: clamp(36px, 10vw, 52px);
+  font-size: clamp(28px, 8vw, 40px);
   font-weight: 800;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: var(--lo-deep-blue);
   user-select: none;
 }
 
@@ -281,71 +287,53 @@ body {
 
 .intro-welcome {
   margin: 0;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  color: var(--lo-deep-blue);
+}
+
+.intro-splash-loading {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(22, 48, 79, 0.78);
+}
+
+.intro-splash-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+  width: 100%;
+}
+
+.intro-splash-actions .labs-btn {
+  width: 100%;
+}
+
+.intro-splash-actions #chooseCharacterBtn,
+.intro-splash-actions #editHandleBtn {
+  grid-column: 1 / -1;
 }
 
 .intro-welcome[hidden] {
   display: none !important;
 }
 
-.intro-splash-loading {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.intro-splash-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 4px;
+.intro-play-btn {
+  margin-top: 0.15rem;
   width: 100%;
-  max-width: 360px;
+  min-width: 0;
+  padding: 0.85rem 1.25rem;
+  font-size: 1.15rem;
 }
-
-.btn-secondary {
-  flex: 1 1 auto;
-  min-width: min(140px, 42vw);
-  padding: 11px 16px;
-  border-radius: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background 0.15s ease, transform 0.12s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.btn-secondary:active {
-  transform: scale(0.98);
-}
-
-.btn-secondary:focus-visible {
-  outline: 2px solid var(--lo-yellow);
-  outline-offset: 2px;
-}
-
 /* HOW TO PLAY — glow after a Lord is chosen (shell adds class per skin). */
-#howToPlayBtn.howto-btn--accent-none {
+#howToPlayBtn.labs-btn--blue.howto-btn--accent-none {
   opacity: 0.85;
   box-shadow: none;
 }
 
-#howToPlayBtn.howto-btn--accent-1 {
+#howToPlayBtn.labs-btn--blue.howto-btn--accent-1 {
   border-color: rgba(186, 104, 255, 0.95);
   background: linear-gradient(
     145deg,
@@ -358,7 +346,7 @@ body {
     0 0 42px rgba(120, 40, 200, 0.35);
 }
 
-#howToPlayBtn.howto-btn--accent-2 {
+#howToPlayBtn.labs-btn--blue.howto-btn--accent-2 {
   border-color: rgba(255, 120, 80, 0.95);
   background: linear-gradient(
     145deg,
@@ -371,7 +359,7 @@ body {
     0 0 40px rgba(200, 40, 20, 0.4);
 }
 
-#howToPlayBtn.howto-btn--accent-3 {
+#howToPlayBtn.labs-btn--blue.howto-btn--accent-3 {
   border-color: rgba(80, 180, 255, 0.95);
   background: linear-gradient(
     145deg,
@@ -384,7 +372,7 @@ body {
     0 0 40px rgba(30, 100, 200, 0.4);
 }
 
-.intro-splash-actions #howToPlayBtn.howto-btn--accent-1:hover {
+.intro-splash-actions #howToPlayBtn.labs-btn--blue.howto-btn--accent-1:hover {
   background: linear-gradient(
     145deg,
     rgba(110, 55, 165, 0.65) 0%,
@@ -397,7 +385,7 @@ body {
     0 0 48px rgba(130, 60, 220, 0.45);
 }
 
-.intro-splash-actions #howToPlayBtn.howto-btn--accent-2:hover {
+.intro-splash-actions #howToPlayBtn.labs-btn--blue.howto-btn--accent-2:hover {
   background: linear-gradient(
     145deg,
     rgba(170, 50, 30, 0.7) 0%,
@@ -410,7 +398,7 @@ body {
     0 0 46px rgba(220, 60, 30, 0.45);
 }
 
-.intro-splash-actions #howToPlayBtn.howto-btn--accent-3:hover {
+.intro-splash-actions #howToPlayBtn.labs-btn--blue.howto-btn--accent-3:hover {
   background: linear-gradient(
     145deg,
     rgba(40, 100, 160, 0.65) 0%,
@@ -421,14 +409,6 @@ body {
     0 0 0 1px rgba(140, 210, 255, 0.45),
     0 0 28px rgba(80, 180, 255, 0.6),
     0 0 46px rgba(40, 120, 220, 0.45);
-}
-
-.intro-play-btn {
-  margin-top: 8px;
-  min-width: min(280px, 86vw);
-  padding: 14px 24px;
-  font-size: 20px;
-  letter-spacing: 0.06em;
 }
 
 .game-viewport {
@@ -550,77 +530,41 @@ body {
 }
 
 /* Small top-left — How to play (mirrors back arrow) */
+.btn-help--corner,
+.btn-back--corner {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .btn-help--corner {
   position: fixed;
   top: 8px;
   left: 8px;
   z-index: 62;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 50%;
-  font-family: inherit;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
-  transition: background 0.15s ease, transform 0.12s ease;
 }
 
-.btn-help--corner:hover {
-  background: rgba(0, 0, 0, 0.6);
-  transform: scale(1.05);
-}
-
-.btn-help--corner:active {
-  transform: scale(0.96);
-}
-
-/* Small top-right control — out of the way of logo + HUD */
 .btn-back--corner {
   position: fixed;
   top: 8px;
   right: 8px;
   z-index: 62;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 50%;
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.45);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   pointer-events: auto;
   touch-action: manipulation;
-  transition: background 0.15s ease, transform 0.12s ease;
-}
-
-.btn-back--corner:hover {
-  background: rgba(0, 0, 0, 0.6);
-  transform: scale(1.05);
-}
-
-.btn-back--corner:active {
-  transform: scale(0.96);
 }
 
 .btn-back-arrow {
@@ -639,14 +583,16 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 10px;
+  padding: 7px 12px;
   border-radius: 999px;
+  font-family: var(--lo-font-display);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  background: rgba(0, 0, 0, 0.35);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
-  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+  color: var(--lo-navy);
+  background: linear-gradient(180deg, #ffe57a 0%, var(--lo-yellow) 55%, #f5c83a 100%);
+  border: 2px solid rgba(13, 33, 66, 0.1);
+  box-shadow: 0 4px 0 rgba(196, 140, 20, 0.32);
   transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -721,11 +667,33 @@ body.game-over-active #overlay {
 .overlay-card {
   max-width: 440px;
   width: 92%;
-  background: rgba(0, 0, 0, 0.78);
-  border-radius: 20px;
+  border-radius: calc(var(--lo-card-radius) + 4px);
   padding: 22px 22px 24px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
   pointer-events: auto;
+}
+
+.overlay-card--labs {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 252, 245, 0.95) 55%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 50px rgba(17, 52, 89, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.overlay-card--labs h2,
+.overlay-card--labs p,
+.overlay-card--labs .leaderboard-title {
+  color: var(--lo-deep-blue);
+  text-shadow: none;
+}
+
+.overlay-card--labs p {
+  color: var(--lo-text);
 }
 
 /* Full-screen dim + hide HUD branding when Game Over is up (HUD was fixed above canvas). */
@@ -748,14 +716,14 @@ body.game-over-active .canvas-wrap::before {
   inset: 0;
   z-index: 8;
   border-radius: inherit;
-  background: rgba(4, 8, 18, 0.82);
+  background: rgba(13, 33, 66, 0.52);
   pointer-events: none;
 }
 
 .overlay-card .loading-text {
   margin: 0 0 8px 0;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(22, 48, 79, 0.78);
 }
 
 .overlay-card .ready-title,
@@ -765,14 +733,16 @@ body.game-over-active .canvas-wrap::before {
 
 .overlay-card h2 {
   margin: 0 0 10px 0;
+  font-family: var(--lo-font-display);
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 700;
+  color: var(--lo-deep-blue);
 }
 
 .overlay-card p {
   margin: 0 0 14px 0;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--lo-text);
 }
 
 .overlay-card.hidden {
@@ -788,11 +758,15 @@ body.game-over-active .canvas-wrap::before {
   max-height: min(88vh, 88dvh);
   max-height: min(92svh, 92dvh);
   z-index: 10;
-  background: rgba(8, 12, 24, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.overlay-card--gameover .overlay-card-ddg-watermark {
+  opacity: 0.08;
+}
+
+.overlay-card--gameover h2,
+.overlay-card--gameover .overlay-card-gameover-body p {
+  text-shadow: none;
 }
 
 /* Single scroll surface: fixed overlay scrolls; drop inner max-height to avoid nested scroll + clipping */
@@ -825,28 +799,26 @@ body.game-over-active #overlay .overlay-card--gameover {
 
 .overlay-card--gameover h2,
 .overlay-card--gameover .overlay-card-gameover-body p {
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
+  text-shadow: none;
 }
 
-.btn-primary {
+.btn-primary,
+.labs-btn--yellow.btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 12px 16px;
-  border-radius: 14px;
-  border: none;
-  font-family: "Fredoka", sans-serif;
+  border-radius: 999px;
+  border: 2.5px solid rgba(13, 33, 66, 0.16);
+  font-family: var(--lo-font-display);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-  background: linear-gradient(180deg, #FFE986 0%, var(--lo-yellow) 90%);
-  color: #1a1a2e;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.7);
-  letter-spacing: 0.02em;
+  background: var(--lo-btn-primary-bg);
+  color: var(--lo-navy);
+  box-shadow: var(--lo-btn-primary-shadow);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
@@ -900,14 +872,16 @@ body.game-over-active #overlay .overlay-card--gameover {
   opacity: 0.85;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.labs-btn--yellow:hover {
   transform: translateY(-2px);
-  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.8);
+  box-shadow: var(--lo-btn-primary-shadow-hover);
 }
 
-.btn-primary:active {
+.btn-primary:active,
+.labs-btn--yellow:active {
   transform: translateY(0);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.7);
+  box-shadow: 0 3px 0 rgba(196, 140, 20, 0.45);
 }
 
 @media (max-width: 480px) {
@@ -930,7 +904,116 @@ body.game-over-active #overlay .overlay-card--gameover {
   .btn-help--corner {
     width: 36px;
     height: 36px;
+    min-height: 36px;
     font-size: 18px;
+  }
+}
+
+/* ——— Little Ollie Games Lab shared UI ——— */
+
+.labs-frosted-card {
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 252, 245, 0.95) 55%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: calc(var(--lo-card-radius) + 4px);
+  box-shadow: 0 20px 50px rgba(17, 52, 89, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.labs-eyebrow {
+  margin: 0 0 0.35rem;
+  font-family: var(--lo-font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lo-deep-blue);
+  opacity: 0.8;
+}
+
+.labs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 2.5px solid rgba(13, 33, 66, 0.16);
+  font-family: var(--lo-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.labs-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.labs-btn--block {
+  width: 100%;
+}
+
+.labs-btn:hover:not(:disabled),
+.labs-btn:focus-visible {
+  transform: translateY(-2px) scale(1.02);
+  outline: 2px solid var(--lo-deep-blue);
+  outline-offset: 3px;
+}
+
+.labs-btn--yellow {
+  background: var(--lo-btn-primary-bg);
+  color: var(--lo-navy);
+  box-shadow: var(--lo-btn-primary-shadow);
+}
+
+.labs-btn--yellow:hover:not(:disabled),
+.labs-btn--yellow:focus-visible {
+  box-shadow: var(--lo-btn-primary-shadow-hover), 0 0 0 4px rgba(255, 216, 77, 0.35);
+}
+
+.labs-btn--blue {
+  background: linear-gradient(160deg, #7ec8ff 0%, #4aa8e8 55%, #3d92d4 100%);
+  color: #fff;
+  box-shadow: 0 5px 0 rgba(35, 105, 160, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+}
+
+.labs-btn--purple {
+  background:
+    linear-gradient(135deg, rgba(90, 70, 170, 0.35) 0%, transparent 55%),
+    linear-gradient(160deg, #6b5bd6 0%, #4a7fd4 48%, #3d92d4 100%);
+  color: #fff;
+  box-shadow: 0 5px 0 rgba(55, 45, 130, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+}
+
+.labs-btn--green {
+  background: linear-gradient(160deg, #b8eb98 0%, var(--lo-green) 55%, #6fbf52 100%);
+  color: var(--lo-navy);
+  box-shadow: 0 5px 0 rgba(70, 130, 45, 0.4), 0 8px 16px rgba(17, 52, 89, 0.12);
+}
+
+@media (max-width: 480px) {
+  .intro-splash-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-btn:hover,
+  .labs-btn:focus-visible {
+    transform: none;
   }
 }
 

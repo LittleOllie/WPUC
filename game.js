@@ -10,12 +10,29 @@ import {
   renderTop10,
   renderLeaderboardPopup,
   MIN_LEADERBOARD_SCORE,
-} from "./scripts/leaderboard.js";
+} from "./scripts/leaderboard-local.js";
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const gameStage = document.getElementById("obhStage");
 
-const overlay = document.getElementById("overlay");
+let gameW = 480;
+let gameH = 640;
+
+function readGameSize() {
+  const host = gameStage || canvas?.parentElement;
+  if (host) {
+    const rect = host.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      gameW = Math.max(1, Math.floor(rect.width));
+      gameH = Math.max(1, Math.floor(rect.height));
+      return;
+    }
+  }
+  gameW = window.innerWidth;
+  gameH = window.innerHeight;
+}
+
 const gameOver = document.getElementById("gameOver");
 const howToPlayOverlay = document.getElementById("howToPlayOverlay");
 const howToPlayGotIt = document.getElementById("howToPlayGotIt");
@@ -93,12 +110,25 @@ async function loadAssets(){
 }
 
 function fitCanvas(){
+  readGameSize();
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  canvas.width = Math.floor(window.innerWidth * dpr);
-  canvas.height = Math.floor(window.innerHeight * dpr);
+  canvas.width = Math.floor(gameW * dpr);
+  canvas.height = Math.floor(gameH * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener("resize", fitCanvas);
+
+function scheduleFitCanvas(){
+  fitCanvas();
+  requestAnimationFrame(() => {
+    fitCanvas();
+    requestAnimationFrame(fitCanvas);
+  });
+}
+
+window.addEventListener("resize", scheduleFitCanvas);
+if (gameStage && typeof ResizeObserver !== "undefined") {
+  new ResizeObserver(() => scheduleFitCanvas()).observe(gameStage);
+}
 
 function rectsIntersect(a,b){
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -176,7 +206,7 @@ const state = {
 };
 
 function resetWorldOnly(){
-  const w = window.innerWidth, h = window.innerHeight;
+  const w = gameW, h = gameH;
   state.player.x = w * TUNE.playerXRatio;
   state.player.y = h * 0.45;
   state.player.vy = 0;
@@ -235,6 +265,10 @@ function resetAll(){
   resetWorldOnly();
 }
 
+function setMenuVisible(visible) {
+  document.body.classList.toggle("obh-menu-visible", !!visible);
+}
+
 function startRun(){
   if (state.isRunning) return;
   state.isGameOver = false;
@@ -269,24 +303,20 @@ function endRun(){
     burstConfetti();
   }
 
-  // show game over overlay (guard so first tap isn't treated as button click)
+  // show game over panel (guard so first tap isn't treated as button click)
   state.overlayShownAt = Date.now();
-  overlay.classList.add("hidden");
+  setMenuVisible(false);
   gameOver.classList.remove("hidden");
 
   refreshLeaderboard().then(() => handleLeaderboard(final));
 }
 
 function handleLeaderboard(score) {
-  if (score >= MIN_LEADERBOARD_SCORE) {
-    checkLeaderboard(score).then((result) => {
-      const qualifies = result.qualifies && (result.rank != null);
-      const rank = qualifies ? result.rank : null;
-      openLeaderboardAfterGame(score, qualifies, rank);
-    });
-  } else {
-    openLeaderboardAfterGame(score, false, null);
-  }
+  checkLeaderboard(score).then((result) => {
+    const qualifies = result.qualifies && (result.rank != null);
+    const rank = qualifies ? result.rank : null;
+    openLeaderboardAfterGame(score, qualifies, rank);
+  });
 }
 
 function showKeepPushingPopup(message) {
@@ -360,7 +390,7 @@ function burstConfetti(){
   state.confetti = [];
   for (let i=0;i<110;i++){
     state.confetti.push({
-      x: rand(30, Math.max(60, window.innerWidth - 30)),
+      x: rand(30, Math.max(60, gameW - 30)),
       y: rand(-80, 20),
       vx: rand(-160, 160),
       vy: rand(-380, -40),
@@ -374,7 +404,7 @@ function burstConfetti(){
 /** Confetti when a Top 10 score is submitted: yellow + blue, falls from top, 2–3 sec. */
 function burstSubmissionConfetti(){
   state.confetti = [];
-  const w = window.innerWidth;
+  const w = gameW;
   const colors = ["#FFDD55", "#6DE0FF", "#4C6FFF"];
   for (let i = 0; i < 90; i++) {
     state.confetti.push({
@@ -397,7 +427,7 @@ function updateConfetti(dt){
     c.y += c.vy * dt;
     c.life -= dt;
   }
-  state.confetti = state.confetti.filter(c => c.y <= window.innerHeight + 80 && c.life > 0);
+  state.confetti = state.confetti.filter(c => c.y <= gameH + 80 && c.life > 0);
 }
 
 function rand(a,b){ return a + Math.random()*(b-a); }
@@ -417,7 +447,7 @@ function jump(strength01){
 }
 
 function ensureContent(){
-  const w = window.innerWidth;
+  const w = gameW;
   const targetX = w + (state.worldSpeed * TUNE.spawnAheadTime);
   const lastX = state.platforms.reduce((m,p) => Math.max(m, p.x + p.w), 0);
 
@@ -438,7 +468,7 @@ function generateChunk(startX){
   const gapMin = 70 + 60 * difficulty;
   const gapMax = 150 + 110 * difficulty;
 
-  const h = window.innerHeight;
+  const h = gameH;
   const baseY = h * 0.68;
   const yVar = 110;
 
@@ -611,7 +641,7 @@ function updateWorld(dt){
   state.shardItems = state.shardItems.filter(s => s.x + s.size >= -120);
 
   ensureContent();
-  state.player.x = window.innerWidth * TUNE.playerXRatio;
+  state.player.x = gameW * TUNE.playerXRatio;
 
   // background scroll (disabled - static background)
   // state.bgScrollX = (state.bgScrollX + dx * 0.25) % Math.max(1, window.innerWidth);
@@ -652,7 +682,7 @@ function tick(dt){
   checkHazardCollisions();
   updateConfetti(dt);
 
-  if (state.player.y > window.innerHeight + 80){
+  if (state.player.y > gameH + 80){
     endRun();
   }
 }
@@ -663,7 +693,7 @@ function currentRunFrame(){
 }
 
 function draw(){
-  const w = window.innerWidth, h = window.innerHeight;
+  const w = gameW, h = gameH;
   ctx.clearRect(0,0,w,h);
 
   // BG – match home page: cover + center (same as .sky background-size/position)
@@ -817,7 +847,7 @@ function roundRectFill(x,y,w,h,r,fill){
 function onPressStart(){
   // start if not running
   if (!state.isRunning && !state.isGameOver){
-    overlay.classList.add("hidden");
+    setMenuVisible(false);
     startRun();
   }
   if (state.isGameOver) return;
@@ -843,7 +873,7 @@ function onPressEnd(){
 }
 
 function overlaysVisible(){
-  return !overlay.classList.contains("hidden") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
+  return document.body.classList.contains("obh-menu-visible") || !gameOver.classList.contains("hidden") || (howToPlayOverlay && !howToPlayOverlay.classList.contains("hidden")) || (leaderboardOverlay && !leaderboardOverlay.classList.contains("hidden")) || (keepPushingPopup && !keepPushingPopup.classList.contains("hidden"));
 }
 
 function isJumpButtonTarget(target){
@@ -904,7 +934,7 @@ window.addEventListener("keyup", (e) => {
 // ---- UI buttons ----
 startBtn.addEventListener("click", async () => {
   if (assetsReadyPromise) await assetsReadyPromise;
-  overlay.classList.add("hidden");
+  setMenuVisible(false);
   gameOver.classList.add("hidden");
   hideLeaderboardOverlay();
   if (keepPushingPopup) keepPushingPopup.classList.add("hidden");
@@ -961,7 +991,7 @@ if (leaderboardSubmitScoreBtn) {
       renderLeaderboardPopup(rows);
       renderTop10(null, rows);
       burstSubmissionConfetti();
-      if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "Submitted! 🎉";
+      if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = "Score saved on this device!";
     } catch (err) {
       if (leaderboardSubmitMsg) leaderboardSubmitMsg.textContent = err?.message || "Could not submit";
       leaderboardSubmitScoreBtn.disabled = false;
@@ -1085,11 +1115,11 @@ let assetsReadyPromise = null;
   console.log("🎮 One Button Hero — Initializing...");
   state.isMobile = window.matchMedia("(pointer: coarse)").matches;
   document.body.dataset.mobile = state.isMobile ? "true" : "";
-  fitCanvas();
+  scheduleFitCanvas();
 
-  // Show start overlay immediately; load assets in background
+  // Menu visible on load; assets load in background
   if (howToPlayOverlay) howToPlayOverlay.classList.add("hidden");
-  if (overlay) overlay.classList.remove("hidden");
+  setMenuVisible(true);
   if (startBtn) {
     startBtn.textContent = "Loading...";
     startBtn.disabled = true;

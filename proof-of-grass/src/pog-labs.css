@@ -1,0 +1,117 @@
+/**
+ * Proof of Grass — Games Lab shell (matches Memory Match / DDG).
+ */
+
+.pog-page {
+  --lo-blue: #6fd3f2;
+  --lo-deep-blue: #17345f;
+  --lo-navy: #0d2142;
+  --lo-yellow: #ffd84d;
+  --lo-green: #8fd36c;
+  --lo-text: #16304f;
+  --lo-btn-primary-bg: linear-gradient(180deg, #ffe57a 0%, var(--lo-yellow) 55%, #f5c83a 100%);
+  --lo-btn-primary-border: 2.5px solid rgba(13, 33, 66, 0.18);
+  --lo-btn-primary-color: var(--lo-navy);
+  --lo-btn-primary-shadow: 0 5px 0 rgba(196, 140, 20, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+  --lo-btn-primary-shadow-hover: 0 7px 0 rgba(196, 140, 20, 0.45), 0 12px 22px rgba(17, 52, 89, 0.16);
+  --labs-stage-aspect: 4 / 5;
+  --labs-game-card-min-h: auto;
+}
+
+.pog-page .labs-game-card {
+  min-height: auto;
+  gap: 0.65rem;
+}
+
+.pog-page .labs-game-head {
+  min-height: auto;
+  margin-bottom: 0;
+}
+
+.pog__lead {
+  max-width: none;
+}
+
+.pog-page .labs-game-card__stage-grow {
+  flex: 0 0 auto;
+}
+
+.pog-page .pog-frame.labs-game-stage {
+  aspect-ratio: 4 / 5;
+  min-height: clamp(280px, 52vw, 420px);
+  max-height: min(62dvh, 520px);
+  padding: 0;
+  contain: layout style;
+}
+
+.pog-page .pog-frame--immersive.labs-game-stage {
+  aspect-ratio: unset;
+  min-height: clamp(320px, 58dvh, 540px);
+  max-height: min(68dvh, 580px);
+}
+
+.pog-page .pog-app {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--labs-stage-radius, 22px) - 2px);
+}
+
+.pog-btn {
+  border: 2.5px solid rgba(13, 33, 66, 0.16);
+  font-family: var(--lo-font-display, "Fredoka", sans-serif);
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pog-btn:hover,
+.pog-btn:focus-visible {
+  transform: translateY(-2px);
+  outline: 2px solid var(--lo-deep-blue);
+  outline-offset: 3px;
+}
+
+.pog-btn--yellow {
+  background: var(--lo-btn-primary-bg);
+  color: var(--lo-btn-primary-color);
+  box-shadow: var(--lo-btn-primary-shadow);
+}
+
+.pog-btn--blue {
+  background: linear-gradient(160deg, #7ec8ff 0%, #4aa8e8 55%, #3d92d4 100%);
+  color: #fff;
+  box-shadow: 0 5px 0 rgba(35, 105, 160, 0.45);
+}
+
+.pog-btn--selected {
+  box-shadow:
+    0 5px 0 rgba(35, 105, 160, 0.45),
+    0 0 0 3px rgba(255, 216, 77, 0.55);
+}
+
+.pog-btn--yellow.pog-btn--selected {
+  box-shadow:
+    var(--lo-btn-primary-shadow),
+    0 0 0 3px rgba(111, 211, 242, 0.45);
+}
+
+.pog__actions .labs-back-to-hub--block {
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(23, 52, 95, 0.1);
+}
+
+.pog-page #root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pog-btn:hover,
+  .pog-btn:focus-visible {
+    transform: none;
+  }
+}

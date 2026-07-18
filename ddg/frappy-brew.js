@@ -570,6 +570,17 @@
       overlayEl.style.removeProperty("max-height");
       return;
     }
+    if (document.body && document.body.classList.contains("ddg-page")) {
+      overlayEl.style.removeProperty("position");
+      overlayEl.style.removeProperty("top");
+      overlayEl.style.removeProperty("left");
+      overlayEl.style.removeProperty("width");
+      overlayEl.style.removeProperty("height");
+      overlayEl.style.removeProperty("right");
+      overlayEl.style.removeProperty("bottom");
+      overlayEl.style.removeProperty("max-height");
+      return;
+    }
     const vv = window.visualViewport;
     if (vv && vv.width > 0 && vv.height > 0) {
       overlayEl.style.position = "fixed";

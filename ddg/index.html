@@ -15,41 +15,84 @@
       head.insertBefore(b, after ? after.nextSibling : head.firstChild);
     })();
   </script>
-  <title>LO x DDG</title>
+  <title>DDG | Little Ollie Games Lab</title>
+  <meta name="description" content="LO × DDG Frappy Brew — flap, collect bubbles, and save your best scores in the Little Ollie Games Lab." />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#6fd3f2" />
   <link rel="icon" type="image/png" href="assets/ddg.png" />
   <link rel="apple-touch-icon" href="assets/ddg.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/lo-playground.css" />
   <link rel="stylesheet" href="frappy-brew.css" />
   <link rel="stylesheet" href="modals.css" />
   <link rel="stylesheet" href="leaderboard.css" />
+  <link rel="stylesheet" href="../styles/labs-nav.css" />
+  <link rel="stylesheet" href="../styles/labs-game-stage.css" />
+  <link rel="stylesheet" href="../styles/labs-game-header.css" />
+  <link rel="stylesheet" href="../styles/labs-leaderboard.css" />
+  <link rel="stylesheet" href="../styles/labs-game-switcher.css" />
+  <link rel="stylesheet" href="ddg-labs.css" />
 </head>
-<body>
+<body class="lo-playground labs-page ddg-page">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../webpageassets/labplayground.jpg"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+    />
+    <div class="lo-playground__dim"></div>
+  </div>
+
+  <main class="lo-playground__content">
+    <div class="lo-playground__shell labs-game-shell">
+      <div class="lo-playground__brand">
+        <a href="../index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
+      </div>
+
+      <div class="lo-playground__card ddg__card labs-game-card">
+        <header class="labs-game-head">
+          <p class="lo-playground__eyebrow">Games Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            DDG <span class="lo-playground__title-accent">Frappy Brew</span>
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead">LO × DDG — flap, collect bubbles, and save your score.</p>
+        </header>
+
+        <div class="labs-game-card__stage-grow">
+        <div class="labs-game-slot">
+        <div class="labs-game-stage" id="ddgGameStage">
   <div class="page page-fullscreen">
     <div class="frappy-bg" aria-hidden="true"></div>
     <div class="frappy-bg-overlay" aria-hidden="true"></div>
 
     <div id="introSplash" class="intro-splash" aria-hidden="false">
-      <a href="../games.html" class="intro-back-to-arcade">← Back to games</a>
-      <div class="intro-splash-inner">
-        <img src="assets/lo.png" alt="Little Ollie" class="intro-splash-lo" width="400" height="120" />
-        <span class="intro-splash-x" aria-hidden="true">×</span>
-        <span class="ddg-skull-wrap ddg-skull-wrap--intro">
-          <img src="assets/ddg.png" alt="DDG" />
-        </span>
-        <p id="welcomeLine" class="intro-welcome" aria-live="polite" hidden></p>
+      <div class="intro-splash-world" aria-hidden="true">
+        <div class="intro-splash-dim"></div>
+      </div>
+      <div class="intro-splash-inner labs-frosted-card">
         <p id="introSplashLoading" class="intro-splash-loading">Loading…</p>
-        <button type="button" id="introPlayBtn" class="btn-primary intro-play-btn" disabled>
-          <span class="btn-primary-text">PLAY</span>
+        <button type="button" id="introPlayBtn" class="labs-btn labs-btn--yellow intro-play-btn" disabled>
+          <span class="btn-primary-text">Play</span>
         </button>
         <div class="intro-splash-actions">
-          <button type="button" id="howToPlayBtn" class="btn-secondary">HOW TO PLAY</button>
-          <button type="button" id="leaderboardOpenBtn" class="btn-secondary">Leaderboard</button>
-          <button type="button" id="chooseCharacterBtn" class="btn-secondary">Choose your Lord of chaos</button>
-          <button type="button" id="editHandleBtn" class="btn-secondary">Set X handle</button>
+          <button type="button" id="howToPlayBtn" class="labs-btn labs-btn--blue">How to play</button>
+          <button type="button" id="leaderboardOpenBtn" class="labs-btn labs-btn--purple">Your scores</button>
+          <button type="button" id="chooseCharacterBtn" class="labs-btn labs-btn--green">Choose your Lord of chaos</button>
         </div>
       </div>
     </div>
@@ -62,7 +105,6 @@
           <img src="assets/ddg.png" alt="DDG" />
         </span>
       </div>
-      <p id="gameHandleBar" class="game-handle-bar" aria-live="polite" hidden></p>
       <div class="hud hud-overlay">
         <div class="hud-pill">
           <span>Score</span>
@@ -83,7 +125,7 @@
       <div class="canvas-wrap" id="canvasWrap">
         <canvas id="gameCanvas"></canvas>
         <div id="overlay" class="overlay">
-          <div class="overlay-card hidden" id="startCard" aria-hidden="true">
+          <div class="overlay-card overlay-card--labs hidden" id="startCard" aria-hidden="true">
             <div class="overlay-card-brand" aria-hidden="true">
               <img src="assets/lo.png" alt="" class="overlay-brand-lo" />
               <span class="co-brand-x">×</span>
@@ -94,7 +136,7 @@
             <p id="loadingText" class="loading-text" style="display: none">Loading…</p>
             <h2 class="ready-title">Ready?</h2>
             <p class="ready-desc">Tap or click to flap.<br />Stay alive and collect bubbles.</p>
-            <button id="startBtn" type="button" class="btn-primary" disabled>
+            <button id="startBtn" type="button" class="labs-btn labs-btn--yellow" disabled>
               <span class="btn-primary-content">
                 <img src="assets/lo.png" alt="" class="btn-brand-lo" />
                 <span class="btn-primary-text">Start</span>
@@ -104,7 +146,7 @@
               </span>
             </button>
           </div>
-          <div class="overlay-card overlay-card--gameover hidden" id="gameOverCard">
+          <div class="overlay-card overlay-card--gameover overlay-card--labs hidden" id="gameOverCard">
             <div class="overlay-card-ddg-watermark" aria-hidden="true">
               <span class="ddg-skull-wrap ddg-skull-wrap--watermark">
                 <img src="assets/ddg.png" alt="" />
@@ -124,36 +166,36 @@
               <div id="gameOverFireworks" class="game-over-extra" hidden aria-hidden="true"></div>
 
               <section class="game-over-top5" aria-labelledby="gameOverTop5Heading">
-                <h3 id="gameOverTop5Heading" class="leaderboard-title">Top 5</h3>
+                <h3 id="gameOverTop5Heading" class="leaderboard-title">Your top 5</h3>
                 <p id="gameOverTop5Status" class="leaderboard-status game-over-top5-status" aria-live="polite"></p>
-                <ol id="gameOverTop5List" class="leaderboard-list leaderboard-list--gameover"></ol>
-                <button type="button" id="gameOverViewLeaderboardBtn" class="btn-secondary btn-secondary--leaderboard-inline">
-                  VIEW TOP 50
+                <div id="gameOverTop5List" class="leaderboard-list-popup leaderboard-list--gameover"></div>
+                <button type="button" id="gameOverViewLeaderboardBtn" class="labs-btn labs-btn--purple labs-btn--block">
+                  View all scores
                 </button>
               </section>
 
               <section
                 class="leaderboard-panel"
                 id="leaderboardPanel"
-                aria-label="Submit score to the leaderboard"
+                aria-label="Save score on this device"
               >
                 <div class="leaderboard-submit">
-                  <label for="leaderboardNameInput">Name for leaderboard</label>
+                  <label for="leaderboardNameInput">Name for your scores</label>
                   <input
                     id="leaderboardNameInput"
                     type="text"
-                    maxlength="16"
+                    maxlength="15"
                     autocomplete="nickname"
                     spellcheck="false"
                     placeholder="Your name"
                   />
-                  <button type="button" id="leaderboardSubmitBtn" class="btn-submit-score">Submit score</button>
+                  <button type="button" id="leaderboardSubmitBtn" class="labs-btn labs-btn--yellow labs-btn--block">Submit score</button>
                   <p id="leaderboardStatus" class="leaderboard-msg" aria-live="polite"></p>
                 </div>
               </section>
 
-              <button id="playAgainBtn" type="button" class="btn-primary btn-primary-text-only">
-                <span class="btn-primary-text">Play Again</span>
+              <button id="playAgainBtn" type="button" class="labs-btn labs-btn--yellow labs-btn--block">
+                <span class="btn-primary-text">Play again</span>
               </button>
             </div>
           </div>
@@ -161,61 +203,22 @@
       </div>
     </div>
 
-    <button type="button" id="gameHowToBtn" class="btn-help btn-help--corner" aria-label="How to play" title="How to play">
+    <button type="button" id="gameHowToBtn" class="btn-help btn-help--corner labs-btn labs-btn--blue" aria-label="How to play" title="How to play">
       <span aria-hidden="true">?</span>
     </button>
-    <button type="button" id="gameBackBtn" class="btn-back btn-back--corner" aria-label="Back to menu" title="Back to menu">
+    <button type="button" id="gameBackBtn" class="btn-back btn-back--corner labs-btn labs-btn--green" aria-label="Back to menu" title="Back to menu">
       <span class="btn-back-arrow" aria-hidden="true">←</span>
     </button>
   </div>
 
-  <!-- Username: first visit cannot dismiss with Escape (handled in shell.js); × hidden until handle exists -->
-  <div
-    id="usernameModal"
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="usernameModalTitle"
-    aria-hidden="true"
-    hidden
-  >
-    <div class="modal-panel">
-      <div class="modal-brand-strip" aria-hidden="true">
-        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
-        <span class="modal-brand-x">×</span>
-        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
-          <img src="assets/ddg.png" alt="" width="46" height="46" />
-        </span>
-      </div>
-      <div class="modal-header">
-        <h2 id="usernameModalTitle" class="modal-title">Welcome</h2>
-        <button type="button" id="usernameModalClose" class="modal-close" aria-label="Close" hidden>×</button>
-      </div>
-      <div class="modal-body">
-        <p id="usernameModalSubtitle" class="username-modal-subtitle" hidden></p>
-        <div class="username-field">
-          <label for="usernameInput">X (Twitter) handle</label>
-          <div class="username-input-wrap">
-            <input
-              id="usernameInput"
-              type="text"
-              autocomplete="username"
-              maxlength="15"
-              autocapitalize="off"
-              spellcheck="false"
-              aria-describedby="usernameHint usernameError"
-            />
-            <span id="usernameCharCount" class="username-char-count" aria-hidden="true">0/15</span>
-          </div>
-          <p id="usernameHint" class="username-hint">Letters, numbers, and underscores only. @ is optional.</p>
-          <p id="usernameError" class="username-error" role="alert"></p>
+        </div>
+        </div>
+        </div>
+
+        <div class="ddg__actions labs-game-actions">
+          <a href="../links/" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green">← Back to Games Lab</a>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" id="usernameSaveBtn" class="btn-modal-primary" disabled>Save</button>
-      </div>
-    </div>
-  </div>
 
   <!-- How to play -->
   <div
@@ -227,7 +230,7 @@
     aria-hidden="true"
     hidden
   >
-    <div class="modal-panel">
+    <div class="modal-panel labs-frosted-card">
       <div class="modal-brand-strip" aria-hidden="true">
         <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
         <span class="modal-brand-x">×</span>
@@ -301,15 +304,15 @@
           </div>
         </section>
 
-        <p class="howto-footer">LO × DDG — Frappy Brew · Leaderboard for live Top 50; optional score submit on Game Over</p>
+        <p class="howto-footer">LO × DDG · Frappy Brew · Scores saved on this device only</p>
       </div>
       <div class="modal-footer">
-        <button type="button" id="howToGotIt" class="btn-modal-primary" data-howto-close>Got it</button>
+        <button type="button" id="howToGotIt" class="labs-btn labs-btn--yellow" data-howto-close>Got it</button>
       </div>
     </div>
   </div>
 
-  <!-- Character + scene (after handle; pairs player1↔bg01, etc.) -->
+  <!-- Character + scene (pairs player1↔bg01, etc.) -->
   <div
     id="characterSelectModal"
     class="modal-overlay"
@@ -319,7 +322,7 @@
     aria-hidden="true"
     hidden
   >
-    <div class="modal-panel modal-panel--character">
+    <div class="modal-panel modal-panel--character labs-frosted-card">
       <div class="modal-brand-strip" aria-hidden="true">
         <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
         <span class="modal-brand-x">×</span>
@@ -337,45 +340,44 @@
         <div class="character-grid" id="characterGrid" role="radiogroup" aria-labelledby="characterSelectTitle"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" id="characterSelectContinue" class="btn-modal-primary" disabled>Continue</button>
+        <button type="button" id="characterSelectContinue" class="labs-btn labs-btn--yellow" disabled>Continue</button>
       </div>
     </div>
   </div>
 
-  <!-- Leaderboard — Top 50 (Firestore listener while open only) -->
+  <!-- Local scoreboard modal (global Firestore leaderboard kept in leaderboard.js for restore) -->
   <div
     id="leaderboardModal"
-    class="modal-overlay"
+    class="leaderboard-overlay"
     role="dialog"
     aria-modal="true"
     aria-labelledby="leaderboardModalTitle"
     aria-hidden="true"
     hidden
   >
-    <div class="modal-panel modal-panel--leaderboard">
+    <div class="leaderboard-card">
       <div id="leaderboardFireworks" class="leaderboard-fireworks" aria-hidden="true"></div>
-      <div class="modal-brand-strip" aria-hidden="true">
-        <img src="assets/lo.png" alt="" class="modal-brand-lo" width="200" height="60" />
-        <span class="modal-brand-x">×</span>
-        <span class="ddg-skull-wrap ddg-skull-wrap--modal">
-          <img src="assets/ddg.png" alt="" width="46" height="46" />
-        </span>
-      </div>
-      <div class="modal-header">
-        <div class="leaderboard-modal-title-wrap">
-          <h2 id="leaderboardModalTitle" class="modal-title">Leaderboard</h2>
-          <p class="leaderboard-modal-subtitle">Highest scores worldwide · Top 50</p>
-        </div>
-        <button type="button" id="leaderboardModalClose" class="modal-close" aria-label="Close">×</button>
-      </div>
-      <div class="modal-body modal-body--scroll modal-body--leaderboard">
-        <p id="leaderboardModalStatus" class="leaderboard-status leaderboard-modal-status" aria-live="polite"></p>
-        <ol id="leaderboardModalList" class="leaderboard-list leaderboard-list--modal"></ol>
-        <p class="leaderboard-modal-footnote">Live Top 50 · updates while this window is open</p>
-      </div>
+      <button type="button" id="leaderboardModalClose" class="labs-btn labs-btn--blue leaderboard-close-btn" aria-label="Close">Close</button>
+      <img
+        src="../webpageassets/logo-nav.webp"
+        class="leaderboard-logo"
+        alt="Little Ollie"
+        width="200"
+        height="58"
+        decoding="async"
+      />
+      <h2 id="leaderboardModalTitle" class="leaderboard-title">Your best scores</h2>
+      <p class="labs-local-note">Saved on this device only.</p>
+      <p id="leaderboardModalStatus" class="leaderboard-status" aria-live="polite"></p>
+      <div id="leaderboardModalList" class="leaderboard-list-popup"></div>
     </div>
   </div>
 
+      <p class="lo-playground__foot">Little Ollie Labs · LO × DDG</p>
+    </div>
+  </main>
+
+  <script type="module" src="../scripts/labs-game-switcher.js"></script>
   <script src="shell.js"></script>
   <script type="module" src="leaderboard-init.js"></script>
 </body>

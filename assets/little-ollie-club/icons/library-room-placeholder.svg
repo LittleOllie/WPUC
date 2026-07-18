@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" role="img" aria-label="Library room placeholder">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b8e8ff"/>
+      <stop offset="100%" stop-color="#7ec8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="280" rx="28" fill="url(#g)"/>
+  <rect x="70" y="60" width="260" height="160" rx="18" fill="#fff8ea" opacity="0.85"/>
+  <text x="200" y="150" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" fill="#17345f">Library Room Art</text>
+</svg>

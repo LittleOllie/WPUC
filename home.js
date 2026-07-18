@@ -102,7 +102,7 @@
     magicStar: { src: "webpageassets/magic-star.png" },
     magicPlane: { src: "webpageassets/magic-paper-plane.png" },
     // Journey cards
-    cardFamily: { src: "webpageassets/family.jpg" },
+    cardFamily: { src: "webpageassets/stage-family-meet-family.png" },
     cardStories: { src: "webpageassets/BookCover.jpg" },
     cardSchool: { src: "webpageassets/Friendship.jpg" },
     cardLabs: { src: "webpageassets/Creativity.jpg" },
@@ -231,53 +231,57 @@
    */
   var stageAssets = {
     home: {
-      bg: "webpageassets/BrowserHome.png",
+      bg: "webpageassets/stage-book-playground.png",
       hideChars: true,
       noFlip: true,
     },
     family: {
-      bg: "webpageassets/BrowserFamily.jpg",
+      bg: "webpageassets/stage-family-meet-family.png",
       hideChars: true,
     },
     stories: {
-      bg: "webpageassets/BrowserStories.jpg",
+      bg: "webpageassets/stage-stories-library.png",
       hideChars: true,
     },
     book: {
-      bg: "webpageassets/BrowserBook.jpg",
+      bg: "webpageassets/stage-book-books.png",
       hideChars: true,
     },
     labs: {
-      bg: "webpageassets/BrowserLabs.jpg",
+      bg: "webpageassets/stage-labs-lo-labs.png",
       hideChars: true,
     },
     journey: {
-      bg: "webpageassets/BrowserJourney.jpg",
-      bgFallback: "webpageassets/journey.jpg",
+      bg: "webpageassets/stage-journey-our-journey.png",
+      hideChars: true,
     },
   };
 
-  /* Phone-only full-scene backgrounds (named to match each page) */
+  /* Phone uses the same full-scene artwork (composite backgrounds) */
   var phoneStageAssets = {
     home: {
-      bg: "webpageassets/PhoneHome.jpg",
+      bg: "webpageassets/stage-book-playground.png",
       hideChars: true,
       noFlip: true,
     },
     family: {
-      bg: "webpageassets/PhoneFamily.jpg",
+      bg: "webpageassets/stage-family-meet-family.png",
       hideChars: true,
     },
     stories: {
-      bg: "webpageassets/PhoneStories.jpg",
+      bg: "webpageassets/stage-stories-library.png",
       hideChars: true,
     },
     book: {
-      bg: "webpageassets/PhoneBook.jpg",
+      bg: "webpageassets/stage-book-books.png",
       hideChars: true,
     },
     labs: {
-      bg: "webpageassets/PhoneLabs.jpg",
+      bg: "webpageassets/stage-labs-lo-labs.png",
+      hideChars: true,
+    },
+    journey: {
+      bg: "webpageassets/stage-journey-our-journey.png",
       hideChars: true,
     },
   };
@@ -934,6 +938,59 @@
   }
 
   /* Family cards: tap/hover to pop character + show short write-up */
+  (function initFamilyCardImages() {
+    var stage = document.querySelector(".lo-stage--family");
+    if (!stage) return;
+
+    var imgs = stage.querySelectorAll(".journey-card__icon img");
+    if (!imgs.length) return;
+
+    function markSharp(img) {
+      function reveal() {
+        if (img.naturalWidth > 0) img.classList.add("is-sharp");
+      }
+      if (img.complete) reveal();
+      else img.addEventListener("load", reveal, { once: true });
+    }
+
+    imgs.forEach(function (img) {
+      img.loading = "eager";
+      img.removeAttribute("loading");
+      markSharp(img);
+    });
+
+    function preloadCharacterArt() {
+      if (preloadCharacterArt.done) return;
+      preloadCharacterArt.done = true;
+      ["webpageassets/locharacter.webp", "webpageassets/dadcharacter.webp"].forEach(function (href) {
+        var link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = href;
+        document.head.appendChild(link);
+      });
+    }
+
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            preloadCharacterArt();
+            io.disconnect();
+          });
+        },
+        { rootMargin: "520px 0px", threshold: 0 }
+      );
+      io.observe(stage);
+    } else {
+      preloadCharacterArt();
+    }
+
+    var stageRect = stage.getBoundingClientRect();
+    if (stageRect.top < window.innerHeight + 520) preloadCharacterArt();
+  })();
+
   (function initFamilyCardPop() {
     var stage = document.querySelector(".lo-stage--family");
     var familyCards = stage

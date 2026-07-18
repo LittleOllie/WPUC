@@ -1,0 +1,146 @@
+/**
+ * Game switcher — top-right of the frosted .lo-playground__card shell
+ */
+
+.labs-game-shell .lo-playground__card {
+  position: relative;
+}
+
+.labs-game-switcher {
+  position: absolute;
+  top: clamp(0.6rem, 2vw, 1rem);
+  right: clamp(0.6rem, 2vw, 1rem);
+  z-index: 50;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  max-width: calc(100% - 12px);
+  pointer-events: auto;
+}
+
+.labs-game-switcher__arrow {
+  flex: 0 0 auto;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #17345f;
+  font-family: var(--lo-font-display, "Fredoka", sans-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(17, 52, 89, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.labs-game-switcher__arrow:hover,
+.labs-game-switcher__arrow:focus-visible {
+  transform: translateY(-1px);
+  outline: 2px solid #17345f;
+  outline-offset: 2px;
+}
+
+.labs-game-switcher__drop {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.labs-game-switcher__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 28px;
+  max-width: min(148px, 42vw);
+  padding: 0.2rem 0.45rem 0.2rem 0.55rem;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #17345f;
+  font-family: var(--lo-font-display, "Fredoka", sans-serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(17, 52, 89, 0.14);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.labs-game-switcher__trigger:hover,
+.labs-game-switcher__trigger:focus-visible {
+  transform: translateY(-1px);
+  outline: 2px solid #17345f;
+  outline-offset: 2px;
+}
+
+.labs-game-switcher__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-game-switcher__chev {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+
+.labs-game-switcher__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(200px, 70vw);
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 10px 24px rgba(17, 52, 89, 0.2);
+}
+
+.labs-game-switcher__option {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #16304f;
+  font-family: var(--lo-font-body, "Nunito", sans-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.labs-game-switcher__option:hover,
+.labs-game-switcher__option:focus-visible {
+  background: rgba(111, 211, 242, 0.28);
+  outline: none;
+}
+
+.labs-game-switcher__option.is-active {
+  background: rgba(255, 216, 77, 0.35);
+  color: #0d2142;
+}
+
+@media (max-width: 480px) {
+  .labs-game-switcher__trigger {
+    max-width: min(118px, 38vw);
+    font-size: 0.62rem;
+  }
+
+  .labs-game-switcher__arrow {
+    min-width: 26px;
+    min-height: 26px;
+  }
+}

@@ -860,6 +860,7 @@
     var btn = $("xps-info-btn");
     if (!dialog) return;
     dialog.hidden = false;
+    dialog.setAttribute("aria-hidden", "false");
     document.body.classList.add("xps-info-open");
     if (btn) btn.setAttribute("aria-expanded", "true");
     var closeBtn = $("xps-info-close");
@@ -871,6 +872,7 @@
     var btn = $("xps-info-btn");
     if (!dialog) return;
     dialog.hidden = true;
+    dialog.setAttribute("aria-hidden", "true");
     document.body.classList.remove("xps-info-open");
     if (btn) {
       btn.setAttribute("aria-expanded", "false");

@@ -2,97 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>X Post Styler — Little Ollie Labs</title>
+  <title>X Post Styler | Little Ollie Labs</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Paste your X post, highlight text, pick a Unicode style, and copy — ready for X." />
-  <meta name="theme-color" content="#4c6fff" />
+  <meta name="theme-color" content="#6fd3f2" />
   <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
   <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
   <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Noto+Sans+Math&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../styles/site-brand.css" />
-  <link rel="stylesheet" href="../styles/site-labs-bg.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&family=Noto+Sans+Math&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/lo-playground.css" />
+  <link rel="stylesheet" href="../home.css" />
+  <link rel="stylesheet" href="../styles/labs-nav.css" />
+  <link rel="stylesheet" href="../styles/labs-game-header.css" />
+  <link rel="stylesheet" href="../styles/labs-game-stage.css" />
+  <link rel="stylesheet" href="../styles/labs-leaderboard.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="xps-page">
-  <div class="hero-bg" aria-hidden="true"></div>
-  <div class="hero-clouds" aria-hidden="true">
-    <img src="../assets/cloud1.webp" class="cloud cloud-1" alt="" />
-    <img src="../assets/cloud2.webp" class="cloud cloud-2" alt="" />
-    <img src="../assets/cloud3.webp" class="cloud cloud-3" alt="" />
+<body class="lo-playground xps-page">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../webpageassets/labplayground.jpg"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
   </div>
-  <div class="playground-bg-dim" aria-hidden="true"></div>
 
-  <div class="xps-wrap">
-    <a href="../links/" class="xps-back">← Playground Labs</a>
-
-    <header class="xps-hero">
-      <div class="xps-hero__head">
-        <h1 class="xps-hero__title">X Post Styler ✨</h1>
-        <button type="button" id="xps-info-btn" class="xps-info-btn" aria-label="How it works" aria-haspopup="dialog" aria-controls="xps-info-dialog" aria-expanded="false">i</button>
-      </div>
-      <p class="xps-hero__sub">Paste your post, highlight words or tap line numbers, pick a style — then copy.</p>
-    </header>
-
-    <section class="xps-card xps-editor" aria-label="Post editor">
-      <p class="xps-label">Your post</p>
-      <div id="xps-editing-bar" class="xps-editing-bar" hidden>
-        <span id="xps-char-count-compact" class="xps-char-count-compact xps-counter xps-counter--calm">0 / 280</span>
-        <button type="button" id="xps-done-editing" class="xps-done-btn">Done</button>
-      </div>
-      <div id="xps-lines" class="xps-lines" aria-label="Post lines"></div>
-
-      <p id="xps-toolbar-idle" class="xps-hint">Highlight text, or tap a line number on the left — then pick a style.</p>
-
-      <div id="xps-toolbar" class="xps-toolbar" hidden>
-        <p class="xps-toolbar__title">Pick a style for: <strong id="xps-selection-text">—</strong></p>
-        <div id="xps-style-grid" class="xps-style-scroll" role="listbox" aria-label="Text styles"></div>
+  <main class="lo-playground__content">
+    <div class="lo-playground__shell xps__shell labs-game-shell">
+      <div class="lo-playground__brand">
+        <a href="../index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
       </div>
 
-      <div class="xps-toggles">
-        <label class="xps-toggle">
-          <input type="checkbox" id="xps-keep-hashtags" checked />
-          <span>Keep hashtags normal</span>
-        </label>
-        <label class="xps-toggle">
-          <input type="checkbox" id="xps-keep-mentions" checked />
-          <span>Keep @mentions normal</span>
-        </label>
-      </div>
+      <div class="lo-playground__card xps__card labs-game-card">
+        <header class="labs-game-head xps__head">
+          <p class="lo-playground__eyebrow">NFT Tools Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            X Post <span class="lo-playground__title-accent">Styler</span> ✨
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead xps__lead">Paste your post, highlight words, pick a style — then copy.</p>
+        </header>
 
-      <div class="xps-btn-row xps-btn-row--mini">
-        <button type="button" id="xps-example" class="xps-btn xps-btn--ghost xps-btn--sm">Paste example</button>
-        <button type="button" id="xps-reset-styles" class="xps-btn xps-btn--ghost xps-btn--sm">Reset styles</button>
-        <button type="button" id="xps-clear" class="xps-btn xps-btn--ghost xps-btn--sm">Clear all</button>
-      </div>
+        <section class="xps-editor" aria-label="Post editor">
+          <p class="xps-label">Your post</p>
 
-      <div class="xps-footer">
-        <div class="xps-counter-wrap">
-          <span class="xps-counter-label">X character estimate</span>
-          <span id="xps-char-count" class="xps-counter xps-counter--calm">0 / 280</span>
-          <span class="xps-counter-note">X may count some characters differently.</span>
+          <div id="xps-editing-bar" class="xps-editing-bar" hidden>
+            <span id="xps-char-count-compact" class="xps-char-count-compact xps-counter xps-counter--calm">0 / 280</span>
+            <button type="button" id="xps-done-editing" class="home-btn xps-btn xps-btn--yellow xps-btn--sm">Done</button>
+          </div>
+
+          <div class="labs-game-card__stage-grow">
+            <div class="xps-editor__slot labs-game-slot">
+              <div class="xps-editor__stage labs-game-stage">
+                <div id="xps-lines" class="xps-lines" aria-label="Post lines"></div>
+              </div>
+            </div>
+          </div>
+
+          <p id="xps-toolbar-idle" class="xps-hint">Highlight text, or tap a line number on the left — then pick a style.</p>
+
+          <div id="xps-toolbar" class="xps-toolbar" hidden>
+            <p class="xps-toolbar__title">Pick a style for: <strong id="xps-selection-text">—</strong></p>
+            <div id="xps-style-grid" class="xps-style-scroll" role="listbox" aria-label="Text styles"></div>
+          </div>
+
+          <div class="xps-toggles">
+            <label class="xps-toggle">
+              <input type="checkbox" id="xps-keep-hashtags" checked />
+              <span>Keep hashtags normal</span>
+            </label>
+            <label class="xps-toggle">
+              <input type="checkbox" id="xps-keep-mentions" checked />
+              <span>Keep @mentions normal</span>
+            </label>
+          </div>
+
+          <div class="xps-counter-wrap xps-counter-wrap--main">
+            <span class="xps-counter-label">X character estimate</span>
+            <span id="xps-char-count" class="xps-counter xps-counter--calm">0 / 280</span>
+            <span class="xps-counter-note">X may count some characters differently.</span>
+          </div>
+        </section>
+
+        <div class="xps__actions labs-game-actions">
+          <div class="xps__actions-row labs-game-actions-row">
+            <button type="button" id="xps-example" class="home-btn xps-btn xps-btn--blue">Paste example</button>
+            <button type="button" id="xps-info-btn" class="home-btn xps-btn xps-btn--blue" aria-haspopup="dialog" aria-controls="xps-info-dialog" aria-expanded="false">How it works</button>
+          </div>
+          <div class="xps__actions-row labs-game-actions-row">
+            <button type="button" id="xps-reset-styles" class="home-btn xps-btn xps-btn--blue">Reset styles</button>
+            <button type="button" id="xps-clear" class="home-btn xps-btn xps-btn--blue">Clear all</button>
+          </div>
+          <button type="button" id="xps-copy-styled" class="home-btn xps-btn xps-btn--yellow xps-btn--block">Copy styled post</button>
+          <a href="../links/#nft" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green">← Back to NFT Tools Lab</a>
         </div>
-        <button type="button" id="xps-copy-styled" class="xps-btn xps-btn--primary xps-btn--block">Copy Styled Post</button>
       </div>
-    </section>
-  </div>
+
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
+    </div>
+  </main>
 
   <div id="xps-toast" class="xps-toast" hidden role="status" aria-live="polite"></div>
 
-  <div id="xps-info-dialog" class="xps-info-dialog" hidden>
-    <div class="xps-info-dialog__backdrop" data-close-info tabindex="-1" aria-hidden="true"></div>
-    <div class="xps-info-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="xps-info-title">
-      <h2 id="xps-info-title" class="xps-info-dialog__title">How it works</h2>
+  <div id="xps-info-dialog" class="leaderboard-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="xps-info-title">
+    <div class="leaderboard-card xps-info-card">
+      <img src="../webpageassets/logo-nav.webp" class="leaderboard-logo" alt="" width="200" height="58" decoding="async" />
+      <h2 id="xps-info-title" class="leaderboard-title">How it works</h2>
       <ol class="xps-info-dialog__steps">
-        <li><strong>Paste your post</strong> — plain text or text you’ve already styled elsewhere. Emojis stay as they are.</li>
-        <li><strong>Select what to style</strong> — highlight words with your mouse or finger, or tap the line numbers on the left to pick whole lines (shift-tap for multiple lines).</li>
-        <li><strong>Pick a style</strong> — the font list appears when something is selected. Tap a style to apply it. Your selection stays put so you can try different looks.</li>
-        <li><strong>Copy &amp; post</strong> — hit <em>Copy Styled Post</em>, then paste straight into X. The fancy Unicode fonts travel with your text.</li>
+        <li><strong>Paste your post</strong> — plain text or text you've already styled elsewhere. Emojis stay as they are.</li>
+        <li><strong>Select what to style</strong> — highlight words, or tap line numbers on the left (shift-tap for multiple lines).</li>
+        <li><strong>Pick a style</strong> — the font list appears when something is selected. Tap a style to apply it.</li>
+        <li><strong>Copy &amp; post</strong> — hit <em>Copy styled post</em>, then paste straight into X.</li>
       </ol>
-      <p class="xps-info-dialog__note">Hashtags and @mentions can stay normal using the toggles below the editor. The character counter is an estimate — X may count some styled characters differently.</p>
-      <button type="button" id="xps-info-close" class="xps-btn xps-btn--primary xps-info-dialog__close">Got it ✨</button>
+      <p class="xps-info-dialog__note">Hashtags and @mentions can stay normal using the toggles. The character counter is an estimate.</p>
+      <button type="button" id="xps-info-close" class="home-btn xps-btn xps-btn--yellow leaderboard-close-btn">Got it ✨</button>
     </div>
   </div>
 

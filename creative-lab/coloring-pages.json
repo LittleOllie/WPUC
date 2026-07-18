@@ -1,0 +1,61 @@
+{
+  "_howToAdd": "Drop files in pages/, then copy _example into pages[] with your details.",
+  "_example": {
+    "title": "Ollie at the Park",
+    "description": "Print and color Ollie on a sunny day.",
+    "file": "pages/ollie-park.pdf",
+    "thumb": "pages/ollie-park-thumb.png",
+    "downloadName": "little-ollie-ollie-park.pdf"
+  },
+  "pages": [
+    {
+      "title": "Little Ollie Coloring Page 1",
+      "description": "Print at home and bring Ollie to life with your favorite colors.",
+      "file": "pages/coloring-page-1.jpg",
+      "thumb": "pages/coloring-page-1.jpg",
+      "downloadName": "little-ollie-coloring-page-1.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 2",
+      "description": "Another free printable — grab your crayons and get creative.",
+      "file": "pages/coloring-page-2.jpg",
+      "thumb": "pages/coloring-page-2.jpg",
+      "downloadName": "little-ollie-coloring-page-2.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 3",
+      "description": "A new scene to color — perfect for a rainy afternoon.",
+      "file": "pages/coloring-page-3.jpg",
+      "thumb": "pages/coloring-page-3.jpg",
+      "downloadName": "little-ollie-coloring-page-3.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 4",
+      "description": "Another Little Ollie adventure ready for your crayons and imagination.",
+      "file": "pages/coloring-page-4.jpg",
+      "thumb": "pages/coloring-page-4.jpg",
+      "downloadName": "little-ollie-coloring-page-4.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 5",
+      "description": "Print, color, and share your masterpiece with the Little Ollie community.",
+      "file": "pages/coloring-page-5.jpg",
+      "thumb": "pages/coloring-page-5.jpg",
+      "downloadName": "little-ollie-coloring-page-5.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 6",
+      "description": "A fresh printable scene — perfect for a creative afternoon.",
+      "file": "pages/coloring-page-6.jpg",
+      "thumb": "pages/coloring-page-6.jpg",
+      "downloadName": "little-ollie-coloring-page-6.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 7",
+      "description": "Download, print, and add your own splash of colour.",
+      "file": "pages/coloring-page-7.jpg",
+      "thumb": "pages/coloring-page-7.jpg",
+      "downloadName": "little-ollie-coloring-page-7.jpg"
+    }
+  ]
+}

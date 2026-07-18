@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Coloring Pages | Little Ollie Creative Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Free Little Ollie coloring pages and printables — download, print, and create." />
+  <meta name="theme-color" content="#ffd84d" />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../flexgrid/site/src/assets/images/LO.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles/lo-playground.css" />
+  <link rel="stylesheet" href="../home.css" />
+  <link rel="stylesheet" href="../styles/labs-nav.css" />
+  <link rel="stylesheet" href="../styles/labs-game-header.css" />
+  <link rel="stylesheet" href="creative-lab.css" />
+</head>
+<body class="lo-playground creative-lab-page">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../webpageassets/stage-labs-lo-labs.png"
+      alt=""
+      width="3122"
+      height="1714"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
+  </div>
+
+  <main class="lo-playground__content">
+    <div class="lo-playground__shell creative-lab__shell">
+      <div class="lo-playground__brand">
+        <a href="../index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
+      </div>
+
+      <div class="lo-playground__card creative-lab__card labs-game-card">
+        <header class="labs-game-head">
+          <p class="lo-playground__eyebrow">Creative Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            Coloring <span class="lo-playground__title-accent">Pages</span>
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead creative-lab__lead">
+            Free printables — download, print, and color.
+          </p>
+        </header>
+
+        <p class="creative-lab__note">
+          Tap a page to preview, hit <strong>Download</strong> to print, and share your art with us on social!
+        </p>
+
+        <p id="creativePagesStatus" class="creative-lab__note" hidden role="status" aria-live="polite"></p>
+
+        <ul id="creativePagesGrid" class="creative-lab__grid" aria-label="Coloring pages"></ul>
+
+        <aside class="creative-lab__usage" aria-labelledby="creative-usage-heading">
+          <span class="creative-lab__usage-icon" aria-hidden="true">🎨</span>
+          <div class="creative-lab__usage-copy">
+            <h2 id="creative-usage-heading" class="creative-lab__usage-title">A little note about our printables</h2>
+            <p class="creative-lab__usage-text">
+              Little Ollie colouring pages are free for families, children, teachers and classrooms to print and enjoy.
+            </p>
+            <p class="creative-lab__usage-text">
+              Please do not sell, commercially reproduce, modify for resale, or upload the printable files to another website. When sharing with others, please send them to the Little Ollie website so they can download their own copy.
+            </p>
+            <p class="creative-lab__usage-footer">
+              © 2026 Little Ollie World™. All rights reserved. Personal, home and classroom use only.
+            </p>
+            <p class="creative-lab__usage-contact">
+              <a href="mailto:littleollienft@gmail.com?subject=Little%20Ollie%20printables">Questions about using our activities? Contact us</a>
+            </p>
+          </div>
+        </aside>
+
+        <div class="creative-lab__extras">
+          <p class="creative-lab__extras-title">Want more?</p>
+          <a
+            href="https://www.amazon.com/dp/B0DC5N4B1W?binding=paperback&amp;ref=dbs_dp_rwt_sb_unkn_tpbk"
+            class="creative-btn creative-btn--blue"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Coloring books on Amazon
+          </a>
+        </div>
+
+        <div class="creative-lab__actions labs-game-actions">
+          <a href="../links/#creative" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green">
+            ← Back to Creative Lab
+          </a>
+        </div>
+      </div>
+
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
+    </div>
+  </main>
+
+  <div
+    id="creativePreview"
+    class="creative-preview hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="creativePreviewTitle"
+    aria-hidden="true"
+  >
+    <button type="button" class="creative-preview__backdrop" data-preview-close aria-label="Close preview"></button>
+    <div class="creative-preview__panel">
+      <button type="button" class="creative-preview__close" data-preview-close aria-label="Close">×</button>
+      <p id="creativePreviewTitle" class="creative-preview__title"></p>
+      <div class="creative-preview__frame">
+        <img id="creativePreviewImg" class="creative-preview__img" alt="" decoding="async" />
+      </div>
+    </div>
+  </div>
+
+  <script src="creative-lab.js" defer></script>
+</body>
+</html>

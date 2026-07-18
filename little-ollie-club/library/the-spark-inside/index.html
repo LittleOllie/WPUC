@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Little Ollie and the Spark Inside | Little Ollie Club Reader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Read Little Ollie and the Spark Inside in the Little Ollie Club digital library." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="../../../webpageassets/favicon.png" type="image/png" sizes="any" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../home.css" />
+  <link rel="stylesheet" href="../../club.css" />
+  <link rel="stylesheet" href="../../../books/components/book-reader/book-reader.css" />
+  <script src="../../../scripts/club-access.js"></script>
+</head>
+<body class="home-page club-page">
+  <div id="book-reader-root" class="book-reader-shell" aria-busy="true"></div>
+
+  <script src="../../../books/components/book-reader/reader-utils.js" defer></script>
+  <script src="../../../books/components/book-reader/BookPage.js" defer></script>
+  <script src="../../../books/components/book-reader/BookSpread.js" defer></script>
+  <script src="../../../books/components/book-reader/BookCover.js" defer></script>
+  <script src="../../../books/components/book-reader/BookStage.js" defer></script>
+  <script src="../../../books/components/book-reader/ReaderHeader.js" defer></script>
+  <script src="../../../books/components/book-reader/ReaderControls.js" defer></script>
+  <script src="../../../books/components/book-reader/ReaderProgress.js" defer></script>
+  <script src="../../../books/components/book-reader/ReaderEndScreen.js" defer></script>
+  <script src="../../../books/components/book-reader/BookReader.js" defer></script>
+  <script defer>
+    document.documentElement.classList.add("home-page-root", "home-js");
+    window.addEventListener("DOMContentLoaded", function () {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get("open") === "1") {
+        /* opened from library preview — reader starts at closed cover */
+      }
+      LoBookReader.init("#book-reader-root", {
+        manifestUrl: "../../../books/the-spark-inside/manifest.json",
+        title: "Little Ollie and the Spark Inside",
+        libraryUrl: "../../index.html#club-library",
+        activitiesUrl: "../../index.html#club-activities",
+      });
+      document.getElementById("book-reader-root").removeAttribute("aria-busy");
+    });
+  </script>
+</body>
+</html>

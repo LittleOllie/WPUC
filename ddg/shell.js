@@ -1,5 +1,5 @@
 /**
- * LO × DDG — Frappy Brew shell: X handle, how-to modals, conditional game load.
+ * LO × DDG — Frappy Brew shell: how-to modals, character select, conditional game load.
  * Set BASE_PATH when the site lives in a subpath (must end with /), e.g. "/my-repo/"
  */
 (function () {
@@ -16,8 +16,6 @@
     }
   }
 
-  const STORAGE_KEY = "frappybrew_xhandle";
-  const LEGACY_KEYS = ["frappy_brew_x_handle"];
   const SKIN_STORAGE_KEY = "frappybrew_skin";
 
   /** Default pickups + hazard (Oceanus / water theme). */
@@ -135,7 +133,6 @@
 
   /** @type {HTMLElement | null} */
   var focusBeforeModal = null;
-  var usernameIsFirstTime = false;
   var characterSelectFirstTime = false;
   /** @type {string | null} */
   var selectedSkinId = null;
@@ -145,73 +142,6 @@
     if (!BASE_PATH) return r;
     var b = BASE_PATH.endsWith("/") ? BASE_PATH : BASE_PATH + "/";
     return b + r;
-  }
-
-  function migrateLegacyHandle() {
-    try {
-      var v = localStorage.getItem(STORAGE_KEY);
-      if (v != null && v !== "") return;
-      for (var i = 0; i < LEGACY_KEYS.length; i++) {
-        var old = localStorage.getItem(LEGACY_KEYS[i]);
-        if (old != null && old !== "") {
-          var n = normalizeHandle(old);
-          if (/^[a-zA-Z0-9_]{1,15}$/.test(n)) {
-            localStorage.setItem(STORAGE_KEY, n);
-          }
-          return;
-        }
-      }
-    } catch (_) {}
-  }
-
-  function getStoredHandle() {
-    migrateLegacyHandle();
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw == null || raw === "") return "";
-      return normalizeHandle(raw);
-    } catch (_) {
-      return "";
-    }
-  }
-
-  function normalizeHandle(raw) {
-    return String(raw ?? "")
-      .replace(/^@+/, "")
-      .replace(/[^a-zA-Z0-9_]/g, "")
-      .slice(0, 15);
-  }
-
-  function isValidHandle(s) {
-    return /^[a-zA-Z0-9_]{1,15}$/.test(s);
-  }
-
-  function setWelcomeLine(handle) {
-    var el = document.getElementById("welcomeLine");
-    if (!el) return;
-    if (handle) {
-      el.textContent = "Welcome " + handle;
-      el.removeAttribute("hidden");
-    } else {
-      el.textContent = "";
-      el.setAttribute("hidden", "");
-    }
-  }
-
-  /** Intro welcome + game HUD handle line (shown while playing). */
-  function syncHandleDisplay() {
-    var h = getStoredHandle();
-    setWelcomeLine(h);
-    var bar = document.getElementById("gameHandleBar");
-    if (bar) {
-      if (h) {
-        bar.textContent = "@" + h;
-        bar.removeAttribute("hidden");
-      } else {
-        bar.textContent = "";
-        bar.setAttribute("hidden", "");
-      }
-    }
   }
 
   function getSkinId() {
@@ -253,6 +183,12 @@
   function applyStoredSkinToPage() {
     var id = getSkinId();
     if (!id) {
+      /* Splash preview until a Lord is chosen — same art as in-game bg. */
+      var preview = getSkinById("3");
+      if (preview && preview.bg) {
+        var u = assetUrl(preview.bg).replace(/\\/g, "/");
+        document.documentElement.style.setProperty("--frappy-bg-page", 'url("' + u + '")');
+      }
       syncHudSkinTheme(null);
       return;
     }
@@ -444,115 +380,6 @@
     document.body.classList.toggle("modal-open", lock);
   }
 
-  var usernameModal = document.getElementById("usernameModal");
-  var usernameTitle = document.getElementById("usernameModalTitle");
-  var usernameSubtitle = document.getElementById("usernameModalSubtitle");
-  var usernameInput = document.getElementById("usernameInput");
-  var usernameCharCount = document.getElementById("usernameCharCount");
-  var usernameSaveBtn = document.getElementById("usernameSaveBtn");
-  var usernameCloseBtn = document.getElementById("usernameModalClose");
-  var usernameError = document.getElementById("usernameError");
-
-  function updateUsernameCharCount() {
-    if (!usernameInput || !usernameCharCount) return;
-    var n = usernameInput.value.length;
-    usernameCharCount.textContent = n + "/15";
-  }
-
-  function updateSaveEnabled() {
-    if (!usernameSaveBtn || !usernameInput) return;
-    var normalized = normalizeHandle(usernameInput.value);
-    usernameSaveBtn.disabled = !isValidHandle(normalized);
-  }
-
-  function openUsernameModal(opts) {
-    var firstTime = !!(opts && opts.firstTime);
-    usernameIsFirstTime = firstTime;
-    focusBeforeModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    if (usernameTitle) {
-      usernameTitle.textContent = firstTime ? "Welcome" : "Edit your handle";
-    }
-    if (usernameSubtitle) {
-      if (firstTime) {
-        usernameSubtitle.textContent =
-          "We need your X handle so we can greet you before you play. It’s saved only on this device.";
-        usernameSubtitle.hidden = false;
-      } else {
-        usernameSubtitle.textContent = "";
-        usernameSubtitle.hidden = true;
-      }
-    }
-    if (usernameInput) {
-      usernameInput.setAttribute(
-        "aria-describedby",
-        firstTime ? "usernameModalSubtitle usernameHint usernameError" : "usernameHint usernameError"
-      );
-    }
-    if (usernameCloseBtn) {
-      usernameCloseBtn.hidden = firstTime;
-      usernameCloseBtn.style.display = firstTime ? "none" : "";
-    }
-
-    var current = getStoredHandle();
-    if (usernameInput) {
-      usernameInput.value = firstTime ? "" : current;
-      updateUsernameCharCount();
-      updateSaveEnabled();
-    }
-    if (usernameError) usernameError.textContent = "";
-
-    if (!usernameModal) return;
-    usernameModal.removeAttribute("hidden");
-    usernameModal.setAttribute("aria-hidden", "false");
-    lockBodyScroll(true);
-
-    requestAnimationFrame(function () {
-      if (usernameInput) {
-        usernameInput.focus();
-        usernameInput.select();
-      } else if (usernameSaveBtn && !usernameSaveBtn.disabled) {
-        usernameSaveBtn.focus();
-      }
-    });
-  }
-
-  function closeUsernameModal() {
-    if (!usernameModal) return;
-    usernameModal.setAttribute("hidden", "");
-    usernameModal.setAttribute("aria-hidden", "true");
-    lockBodyScroll(false);
-    if (focusBeforeModal && typeof focusBeforeModal.focus === "function") {
-      try {
-        focusBeforeModal.focus();
-      } catch (_) {}
-    }
-    focusBeforeModal = null;
-  }
-
-  function saveUsernameFromInput() {
-    if (!usernameInput || !usernameSaveBtn || usernameSaveBtn.disabled) return false;
-    var normalized = normalizeHandle(usernameInput.value);
-    if (!isValidHandle(normalized)) {
-      if (usernameError) {
-        usernameError.textContent = "Use 1–15 letters, numbers, or underscores.";
-      }
-      return false;
-    }
-    try {
-      localStorage.setItem(STORAGE_KEY, normalized);
-    } catch (_) {}
-    if (usernameError) usernameError.textContent = "";
-    syncHandleDisplay();
-    closeUsernameModal();
-    updateEditHandleLabel();
-    var hasGame = !!document.querySelector("script[data-frappy-brew]");
-    if (!hasGame) {
-      openCharacterSelectModal({ firstTime: true });
-    }
-    return true;
-  }
-
   var howToModal = document.getElementById("howToModal");
   var howToCloseBtns = document.querySelectorAll("[data-howto-close]");
   var howToGotIt = document.getElementById("howToGotIt");
@@ -583,13 +410,6 @@
     focusBeforeModal = null;
   }
 
-  function updateEditHandleLabel() {
-    var btn = document.getElementById("editHandleBtn");
-    if (!btn) return;
-    var h = getStoredHandle();
-    btn.textContent = h ? "Edit X handle" : "Set X handle";
-  }
-
   var leaderboardModal = document.getElementById("leaderboardModal");
 
   function onGlobalKeydown(e) {
@@ -613,63 +433,10 @@
       if (characterSelectFirstTime) return;
       e.preventDefault();
       closeCharacterSelectModal();
-      return;
-    }
-
-    if (usernameModal && !usernameModal.hidden) {
-      if (usernameIsFirstTime) return;
-      e.preventDefault();
-      closeUsernameModal();
     }
   }
 
   document.addEventListener("keydown", onGlobalKeydown);
-
-  if (usernameInput) {
-    usernameInput.addEventListener("input", function () {
-      var start = usernameInput.selectionStart;
-      var raw = usernameInput.value;
-      var norm = normalizeHandle(raw);
-      if (norm !== raw) {
-        usernameInput.value = norm;
-        if (start != null) {
-          var pos = Math.min(norm.length, start);
-          usernameInput.setSelectionRange(pos, pos);
-        }
-      }
-      updateUsernameCharCount();
-      updateSaveEnabled();
-      if (usernameError) usernameError.textContent = "";
-    });
-    usernameInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        if (usernameSaveBtn && !usernameSaveBtn.disabled) {
-          e.preventDefault();
-          saveUsernameFromInput();
-        }
-      }
-    });
-  }
-
-  if (usernameSaveBtn) {
-    usernameSaveBtn.addEventListener("click", function () {
-      saveUsernameFromInput();
-    });
-  }
-
-  if (usernameCloseBtn) {
-    usernameCloseBtn.addEventListener("click", function () {
-      if (!usernameIsFirstTime) closeUsernameModal();
-    });
-  }
-
-  if (usernameModal) {
-    usernameModal.addEventListener("click", function (e) {
-      if (e.target === usernameModal && !usernameIsFirstTime) {
-        closeUsernameModal();
-      }
-    });
-  }
 
   howToCloseBtns.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -698,13 +465,6 @@
     });
   }
 
-  var editHandleBtn = document.getElementById("editHandleBtn");
-  if (editHandleBtn) {
-    editHandleBtn.addEventListener("click", function () {
-      openUsernameModal({ firstTime: !getStoredHandle() });
-    });
-  }
-
   buildCharacterGrid();
 
   var characterSelectContinue = document.getElementById("characterSelectContinue");
@@ -729,9 +489,6 @@
     });
   }
 
-  updateEditHandleLabel();
-
-  var initial = getStoredHandle();
   var loadingEl = document.getElementById("introSplashLoading");
   function onBackToMenu() {
     if (window.FrappyBrew && typeof window.FrappyBrew.returnToMenu === "function") {
@@ -743,7 +500,6 @@
         intro.setAttribute("aria-hidden", "false");
       }
     }
-    syncHandleDisplay();
   }
 
   var backBtn = document.getElementById("gameBackBtn");
@@ -758,17 +514,10 @@
   syncHowToHeroImages();
   syncHowToPlayButtonAccent();
 
-  if (initial) {
-    syncHandleDisplay();
-    if (getSkinId()) {
-      injectGameScript();
-    } else {
-      if (loadingEl) loadingEl.textContent = "Choose your Lord of chaos to continue";
-      openCharacterSelectModal({ firstTime: true });
-    }
+  if (getSkinId()) {
+    injectGameScript();
   } else {
-    syncHandleDisplay();
-    if (loadingEl) loadingEl.textContent = "Save your handle to load the game";
-    openUsernameModal({ firstTime: true });
+    if (loadingEl) loadingEl.textContent = "Choose your Lord of chaos to continue";
+    openCharacterSelectModal({ firstTime: true });
   }
 })();

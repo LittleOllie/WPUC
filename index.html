@@ -24,6 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="home.css" />
+  <script src="scripts/club-access.js"></script>
 </head>
 <body class="home-page">
   <a class="home-skip" href="#home">Skip to content</a>
@@ -42,7 +43,10 @@
         <a href="#labs" class="home-nav__link">Little Ollie Labs</a>
         <a href="#our-story" class="home-nav__link">Our Story</a>
         <a href="#journey" class="home-nav__link">Our Journey</a>
+        <a href="little-ollie-club/" class="home-nav__cta home-nav__cta--mobile" data-club-link>Little Ollie Club</a>
       </nav>
+
+      <a href="little-ollie-club/" class="home-nav__cta home-nav__cta--desktop" data-club-link>Little Ollie Club</a>
 
       <button type="button" class="home-nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
         <span class="home-nav__toggle-bar" aria-hidden="true"></span>
@@ -249,7 +253,10 @@
             <li class="journey-cards__item reveal">
               <a class="journey-card journey-card--ollie" href="#family">
                 <span class="journey-card__icon is-loaded" data-card-icon="ollie">
-                  <img src="webpageassets/ollie.webp" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                  <picture>
+                    <source srcset="webpageassets/locharacter.webp" type="image/webp" />
+                    <img src="webpageassets/locharacter.PNG" alt="" width="1024" height="1536" decoding="async" loading="eager" />
+                  </picture>
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Ollie</span>
@@ -271,7 +278,10 @@
             <li class="journey-cards__item reveal reveal--delay">
               <a class="journey-card journey-card--dad" href="#family">
                 <span class="journey-card__icon is-loaded" data-card-icon="dad">
-                  <img src="webpageassets/dad.webp" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                  <picture>
+                    <source srcset="webpageassets/dadcharacter.webp" type="image/webp" />
+                    <img src="webpageassets/dadcharacter.png" alt="" width="1024" height="1536" decoding="async" loading="eager" />
+                  </picture>
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Dad</span>
@@ -294,7 +304,7 @@
             <li class="journey-cards__item reveal reveal--delay-2">
               <a class="journey-card journey-card--mum" href="#family">
                 <span class="journey-card__icon is-loaded" data-card-icon="mum">
-                  <img src="webpageassets/mum.webp" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                  <img src="webpageassets/mum.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Mum</span>
@@ -316,7 +326,7 @@
             <li class="journey-cards__item reveal">
               <a class="journey-card journey-card--lily" href="#family">
                 <span class="journey-card__icon is-loaded" data-card-icon="lily">
-                  <img src="webpageassets/lily.webp" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                  <img src="webpageassets/lily.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Lily</span>
@@ -338,7 +348,7 @@
             <li class="journey-cards__item reveal reveal--delay">
               <a class="journey-card journey-card--jack" href="#family">
                 <span class="journey-card__icon is-loaded" data-card-icon="jack">
-                  <img src="webpageassets/jack.webp" alt="" width="400" height="400" decoding="async" loading="lazy" />
+                  <img src="webpageassets/jack.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Jack</span>
@@ -704,10 +714,10 @@
               </button>
             </div>
             <div class="home-hero__body" id="copy-body-labs">
-              <p class="home-hero__desc">Explore all the fun apps we have made, mainly for Web3 collectors and creators who love playful tools and creative experiments.</p>
-              <p class="home-hero__desc">There are grid builders, twin finders, games and handy tools to poke around in, all built with the same curiosity that started Little Ollie World.</p>
-              <p class="home-hero__desc">Loads of fun kids learning games are coming soon too, made with the same heart as our books and stories.</p>
-              <p class="home-hero__desc">Little Ollie Labs is where we try new ideas, test tools and build playful experiences that extend the world beyond the page.</p>
+              <p class="home-hero__desc">Little Ollie Labs is where playful ideas come to life — for kids, families, and anyone who loves making and exploring.</p>
+              <p class="home-hero__desc">Play games in the Games Lab, try creative tools in NFT Tools Lab, or visit Creative Lab for free downloadable coloring pages you can print at home.</p>
+              <p class="home-hero__desc">Loads more games, activities and surprises are on the way, all built with the same heart as our books and stories.</p>
+              <p class="home-hero__desc">This is our little workshop for testing ideas and stretching Little Ollie World beyond the page.</p>
               <div class="home-hero__actions">
                 <a href="links/" class="home-btn home-btn--primary">Enter the Labs</a>
                 <a href="#journey" class="home-btn home-btn--secondary">Our Journey</a>
@@ -752,19 +762,7 @@
                 </span>
                 <span class="journey-card__text">
                   <span class="journey-card__title">Creative Lab</span>
-                  <span class="journey-card__desc">Stories, books and Little Ollie ideas.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--adventure" href="links/#community">
-                <span class="journey-card__icon is-loaded" data-card-icon="community" aria-hidden="true">
-                  <img src="webpageassets/community-lab.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Community Lab</span>
-                  <span class="journey-card__desc">Follow, connect and join the journey.</span>
+                  <span class="journey-card__desc">Coloring pages, printables and downloads.</span>
                 </span>
                 <span class="journey-card__arrow" aria-hidden="true">→</span>
               </a>
@@ -789,7 +787,7 @@
       <div class="our-story__world" aria-hidden="true">
         <img
           class="our-story__bg"
-          src="webpageassets/ourstorybg.png"
+          src="webpageassets/stage-our-story-landscape.png"
           alt=""
           width="1600"
           height="1000"
@@ -1120,6 +1118,7 @@
               <a href="#family">Meet the Family</a>
               <a href="#stories">Stories</a>
               <a href="#book">Books</a>
+              <a href="little-ollie-club/" data-club-link>Little Ollie Club</a>
             </nav>
           </div>
           <div class="home-footer__col">

@@ -1,0 +1,205 @@
+/**
+ * One Button Hero — playground shell (matches Slider Puzzle card size).
+ */
+
+.obh-page {
+  --lo-blue: #6fd3f2;
+  --lo-deep-blue: #17345f;
+  --lo-navy: #0d2142;
+  --lo-yellow: #ffd84d;
+  --lo-cream: #fffaf0;
+  --lo-green: #8fd36c;
+  --lo-text: #16304f;
+  --lo-btn-primary-bg: linear-gradient(180deg, #ffe57a 0%, var(--lo-yellow) 55%, #f5c83a 100%);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+.obh-page *,
+.obh-page *::before,
+.obh-page *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.obh__board {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+/* Taller play area — intrinsic height from aspect ratio (canvas is absolute, so ratio is required) */
+.obh-page .obh__board-wrap.labs-game-stage--obh {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: clamp(280px, 52vw, 420px);
+  aspect-ratio: 4 / 5;
+  max-height: 100%;
+  height: auto;
+}
+
+.obh__actions {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.obh__actions .obh-btn,
+.obh__actions .labs-back-to-hub {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.obh-page:not(.obh-menu-visible) #startBtn {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* HUD inside the game frame */
+.obh-page .obh__board-wrap .hud,
+.obh-page .obh__board-wrap .game-cloud-layer,
+.obh-page .obh__board-wrap .game-hook,
+.obh-page .obh__board-wrap .jump-btn-container {
+  position: absolute !important;
+}
+
+.obh-page .obh__board-wrap .hud {
+  top: max(6px, var(--safe-top));
+  left: max(6px, var(--safe-left));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.obh-page .obh__board-wrap .hud-pill {
+  padding: 6px 11px;
+  font-size: 12px;
+}
+
+.obh-page .obh__board-wrap #multiplierBarWrapper,
+.obh-page .obh__board-wrap .obh__mult-bar {
+  width: 88px;
+  height: 11px;
+  margin-top: 0;
+  align-self: flex-start;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.obh-page .obh__board-wrap .game-cloud-layer {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  z-index: 2;
+}
+
+.obh-page .obh__board-wrap .game-cloud-1 {
+  width: 42%;
+  max-width: 180px;
+}
+
+.obh-page .obh__board-wrap .game-cloud-2 {
+  width: 34%;
+  max-width: 150px;
+}
+
+.obh-page .obh__board-wrap .game-cloud-3 {
+  width: 38%;
+  max-width: 165px;
+}
+
+.obh-page .obh__board-wrap .game-hook {
+  top: -4px;
+  right: 8%;
+  width: 24%;
+  max-width: 100px;
+  min-width: 52px;
+  z-index: 5;
+}
+
+.obh-page .obh__board-wrap .jump-btn-container {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(10px, calc(6px + var(--safe-bottom)));
+  z-index: 15;
+  width: calc(100% - 20px);
+  max-width: 200px;
+}
+
+.obh-page .obh__board-wrap .jump-btn {
+  min-height: 48px;
+  min-width: 80px;
+  font-size: 16px;
+  padding: 8px 16px;
+}
+
+.obh-page.obh-menu-visible .obh__board-wrap .jump-btn-container {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.obh__board-wrap #gameOver {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+  background: rgba(13, 33, 66, 0.52);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overflow-y: auto;
+}
+
+.obh__board-wrap #gameOver.hidden {
+  display: none;
+}
+
+.obh__board-wrap #gameOver .obh-screen-card {
+  max-width: none;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.obh-page .obh__board-wrap .how-to-play-overlay,
+.obh-page .obh__board-wrap .leaderboard-overlay,
+.obh-page .obh__board-wrap .modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.obh-page .obh__board-wrap .leaderboard-card,
+.obh-page .obh__board-wrap .how-to-play-card,
+.obh-page .obh__board-wrap .keep-pushing-card,
+.obh-page .obh__board-wrap .name-modal-card {
+  max-width: none;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+@media (max-width: 480px) {
+  .obh__actions-row {
+    grid-template-columns: 1fr;
+  }
+
+  .obh-page .obh__board-wrap #multiplierBarWrapper,
+  .obh-page .obh__board-wrap .obh__mult-bar {
+    width: 76px;
+    height: 10px;
+  }
+}

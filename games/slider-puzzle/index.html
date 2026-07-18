@@ -2,79 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Slider Puzzle – LO Arcade</title>
+  <title>Slider Puzzle | Little Ollie Games Lab</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="description" content="Slide the tiles and complete the picture in the Little Ollie Games Lab slider puzzle." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="../../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../../flexgrid/site/src/assets/images/LO.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/lo-playground.css" />
+  <link rel="stylesheet" href="../../home.css" />
+  <link rel="stylesheet" href="../../styles/labs-nav.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-stage.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-header.css" />
+  <link rel="stylesheet" href="../../styles/labs-leaderboard.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-switcher.css" />
   <link rel="stylesheet" href="slider-puzzle.css" />
 </head>
-<body>
-  <header class="puzzle-header">
-    <img src="../../assets/websitelogo.webp" alt="" class="puzzle-header-img" />
-  </header>
-  <p class="subtitle">Rearrange The Tiles To Complete The Picture.</p>
-
-  <div class="difficulty-row">
-    <label for="difficulty-select">Difficulty:</label>
-    <select id="difficulty-select" aria-label="Difficulty">
-      <option value="3">Easy (3×3)</option>
-      <option value="4">Medium (4×4)</option>
-      <option value="5">Hard (5×5)</option>
-    </select>
+<body class="lo-playground slider-puzzle-page">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../../webpageassets/labplayground.jpg"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
   </div>
 
-  <div class="game-info">
-    <span id="moves-display" class="game-info-pill">🔄 MOVES: 0</span>
-    <span id="timer-display" class="game-info-pill">⏱ TIME: 0:00</span>
-  </div>
+  <main id="slider-puzzle-main" class="lo-playground__content">
+    <div class="lo-playground__shell slider-puzzle__shell labs-game-shell">
+      <div class="lo-playground__brand">
+        <a href="../../index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="../../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
+      </div>
 
-  <div class="puzzle-wrap">
-    <div id="puzzle-board-wrap" class="puzzle-board-wrap">
-      <canvas id="puzzle-canvas" width="320" height="320"></canvas>
-    </div>
-  </div>
+      <div class="lo-playground__card slider-puzzle__card labs-game-card">
+        <header class="labs-game-head">
+          <p class="lo-playground__eyebrow">Games Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            Slider <span class="lo-playground__title-accent">Puzzle</span>
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead">Rearrange the tiles to complete the picture.</p>
+        </header>
 
-  <div class="buttons-section">
-    <div class="button-row button-row-images" aria-label="Image options">
-      <button type="button" id="btn-new-image">New Random Image</button>
-      <button type="button" id="uploadImageBtn">Upload Your Own Image</button>
-    </div>
-    <div class="button-row-single">
-      <button type="button" id="leaderboardBtn" class="btn-leaderboard-full">🏆 Leaderboard</button>
-    </div>
-    <div class="button-row-nav">
-      <a href="../../games.html" class="btn-back-link">← Back To LO Arcade</a>
-    </div>
-  </div>
-  <input type="file" id="imageUpload" accept="image/*" style="display: none" aria-hidden="true" />
+        <div class="slider-puzzle__difficulty">
+          <label for="difficulty-select">Difficulty</label>
+          <select id="difficulty-select" class="slider-puzzle__select" aria-label="Difficulty">
+            <option value="3">Easy (3×3)</option>
+            <option value="4">Medium (4×4)</option>
+            <option value="5">Hard (5×5)</option>
+          </select>
+        </div>
 
-  <div id="leaderboardModal" class="leaderboard-overlay hidden" aria-hidden="true">
+        <div class="slider-puzzle__stats" aria-live="polite">
+          <span id="moves-display" class="slider-puzzle__stat">Moves: 0</span>
+          <span id="timer-display" class="slider-puzzle__stat">Time: 0:00</span>
+        </div>
+
+        <div class="labs-game-card__stage-grow">
+        <div class="slider-puzzle__board labs-game-slot">
+          <div id="puzzle-board-wrap" class="slider-puzzle__board-wrap labs-game-stage">
+            <canvas id="puzzle-canvas" width="320" height="320" aria-label="Slider puzzle board"></canvas>
+          </div>
+        </div>
+        </div>
+
+        <div class="slider-puzzle__actions">
+          <div class="slider-puzzle__actions-row">
+            <button type="button" id="btn-new-image" class="home-btn slider-puzzle-btn slider-puzzle-btn--yellow">New random image</button>
+            <button type="button" id="uploadImageBtn" class="home-btn slider-puzzle-btn slider-puzzle-btn--blue">Upload your own</button>
+          </div>
+          <button type="button" id="leaderboardBtn" class="home-btn slider-puzzle-btn slider-puzzle-btn--purple">Your scores</button>
+          <a href="../../links/" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green">← Back to Games Lab</a>
+        </div>
+      </div>
+
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
+    </div>
+  </main>
+
+  <input type="file" id="imageUpload" accept="image/*" hidden aria-hidden="true" />
+
+  <div id="leaderboardModal" class="leaderboard-overlay hidden" aria-hidden="true" role="dialog" aria-labelledby="leaderboardTitle" aria-modal="true">
     <div class="leaderboard-card">
-      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules" style="visibility: hidden;">Rules</button>
-      <img src="../../assets/websitelogo.webp" class="leaderboard-logo" alt="Slider Puzzle" />
-      <h2 class="leaderboard-title">Leaderboard</h2>
-      <div class="leaderboard-tabs">
-        <button type="button" data-diff="easy">Easy</button>
-        <button type="button" data-diff="medium">Medium</button>
-        <button type="button" data-diff="hard">Hard</button>
+      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules" hidden>Rules</button>
+      <img src="../../webpageassets/logo-nav.webp" class="leaderboard-logo" alt="Little Ollie" width="200" height="58" decoding="async" />
+      <h2 id="leaderboardTitle" class="leaderboard-title">Your best scores</h2>
+      <p class="labs-local-note">Saved on this device only.</p>
+      <div class="leaderboard-tabs" role="tablist" aria-label="Difficulty">
+        <button type="button" data-diff="easy" role="tab">Easy</button>
+        <button type="button" data-diff="medium" role="tab">Medium</button>
+        <button type="button" data-diff="hard" role="tab">Hard</button>
       </div>
       <div id="leaderboardList" class="leaderboard-list-popup"></div>
       <div id="sliderLeaderboardSubmitSection" class="leaderboard-submit-section hidden">
-        <p class="leaderboard-submit-heading">🎉 YOU COMPLETED THE PUZZLE!</p>
-        <p id="sliderLeaderboardYourScore" class="leaderboard-your-score">YOUR TIME: 0:00 • MOVES: 0</p>
-        <input type="text" id="sliderLeaderboardNameInput" placeholder="YOUR NAME" maxlength="30" autocomplete="nickname" />
+        <p class="leaderboard-submit-heading">🎉 You completed the puzzle!</p>
+        <p id="sliderLeaderboardYourScore" class="leaderboard-your-score">Your time: 0:00 • Moves: 0</p>
+        <input type="text" id="sliderLeaderboardNameInput" placeholder="Your name" maxlength="30" autocomplete="nickname" />
         <div class="leaderboard-submit-actions">
-          <button type="button" id="sliderLeaderboardSubmitBtn" class="btn-lo-yellow">SUBMIT SCORE</button>
-          <button type="button" id="sliderLeaderboardPlayAgainBtn" class="btn-lo-secondary">PLAY AGAIN</button>
+          <button type="button" id="sliderLeaderboardSubmitBtn" class="home-btn slider-puzzle-btn slider-puzzle-btn--yellow">Submit score</button>
+          <button type="button" id="sliderLeaderboardPlayAgainBtn" class="home-btn slider-puzzle-btn slider-puzzle-btn--green">Play again</button>
         </div>
         <p id="sliderLeaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
       </div>
-      <button type="button" id="closeLeaderboard" class="btn-lo-yellow">Close</button>
+      <button type="button" id="closeLeaderboard" class="home-btn slider-puzzle-btn slider-puzzle-btn--blue leaderboard-close-btn">Close</button>
     </div>
   </div>
 
-  <script type="module" src="leaderboard-slider.js"></script>
+  <!-- Global leaderboard (restore): leaderboard-slider.js -->
+  <script type="module" src="../../scripts/labs-leaderboard-ui.js"></script>
+  <script type="module" src="../../scripts/labs-game-switcher.js"></script>
+  <script type="module" src="leaderboard-local.js"></script>
   <script defer src="slider-puzzle.js"></script>
 </body>
 </html>

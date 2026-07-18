@@ -7,33 +7,31 @@ BRAND
 
 ═══════════════════════════════════════════════════════════
 FULL-VIEWPORT STAGES (home.js → stageAssets / phoneStageAssets)
-Naming: Browser{Page} = desktop (≥900px), Phone{Page} = phone (≤899px)
+Each stage uses one full-scene PNG on desktop and phone.
 
 HOME
-  BrowserHome.png             ✅ browser/desktop background
-  PhoneHome.jpg               ✅ phone composite
+  stage-book-playground.png       Playground scene (welcome hero)
+
+OUR STORY (separate section — index.html our-story__bg)
+  stage-our-story-landscape.png   Home screen cottage (Dream / Create / Believe)
 
 FAMILY
-  BrowserFamily.jpg           ✅ browser/desktop background
-  PhoneFamily.jpg             ✅ phone composite
-  ollie / dad / mum / lily / jack.webp
-                              ✅ bottom character cards
+  stage-family-meet-family.png    Meet the family park scene
 
 STORIES
-  BrowserStories.jpg          ✅ browser/desktop background
-  PhoneStories.jpg            ✅ phone composite
+  stage-stories-library.png       Library reading room
 
-BOOKS
-  BrowserBook.jpg             ✅ browser/desktop background
-  PhoneBook.jpg               ✅ phone composite
+BOOKS (#book — nav label “Books”, Spark Inside section)
+  stage-book-books.png            books.PNG upload (Spark Inside section)
 
 LABS
-  BrowserLabs.jpg             ✅ browser/desktop background
-  PhoneLabs.jpg               ✅ phone composite
+  stage-labs-lo-labs.png       LO Labs outdoor lab
 
 JOURNEY
-  BrowserJourney.jpg          ✅ browser/desktop background
-  journey.jpg                 fallback
+  stage-journey-our-journey.png  Our Journey village map
+
+ARCHIVED (previous backgrounds — safe to restore from)
+  archive/backgrounds/BrowserHome.png, PhoneHome.jpg, etc.
 
 HOME JOURNEY CARDS (under Home only — home.js → heroAssets)
   family.jpeg / BookCover.jpg / Friendship.png /

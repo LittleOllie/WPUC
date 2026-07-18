@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320" role="img" aria-label="Future book placeholder">
+  <rect width="240" height="320" rx="18" fill="#fff8ea"/>
+  <rect x="16" y="16" width="208" height="288" rx="12" fill="#f3e8ff"/>
+  <text x="120" y="165" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#17345f">Future Book</text>
+</svg>

@@ -1,29 +1,13 @@
-import { motion } from "framer-motion";
-
 export default function DisplayModeToggle({
   immersive,
   onSelectPortrait,
   onSelectImmersive,
 }) {
   return (
-    <motion.div
-      className="pog-mode-switch"
-      role="group"
-      aria-label="Display mode"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.6, duration: 0.45 }}
-    >
-      <motion.div
-        className="pog-mode-switch__thumb"
-        aria-hidden
-        initial={false}
-        animate={{ x: immersive ? "100%" : "0%" }}
-        transition={{ type: "spring", stiffness: 480, damping: 34 }}
-      />
+    <div className="labs-game-actions-row pog-mode-actions" role="group" aria-label="Display mode">
       <button
         type="button"
-        className="pog-mode-switch__option"
+        className={`home-btn pog-btn pog-btn--blue${!immersive ? " pog-btn--selected" : ""}`}
         aria-pressed={!immersive}
         onClick={onSelectPortrait}
       >
@@ -31,12 +15,12 @@ export default function DisplayModeToggle({
       </button>
       <button
         type="button"
-        className="pog-mode-switch__option"
+        className={`home-btn pog-btn pog-btn--yellow${immersive ? " pog-btn--selected" : ""}`}
         aria-pressed={immersive}
         onClick={onSelectImmersive}
       >
         Ultra Grass 🌱
       </button>
-    </motion.div>
+    </div>
   );
 }

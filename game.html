@@ -3,127 +3,184 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>One Button Hero — Web</title>
+  <title>One Button Hero | Little Ollie Games Lab</title>
+  <meta name="description" content="Press to jump, hold to glide, and dodge cones in the Little Ollie Games Lab." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="flexgrid/site/src/assets/images/LO.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/lo-playground.css" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="obh-labs.css" />
+  <link rel="stylesheet" href="styles/labs-nav.css" />
+  <link rel="stylesheet" href="styles/labs-game-stage.css" />
+  <link rel="stylesheet" href="styles/labs-game-header.css" />
+  <link rel="stylesheet" href="styles/labs-leaderboard.css" />
+  <link rel="stylesheet" href="styles/labs-game-switcher.css" />
 </head>
-<body>
+<body class="lo-playground obh-page obh-menu-visible">
 
-  <canvas id="game"></canvas>
-  <div class="game-cloud-layer" aria-hidden="true">
-    <img src="assets/cloud1.webp" class="game-cloud game-cloud-1" alt="" />
-    <img src="assets/cloud2.webp" class="game-cloud game-cloud-2" alt="" />
-    <img src="assets/cloud3.webp" class="game-cloud game-cloud-3" alt="" />
-  </div>
-  <img src="assets/cranehook.webp" class="game-hook" alt="" />
-
-  <!-- Dedicated Jump button (mobile: jump only here; desktop: Space + click) -->
-  <div class="jump-btn-container" id="jumpBtnContainer" aria-hidden="true">
-    <span class="jump-btn-helper" id="jumpBtnHelper">Tap to jump</span>
-    <button type="button" class="jump-btn" id="jumpBtn" aria-label="Jump">JUMP</button>
-  </div>
-
-  <a href="index.html" class="back-to-main" id="backToMainBtn">← Back to main</a>
-
-  <!-- HUD Elements -->
-  <div class="hud">
-    <div id="scorePill" class="hud-pill hud-score" aria-label="Score"></div>
-    <div id="shardsPill" class="hud-pill hud-shards" aria-label="Golden bolts"></div>
-    <div id="multPill" class="hud-pill hud-mult" aria-label="Multiplier"></div>
-    <div id="multiplierBarWrapper">
-      <div id="multiplierBarFill"></div>
-    </div>
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="webpageassets/labplayground.jpg"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
   </div>
 
-  <!-- How to play (first start only) -->
-  <div id="howToPlayOverlay" class="how-to-play-overlay hidden" aria-hidden="true">
-    <div class="how-to-play-card">
-      <h2>How to play</h2>
-      <ul>
-        <li><strong>Press</strong> the button to jump</li>
-        <li><strong>Hold</strong> to glide forward</li>
-        <li>You can <strong>double jump</strong></li>
-        <li>Avoid the <strong>cones</strong> or it’s game over</li>
-        <li>Collect <strong>golden bolts</strong> to build your multiplier</li>
-      </ul>
-      <button id="howToPlayGotIt" type="button" class="btn-lo-yellow">Got it</button>
-    </div>
-  </div>
-
-  <!-- Start Overlay -->
-  <div id="overlay">
-    <img src="assets/onebuttonherologo.webp" class="game-title-logo" alt="One Button Hero" />
-    <p class="overlay-tagline">Press to Jump • Hold to Glide • Double jump!</p>
-    <button id="startBtn">Start</button>
-    <button id="rulesBtn" type="button" class="btn-rules">Rules</button>
-    <button id="menuLeaderboardBtn" type="button" class="btn-leaderboard-small">🏆 Leaderboard</button>
-  </div>
-
-  <!-- Game Over Overlay -->
-  <div id="gameOver" class="hidden">
-    <h1>GAME OVER</h1>
-    <p id="finalLine"></p>
-
-    <div class="submit-section">
-      <input type="text" id="playerName" placeholder="Your name" maxlength="15" />
-      <div class="button-group">
-        <button id="saveNameBtn">Save Name</button>
+  <main class="lo-playground__content">
+    <div class="lo-playground__shell obh__shell labs-game-shell">
+      <div class="lo-playground__brand">
+        <a href="index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
       </div>
-      <p id="submitMsg"></p>
-    </div>
 
-    <button id="restartBtn">Play Again</button>
-    <button id="openLeaderboardBtn" type="button" class="btn-leaderboard">🏆 Leaderboard</button>
-  </div>
+      <div class="lo-playground__card obh__card labs-game-card">
+        <header class="labs-game-head">
+          <p class="lo-playground__eyebrow">Games Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            One Button <span class="lo-playground__title-accent">Hero</span>
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead">Press to jump • Hold to glide • Double jump!</p>
+        </header>
 
-  <!-- Keep Pushing popup (score < 500 or not Top 10) -->
-  <div id="keepPushingPopup" class="modal-overlay hidden" aria-hidden="true">
-    <div class="modal-card modal-card-lo keep-pushing-card">
-      <h2>Keep Pushing!</h2>
-      <p id="keepPushingMessage" class="keep-pushing-message">Score 500+ to enter the Global Leaderboard!</p>
-      <button id="keepPushingPlayAgainBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
-      <button id="keepPushingLeaderboardBtn" type="button" class="btn-leaderboard-keep-pushing">🏆 View Leaderboard</button>
-    </div>
-  </div>
+        <div class="labs-game-card__stage-grow">
+        <div class="obh__board labs-game-slot">
+          <div class="obh__board-wrap labs-game-stage labs-game-stage--obh" id="obhStage">
+            <canvas id="game"></canvas>
+            <div class="game-cloud-layer" aria-hidden="true">
+              <img src="assets/cloud1.webp" class="game-cloud game-cloud-1" alt="" />
+              <img src="assets/cloud2.webp" class="game-cloud game-cloud-2" alt="" />
+              <img src="assets/cloud3.webp" class="game-cloud game-cloud-3" alt="" />
+            </div>
+            <img src="assets/cranehook.webp" class="game-hook" alt="" />
 
-  <!-- Leaderboard popup (view or qualified submit) -->
-  <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true">
-    <div class="leaderboard-card">
-      <button type="button" id="leaderboardRulesBtn" class="leaderboard-rules-btn" aria-label="Rules">Rules</button>
-      <img src="assets/onebuttonherologo.webp" class="leaderboard-logo" alt="One Button Hero" />
-      <h2 class="leaderboard-title">Global Leaderboard</h2>
-      <div id="leaderboardList" class="leaderboard-list-popup"></div>
-      <div id="leaderboardSubmitSection" class="leaderboard-submit-section hidden">
-        <p class="leaderboard-submit-heading">🔥 You Made The Top 10!</p>
-        <p id="leaderboardYourScore" class="leaderboard-your-score">Your score: 0</p>
-        <p id="leaderboardPlacedRank" class="leaderboard-placed-rank">You placed #1!</p>
-        <input type="text" id="leaderboardNameInput" placeholder="Your name" maxlength="15" autocomplete="nickname" />
-        <div class="leaderboard-submit-actions">
-          <button id="leaderboardSubmitScoreBtn" type="button" class="btn-lo-yellow">SUBMIT SCORE</button>
-          <button id="leaderboardPlayAgainBtn" type="button" class="btn-lo-secondary">PLAY AGAIN</button>
+            <div class="hud obh__hud" aria-live="polite">
+              <div id="scorePill" class="hud-pill hud-score" aria-label="Score"></div>
+              <div id="shardsPill" class="hud-pill hud-shards" aria-label="Golden bolts"></div>
+              <div id="multPill" class="hud-pill hud-mult" aria-label="Multiplier"></div>
+              <div id="multiplierBarWrapper" class="obh__mult-bar">
+                <div id="multiplierBarFill"></div>
+              </div>
+            </div>
+
+            <div class="jump-btn-container" id="jumpBtnContainer" aria-hidden="true">
+              <span class="jump-btn-helper" id="jumpBtnHelper">Tap to jump</span>
+              <button type="button" class="jump-btn" id="jumpBtn" aria-label="Jump">Jump</button>
+            </div>
+
+            <div id="gameOver" class="hidden">
+              <div class="obh-screen-card obh-screen-card--gameover">
+                <h1>Game over</h1>
+                <p id="finalLine"></p>
+
+                <div class="submit-section">
+                  <input type="text" id="playerName" placeholder="Your name" maxlength="15" />
+                  <div class="button-group">
+                    <button type="button" id="saveNameBtn" class="obh-btn obh-btn--blue">Save name</button>
+                  </div>
+                  <p id="submitMsg"></p>
+                </div>
+
+                <div class="obh-menu-actions obh-menu-actions--stack">
+                  <button type="button" id="restartBtn" class="obh-btn obh-btn--yellow">Play again</button>
+                  <button type="button" id="openLeaderboardBtn" class="obh-btn obh-btn--purple">Your scores</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="howToPlayOverlay" class="how-to-play-overlay hidden" aria-hidden="true">
+              <div class="obh-frosted-card how-to-play-card">
+                <h2>How to play</h2>
+                <ul>
+                  <li><strong>Press</strong> the button to jump</li>
+                  <li><strong>Hold</strong> to glide forward</li>
+                  <li>You can <strong>double jump</strong></li>
+                  <li>Avoid the <strong>cones</strong> or it's game over</li>
+                  <li>Collect <strong>golden bolts</strong> to build your multiplier</li>
+                </ul>
+                <button id="howToPlayGotIt" type="button" class="obh-btn obh-btn--yellow">Got it</button>
+              </div>
+            </div>
+
+            <div id="keepPushingPopup" class="modal-overlay hidden" aria-hidden="true">
+              <div class="obh-frosted-card keep-pushing-card">
+                <h2>Keep pushing!</h2>
+                <p id="keepPushingMessage" class="keep-pushing-message">Play again to beat your personal best!</p>
+                <button type="button" id="keepPushingPlayAgainBtn" class="obh-btn obh-btn--yellow">Play again</button>
+                <button type="button" id="keepPushingLeaderboardBtn" class="obh-btn obh-btn--purple">Your scores</button>
+              </div>
+            </div>
+
+            <div id="leaderboardOverlay" class="leaderboard-overlay hidden" aria-hidden="true" role="dialog" aria-labelledby="leaderboardTitle" aria-modal="true">
+              <div class="obh-frosted-card leaderboard-card">
+                <button type="button" id="leaderboardRulesBtn" class="obh-btn obh-btn--blue leaderboard-rules-btn" aria-label="Rules">Rules</button>
+                <img src="webpageassets/logo-nav.webp" class="leaderboard-logo" alt="Little Ollie" width="200" height="58" decoding="async" />
+                <h2 id="leaderboardTitle" class="leaderboard-title">Your best scores</h2>
+                <p class="labs-local-note">Saved on this device only.</p>
+                <div id="leaderboardList" class="leaderboard-list-popup"></div>
+                <div id="leaderboardSubmitSection" class="leaderboard-submit-section hidden">
+                  <p class="leaderboard-submit-heading">New personal best!</p>
+                  <p id="leaderboardYourScore" class="leaderboard-your-score">Your score: 0</p>
+                  <p id="leaderboardPlacedRank" class="leaderboard-placed-rank">You placed #1!</p>
+                  <input type="text" id="leaderboardNameInput" placeholder="Your name" maxlength="15" autocomplete="nickname" />
+                  <div class="leaderboard-submit-actions">
+                    <button type="button" id="leaderboardSubmitScoreBtn" class="obh-btn obh-btn--yellow">Submit score</button>
+                    <button type="button" id="leaderboardPlayAgainBtn" class="obh-btn obh-btn--green">Play again</button>
+                  </div>
+                  <p id="leaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
+                </div>
+                <div id="leaderboardPlayAgainOnly" class="leaderboard-play-again-only hidden">
+                  <p id="leaderboardYourScoreOnly" class="leaderboard-your-score">Your score: 0</p>
+                  <button type="button" id="leaderboardPlayAgainOnlyBtn" class="obh-btn obh-btn--yellow">Play again</button>
+                </div>
+                <button type="button" id="closeLeaderboardBtn" class="obh-btn obh-btn--blue leaderboard-close-btn">Close</button>
+              </div>
+            </div>
+
+            <div id="nameModal" class="modal-overlay hidden" aria-hidden="true">
+              <div class="obh-frosted-card name-modal-card">
+                <h2>Enter your name</h2>
+                <p class="modal-hint">Saved locally. We won't ask again.</p>
+                <input type="text" id="nameModalInput" placeholder="Name" maxlength="15" autocomplete="nickname" />
+                <button type="button" id="nameModalSave" class="obh-btn obh-btn--yellow">Save</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <p id="leaderboardSubmitMsg" class="leaderboard-submit-msg"></p>
-      </div>
-      <div id="leaderboardPlayAgainOnly" class="leaderboard-play-again-only hidden">
-        <p id="leaderboardYourScoreOnly" class="leaderboard-your-score">Your score: 0</p>
-        <button id="leaderboardPlayAgainOnlyBtn" type="button" class="btn-lo-yellow btn-play-again-large">PLAY AGAIN</button>
-      </div>
-      <button id="closeLeaderboardBtn" type="button" class="btn-lo-yellow">Close</button>
-    </div>
-  </div>
+        </div>
 
-  <!-- Name modal (first time only) -->
-  <div id="nameModal" class="modal-overlay hidden" aria-hidden="true">
-    <div class="modal-card modal-card-lo name-modal-card">
-      <h2>Enter your name</h2>
-      <p class="modal-hint">Saved locally — we won't ask again.</p>
-      <input type="text" id="nameModalInput" placeholder="Name" maxlength="15" autocomplete="nickname" />
-      <button id="nameModalSave" type="button" class="btn-lo-yellow">Save</button>
-    </div>
-  </div>
+        <div class="obh__actions labs-game-actions">
+          <button type="button" id="startBtn" class="obh-btn obh-btn--yellow">Start</button>
+          <div class="obh__actions-row labs-game-actions-row">
+            <button type="button" id="rulesBtn" class="obh-btn obh-btn--blue">Rules</button>
+            <button type="button" id="menuLeaderboardBtn" class="obh-btn obh-btn--purple">Your scores</button>
+          </div>
+          <a href="links/" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green" id="backToMainBtn">← Back to Games Lab</a>
+        </div>
+      </div>
 
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
+    </div>
+  </main>
+
+  <script type="module" src="scripts/labs-game-switcher.js"></script>
   <script type="module" src="game.js"></script>
 </body>
 </html>

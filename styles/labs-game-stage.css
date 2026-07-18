@@ -1,0 +1,136 @@
+/**
+ * Shared Games Lab play area — same square stage as Slider Puzzle.
+ * All action games render inside .labs-game-stage (1:1, full card width).
+ */
+
+:root {
+  --labs-shell-max: 540px;
+  --labs-stage-aspect: 1 / 1;
+  --labs-stage-radius: 22px;
+  --labs-stage-border: 3px solid rgba(255, 255, 255, 0.95);
+  --labs-stage-shadow:
+    0 12px 28px rgba(17, 52, 89, 0.18),
+    inset 0 0 0 1px rgba(23, 52, 95, 0.08);
+  --labs-stage-bg: var(--lo-blue, #6fd3f2);
+  /* Shared frosted card height (Slider Puzzle reference) */
+  --labs-game-card-min-h: clamp(720px, 82dvh, 920px);
+}
+
+.lo-playground__shell.labs-game-shell,
+.labs-game-shell {
+  width: min(var(--labs-shell-max), 100%);
+}
+
+/* Same overall white card size across Games Lab titles */
+.labs-game-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: var(--labs-game-card-min-h);
+}
+
+.labs-game-card__stage-grow {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.labs-game-card__stage-grow > .labs-game-slot,
+.labs-game-card__stage-grow > .labs-game-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.labs-game-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--labs-stage-aspect);
+  border-radius: var(--labs-stage-radius);
+  overflow: hidden;
+  border: var(--labs-stage-border);
+  box-shadow: var(--labs-stage-shadow);
+  background: var(--labs-stage-bg);
+  isolation: isolate;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  contain: layout style;
+}
+
+/* Fixed-size wrapper — stage never grows/shrinks when chrome toggles */
+.labs-game-slot {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.labs-game-slot > .labs-game-stage {
+  width: 100%;
+}
+
+.labs-game-stage > canvas,
+.labs-game-stage #game,
+.labs-game-stage #puzzle-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Popups stay inside the square stage (not full viewport) */
+.labs-game-stage .how-to-play-overlay,
+.labs-game-stage .leaderboard-overlay,
+.labs-game-stage .modal-overlay,
+.labs-game-stage #overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.labs-game-stage .leaderboard-card,
+.labs-game-stage .obh-frosted-card,
+.labs-game-stage .overlay-card {
+  max-height: 100%;
+}
+
+.labs-game-stage__fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.labs-game-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+}
+
+.labs-game-actions-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.labs-game-actions .labs-back-to-hub--block,
+.labs-game-actions .home-btn,
+.labs-game-actions .labs-btn,
+.labs-game-actions .obh-btn,
+.labs-game-actions .slider-puzzle-btn {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .labs-game-actions-row {
+    grid-template-columns: 1fr;
+  }
+}

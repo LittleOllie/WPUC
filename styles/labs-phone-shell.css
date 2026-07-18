@@ -1,0 +1,135 @@
+/**
+ * Shared Games Lab “phone frame” — same width as Slider Puzzle (540px max).
+ * Action games render inside the screen; playground BG fills the page behind it.
+ */
+
+.labs-phone-page {
+  --labs-phone-width: min(540px, 100%);
+  --labs-phone-aspect: 480 / 640;
+  --labs-phone-bezel: clamp(8px, 2vw, 12px);
+  --labs-phone-radius: 32px;
+  --labs-phone-screen-radius: 22px;
+
+  margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: #6ec0ea;
+}
+
+.labs-phone-world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.labs-phone-world__bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.labs-phone-world__dim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(20, 50, 90, 0.18) 0%, rgba(20, 50, 90, 0.35) 55%, rgba(15, 40, 70, 0.5) 100%);
+}
+
+.labs-phone-layout {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(0.75rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.75rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+}
+
+.labs-phone-shell {
+  width: var(--labs-phone-width);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.labs-phone-device {
+  border-radius: var(--labs-phone-radius);
+  padding: var(--labs-phone-bezel);
+  background: linear-gradient(165deg, #fefefe 0%, #e8eef5 42%, #cfd9e6 100%);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 22px 50px rgba(17, 52, 89, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.labs-phone-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--labs-phone-aspect);
+  max-height: min(78dvh, calc(100vw * 640 / 480));
+  border-radius: var(--labs-phone-screen-radius);
+  overflow: hidden;
+  background: #0a1628;
+  isolation: isolate;
+  touch-action: manipulation;
+}
+
+.labs-phone-screen > .page,
+.labs-phone-screen > .page-fullscreen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.labs-phone-foot {
+  margin: 0;
+  text-align: center;
+  font-family: var(--lo-font-display, "Fredoka", sans-serif);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(17, 52, 89, 0.35);
+}
+
+/* Overlays scoped to the phone screen (not the whole browser) */
+.labs-phone-screen .modal-overlay,
+.labs-phone-screen .leaderboard-overlay,
+.labs-phone-screen .how-to-play-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+}
+
+.labs-phone-shell > .labs-back-to-hub--block {
+  flex-shrink: 0;
+}
+
+@media (max-height: 700px) {
+  .labs-phone-layout {
+    align-items: flex-start;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .labs-phone-screen {
+    max-height: min(72dvh, calc(100vw * 640 / 480));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-phone-device {
+    box-shadow: 0 12px 28px rgba(17, 52, 89, 0.18);
+  }
+}

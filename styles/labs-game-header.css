@@ -1,0 +1,37 @@
+/**
+ * Shared Games Lab card header — same eyebrow + title position on every game.
+ */
+
+.labs-game-head {
+  position: relative;
+  margin: 0 0 0.15rem;
+  text-align: center;
+  flex-shrink: 0;
+  min-height: clamp(5.25rem, 17vw, 6.5rem);
+  padding-right: min(148px, 40vw);
+}
+
+.labs-game-head .lo-playground__eyebrow {
+  margin: 0 0 0.55rem;
+}
+
+.labs-game-head .lo-playground__title,
+.labs-game-head__title {
+  margin: 0;
+  font-size: clamp(1.85rem, 5.5vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.labs-game-head .lo-playground__lead,
+.labs-game-head__lead {
+  margin: 0.45rem auto 0;
+  max-width: none;
+  font-size: clamp(0.92rem, 2.8vw, 1.05rem);
+}
+
+@media (max-width: 480px) {
+  .labs-game-head {
+    padding-right: min(120px, 36vw);
+    min-height: clamp(4.85rem, 22vw, 5.75rem);
+  }
+}

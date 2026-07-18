@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const categoryButtons = document.querySelectorAll("[data-category]");
   const categoryPanels = document.querySelectorAll("[data-category-panel]");
-  const validCategories = new Set(["games", "nft", "creative", "community"]);
+  const validCategories = new Set(["games", "nft", "creative"]);
 
   function setActiveCard(categoryId) {
     categoryButtons.forEach((btn) => {

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Little Ollie Club | Stories, Activities and Games for Families</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="The Little Ollie Club is a growing place for stories, activities, games and creative adventures made for kids and families." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="../webpageassets/favicon.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../webpageassets/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../webpageassets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../home.css" />
+  <link rel="stylesheet" href="club.css" />
+  <script src="../scripts/club-access.js"></script>
+</head>
+<body class="home-page club-page">
+  <a class="home-skip" href="#club-home">Skip to content</a>
+
+  <header class="home-nav" id="site-nav">
+    <div class="home-nav__inner">
+      <a class="home-nav__brand" href="#club-home" aria-label="Little Ollie Club home">
+        <img src="../webpageassets/logo-nav.webp" alt="" class="home-nav__logo" width="140" height="40" decoding="async" />
+      </a>
+
+      <nav class="home-nav__links" id="nav-links" aria-label="Club navigation">
+        <a href="#club-home" class="home-nav__link">Club Home</a>
+        <a href="#club-explore" class="home-nav__link">Explore</a>
+        <a href="#club-library" class="home-nav__link">Library</a>
+        <a href="#club-activities" class="home-nav__link">Activities</a>
+        <a href="#club-games" class="home-nav__link">Games</a>
+        <a href="#club-news" class="home-nav__link">Club News</a>
+        <a href="#club-membership" class="home-nav__link">Membership</a>
+        <a href="../index.html" class="home-nav__cta home-nav__cta--mobile">Back to Little Ollie World</a>
+      </nav>
+
+      <a href="../index.html" class="home-nav__cta home-nav__cta--desktop">Back to Little Ollie World</a>
+
+      <button type="button" class="home-nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="home-nav-backdrop" id="nav-backdrop" hidden aria-hidden="true"></div>
+
+  <main id="main-content">
+    <!-- Stage 1: Club Home -->
+    <div class="lo-stage lo-stage--club-home is-phone-composite" id="club-home" data-stage="club-home">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-club-bg="home"
+            src="../webpageassets/loClubHome.png"
+            alt=""
+            width="1600"
+            height="1000"
+            sizes="100vw"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder hidden>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add loClubHome.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-home-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Welcome to</p>
+            <div class="home-hero__head">
+              <h1 class="home-hero__title" id="club-home-heading">
+                The <span class="home-hero__title-accent">Little Ollie Club</span>
+              </h1>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-home" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-home">
+              <p class="home-hero__desc">A growing place for stories, activities, games and creative adventures made for kids and families.</p>
+              <p class="home-hero__desc">Explore what we are building today and come along as the Club continues to grow.</p>
+              <div class="home-hero__actions">
+                <a href="#club-explore" class="home-btn home-btn--primary">Explore the Club</a>
+                <a href="#club-membership" class="home-btn home-btn--secondary">Membership Coming Soon</a>
+              </div>
+            </div>
+          </div>
+          <div class="lo-stage__spacer" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--club" href="#club-home">
+                <span class="journey-card__icon is-loaded">
+                  <img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span>
+                  <span class="journey-card__desc">Welcome to the Little Ollie Club.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--stories" href="#club-library">
+                <span class="journey-card__icon is-loaded">
+                  <img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span>
+                  <span class="journey-card__desc">Stories and books for family reading.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay-2">
+              <a class="journey-card journey-card--labs" href="#club-activities">
+                <span class="journey-card__icon is-loaded">
+                  <img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span>
+                  <span class="journey-card__desc">Colour, create, draw and imagine.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal">
+              <a class="journey-card journey-card--adventure" href="#club-games">
+                <span class="journey-card__icon is-loaded">
+                  <img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span>
+                  <span class="journey-card__desc">Playful learning and digital fun.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+            <li class="journey-cards__item reveal reveal--delay">
+              <a class="journey-card journey-card--school" href="#club-news">
+                <span class="journey-card__icon is-loaded">
+                  <img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" />
+                </span>
+                <span class="journey-card__text">
+                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span>
+                  <span class="journey-card__desc">See what we are building next.</span>
+                </span>
+                <span class="journey-card__arrow" aria-hidden="true">→</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 2: Explore -->
+    <div class="lo-stage lo-stage--club-explore" id="club-explore" data-stage="club-explore">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img class="lo-stage__bg" data-club-bg="explore" alt="" width="1600" height="1000" sizes="100vw" decoding="async" hidden />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add club-explore-bg.jpg</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-explore-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Inside the Club</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-explore-heading">
+                Explore the <span class="home-hero__title-accent">Club</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-explore" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-explore">
+              <p class="home-hero__desc">The Little Ollie Club is being built as a special place where children and families can read, play, create and discover new adventures together.</p>
+              <p class="home-hero__desc">Choose a room on the right to see what is waiting inside, or use the tiles below to jump around the Club.</p>
+            </div>
+          </div>
+          <div class="club-stage__content reveal reveal--delay">
+            <div class="club-grid club-grid--rooms" id="club-rooms-grid" aria-label="Club rooms"></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--club" href="#club-home"><span class="journey-card__icon is-loaded"><img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span><span class="journey-card__desc">Welcome to the Little Ollie Club.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--stories" href="#club-library"><span class="journey-card__icon is-loaded"><img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span><span class="journey-card__desc">Stories and books for family reading.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay-2"><a class="journey-card journey-card--labs" href="#club-activities"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span><span class="journey-card__desc">Colour, create, draw and imagine.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--adventure" href="#club-games"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span><span class="journey-card__desc">Playful learning and digital fun.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--school" href="#club-news"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span><span class="journey-card__desc">See what we are building next.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 3: Library -->
+    <div class="lo-stage lo-stage--club-library" id="club-library" data-stage="club-library">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img
+            class="lo-stage__bg"
+            data-club-bg="library"
+            src="../webpageassets/LOClubLibrary.png"
+            alt=""
+            width="1535"
+            height="1024"
+            sizes="100vw"
+            decoding="async"
+          />
+          <div class="lo-stage__placeholder" data-stage-placeholder hidden>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add LOClubLibrary.png</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-library-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Stories and Books</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-library-heading">
+                The Little Ollie <span class="home-hero__title-accent">Library</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-library" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-library">
+              <p class="home-hero__desc">A growing digital shelf filled with Little Ollie stories, adventures and positive lessons for children and families.</p>
+            </div>
+          </div>
+          <div class="club-stage__content club-stage__content--library reveal reveal--delay">
+            <div class="club-library-layout" id="club-library-layout">
+              <div class="club-library-layout__hero">
+                <p class="club-library-layout__eyebrow">Featured book</p>
+                <div class="club-library-layout__main" id="club-library-main" aria-live="polite"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards club-library__coming-soon-nav" id="club-library-coming-soon-nav" aria-label="More books coming soon">
+        <div class="home-container journey-cards__inner">
+          <p class="club-library__coming-soon-label">More coming soon</p>
+          <ul class="journey-cards__track" id="club-library-coming-soon-track"></ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 4: Activities -->
+    <div class="lo-stage lo-stage--club-activities" id="club-activities" data-stage="club-activities">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img class="lo-stage__bg" data-club-bg="activities" alt="" width="1600" height="1000" sizes="100vw" decoding="async" hidden />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add club-activities-bg.jpg</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-activities-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Create and Play</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-activities-heading">
+                Activity <span class="home-hero__title-accent">Corner</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-activities" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-activities">
+              <p class="home-hero__desc">Creative activities designed to help children draw, imagine, solve and explore.</p>
+            </div>
+          </div>
+          <div class="club-stage__content reveal reveal--delay">
+            <div class="club-grid club-grid--tiles" id="club-activities-grid" aria-label="Club activities"></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--club" href="#club-home"><span class="journey-card__icon is-loaded"><img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span><span class="journey-card__desc">Welcome to the Little Ollie Club.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--stories" href="#club-library"><span class="journey-card__icon is-loaded"><img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span><span class="journey-card__desc">Stories and books for family reading.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay-2"><a class="journey-card journey-card--labs" href="#club-activities"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span><span class="journey-card__desc">Colour, create, draw and imagine.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--adventure" href="#club-games"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span><span class="journey-card__desc">Playful learning and digital fun.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--school" href="#club-news"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span><span class="journey-card__desc">See what we are building next.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 5: Games -->
+    <div class="lo-stage lo-stage--club-games" id="club-games" data-stage="club-games">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img class="lo-stage__bg" data-club-bg="games" alt="" width="1600" height="1000" sizes="100vw" decoding="async" hidden />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add club-games-bg.jpg</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-games-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Play and Learn</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-games-heading">
+                Games and <span class="home-hero__title-accent">Learning</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-games" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-games">
+              <p class="home-hero__desc">Playful digital experiences that help children practise skills, solve problems and enjoy learning.</p>
+              <p class="home-hero__desc">The Games Room will continue growing as new Little Ollie Labs projects are created.</p>
+            </div>
+          </div>
+          <div class="club-stage__content reveal reveal--delay">
+            <div class="club-grid club-grid--games" id="club-games-grid" aria-label="Club games"></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--club" href="#club-home"><span class="journey-card__icon is-loaded"><img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span><span class="journey-card__desc">Welcome to the Little Ollie Club.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--stories" href="#club-library"><span class="journey-card__icon is-loaded"><img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span><span class="journey-card__desc">Stories and books for family reading.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay-2"><a class="journey-card journey-card--labs" href="#club-activities"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span><span class="journey-card__desc">Colour, create, draw and imagine.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--adventure" href="#club-games"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span><span class="journey-card__desc">Playful learning and digital fun.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--school" href="#club-news"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span><span class="journey-card__desc">See what we are building next.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 6: News -->
+    <div class="lo-stage lo-stage--club-news" id="club-news" data-stage="club-news">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img class="lo-stage__bg" data-club-bg="news" alt="" width="1600" height="1000" sizes="100vw" decoding="async" hidden />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add club-news-bg.jpg</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-news-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">From the Clubhouse</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-news-heading">
+                Clubhouse <span class="home-hero__title-accent">Updates</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-news" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-news">
+              <p class="home-hero__desc">Follow along as we build new stories, characters, games and creative experiences.</p>
+            </div>
+          </div>
+          <div class="club-stage__content reveal reveal--delay">
+            <div class="club-grid club-grid--updates" id="club-updates-grid" aria-label="Club updates"></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--club" href="#club-home"><span class="journey-card__icon is-loaded"><img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span><span class="journey-card__desc">Welcome to the Little Ollie Club.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--stories" href="#club-library"><span class="journey-card__icon is-loaded"><img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span><span class="journey-card__desc">Stories and books for family reading.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay-2"><a class="journey-card journey-card--labs" href="#club-activities"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span><span class="journey-card__desc">Colour, create, draw and imagine.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--adventure" href="#club-games"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span><span class="journey-card__desc">Playful learning and digital fun.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--school" href="#club-news"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span><span class="journey-card__desc">See what we are building next.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Stage 7: Membership, trust and CTA -->
+    <div class="lo-stage lo-stage--club-membership" id="club-membership" data-stage="club-membership">
+      <div class="lo-stage__world" aria-hidden="true">
+        <div class="lo-stage__frame">
+          <img class="lo-stage__bg" data-club-bg="membership" alt="" width="1600" height="1000" sizes="100vw" decoding="async" hidden />
+          <div class="lo-stage__placeholder" data-stage-placeholder>
+            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
+            <span class="lo-stage__placeholder-detail">Add club-membership-bg.jpg</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="lo-stage__panel" aria-labelledby="club-membership-heading">
+        <div class="home-container lo-stage__grid">
+          <div class="home-hero__copy reveal" data-copy-panel>
+            <p class="home-eyebrow">Looking Ahead</p>
+            <div class="home-hero__head">
+              <h2 class="home-hero__title" id="club-membership-heading">
+                A Club That Grows With <span class="home-hero__title-accent">Little Ollie</span>
+              </h2>
+              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-club-membership" aria-label="Show more about this section">
+                <span class="home-hero__expand-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="home-hero__body" id="copy-body-club-membership">
+              <p class="home-hero__desc">We are building the Little Ollie Club as a safe and welcoming place for children and families.</p>
+              <p class="home-hero__desc">Future members will be able to explore a growing library, creative activities, games, previews and special Little Ollie experiences.</p>
+            </div>
+          </div>
+          <div class="club-stage__content reveal reveal--delay">
+            <div class="club-membership-grid">
+              <article class="club-membership-card">
+                <h3>Family Membership</h3>
+                <p class="club-membership-card__subtitle">A simple membership for parents and families.</p>
+                <ul>
+                  <li>Access to the digital library</li>
+                  <li>Printable activities</li>
+                  <li>Selected games and learning tools</li>
+                  <li>New content as it is added</li>
+                  <li>Member news and previews</li>
+                  <li>Simple email-based account access</li>
+                </ul>
+                <button type="button" class="home-btn home-btn--secondary home-btn--soon" data-coming-soon="Family membership details will be shared when the Club opens.">
+                  Coming Later
+                </button>
+              </article>
+              <article class="club-membership-card club-membership-card--founder">
+                <h3>Founder Access</h3>
+                <p class="club-membership-card__subtitle">Special access for early supporters of the Little Ollie journey.</p>
+                <ul>
+                  <li>Long-term Club access</li>
+                  <li>Founder profile badge</li>
+                  <li>Behind-the-scenes previews</li>
+                  <li>Selected community participation</li>
+                  <li>Future Little Ollie digital collection access</li>
+                  <li>Additional founder surprises</li>
+                </ul>
+                <button type="button" class="home-btn home-btn--secondary home-btn--soon" data-coming-soon="Founder access details will be shared when the Club opens.">
+                  Details Coming Later
+                </button>
+              </article>
+            </div>
+            <p class="club-disclaimer">The final membership structure, access methods, benefits and pricing have not yet been confirmed.</p>
+
+            <div class="club-stage__subsection">
+              <h3 class="club-stage__subsection-title">Made With Families in Mind</h3>
+              <p>Little Ollie World is being created by a real family, with the goal of making positive, enjoyable and meaningful experiences for children.</p>
+              <div class="club-grid club-grid--trust" id="club-trust-grid" aria-label="Family trust points"></div>
+            </div>
+
+            <div class="club-cta__panel">
+              <h3 class="club-cta__title">The Clubhouse Doors Are Opening Soon</h3>
+              <p>We are building the first version of the Little Ollie Club right now. Explore the world, follow the journey and come back as new stories, activities and games are added.</p>
+              <div class="club-btn-row">
+                <a class="home-btn home-btn--primary" href="../index.html">Return to Little Ollie World</a>
+                <a class="home-btn home-btn--secondary" href="../index.html#labs">Explore Little Ollie Labs</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="journey-cards lo-stage__cards" aria-label="Explore the Club">
+        <div class="home-container journey-cards__inner">
+          <ul class="journey-cards__track">
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--club" href="#club-home"><span class="journey-card__icon is-loaded"><img src="../webpageassets/ollie.webp" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">★</span> Club Home</span><span class="journey-card__desc">Welcome to the Little Ollie Club.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--stories" href="#club-library"><span class="journey-card__icon is-loaded"><img src="../webpageassets/BookCover.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Library</span><span class="journey-card__desc">Stories and books for family reading.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay-2"><a class="journey-card journey-card--labs" href="#club-activities"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Creativity.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎨</span> Activities</span><span class="journey-card__desc">Colour, create, draw and imagine.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal"><a class="journey-card journey-card--adventure" href="#club-games"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Resilience.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">🎮</span> Games</span><span class="journey-card__desc">Playful learning and digital fun.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+            <li class="journey-cards__item reveal reveal--delay"><a class="journey-card journey-card--school" href="#club-news"><span class="journey-card__icon is-loaded"><img src="../webpageassets/Friendship.jpg" alt="" width="96" height="96" decoding="async" loading="lazy" /></span><span class="journey-card__text"><span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📣</span> Club News</span><span class="journey-card__desc">See what we are building next.</span></span><span class="journey-card__arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <footer class="home-footer" aria-label="Site footer">
+      <div class="home-footer__blend" aria-hidden="true"></div>
+      <div class="home-footer__stars" aria-hidden="true"></div>
+      <div class="home-footer__sparkles" aria-hidden="true"></div>
+      <div class="home-footer__hills" aria-hidden="true">
+        <div class="home-footer__trees"></div>
+      </div>
+
+      <div class="home-container home-footer__inner">
+        <div class="home-footer__brand">
+          <p class="home-footer__eyebrow">The adventure continues</p>
+          <img src="../webpageassets/logo-footer.webp" alt="Little Ollie World" class="home-footer__logo" width="180" height="54" decoding="async" />
+          <p class="home-footer__tagline">Where little ideas grow into big adventures.</p>
+          <p class="home-footer__credit">Made with imagination by a dad and his little mate.</p>
+        </div>
+
+        <div class="home-footer__links">
+          <div class="home-footer__col">
+            <p class="home-footer__col-title">Explore</p>
+            <nav class="home-footer__nav" aria-label="Explore">
+              <a href="../index.html#home">Home</a>
+              <a href="../index.html#family">Meet the Family</a>
+              <a href="../index.html#stories">Stories</a>
+              <a href="../index.html#book">Books</a>
+              <a href="#club-home">Little Ollie Club</a>
+            </nav>
+          </div>
+          <div class="home-footer__col">
+            <p class="home-footer__col-title">More</p>
+            <nav class="home-footer__nav" aria-label="More">
+              <a href="../index.html#labs">Little Ollie Labs</a>
+              <a href="../index.html#our-story">Our Story</a>
+              <a href="../index.html#journey">Our Journey</a>
+              <a href="mailto:littleollienft@gmail.com">Contact</a>
+            </nav>
+          </div>
+        </div>
+
+        <div class="home-footer__meta">
+          <div class="home-footer__social" aria-label="Social links">
+            <a class="home-footer__social-link" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <img src="../webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
+            </a>
+            <a class="home-footer__social-link" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <img src="../webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
+            </a>
+            <a class="home-footer__social-link" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+              <img src="../webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
+            </a>
+            <a class="home-footer__social-link" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer" aria-label="X">
+              <img src="../webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
+            </a>
+            <a class="home-footer__social-link" href="mailto:littleollienft@gmail.com" aria-label="Email">
+              <img src="../webpageassets/email.png" alt="" width="32" height="32" decoding="async" />
+            </a>
+          </div>
+          <div class="home-footer__legal">
+            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Privacy</a>
+            <span class="home-footer__dot" aria-hidden="true"></span>
+            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Terms</a>
+          </div>
+          <p class="home-footer__copy">&copy; <span id="footer-year"></span> Little Ollie Labs. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <div class="club-toast" id="club-toast" role="status" aria-live="polite" hidden></div>
+
+  <div class="club-book-preview" id="club-book-preview" hidden>
+    <div class="club-book-preview__backdrop" data-close-book-preview aria-hidden="true"></div>
+    <div class="club-book-preview__dialog" role="dialog" aria-modal="true" aria-labelledby="club-book-preview-title">
+      <button type="button" class="club-book-preview__close" data-close-book-preview aria-label="Close book preview">×</button>
+      <div class="club-book-preview__grid">
+        <div class="club-book-preview__cover-wrap">
+          <img src="../webpageassets/BookCover.jpg" alt="Cover of Little Ollie and the Spark Inside" width="420" height="420" decoding="async" />
+        </div>
+        <div class="club-book-preview__copy">
+          <span class="club-book-preview__badge">Available Now</span>
+          <h2 id="club-book-preview-title">Little Ollie: The Spark Inside</h2>
+          <div class="club-book-preview__story" id="club-book-preview-story"></div>
+          <div class="club-tags club-book-preview__tags" id="club-book-preview-tags" aria-label="Book features"></div>
+          <div class="club-btn-row">
+            <a class="home-btn home-btn--primary" id="club-open-book-link" href="library/the-spark-inside/">Open Book</a>
+            <a class="home-btn home-btn--ghost" id="club-preview-buy-book" data-buy-book href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N" rel="noopener noreferrer" target="_blank">Buy the Book</a>
+            <button type="button" class="home-btn home-btn--secondary" data-close-book-preview>Back to Library</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="club-content.js"></script>
+  <script src="club.js" defer></script>
+</body>
+</html>

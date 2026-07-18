@@ -5,7 +5,7 @@
 (function () {
   const TILE_GAP = 2;
   const TILE_RADIUS = 12;
-  const BOARD_BG = "#6DE0FF";
+  const BOARD_BG = "#6fd3f2";
 
   function shuffleStepsForSize(size) {
     switch (size) {
@@ -75,7 +75,7 @@
     if (timerId) return;
     timerId = setInterval(function () {
       elapsedSeconds++;
-      if (timerEl) timerEl.textContent = "⏱ TIME: " + formatTime(elapsedSeconds);
+      if (timerEl) timerEl.textContent = "Time: " + formatTime(elapsedSeconds);
     }, 1000);
   }
 
@@ -92,14 +92,40 @@
     return m + ":" + (s < 10 ? "0" : "") + s;
   }
 
-  /** Leaderboard display: "0:15s" or "—" (s wrapped so it stays lowercase under uppercase CSS) */
-  function formatTimeForLeaderboard(seconds) {
-    if (seconds == null || typeof seconds !== "number" || isNaN(seconds)) return "—";
-    return formatTime(seconds) + "<span class=\"leaderboard-sec-unit\">s</span>";
+  /** Leaderboard display: "0:15s" or "—" */
+  function renderLbRows(container, rows, emptyMessage) {
+    var ui = window.LabsLeaderboardUI;
+    if (ui && typeof ui.renderLeaderboardList === "function") {
+      ui.renderLeaderboardList(container, rows, {
+        mode: "time-moves",
+        emptyMessage: emptyMessage || "No scores yet. Complete a puzzle to add one.",
+        highlightTop3: true,
+      });
+      return;
+    }
+    if (!container) return;
+    container.innerHTML = "<p class=\"leaderboard-unavailable\">Leaderboard UI unavailable.</p>";
+  }
+
+  function getStoredLbName() {
+    var ui = window.LabsLeaderboardUI;
+    if (ui && typeof ui.getStoredPlayerName === "function") {
+      return ui.getStoredPlayerName(30);
+    }
+    return localStorage.getItem("lo_player_name") || "";
+  }
+
+  function saveLbName(name) {
+    var ui = window.LabsLeaderboardUI;
+    if (ui && typeof ui.setStoredPlayerName === "function") {
+      ui.setStoredPlayerName(name, 30);
+      return;
+    }
+    localStorage.setItem("lo_player_name", name);
   }
 
   function updateMoves() {
-    if (movesEl) movesEl.textContent = "🔄 MOVES: " + moves;
+    if (movesEl) movesEl.textContent = "Moves: " + moves;
   }
 
   function loadImage(src, callback) {
@@ -291,45 +317,25 @@
     leaderboardModal.classList.remove("hidden");
     if (sliderSubmitSection) sliderSubmitSection.classList.remove("hidden");
     if (sliderYourScoreEl)
-      sliderYourScoreEl.textContent = "YOUR TIME: " + formatTime(elapsedSeconds) + " • MOVES: " + moves;
+      sliderYourScoreEl.textContent = "Your time: " + formatTime(elapsedSeconds) + " • Moves: " + moves;
     if (sliderNameInput) {
-      sliderNameInput.value = localStorage.getItem("lo_player_name") || "";
+      sliderNameInput.value = getStoredLbName();
       sliderNameInput.disabled = false;
     }
     if (sliderSubmitBtn) {
       sliderSubmitBtn.disabled = false;
-      sliderSubmitBtn.textContent = "SUBMIT SCORE";
+      sliderSubmitBtn.textContent = "Submit score";
     }
     if (sliderPlayAgainBtn) sliderPlayAgainBtn.disabled = false;
     if (sliderSubmitMsg) sliderSubmitMsg.textContent = "";
     var diff = getDifficultyKey();
+    if (window.LabsLeaderboardUI) {
+      window.LabsLeaderboardUI.setDifficultyTabs(diff);
+    }
     try {
       if (typeof window.getLeaderboard === "function") {
         var list = await window.getLeaderboard(diff);
-        if (leaderboardList) {
-          leaderboardList.innerHTML = "";
-          list.forEach(function (score, i) {
-            var row = document.createElement("div");
-            var rankClass = "leaderboard-popup-row";
-            if (i === 0) rankClass += " rank-gold";
-            else if (i === 1) rankClass += " rank-silver";
-            else if (i === 2) rankClass += " rank-bronze";
-            row.className = rankClass;
-            var rankSpan = document.createElement("span");
-            rankSpan.className = "leaderboard-popup-rank";
-            rankSpan.textContent = "#" + (i + 1);
-            var nameSpan = document.createElement("span");
-            nameSpan.className = "leaderboard-popup-name";
-            nameSpan.textContent = score.playerName || "—";
-            var scoreSpan = document.createElement("span");
-            scoreSpan.className = "leaderboard-popup-score";
-            scoreSpan.innerHTML = formatTimeForLeaderboard(score.timeSeconds) + "<br><span class=\"leaderboard-popup-moves\">" + (score.moves != null ? score.moves + " moves" : "—") + "</span>";
-            row.appendChild(rankSpan);
-            row.appendChild(nameSpan);
-            row.appendChild(scoreSpan);
-            leaderboardList.appendChild(row);
-          });
-        }
+        renderLbRows(leaderboardList, list);
       }
     } catch (e) {}
     if (sliderNameInput) sliderNameInput.focus();
@@ -398,7 +404,7 @@
     stopTimer();
     elapsedSeconds = 0;
     moves = 0;
-    if (timerEl) timerEl.textContent = "⏱ TIME: 0:00";
+    if (timerEl) timerEl.textContent = "Time: 0:00";
     updateMoves();
     hideWin();
   }
@@ -430,8 +436,8 @@
     if (sliderSubmitMsg) sliderSubmitMsg.textContent = "Saving…";
     try {
       await window.submitScore(name, difficulty, timeSeconds, moveCount);
-      localStorage.setItem("lo_player_name", name);
-      if (sliderSubmitMsg) sliderSubmitMsg.textContent = "Score saved to leaderboard!";
+      saveLbName(name);
+      if (sliderSubmitMsg) sliderSubmitMsg.textContent = "Score saved on this device!";
     } catch (err) {
       hasSubmittedThisWin = false;
       if (sliderNameInput) sliderNameInput.disabled = false;
@@ -542,6 +548,9 @@
 
   async function loadLeaderboard(difficulty) {
     if (!leaderboardList) return;
+    if (window.LabsLeaderboardUI) {
+      window.LabsLeaderboardUI.setDifficultyTabs(difficulty);
+    }
     if (typeof window.getLeaderboard !== "function") {
       var msg = "Leaderboard unavailable. Open the page via a web server (http:// or https://), not as a file. Check the browser console (F12) for errors.";
       leaderboardList.innerHTML = "<p class=\"leaderboard-unavailable\">" + msg + "</p>";
@@ -549,28 +558,7 @@
     }
     try {
       const scores = await window.getLeaderboard(difficulty);
-      leaderboardList.innerHTML = "";
-      scores.forEach(function (score, i) {
-        const row = document.createElement("div");
-        let rankClass = "leaderboard-popup-row";
-        if (i === 0) rankClass += " rank-gold";
-        else if (i === 1) rankClass += " rank-silver";
-        else if (i === 2) rankClass += " rank-bronze";
-        row.className = rankClass;
-        const rankSpan = document.createElement("span");
-        rankSpan.className = "leaderboard-popup-rank";
-        rankSpan.textContent = "#" + (i + 1);
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "leaderboard-popup-name";
-        nameSpan.textContent = score.playerName || "—";
-        const scoreSpan = document.createElement("span");
-        scoreSpan.className = "leaderboard-popup-score";
-        scoreSpan.innerHTML = formatTimeForLeaderboard(score.timeSeconds) + "<br><span class=\"leaderboard-popup-moves\">" + (score.moves != null ? score.moves + " moves" : "—") + "</span>";
-        row.appendChild(rankSpan);
-        row.appendChild(nameSpan);
-        row.appendChild(scoreSpan);
-        leaderboardList.appendChild(row);
-      });
+      renderLbRows(leaderboardList, scores);
     } catch (err) {
       leaderboardList.innerHTML = "<p class=\"leaderboard-unavailable\">Could not load leaderboard.</p>";
     }
