@@ -2,7 +2,11 @@
  * Jigsaw Puzzle — drag rounded tiles from the tray onto the board.
  * Easy 3×3, Medium 4×4, Hard 6×6, Expert 8×8. Shared image pool with Memory Match.
  */
-import { labPuzzleImageSrc, pickRandomLabPuzzleImage } from "../../scripts/labs-puzzle-images.js";
+import {
+  labPuzzleImageSrc,
+  pickRandomLabPuzzleImage,
+  pickRandomLabPuzzleImageExcept,
+} from "../../scripts/labs-puzzle-images.js";
 
 const SNAP_RATIO = 0.42;
 const TRAY_PIECE_SCALE = 0.92;
@@ -23,6 +27,10 @@ const confettiCanvas = document.getElementById("jigsaw-confetti");
 const winOverlay = document.getElementById("jigsawWinOverlay");
 const winStatsEl = document.getElementById("jigsawWinStats");
 const winBestEl = document.getElementById("jigsawWinBest");
+const winLeaderboardList = document.getElementById("jigsawWinLeaderboard");
+const winNameInput = document.getElementById("jigsawWinNameInput");
+const winSubmitBtn = document.getElementById("jigsawWinSubmitBtn");
+const winSubmitMsg = document.getElementById("jigsawWinSubmitMsg");
 const winPlayAgainBtn = document.getElementById("jigsawPlayAgainBtn");
 
 const submitSection = document.getElementById("jigsawLeaderboardSubmitSection");
@@ -840,6 +848,61 @@ function launchConfetti() {
   tick();
 }
 
+function resetWinSubmitForm() {
+  hasSubmittedThisWin = false;
+  const stored = getStoredLbName();
+  if (winNameInput) {
+    winNameInput.value = stored;
+    winNameInput.disabled = false;
+  }
+  if (nameInput) {
+    nameInput.value = stored;
+    nameInput.disabled = false;
+  }
+  if (winSubmitBtn) {
+    winSubmitBtn.disabled = false;
+    winSubmitBtn.textContent = "Submit score";
+  }
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Submit score";
+  }
+  if (winSubmitMsg) winSubmitMsg.textContent = "";
+  if (submitMsg) submitMsg.textContent = "";
+}
+
+function getSubmitName() {
+  const winName = winNameInput && winNameInput.value.trim();
+  const lbName = nameInput && nameInput.value.trim();
+  return winName || lbName || "Player";
+}
+
+function setSubmitMessages(text) {
+  if (winSubmitMsg) winSubmitMsg.textContent = text;
+  if (submitMsg) submitMsg.textContent = text;
+}
+
+async function loadWinLeaderboard() {
+  if (!winLeaderboardList) return;
+  if (typeof window.getLeaderboard !== "function") {
+    winLeaderboardList.innerHTML =
+      "<p class=\"jigsaw-puzzle__win-lb-empty\">Scores saved on this device only.</p>";
+    return;
+  }
+  try {
+    const scores = await window.getLeaderboard(getDifficultyKey());
+    if (!scores || !scores.length) {
+      winLeaderboardList.innerHTML =
+        "<p class=\"jigsaw-puzzle__win-lb-empty\">No scores yet — be the first!</p>";
+      return;
+    }
+    renderLbRows(winLeaderboardList, scores.slice(0, 5));
+  } catch (_) {
+    winLeaderboardList.innerHTML =
+      "<p class=\"jigsaw-puzzle__win-lb-empty\">Could not load scores.</p>";
+  }
+}
+
 function hideWinOverlays() {
   if (winOverlay) {
     winOverlay.classList.add("hidden");
@@ -877,41 +940,53 @@ function onWin() {
   }
   if (winBestEl) winBestEl.textContent = formatBestLine(best);
 
+  resetWinSubmitForm();
+  loadWinLeaderboard();
+
   if (winOverlay) {
     winOverlay.classList.remove("hidden");
     winOverlay.setAttribute("aria-hidden", "false");
   }
 
   launchConfetti();
+  if (winNameInput) winNameInput.focus();
 }
 
 async function submitWinScore() {
   if (hasSubmittedThisWin) return;
-  const name = (nameInput && nameInput.value.trim()) || "Player";
+  const name = getSubmitName();
   if (typeof window.submitScore !== "function") {
-    if (submitMsg) {
-      submitMsg.textContent = window.leaderboardBridgeError
+    setSubmitMessages(
+      window.leaderboardBridgeError
         ? "Leaderboard script failed to load. Open via a web server and check the console (F12)."
-        : "Leaderboard unavailable. Open via http(s):// and check console (F12).";
-    }
+        : "Leaderboard unavailable. Open via http(s):// and check console (F12)."
+    );
     return;
   }
   const difficulty = getDifficultyKey();
   hasSubmittedThisWin = true;
+  if (winNameInput) winNameInput.disabled = true;
   if (nameInput) nameInput.disabled = true;
+  if (winSubmitBtn) winSubmitBtn.disabled = true;
   if (submitBtn) submitBtn.disabled = true;
-  if (lbPlayAgainBtn) lbPlayAgainBtn.disabled = true;
-  if (submitMsg) submitMsg.textContent = "Saving…";
+  setSubmitMessages("Saving…");
   try {
     await window.submitScore(name, difficulty, elapsedSeconds, moves);
     saveLbName(name);
-    if (submitMsg) submitMsg.textContent = "Score saved on this device!";
+    if (winNameInput) winNameInput.value = name;
+    if (nameInput) nameInput.value = name;
+    setSubmitMessages("Score saved on this device!");
+    if (winBestEl) {
+      winBestEl.textContent = formatBestLine(readPersonalBest(difficulty));
+    }
+    await loadWinLeaderboard();
   } catch (_) {
     hasSubmittedThisWin = false;
+    if (winNameInput) winNameInput.disabled = false;
     if (nameInput) nameInput.disabled = false;
+    if (winSubmitBtn) winSubmitBtn.disabled = false;
     if (submitBtn) submitBtn.disabled = false;
-    if (lbPlayAgainBtn) lbPlayAgainBtn.disabled = false;
-    if (submitMsg) submitMsg.textContent = "Could not save score. Try again.";
+    setSubmitMessages("Could not save score. Try again.");
   }
 }
 
@@ -934,12 +1009,27 @@ async function loadLeaderboard(difficulty) {
   }
 }
 
+function beginPlayAgainPuzzle() {
+  startPuzzle();
+  scrambleToTray();
+}
+
 function playAgain() {
   hideWinOverlays();
   isUploadedImage = false;
-  currentImageName = pickRandomLabPuzzleImage();
+  currentImageName = pickRandomLabPuzzleImageExcept(currentImageName);
   imageSrc = labPuzzleImageSrc(currentImageName);
-  runWithImage();
+  preloadImage(getImageUrl(), function (err) {
+    if (err) {
+      currentImageName = pickRandomLabPuzzleImageExcept(currentImageName);
+      imageSrc = labPuzzleImageSrc(currentImageName);
+      preloadImage(imageSrc, function (err2) {
+        if (!err2) beginPlayAgainPuzzle();
+      });
+      return;
+    }
+    beginPlayAgainPuzzle();
+  });
 }
 
 if (btnStart) {
@@ -960,7 +1050,7 @@ if (btnNewImage) {
   btnNewImage.addEventListener("click", function () {
     if (dragState || isScrambling) return;
     isUploadedImage = false;
-    currentImageName = pickRandomLabPuzzleImage();
+    currentImageName = pickRandomLabPuzzleImageExcept(currentImageName);
     imageSrc = labPuzzleImageSrc(currentImageName);
     runWithImage();
   });
@@ -1011,6 +1101,15 @@ document.querySelectorAll(".leaderboard-tabs button").forEach(function (btn) {
 });
 
 if (submitBtn) submitBtn.addEventListener("click", submitWinScore);
+if (winSubmitBtn) winSubmitBtn.addEventListener("click", submitWinScore);
+if (winNameInput && nameInput) {
+  winNameInput.addEventListener("input", function () {
+    nameInput.value = winNameInput.value;
+  });
+  nameInput.addEventListener("input", function () {
+    winNameInput.value = nameInput.value;
+  });
+}
 if (lbPlayAgainBtn) lbPlayAgainBtn.addEventListener("click", playAgain);
 if (winPlayAgainBtn) winPlayAgainBtn.addEventListener("click", playAgain);
 

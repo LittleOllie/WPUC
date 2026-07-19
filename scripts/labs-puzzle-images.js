@@ -21,6 +21,20 @@ export function pickRandomLabPuzzleImage() {
   return names[Math.floor(Math.random() * names.length)];
 }
 
+export function pickRandomLabPuzzleImageExcept(excludeName) {
+  const names = labPuzzleImageNames();
+  if (!names.length) return "51";
+  if (names.length === 1) return names[0];
+  const exclude = String(excludeName || "");
+  let pick = pickRandomLabPuzzleImage();
+  let attempts = 0;
+  while (pick === exclude && attempts < 16) {
+    pick = pickRandomLabPuzzleImage();
+    attempts += 1;
+  }
+  return pick;
+}
+
 if (typeof window !== "undefined") {
   window.LabPuzzleImages = {
     COUNT: LAB_PUZZLE_IMAGE_COUNT,
@@ -29,5 +43,6 @@ if (typeof window !== "undefined") {
     names: labPuzzleImageNames,
     src: labPuzzleImageSrc,
     pickRandom: pickRandomLabPuzzleImage,
+    pickRandomExcept: pickRandomLabPuzzleImageExcept,
   };
 }
