@@ -21,6 +21,18 @@ export const LABS_PLAYGROUND_GAMES = [
     path: "games/memory-match/index.html",
   },
   {
+    id: "jigsaw",
+    title: "Jigsaw Puzzle",
+    match: /(?:^|\/)games\/jigsaw-puzzle(?:\/index\.html)?\/?$/i,
+    path: "games/jigsaw-puzzle/index.html",
+  },
+  {
+    id: "ttt",
+    title: "X & O",
+    match: /(?:^|\/)games\/tic-tac-toe(?:\/index\.html)?\/?$/i,
+    path: "games/tic-tac-toe/index.html",
+  },
+  {
     id: "ddg",
     title: "DDG Frappy Brew",
     match: /(?:^|\/)ddg(?:\/index\.html)?\/?$/i,

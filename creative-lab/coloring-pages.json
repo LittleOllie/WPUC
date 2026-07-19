@@ -56,6 +56,20 @@
       "file": "pages/coloring-page-7.jpg",
       "thumb": "pages/coloring-page-7.jpg",
       "downloadName": "little-ollie-coloring-page-7.jpg"
+    },
+    {
+      "title": "Little Ollie Coloring Page 8",
+      "description": "A new printable scene — grab your markers and make it yours.",
+      "file": "pages/coloring-page-8.png",
+      "thumb": "pages/coloring-page-8.png",
+      "downloadName": "little-ollie-coloring-page-8.png"
+    },
+    {
+      "title": "Little Ollie Coloring Page 9",
+      "description": "Another free printable — perfect for a creative afternoon at home.",
+      "file": "pages/coloring-page-9.png",
+      "thumb": "pages/coloring-page-9.png",
+      "downloadName": "little-ollie-coloring-page-9.png"
     }
   ]
 }

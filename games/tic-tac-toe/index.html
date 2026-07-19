@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>X &amp; O | Little Ollie Games Lab</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="description" content="Play X and O with a friend or challenge Little Ollie in this cosy tic-tac-toe game." />
+  <meta name="theme-color" content="#6fd3f2" />
+  <link rel="icon" href="../../flexgrid/site/src/assets/images/LO.png" type="image/png" sizes="any" />
+  <link rel="shortcut icon" href="../../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../../flexgrid/site/src/assets/images/LO.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/lo-playground.css" />
+  <link rel="stylesheet" href="../../home.css" />
+  <link rel="stylesheet" href="../../styles/labs-nav.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-stage.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-header.css" />
+  <link rel="stylesheet" href="../../styles/labs-game-switcher.css" />
+  <link rel="stylesheet" href="tic-tac-toe.css" />
+</head>
+<body class="lo-playground tic-tac-toe-page">
+  <div class="lo-playground__world" aria-hidden="true">
+    <img
+      class="lo-playground__bg"
+      src="../../webpageassets/labplayground.jpg"
+      alt=""
+      width="1535"
+      height="1024"
+      decoding="async"
+      fetchpriority="high"
+    />
+    <div class="lo-playground__dim"></div>
+  </div>
+
+  <main id="tic-tac-toe-main" class="lo-playground__content">
+    <div class="lo-playground__shell tic-tac-toe__shell labs-game-shell">
+      <div class="lo-playground__brand">
+        <a href="../../index.html#labs" aria-label="Little Ollie World Labs">
+          <img
+            src="../../webpageassets/logo-nav.webp"
+            class="lo-playground__logo"
+            alt="Little Ollie"
+            width="220"
+            height="64"
+            decoding="async"
+          />
+        </a>
+      </div>
+
+      <div class="lo-playground__card tic-tac-toe__card-shell labs-game-card">
+        <header class="labs-game-head">
+          <p class="lo-playground__eyebrow">Games Lab</p>
+          <h1 class="lo-playground__title labs-game-head__title">
+            X &amp; <span class="lo-playground__title-accent">O</span>
+          </h1>
+          <p class="lo-playground__lead labs-game-head__lead tic-tac-toe__lead">Three in a row wins — play a friend or take on Little Ollie.</p>
+        </header>
+
+        <div class="tic-tac-toe__toolbar">
+          <div class="tic-tac-toe__controls">
+            <div class="tic-tac-toe__mode">
+              <label for="mode-select">Mode</label>
+              <select id="mode-select" class="tic-tac-toe__select" aria-label="Game mode">
+                <option value="cpu" selected>Vs Little Ollie</option>
+                <option value="friend">Two players</option>
+              </select>
+            </div>
+            <div class="tic-tac-toe__mode" id="difficulty-wrap">
+              <label for="difficulty-select">Level</label>
+              <select id="difficulty-select" class="tic-tac-toe__select" aria-label="Difficulty level">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+          <p id="status-display" class="tic-tac-toe__status" aria-live="polite">Your turn — you are X</p>
+        </div>
+
+        <div class="labs-game-card__stage-grow">
+          <div class="tic-tac-toe__board-wrap labs-game-slot">
+            <div class="tic-tac-toe__stage labs-game-stage">
+              <div class="tic-tac-toe__board-inner">
+                <svg id="ttt-win-line" class="tic-tac-toe__win-line" aria-hidden="true" focusable="false"></svg>
+                <div id="ttt-grid" class="tic-tac-toe__grid" role="grid" aria-label="Tic-tac-toe board"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tic-tac-toe__score" aria-live="polite">
+          <span id="score-x" class="tic-tac-toe__score-pill tic-tac-toe__score-pill--x">X: 0</span>
+          <span id="score-draw" class="tic-tac-toe__score-pill">Draws: 0</span>
+          <span id="score-o" class="tic-tac-toe__score-pill tic-tac-toe__score-pill--o">O: 0</span>
+        </div>
+
+        <div class="tic-tac-toe__actions">
+          <button type="button" id="btn-new-game" class="home-btn tic-tac-toe-btn tic-tac-toe-btn--yellow">New game</button>
+          <button type="button" id="btn-reset-scores" class="home-btn tic-tac-toe-btn tic-tac-toe-btn--blue">Reset scores</button>
+          <a href="../../links/" class="labs-back-to-hub labs-back-to-hub--block labs-back-to-hub--green">← Back to Games Lab</a>
+        </div>
+      </div>
+
+      <p class="lo-playground__foot">Little Ollie Labs • The Playground</p>
+    </div>
+  </main>
+
+  <script type="module" src="../../scripts/labs-game-switcher.js"></script>
+  <script defer src="tic-tac-toe.js"></script>
+</body>
+</html>

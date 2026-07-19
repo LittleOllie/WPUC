@@ -14,8 +14,10 @@
       default: return 180;
     }
   }
-  /* PNGs live in ../../assets/ as 51.png … 100.png */
-  const PUZZLE_IMAGE_NAMES = Array.from({ length: 50 }, (_, i) => String(i + 51));
+  const PUZZLE_IMAGE_NAMES =
+    window.LabPuzzleImages && typeof window.LabPuzzleImages.names === "function"
+      ? window.LabPuzzleImages.names()
+      : Array.from({ length: 50 }, (_, i) => String(i + 51));
 
   const canvas = document.getElementById("puzzle-canvas");
   const boardWrap = document.getElementById("puzzle-board-wrap");

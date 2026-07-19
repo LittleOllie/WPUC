@@ -3,7 +3,10 @@
  * Easy 6 pairs, Medium 8 pairs, Hard 12 pairs. Leaderboard: time then moves.
  */
 (function () {
-  const PUZZLE_IMAGE_NAMES = Array.from({ length: 50 }, (_, i) => String(i + 51));
+  const PUZZLE_IMAGE_NAMES =
+    window.LabPuzzleImages && typeof window.LabPuzzleImages.names === "function"
+      ? window.LabPuzzleImages.names()
+      : Array.from({ length: 50 }, (_, i) => String(i + 51));
   const ASSET_BASE = "../../assets/";
   const CARD_BACK_SRC = "../../webpageassets/memorymatch.png";
 

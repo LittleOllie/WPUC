@@ -1,0 +1,364 @@
+/**
+ * X & O — Games Lab styling
+ */
+
+.tic-tac-toe-page {
+  --lo-blue: #6fd3f2;
+  --lo-deep-blue: #17345f;
+  --lo-navy: #0d2142;
+  --lo-yellow: #ffd84d;
+  --lo-cream: #fffaf0;
+  --lo-green: #8fd36c;
+  --lo-text: #16304f;
+  --lo-white: #ffffff;
+  --lo-btn-primary-bg: linear-gradient(180deg, #ffe57a 0%, var(--lo-yellow) 55%, #f5c83a 100%);
+  --lo-btn-primary-border: 2.5px solid rgba(13, 33, 66, 0.18);
+  --lo-btn-primary-color: var(--lo-navy);
+  --lo-btn-primary-shadow: 0 5px 0 rgba(196, 140, 20, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+  --lo-btn-primary-shadow-hover: 0 7px 0 rgba(196, 140, 20, 0.45), 0 12px 22px rgba(17, 52, 89, 0.16);
+  --labs-stage-aspect: unset;
+  --labs-game-card-min-h: auto;
+}
+
+.tic-tac-toe-page .labs-game-card {
+  min-height: auto;
+  gap: 0.65rem;
+}
+
+.tic-tac-toe-page .labs-game-head {
+  min-height: auto;
+  margin-bottom: 0;
+}
+
+.tic-tac-toe-page .tic-tac-toe__lead {
+  max-width: none;
+  white-space: nowrap;
+  font-size: clamp(0.58rem, 2.55vw, 0.92rem);
+  line-height: 1.2;
+  margin-top: 0.35rem;
+}
+
+.tic-tac-toe-page .labs-game-card__stage-grow {
+  flex: 0 0 auto;
+}
+
+.tic-tac-toe-page *,
+.tic-tac-toe-page *::before,
+.tic-tac-toe-page *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tic-tac-toe__shell {
+  width: min(520px, 100%);
+}
+
+.tic-tac-toe__board-wrap {
+  width: 100%;
+}
+
+.tic-tac-toe-page .tic-tac-toe__stage.labs-game-stage {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+  padding: 0.4rem;
+  box-sizing: border-box;
+  overflow: visible;
+  aspect-ratio: unset;
+  height: auto;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 250, 240, 0.45) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 10px 28px rgba(17, 52, 89, 0.14);
+}
+
+.tic-tac-toe__board-inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  z-index: 1;
+  isolation: isolate;
+}
+
+.tic-tac-toe__board-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: url("../../webpageassets/LO.png") center center / contain no-repeat;
+  opacity: 0.52;
+  filter: brightness(1.12);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tic-tac-toe__win-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.tic-tac-toe__win-line line {
+  stroke: var(--lo-yellow);
+  stroke-width: 7;
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 0 rgba(196, 140, 20, 0.55));
+}
+
+.tic-tac-toe__toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.tic-tac-toe__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.tic-tac-toe__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tic-tac-toe-page #difficulty-wrap.is-hidden {
+  display: none;
+}
+
+.tic-tac-toe__mode label {
+  font-family: var(--lo-font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--lo-deep-blue);
+  white-space: nowrap;
+}
+
+.tic-tac-toe__select {
+  min-height: 38px;
+  padding: 0.3rem 0.65rem;
+  border-radius: 12px;
+  border: 2px solid rgba(13, 33, 66, 0.22);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--lo-text);
+  font-family: var(--lo-font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  max-width: 11rem;
+}
+
+.tic-tac-toe__select:focus-visible {
+  outline: 2px solid var(--lo-deep-blue);
+  outline-offset: 2px;
+}
+
+.tic-tac-toe__status {
+  margin: 0;
+  text-align: center;
+  font-family: var(--lo-font-display);
+  font-size: clamp(0.82rem, 2.4vw, 0.95rem);
+  font-weight: 700;
+  color: var(--lo-deep-blue);
+  min-height: 1.25rem;
+}
+
+.tic-tac-toe__grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.tic-tac-toe__cell {
+  appearance: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  border: 2.5px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 3px 0 rgba(17, 52, 89, 0.07);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: var(--lo-font-display);
+  font-size: clamp(2.85rem, 18vw, 4.35rem);
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.tic-tac-toe__cell:not(:disabled):hover,
+.tic-tac-toe__cell:not(:disabled):focus-visible {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 5px 0 rgba(17, 52, 89, 0.1),
+    0 0 0 3px rgba(111, 211, 242, 0.45);
+  outline: none;
+}
+
+.tic-tac-toe__cell:disabled {
+  cursor: default;
+}
+
+.tic-tac-toe__cell--x {
+  color: var(--lo-yellow);
+  text-shadow:
+    0 0 12px rgba(255, 255, 255, 0.95),
+    0 3px 0 rgba(196, 140, 20, 0.45),
+    0 3px 8px rgba(17, 52, 89, 0.28);
+}
+
+.tic-tac-toe__cell--o {
+  color: #2f8fe8;
+  text-shadow:
+    0 0 12px rgba(255, 255, 255, 0.95),
+    0 3px 0 rgba(35, 105, 160, 0.4),
+    0 3px 8px rgba(17, 52, 89, 0.28);
+}
+
+.tic-tac-toe__cell--win {
+  background: rgba(255, 216, 77, 0.48);
+  border-color: rgba(196, 140, 20, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 4px 0 rgba(196, 140, 20, 0.28),
+    0 0 0 3px rgba(255, 216, 77, 0.35);
+  animation: ttt-win-pop 0.45s ease;
+}
+
+@keyframes ttt-win-pop {
+  0% { transform: scale(0.92); }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.tic-tac-toe__score {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.tic-tac-toe__score-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(13, 33, 66, 0.1);
+  font-family: var(--lo-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lo-deep-blue);
+}
+
+.tic-tac-toe__score-pill--x {
+  border-color: rgba(255, 216, 77, 0.55);
+  color: #c8960a;
+}
+
+.tic-tac-toe__score-pill--o {
+  border-color: rgba(47, 143, 232, 0.45);
+  color: #2f8fe8;
+}
+
+.tic-tac-toe__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.15rem;
+}
+
+.tic-tac-toe__actions .home-btn {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.tic-tac-toe-btn {
+  border: 2.5px solid rgba(13, 33, 66, 0.16);
+  font-family: var(--lo-font-display);
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tic-tac-toe-btn:hover,
+.tic-tac-toe-btn:focus-visible {
+  transform: translateY(-3px) scale(1.02);
+  outline: 2px solid var(--lo-deep-blue);
+  outline-offset: 3px;
+}
+
+.tic-tac-toe-btn--yellow {
+  background: var(--lo-btn-primary-bg);
+  color: var(--lo-btn-primary-color);
+  box-shadow: var(--lo-btn-primary-shadow);
+}
+
+.tic-tac-toe-btn--yellow:hover,
+.tic-tac-toe-btn--yellow:focus-visible {
+  box-shadow:
+    var(--lo-btn-primary-shadow-hover),
+    0 0 0 4px rgba(255, 216, 77, 0.35);
+}
+
+.tic-tac-toe-btn--blue {
+  background: linear-gradient(160deg, #7ec8ff 0%, #4aa8e8 55%, #3d92d4 100%);
+  color: #fff;
+  box-shadow: 0 5px 0 rgba(35, 105, 160, 0.45), 0 8px 16px rgba(17, 52, 89, 0.12);
+}
+
+.tic-tac-toe__actions .labs-back-to-hub--block {
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(23, 52, 95, 0.1);
+}
+
+@media (max-width: 480px) {
+  .tic-tac-toe-page .tic-tac-toe__stage.labs-game-stage {
+    padding: 0.35rem;
+  }
+
+  .tic-tac-toe__grid {
+    gap: 0.38rem;
+  }
+
+  .tic-tac-toe__cell {
+    border-radius: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tic-tac-toe__cell,
+  .tic-tac-toe__cell--win {
+    animation: none;
+    transition: none;
+  }
+}
