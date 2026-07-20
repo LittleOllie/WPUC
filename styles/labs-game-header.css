@@ -8,7 +8,6 @@
   text-align: center;
   flex-shrink: 0;
   min-height: clamp(5.25rem, 17vw, 6.5rem);
-  padding-right: min(148px, 40vw);
 }
 
 .labs-game-head .lo-playground__eyebrow {
@@ -18,8 +17,9 @@
 .labs-game-head .lo-playground__title,
 .labs-game-head__title {
   margin: 0;
-  font-size: clamp(1.85rem, 5.5vw, 2.35rem);
+  font-size: clamp(1.55rem, 4.8vw, 2.35rem);
   line-height: 1.08;
+  white-space: nowrap;
 }
 
 .labs-game-head .lo-playground__lead,
@@ -31,7 +31,11 @@
 
 @media (max-width: 480px) {
   .labs-game-head {
-    padding-right: min(120px, 36vw);
     min-height: clamp(4.85rem, 22vw, 5.75rem);
+  }
+
+  .labs-game-head .lo-playground__title,
+  .labs-game-head__title {
+    font-size: clamp(1.45rem, 4.6vw, 2.1rem);
   }
 }

@@ -6,6 +6,11 @@
   position: relative;
 }
 
+/* Reserve a fixed band for the switcher so the title row never jumps */
+.labs-game-shell .lo-playground__card.labs-game-card {
+  padding-top: clamp(2.55rem, 7vw, 3rem);
+}
+
 .labs-game-switcher {
   position: absolute;
   top: clamp(0.6rem, 2vw, 1rem);
