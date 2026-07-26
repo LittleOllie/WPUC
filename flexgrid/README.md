@@ -1,64 +1,54 @@
 # Flex Grid — Little Ollie NFT Grid Builder
 
-Build beautiful NFT collages from one or multiple crypto wallets and export as PNG.
+Build shareable NFT collages from one or more wallets. Export PNG, GIF, or MP4.
 
-## What This App Does
-
-- Load NFTs from wallet addresses via Alchemy
-- Group by collection and select which to include
-- Build a customizable grid (3×3 to 10×10 or custom)
-- Export as PNG with white background and watermark
-
-## Run Locally
+## Quick start
 
 ```bash
-# From project root
-python -m http.server 8000
-# Or: npx serve .
+cd flexgrid
+npm install
+cp .dev.vars.example .dev.vars   # add API keys locally (never commit)
+npm run build                   # bundle frontend → site/dist/app.js
+npm run dev                     # Wrangler dev (Worker + static site)
 ```
 
-Then open http://localhost:8000/flexgrid/site/ (or use `npx wrangler dev` from the `flexgrid/` folder — app lives in `site/`)
+Open the URL Wrangler prints (typically `http://127.0.0.1:8787`).
 
-## Config
+## Scripts
 
-Configuration lives in `src/js/config.js`:
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Local Worker + static assets |
+| `npm run build` | Minified ESM bundle to `site/dist/app.js` |
+| `npm run build:images` | Generate WebP variants of large PNGs |
+| `npm run test` | Vitest unit tests |
+| `npm run check` | Build + tests |
+| `npm run deploy` | Build then `wrangler deploy` |
 
-- **Development:** `FRONTEND_CONFIG.enabled = true` uses the local API key (for testing only).
-- **Production:** Use a backend endpoint or Cloudflare Worker to serve config securely. See `docs/FLEX_GRID_SETUP.md`.
+## Documentation
 
-## Project Structure
+- [docs/FLEX_GRID_SETUP.md](docs/FLEX_GRID_SETUP.md) — install, secrets, deploy
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, Worker, caches
+- [docs/SECURITY.md](docs/SECURITY.md) — secrets, rate limits, CSP
+- [docs/TESTING.md](docs/TESTING.md) — automated and manual test matrix
 
-```
-├── index.html              # Redirects into site/ (for simple static servers)
-├── site/                   # Static assets served by Wrangler + browser entry
-│   ├── index.html
-│   ├── vendor/             # GIF libs (same-origin)
-│   └── src/
-│       ├── js/             # app.js, api.js, config.js, …
-│       ├── styles/
-│       └── assets/images/
-├── worker.js               # Cloudflare Worker (Alchemy + /img)
+## Structure
+
+```text
+flexgrid/
+├── worker.js              # Production Cloudflare Worker
+├── worker/rateLimit.js    # In-Worker abuse protection
 ├── wrangler.jsonc
-├── docs/
-└── README.md
+├── site/                  # Static UI (Wrangler assets)
+│   ├── index.html
+│   ├── dist/app.js        # Production bundle (generated)
+│   └── src/js/            # Source modules
+└── tests/
 ```
 
-## Deployment
+## Supported chains
 
-1. Deploy the Worker first (from project root):
-   ```bash
-   npx wrangler deploy
-   npx wrangler secret put ALCHEMY_API_KEY   # Paste your Alchemy API key when prompted
-   ```
-2. Deploy the frontend to any static host (GitHub Pages, Netlify, Vercel, etc.).
-3. Ensure `index.html` is served at the root.
-4. CSP in `index.html` allows required external domains.
-
-## Docs
-
-- `docs/FLEX_GRID_SETUP.md` — Setup and config
-- `docs/WATERMARK_SYSTEM.md` — Watermark behavior
-- Other docs in `docs/` for worker, Alchemy, etc.
+Ethereum, Base, ApeChain, Polygon (contract-scoped), Solana (beta), Custom image upload.
 
 ---
 

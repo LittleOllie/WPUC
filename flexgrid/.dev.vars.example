@@ -1,10 +1,18 @@
-# Wrangler does NOT load this filename. Copy to `.dev.vars` in this folder:
-#   cp .dev.vars.example .dev.vars
-# Then run: npm run dev
-#
-# FlexGrid / image proxy / NFT routes:
-ALCHEMY_API_KEY=your_alchemy_key
-# MORALIS_API_KEY=
-# HELIUS_API_KEY=
-#
-# Collection Overlap API lives in a separate Worker: ../collection-overlap-api/
+# Wrangler local secrets — copy to `.dev.vars` (never commit)
+
+# Required for ETH / Base / Polygon NFT routes:
+ALCHEMY_API_KEY=your_alchemy_key_here
+
+# Required for ApeChain (primary provider):
+# MORALIS_API_KEY=your_moralis_key_here
+
+# Required for Solana beta:
+# HELIUS_API_KEY=your_helius_key_here
+
+# Optional ApeChain Alchemy fallback:
+# ALCHEMY_API_KEY_APECHAIN=your_apechain_alchemy_key_here
+
+# Optional rate-limit tuning (production Worker env):
+# RATE_LIMIT_API_MAX=90
+# RATE_LIMIT_IMG_MAX=240
+# RATE_LIMIT_WINDOW_MS=60000

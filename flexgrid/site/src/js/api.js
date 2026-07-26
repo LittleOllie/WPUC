@@ -485,58 +485,6 @@ export async function fetchNFTsInBatches(opts = {}) {
   return run;
 }
 
-export async function fetchNFTsFromZora({ wallet, contractAddress }) {
-  const query = `query($owner: String!, $contract: String!, $after: String) {
-    tokens(
-      networks: [{network: ETHEREUM, chain: MAINNET}]
-      pagination: {limit: 100, after: $after}
-      where: {ownerAddresses: [$owner], collectionAddresses: [$contract]}
-    ) {
-      nodes {
-        token {
-          collectionAddress
-          tokenId
-          name
-          image { url }
-        }
-      }
-      pageInfo { hasNextPage endCursor }
-    }
-  }`;
-  const all = [];
-  let after = null;
-  for (let page = 0; page < 25; page++) {
-    const res = await fetch("https://api.zora.co/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query,
-        variables: { owner: wallet, contract: contractAddress, after },
-      }),
-    });
-    if (!res.ok) break;
-    const json = await res.json().catch(() => ({}));
-    const nodes = json?.data?.tokens?.nodes ?? [];
-    for (const n of nodes) {
-      const t = n?.token;
-      if (!t?.tokenId) continue;
-      const img = t?.image;
-      const imgUrl = typeof img === "object" && img ? img?.url : null;
-      all.push({
-        contract: { address: (t.collectionAddress || contractAddress).toLowerCase(), name: "" },
-        contractAddress: (t.collectionAddress || contractAddress).toLowerCase(),
-        tokenId: String(t.tokenId),
-        name: t?.name || `#${t.tokenId}`,
-        image: imgUrl ? { cachedUrl: imgUrl, originalUrl: imgUrl } : null,
-      });
-    }
-    const hasNext = json?.data?.tokens?.pageInfo?.hasNextPage;
-    if (!hasNext) break;
-    after = json?.data?.tokens?.pageInfo?.endCursor;
-  }
-  return all;
-}
-
 /**
  * Contract-level collection image via Worker (Alchemy for ETH/Base/Polygon; Moralis for ApeChain).
  * Returns { rawLogoUrl: string | null, contractName?: string | null, error?: string }.

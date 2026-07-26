@@ -47,12 +47,12 @@
   connect-src
     'self'
     http://localhost:3000
-    https://api.zora.co
+    http://127.0.0.1:8787
     https://loflexgrid.littleollienft.workers.dev;
 ">
 
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Little Ollie Flex Grid</title>
 
   <!-- Favicon & app icons -->
@@ -66,6 +66,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FlexGrid">
 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="src/styles/style.css">
   <!-- Inline styles removed - see src/styles/style.css -->
@@ -76,7 +78,7 @@
   <div id="disclaimerOverlay" class="disclaimer-overlay" aria-hidden="false">
     <div class="disclaimer-modal">
       <a href="https://littleollielabs.com/links/" class="disclaimer-back-link">← BACK TO LINKS</a>
-      <img src="src/assets/images/header.png" class="disclaimer-header" alt="Little Ollie" />
+      <img src="src/assets/images/header.webp" class="disclaimer-header" alt="Little Ollie" width="640" height="200" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='src/assets/images/header.png';" />
       <div class="disclaimer-content">
         <h2 class="disclaimer-title">👋 Welcome to Little Ollie Flex Grid!</h2>
         <p class="disclaimer-text">Unfortunately, not all collections work 100% yet — we're actively looking into compatibility. Please reach out with any issues so we can keep improving this for everyone!</p>
@@ -89,26 +91,7 @@
       </div>
     </div>
   </div>
-  <script>
-    (function(){
-      var overlay = document.getElementById("disclaimerOverlay");
-      var btn = document.getElementById("disclaimerContinue");
-      function dismissDisclaimer() {
-        if (!overlay) return;
-        overlay.classList.add("hidden");
-        overlay.setAttribute("aria-hidden", "true");
-      }
-      if (btn && overlay) {
-        btn.addEventListener("click", dismissDisclaimer);
-      }
-      /* Tap dimmed area outside the modal — same as Continue (overlay was blocking chain buttons). */
-      if (overlay) {
-        overlay.addEventListener("click", function (e) {
-          if (e.target === overlay) dismissDisclaimer();
-        });
-      }
-    })();
-  </script>
+
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-overlay-inner" aria-busy="true">
       <div class="loading-overlay-orbit">
@@ -132,12 +115,12 @@
   <div class="wrap container">
 
     <div class="heroHeader heroHeaderStack" aria-label="Little Ollie FlexGrid">
-      <img src="src/assets/images/dad.png" class="heroHeaderSide heroHeaderSide--left" alt="Dad" loading="eager" decoding="async" />
+      <img src="src/assets/images/dad.webp" class="heroHeaderSide heroHeaderSide--left" alt="Dad" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='src/assets/images/dad.png';" />
       <div class="heroHeaderCenter">
-        <img src="src/assets/images/lo1.png" class="heroHeaderLo" alt="Little Ollie" loading="eager" decoding="async" />
-        <img src="src/assets/images/FG.png" class="heroHeaderFg" alt="Flex Grid" loading="eager" decoding="async" />
+        <img src="src/assets/images/lo1.webp" class="heroHeaderLo" alt="Little Ollie" loading="eager" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='src/assets/images/lo1.png';" />
+        <img src="src/assets/images/FG.webp" class="heroHeaderFg" alt="Flex Grid" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='src/assets/images/FG.png';" />
       </div>
-      <img src="src/assets/images/LO.png" class="heroHeaderSide heroHeaderSide--right" alt="Little Ollie character" loading="eager" decoding="async" />
+      <img src="src/assets/images/LO.webp" class="heroHeaderSide heroHeaderSide--right" alt="Little Ollie character" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='src/assets/images/LO.png';" />
     </div>
     <p class="heroTagline">Your NFTs. One Grid. Multi-Chain.</p>
 
@@ -179,33 +162,9 @@
               <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false">Polygon</button>
               <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false">Solana (Beta)</button>
-              <button type="button" class="flexgrid-chain-btn flexgrid-chain-btn--custom" data-chain="custom" aria-pressed="false">Custom Grid</button>
             </div>
 
             <button id="chainNextBtn" class="btn walletFlowLoadBtn" type="button" disabled>Next</button>
-          </div>
-        </div>
-      </div>
-    </section>
-    </div>
-
-    <!-- STEP 2 (custom): Upload images from device -->
-    <div id="screen-custom" class="screen" style="display:none;">
-    <section class="panel" id="customPanel">
-      <div class="walletSection" style="margin-top:0;">
-        <div class="walletSectionContent">
-          <div class="walletFlowStack">
-            <h2 class="walletFlowTitle">Custom Grid</h2>
-            <p class="customGridIntro">Upload photos from your computer or phone — no wallet needed. Pick as many as you like, then build your grid.</p>
-
-            <div class="customImagesToolbar">
-              <button id="customGridChooseBtn" class="btn guideGlow" type="button" aria-controls="customGridFileInput">📷 Choose images</button>
-              <input type="file" id="customGridFileInput" accept="image/*" multiple class="srOnly" tabindex="-1" aria-hidden="true" />
-            </div>
-
-            <div id="customImagesList" class="customImagesList" aria-live="polite"></div>
-
-            <button id="customGridBuildBtn" class="btn walletFlowLoadBtn" type="button" disabled>🧩 Build grid</button>
           </div>
         </div>
       </div>
@@ -360,8 +319,8 @@
     <div class="buildExportRow" id="buildExportRow">
       <button id="retryBtn" class="btn" type="button">🔄 Retry missing</button>
       <button id="removeUnloadedBtn" class="btn" type="button" style="display:none;">🗑️ Remove unloaded & reshuffle</button>
-      <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Add more images</button>
-      <button id="gridRemoveImportedBtn" class="btn btnSmall" type="button" title="Remove images one at a time" hidden aria-hidden="true">🗑️ Remove images</button>
+      <button id="gridImportImageBtn" class="btn btnSmall" type="button" aria-controls="importImageInput">📥 Import Image / Logo</button>
+      <button id="gridRemoveImportedBtn" class="btn btnSmall" type="button" title="Remove all imported images from this session" hidden aria-hidden="true">🗑️ Remove imports</button>
       <input type="file" id="importImageInput" accept="image/*" multiple class="srOnly" tabindex="-1" aria-hidden="true" />
       <button id="gridShuffleBtn" class="btn btnSmall" type="button" style="display:none;">🔀 Shuffle order</button>
     </div>
@@ -505,67 +464,6 @@
 
   </div>
 
-  <!-- Collection search filter (unchanged) -->
-  <script>
-    (function(){
-      const $ = (id)=>document.getElementById(id);
-      const list = $("collectionsList");
-      const search = $("collectionSearch");
-
-      if (search && list){
-        search.addEventListener("input", () => {
-          const q = search.value.trim().toLowerCase();
-          // Collection-first UX renders cards inside `.collection-grid`.
-          // Filter the cards rather than `#collectionsList` direct children.
-          const grid = list.querySelector(".collection-grid");
-          const cards = grid ? Array.from(grid.querySelectorAll(".collection-card")) : [];
-          cards.forEach((el) => {
-            const txt = (el.innerText || "").toLowerCase();
-            el.style.display = (!q || txt.includes(q)) ? "" : "none";
-          });
-        });
-      }
-    })();
-  </script>
-
-  <!-- ✅ Watermark auto-scale + lock width to 1 tile (fixes overlap into tile #2) -->
-<script>
-  (function(){
-    const key = "lo_theme";
-    const wrap = document.getElementById("themeToggleWrap");
-    if(!wrap) return;
-
-    const updateState = () => {
-      wrap.classList.toggle("dark", document.body.classList.contains("dark"));
-      wrap.setAttribute("aria-checked", document.body.classList.contains("dark"));
-    };
-
-    // 1) Load saved theme, otherwise use system preference
-    const saved = localStorage.getItem(key);
-    if(saved === "dark"){
-      document.body.classList.add("dark");
-    }else if(saved === "light"){
-      document.body.classList.remove("dark");
-    }else{
-      if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
-        document.body.classList.add("dark");
-      }
-    }
-    updateState();
-
-    // 2) Toggle on click/key + persist
-    const toggle = () => {
-      document.body.classList.toggle("dark");
-      localStorage.setItem(key, document.body.classList.contains("dark") ? "dark" : "light");
-      updateState();
-    };
-    wrap.addEventListener("click", toggle);
-    wrap.addEventListener("keydown", (e) => { if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(); } });
-  })();
-</script>
- 
-<script src="vendor/loGifBranding.js"></script>
-<script src="vendor/gif.js"></script>
-<script type="module" src="src/js/app.js"></script>
+<script type="module" src="dist/app.js"></script>
 </body>
 </html>

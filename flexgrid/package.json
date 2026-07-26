@@ -1,12 +1,22 @@
 {
-  "name": "flexgrid-worker",
+  "name": "flexgrid",
   "private": true,
-  "description": "Cloudflare Worker for FlexGrid + Collection Overlap API",
+  "description": "Little Ollie FlexGrid — multi-chain NFT collage builder",
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "build": "node scripts/build.mjs",
+    "build:images": "node scripts/optimize-images.mjs",
+    "check": "npm run build && vitest run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0",
+    "sharp": "^0.34.1",
+    "vitest": "^3.0.5",
     "wrangler": "^4.54.0"
   }
 }

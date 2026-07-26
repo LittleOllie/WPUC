@@ -21,15 +21,51 @@ import {
   peekResolvedForRawArt,
   primeResolvedRawArt,
 } from "./modules/imageLoader.js";
+import {
+  DEV,
+  FLEX_GRID_MAX_NFTS,
+  RETRY_MISSING_BUTTON_HINT,
+  MAX_WALLET_ADDRESSES,
+  APP_SETTINGS_VERSION,
+  EXPORT_WATERMARK_TEXT,
+  HUB_LINKS_PAGE,
+  MAX_CONCURRENT_LOADS_DEFAULT,
+  MAX_CONCURRENT_LOADS_WHALE,
+  TILE_PLACEHOLDER_SRC,
+  GRID_LOADING_PLACEHOLDER_SRC,
+  PLACEHOLDER_DATA_URL,
+  GRID_EMPTY_SENTINEL,
+  ALCHEMY_HOST,
+  SHOW_ERROR_PANEL,
+} from "./core/constants.js";
+import { $, safeText } from "./core/dom.js";
+import { escapeHtml } from "./core/escapeHtml.js";
+import {
+  state,
+  uiState,
+  currentStep,
+  setCurrentStep,
+  syncOrderedItemsFromGrid,
+  configLoaded,
+  setConfigLoaded,
+  IMG_PROXY,
+  setImgProxy,
+} from "./core/state.js";
+import { addError, clearErrorLog, errorLog } from "./core/errors.js";
+import { setStatus, showLoading, hideLoading, showConnectionStatus, yieldToPaint } from "./ui/loading.js";
+import { showToast } from "./ui/notifications.js";
+import {
+  isValidEvmWalletAddress,
+  isValidSolanaWalletAddress,
+} from "./wallets/walletValidation.js";
+import { isIOS, sleep } from "./platform/ios.js";
+import { initThemeToggle } from "./ui/theme.js";
+import { initDisclaimer } from "./wizard/disclaimer.js";
+import { initCollectionSearch } from "./collections/collectionSearch.js";
+import { initBootstrapUi } from "./bootstrap.js";
+import { loadGifExportLibs } from "./export/gifLazyLoad.js";
 
 hydrateImageLoaderFromSession();
-
-const DEV = window.location.hostname === "localhost";
-/** Max NFTs (including custom uploads) in one grid build / reorder. */
-const FLEX_GRID_MAX_NFTS = 900;
-/** Points users to #retryBtn (above the grid) when image loads fail. */
-const RETRY_MISSING_BUTTON_HINT = "Try the 🔄 Retry missing button above.";
-const $ = (id) => document.getElementById(id);
 
 function getGridPrimary() {
   return $("grid");
@@ -59,15 +95,9 @@ function queryAllGridTiles() {
 
 // ---------- Step-based UI flow (wizard) ----------
 // Welcome overlay first; then 0 = 1. Chain, 1 = 2. Wallets, 2 = 3. Collections, 3 = 4. Grid — one screen at a time.
-let currentStep = 0;
 
 // ---------- UI-only onboarding state ----------
 // This is a UX control layer only. It must not replace or interfere with existing app state / data logic.
-const uiState = {
-  step: 1, // 1..4
-  chain: null,
-  wallet: null,
-};
 
 function isCustomGridMode() {
   return String(uiState.chain || state.chain || "").trim().toLowerCase() === "custom";
@@ -165,7 +195,7 @@ function buildCustomGrid() {
 
 function renderUI({ scrollTop = false } = {}) {
   // Keep legacy step index in sync (0..3) so existing UI helpers keep working.
-  currentStep = Math.max(0, Math.min(3, (uiState.step || 1) - 1));
+  setCurrentStep(Math.max(0, Math.min(3, (uiState.step || 1) - 1)));
 
   const chain = $("screen-chain");
   const wallets = $("screen-wallets");
@@ -276,8 +306,6 @@ function goToStep(step) {
 }
 
 /** Little Ollie Labs links hub (absolute so it works from /flexgrid/site/ or any deploy path). */
-const HUB_LINKS_PAGE = "https://littleollielabs.com/links/";
-
 function syncHubBackButton() {
   const btn = $("hubBackBtn");
   if (!btn) return;
@@ -312,16 +340,6 @@ function onHubBackClick() {
   }
   goToStep(isCustomGridMode() ? 1 : 2);
 }
-
-function escapeHtml(str) {
-  if (str === null || str === undefined) return "";
-  const div = document.createElement("div");
-  div.textContent = String(str);
-  return div.innerHTML;
-}
-
-// ✅ Global toggle (was incorrectly inside getIpfsPath before)
-const SHOW_ERROR_PANEL = false; // set true only when debugging
 
 // ---------- Guided glow (onboarding highlight) ----------
 function setGuideGlow(ids = []) {
@@ -430,65 +448,6 @@ function updateGuideGlow() {
   }
 
   setGuideGlow([]);
-}
-
-const state = {
-  collections: [],
-  selectedKeys: new Set(),
-  /** Per collection: "all" | "manual" | "none" */
-  selectionModeByCollection: {},
-  /** Per collection: Set of stable NFT keys (see getNFTSelectionKey) when mode is "manual" */
-  selectedNFTsByCollection: {},
-  selectedSortByCollection: {},
-  /** Contract keys: order of collection blocks left-to-right in the grid (drag trait-order rows to change). */
-  gridCollectionOrder: [],
-  wallets: [],
-  chain: "eth",
-  host: "eth-mainnet.g.alchemy.com",
-  walletCollapsed: false,
-  collectionsCollapsed: true,
-  traitOrderCollapsed: true,
-  /** Layout template id: "classic" | "hero" | "split" | "mixed" */
-  selectedLayout: "classic",
-  /** Set at build: { mode, layoutId?, columns?, rows?, totalSlots? } */
-  gridLayoutMeta: null,
-  /** Local uploads: { id, image: blobUrl, isCustom: true, name?, sourceKey } */
-  customImages: [],
-  /** Subset of customImages.id included in the next build */
-  selectedCustomImageIds: new Set(),
-  /** When true, uploaded tiles show × to remove individually */
-  customImageRemoveMode: false,
-  /** Collection contract keys whose collection logo is included first in that collection’s block in the grid */
-  includeCollectionLogoInBuild: new Set(),
-  /** In-memory cache: `${chain}::${contract}` → raw OpenSea logo URL or null */
-  contractLogoCache: Object.create(null),
-  /** Dedupe in-flight contract metadata fetches */
-  contractLogoInflight: new Map(),
-  /** Right drawer — open state only; panel DOM is separate */
-  isSettingsOpen: false,
-  /** "theme" | "light" | "dark" — stage preview behind grid */
-  settingsCanvasBg: "theme",
-  /** Grid gap: none keeps legacy 0 gap */
-  settingsGridSpacing: "none",
-  settingsTileBorder: false,
-  settingsKeepGridSquare: true,
-  /** When true, classic grid pads to a square (⌈√n⌉²); when false, minimum rectangle */
-  settingsAutoFillEmpty: true,
-  settingsTextShadow: true,
-  /** Optional caption on stage (export still uses flat fill; caption is on-screen only unless we extend export later) */
-  settingsStageCaption: "",
-  /** Animation export choice (GIF or MP4/WebM). Default is set when opening the export modal. */
-  exportType: "gif",
-};
-state.imageLoadState = { total: 0, loaded: 0, failed: 0, retrying: 0 };
-
-const APP_SETTINGS_VERSION = "v2 Beta";
-
-/** Same array reference as currentGridItems — manual drag order (updated on swap). */
-state.orderedItems = [];
-
-function syncOrderedItemsFromGrid() {
-  state.orderedItems = state.currentGridItems;
 }
 
 function getSelectedCustomsForBuild() {
@@ -1017,18 +976,6 @@ function notifyBuildAffectedByLogoOrCollectionChange() {
   }
 }
 
-// ---- Export watermark (single source of truth) ----
-const EXPORT_WATERMARK_TEXT = "⚡ Powered by Little Ollie";
-
-// Configuration (loaded securely - see loadConfig() below)
-let IMG_PROXY = null;
-let configLoaded = false;
-
-const ALCHEMY_HOST = {
-  eth: "eth-mainnet.g.alchemy.com",
-  base: "base-mainnet.g.alchemy.com",
-  polygon: "polygon-mainnet.g.alchemy.com",
-};
 
 /** Keep `state.chain` / `state.host` in sync with the Chain dropdown so loads never use a stale chain. */
 function applyChainSelectionFromDom() {
@@ -1061,8 +1008,6 @@ const imageCache = new Map();
 
 // ---------- Concurrent load limiter (prevents network overload) ----------
 /** Higher than before, but capped to avoid CDN/worker stampede causing synchronized onerror bursts. */
-const MAX_CONCURRENT_LOADS_DEFAULT = 8;
-const MAX_CONCURRENT_LOADS_WHALE = 5;
 let activeLoads = 0;
 const loadQueue = [];
 
@@ -1102,13 +1047,6 @@ function setImgCORS(imgEl, enabled) {
   } catch (_) {}
 }
 
-const PLACEHOLDER_DATA_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3Crect fill='%23333' width='1' height='1'/%3E%3C/svg%3E";
-const TILE_PLACEHOLDER_SRC = "src/assets/images/tile.png";
-/** Shown on grid tiles until NFT art loads (Little Ollie mark). */
-const GRID_LOADING_PLACEHOLDER_SRC = "src/assets/images/LO.png";
-
-/** Classic grid: explicit empty cell (drag NFTs here to leave gaps / “new lines”). */
-const GRID_EMPTY_SENTINEL = Object.freeze({ _gridEmpty: true });
 
 function isGridSlotEmpty(it) {
   return !it || it === GRID_EMPTY_SENTINEL || it._gridEmpty === true;
@@ -1142,77 +1080,6 @@ function makeGridTileForClassicSlot(item, orderIndexStr) {
   return t;
 }
 
-// ---------- UI helpers ----------
-const errorLog = {
-  errors: [],
-  maxErrors: 50,
-  imageErrorCount: 0,
-  imageErrorThrottleMax: 3,
-};
-
-function addError(error, context = "") {
-  const timestamp = new Date().toLocaleTimeString();
-  const errorEntry = {
-    timestamp,
-    message: error?.message || String(error),
-    context,
-    stack: error?.stack,
-    fullError: error,
-  };
-
-  errorLog.errors.unshift(errorEntry);
-  if (errorLog.errors.length > errorLog.maxErrors) {
-    errorLog.errors = errorLog.errors.slice(0, errorLog.maxErrors);
-  }
-
-  updateErrorLogDisplay();
-}
-
-function updateErrorLogDisplay() {
-  const errorLogEl = $("errorLog");
-  const errorLogContent = $("errorLogContent");
-
-  // ✅ hide the panel for normal users
-  if (!SHOW_ERROR_PANEL) {
-    if (errorLogEl) errorLogEl.style.display = "none";
-    return;
-  }
-
-  if (!errorLogEl || !errorLogContent) return;
-
-  if (errorLog.errors.length === 0) {
-    errorLogEl.style.display = "none";
-    return;
-  }
-
-  errorLogEl.style.display = "block";
-  errorLogContent.innerHTML = errorLog.errors
-    .map((err) => {
-      const contextText = err.context
-        ? ` <span style="opacity: 0.7;">[${escapeHtml(err.context)}]</span>`
-        : "";
-      const stackText =
-        err.stack && window.location.hostname === "localhost"
-          ? `<div style="margin-top: 4px; padding-left: 12px; opacity: 0.6; font-size: 13px;">${err.stack
-              .split("\n")
-              .slice(0, 3)
-              .map((line) => escapeHtml(line))
-              .join("<br>")}</div>`
-          : "";
-      return `
-      <div style="padding: 6px 0; border-bottom: 1px solid rgba(244, 67, 54, 0.2);">
-        <div style="color: #f44336; font-weight: 700;">
-          <span style="opacity: 0.7; font-size: 13px;">[${escapeHtml(err.timestamp)}]</span>${contextText}
-        </div>
-        <div style="margin-top: 2px; color: #ffcdd2;">${escapeHtml(err.message)}</div>
-        ${stackText}
-      </div>
-    `;
-    })
-    .join("");
-}
-
-// ---------- Post-export donation modal ----------
 function showDonationPopup() {
   try {
     const existing = document.querySelector(".donation-modal");
@@ -1229,10 +1096,11 @@ function showDonationPopup() {
       <button class="donation-close-x" type="button" aria-label="Close">×</button>
       <img
         class="donation-header flexgrid-modal-banner"
-        src="src/assets/images/header.png"
+        src="src/assets/images/header.webp"
         alt=""
         aria-hidden="true"
         decoding="async"
+        onerror="this.onerror=null;this.src='src/assets/images/header.png';"
       />
       <div class="donation-body">
         <h2 class="donation-title">Thanks for using FlexGrid!</h2>
@@ -1243,7 +1111,7 @@ function showDonationPopup() {
 
         <div class="wallet-box">
           <span class="wallet-label">Donation wallet</span>
-          <span id="walletAddress" class="wallet-address">${address}</span>
+          <span id="walletAddress" class="wallet-address">${escapeHtml(address)}</span>
           <button id="copyWalletBtn" class="btn btnSmall" type="button">📋 Copy</button>
         </div>
 
@@ -1259,7 +1127,6 @@ function showDonationPopup() {
     } catch (_) {}
   };
 
-  // Overlay click closes; content click doesn't.
   modal.addEventListener("click", (e) => {
     if (e.target === modal) close();
   });
@@ -1305,78 +1172,9 @@ function showDonationPopup() {
     });
   }
 
-  // Esc closes
-  const onKey = (e) => {
+  document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") close();
-  };
-  document.addEventListener("keydown", onKey, { once: true });
-}
-
-function clearErrorLog() {
-  errorLog.errors = [];
-  updateErrorLogDisplay();
-}
-
-function showConnectionStatus(connected) {
-  const statusEl = $("connectionStatus");
-  const lightEl = $("connectionLight");
-  const textEl = $("connectionText");
-
-  if (!statusEl) return;
-
-  statusEl.style.display = "flex";
-
-  if (connected) {
-    statusEl.style.background = "rgba(76, 175, 80, 0.15)";
-    statusEl.style.borderColor = "rgba(76, 175, 80, 0.3)";
-    if (lightEl) {
-      lightEl.style.background = "#4CAF50";
-      lightEl.style.boxShadow = "0 0 8px rgba(76, 175, 80, 0.6)";
-    }
-    if (textEl) {
-      textEl.textContent = "Connected";
-      textEl.style.color = "#4CAF50";
-    }
-  } else {
-    statusEl.style.background = "rgba(244, 67, 54, 0.15)";
-    statusEl.style.borderColor = "rgba(244, 67, 54, 0.3)";
-    if (lightEl) {
-      lightEl.style.background = "#f44336";
-      lightEl.style.boxShadow = "0 0 8px rgba(244, 67, 54, 0.6)";
-    }
-    if (textEl) {
-      textEl.textContent = "Not Connected";
-      textEl.style.color = "#f44336";
-    }
-  }
-}
-
-function setStatus(msg) {
-  const el = $("status");
-  if (el) el.textContent = msg || "";
-}
-
-function showLoading(message = "Loading…", progress = "") {
-  const overlay = $("loadingOverlay");
-  if (overlay) {
-    overlay.classList.add("visible");
-    overlay.setAttribute("aria-hidden", "false");
-  }
-  const statusEl = $("loadingOverlayStatus");
-  if (statusEl) {
-    const line = [message, progress].filter((s) => s && String(s).trim()).join(" — ");
-    statusEl.textContent = line || "";
-  }
-}
-
-function hideLoading() {
-  const overlay = $("loadingOverlay");
-  if (overlay) {
-    overlay.classList.remove("visible");
-    overlay.setAttribute("aria-hidden", "true");
-  }
-  const statusEl = $("loadingOverlayStatus");
-  if (statusEl) statusEl.textContent = "";
+  }, { once: true });
 }
 
 function updateImageProgress() {
@@ -1498,9 +1296,6 @@ function setGridColumns(cols) {
   if (grid) grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 }
 
-function safeText(s) {
-  return (s || "").toString();
-}
 
 // ---------- URL helpers ----------
 function tryParseJsonObject(val) {
@@ -1536,6 +1331,80 @@ function repairBrokenImageUrl(url) {
   s = s.replace(/^https:\/\/{3,}/i, "https://");
   s = s.replace(/^http:\/\/{3,}/i, "http://");
   return s;
+}
+
+/** Lower = try sooner. Prefer edge/CDN mirrors over slow origin buckets (e.g. Quirklings S3). */
+function imageHostPriority(url) {
+  try {
+    const h = new URL(String(url)).hostname.toLowerCase();
+    if (h === "nft2-cdn.alchemy.com" || h.endsWith(".nft2-cdn.alchemy.com")) return 0;
+    if (h.includes("cloudinary.com")) return 1;
+    if (h.endsWith(".seadn.io") || h === "i.seadn.io" || h === "i2c.seadn.io") return 2;
+    if (h.endsWith(".w3s.link") || h.endsWith(".dweb.link") || h.includes("ipfs")) return 3;
+    if (h.endsWith(".amazonaws.com")) return 9;
+    if (h.endsWith(".alchemy.com")) return 4;
+    return 5;
+  } catch (_) {
+    return 6;
+  }
+}
+
+function isFastCdnImageUrl(url) {
+  return imageHostPriority(url) <= 4;
+}
+
+function coerceUrlCandidate(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "object" && value) {
+    const ou =
+      (typeof value.url === "string" && value.url.trim()) ||
+      (typeof value.uri === "string" && value.uri.trim()) ||
+      (typeof value.gateway === "string" && value.gateway.trim()) ||
+      "";
+    return ou ? repairBrokenImageUrl(String(ou).trim()) : "";
+  }
+  const s = repairBrokenImageUrl(String(value).trim());
+  return s && s !== "[object Object]" ? s : "";
+}
+
+/**
+ * All non-logo art URLs for an NFT, CDN-first (Alchemy / Cloudinary before slow S3 originals).
+ * Used for grid tiles + manual picker fallbacks.
+ */
+function collectNftImageUrlVariants(nft) {
+  if (!nft || typeof nft !== "object") return [];
+  const logo = extractCollectionLogoRawUrlFromNft(nft);
+  const normLogo = logo ? String(logo).trim() : "";
+  const merged = mergedNFTMetadata(nft);
+  const raw = [
+    nft?.image?.cachedUrl,
+    nft?.image?.pngUrl,
+    nft?.image?.thumbnailUrl,
+    nft?.media?.[0]?.gateway,
+    nft?.media?.[0]?.raw,
+    nft?.media?.[0]?.thumbnail,
+    merged?.image,
+    merged?.image_url,
+    nft?.raw?.metadata?.image,
+    nft?.raw?.metadata?.image_url,
+    nft?.rawMetadata?.image,
+    nft?.rawMetadata?.image_url,
+    nft?.metadata?.image,
+    nft?.metadata?.image_url,
+    nft?.tokenUri?.gateway,
+    nft?.image?.originalUrl,
+    typeof nft?.image === "string" ? nft.image : "",
+  ];
+  const seen = new Set();
+  const out = [];
+  for (const c of raw) {
+    const s = coerceUrlCandidate(c);
+    if (!s || (normLogo && s === normLogo) || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  out.sort((a, b) => imageHostPriority(a) - imageHostPriority(b));
+  return out;
 }
 
 /** Inline SVG / image_data from OpenSea-style metadata → usable data URL (bounded size). */
@@ -1778,26 +1647,61 @@ function manualModalMaxDomCells() {
   return 44;
 }
 
-/** Proxy first when available, then direct gateways as fallback. */
-function buildImageCandidates(rawUrl) {
-  const normalized = normalizeImageUrl(rawUrl);
-  if (!normalized) return [];
+/** Proxy first when available, then direct gateways as fallback. CDN hosts try direct before proxy. */
+function buildImageCandidates(rawUrl, extraUrls = []) {
+  const seeds = [...new Set([rawUrl, ...(Array.isArray(extraUrls) ? extraUrls : [])].map((u) => String(u || "").trim()).filter(Boolean))];
+  if (!seeds.length) return [];
 
-  const proxy = toProxyUrl(rawUrl);
-  const candidates = proxy ? [proxy] : [];
+  const candidates = [];
+  const seen = new Set();
 
-  const ipfsPath = getIpfsPath(rawUrl);
-  if (ipfsPath) {
-    candidates.push(`https://dweb.link/ipfs/${ipfsPath}`);
-    candidates.push(`https://w3s.link/ipfs/${ipfsPath}`);
-    candidates.push(`https://ipfs.io/ipfs/${ipfsPath}`);
-    candidates.push(`https://nftstorage.link/ipfs/${ipfsPath}`);
-    candidates.push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
-  } else if (normalized && !candidates.includes(normalized)) {
-    candidates.push(normalized);
+  const push = (u) => {
+    const s = String(u || "").trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    candidates.push(s);
+  };
+
+  for (const seed of seeds) {
+    const normalized = normalizeImageUrl(seed);
+    if (!normalized) continue;
+
+    if (isFastCdnImageUrl(normalized)) {
+      push(normalized);
+      const proxy = toProxyUrl(seed);
+      if (proxy) push(proxy);
+    } else {
+      const proxy = toProxyUrl(seed);
+      if (proxy) push(proxy);
+      push(normalized);
+    }
+
+    const ipfsPath = getIpfsPath(seed);
+    if (ipfsPath) {
+      push(`https://dweb.link/ipfs/${ipfsPath}`);
+      push(`https://w3s.link/ipfs/${ipfsPath}`);
+      push(`https://ipfs.io/ipfs/${ipfsPath}`);
+      push(`https://nftstorage.link/ipfs/${ipfsPath}`);
+      push(`https://cloudflare-ipfs.com/ipfs/${ipfsPath}`);
+    }
   }
 
-  return [...new Set(candidates)];
+  return candidates;
+}
+
+/** Merge candidate chains from multiple seed URLs (NFT mirrors + gateways). */
+function buildImageCandidatesFromSeeds(urls, max = 10) {
+  const out = [];
+  const seen = new Set();
+  for (const u of urls || []) {
+    for (const c of buildImageCandidates(u)) {
+      if (!c || seen.has(c)) continue;
+      seen.add(c);
+      out.push(c);
+      if (out.length >= max) return out;
+    }
+  }
+  return out;
 }
 
 /**
@@ -1828,7 +1732,7 @@ function primeImageCacheFromManualPreview(nft, imgEl) {
   const rawStr = typeof raw === "string" ? raw.trim() : "";
   if (!rawStr) return;
   const normalized = normalizeImageUrl(rawStr) || rawStr;
-  const candidates = buildImageCandidates(normalized);
+  const candidates = buildImageCandidatesFromSeeds(collectNftImageUrlVariants(nft).length ? collectNftImageUrlVariants(nft) : [normalized]);
   const shown = (imgEl.currentSrc || imgEl.src || "").trim();
   if (shown && shown !== TILE_PLACEHOLDER_SRC && shown !== GRID_LOADING_PLACEHOLDER_SRC) {
     imageCache.set(shown, shown);
@@ -1949,27 +1853,11 @@ function syncWatermarkDOMToOneTile() {
 }
 
 // ---------- Wallet list ----------
-const MAX_WALLET_ADDRESSES = 12;
-
 function getWalletParseChain() {
   const sel = $("chainSelect");
   const fromDom = sel ? String(sel.value || "").trim().toLowerCase() : "";
   if (fromDom) return fromDom;
   return String(state.chain || "eth").trim().toLowerCase();
-}
-
-function isValidEvmWalletAddress(addr) {
-  const a = String(addr || "").trim().toLowerCase();
-  return /^0x[a-f0-9]{40}$/.test(a);
-}
-
-// Solana public keys are base58-encoded (typically 32–44 chars). Case matters.
-function isValidSolanaWalletAddress(addr) {
-  const a = String(addr || "").trim();
-  if (!a) return false;
-  if (a.length < 32 || a.length > 44) return false;
-  if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(a)) return false;
-  return true;
 }
 
 /** Placeholder names from APIs/UI — never show these as the saved card title. */
@@ -3387,9 +3275,9 @@ async function resolveRawUrlOntoImage(img, rawUrl, opts = {}) {
     }
   }
 
-  let candidates = (explicitCandidates && explicitCandidates.length ? explicitCandidates : buildImageCandidates(raw))
-    .filter(Boolean)
-    .slice(0, 3); // cap to 2–3 tries (fast + mobile safe)
+  let candidates = explicitCandidates?.length
+    ? buildImageCandidatesFromSeeds(explicitCandidates, 10)
+    : buildImageCandidates(raw, opts.extraCandidates || []).slice(0, 10);
   if (manualMw > 0) {
     candidates = candidates.map((u) => mapManualTry(u));
   }
@@ -3477,6 +3365,7 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
     const resHit = await resolveRawUrlOntoImage(img, rawOk, {
       manualThumbMax: manualModalThumbMaxPx(),
       imageIdentity: nftImageCacheIdentity(nft),
+      extraCandidates: collectNftImageUrlVariants(nft),
     });
     if (resHit.ok && img.isConnected) {
       try {
@@ -3506,6 +3395,7 @@ async function startManualModalThumbnailLoad(img, cell, retryBtn, nft, { isRetry
   const res = await resolveRawUrlOntoImage(img, raw, {
     manualThumbMax: manualModalThumbMaxPx(),
     imageIdentity: nftImageCacheIdentity(nft),
+    extraCandidates: collectNftImageUrlVariants(nft),
   });
   let ok = res.ok;
   if (ok) {
@@ -6543,8 +6433,11 @@ function makeNFTTile(it) {
 
   let raw = "";
   try {
-    if (Array.isArray(it?.imageCandidates) && it.imageCandidates.length) {
-      raw = "__CANDS__:" + JSON.stringify(it.imageCandidates.slice(0, 3));
+    if (Array.isArray(it?._imageCandidates) && it._imageCandidates.length) {
+      raw = "__CANDS__:" + JSON.stringify(it._imageCandidates.slice(0, 10));
+    }
+    if (!raw && Array.isArray(it?.imageCandidates) && it.imageCandidates.length) {
+      raw = "__CANDS__:" + JSON.stringify(it.imageCandidates.slice(0, 10));
     }
     if (!raw && typeof it?._rawImageUrl === "string" && it._rawImageUrl.trim()) raw = it._rawImageUrl.trim();
     if (!raw && typeof it?.image === "string" && it.image.trim()) raw = it.image.trim();
@@ -6925,6 +6818,7 @@ async function loadWallets() {
 
     const gatherMsg = "Gathering your NFTs";
     showLoading(gatherMsg, "");
+    await yieldToPaint();
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
 
     const allNfts = [];
@@ -6987,6 +6881,7 @@ async function loadWallets() {
     }
 
     showLoading(gatherMsg, "");
+    await yieldToPaint();
     if (DEV) console.log("RAW NFT COUNT (all wallets)", allNfts.length);
     if (DEV) console.log("RAW SAMPLE (all)", allNfts.slice(0, 10).map((nft) => ({
       contract: nft?.contract?.address,
@@ -6997,7 +6892,16 @@ async function loadWallets() {
       idTokenId: nft?.id?.tokenId,
     })));
     const validNfts = allNfts.filter((n) => n && typeof n === "object");
-    const normalized = validNfts.map((n) => normalizeNFT(n, chain));
+    const normalized = [];
+    const NORMALIZE_CHUNK = 200;
+    for (let ni = 0; ni < validNfts.length; ni += NORMALIZE_CHUNK) {
+      const end = Math.min(validNfts.length, ni + NORMALIZE_CHUNK);
+      for (let j = ni; j < end; j++) normalized.push(normalizeNFT(validNfts[j], chain));
+      if (end < validNfts.length) {
+        showLoading(gatherMsg, `${end}/${validNfts.length}`);
+        await yieldToPaint();
+      }
+    }
     if (chain === "apechain" && normalized.length > 0) {
       try {
         const s = normalized[0];
@@ -7012,6 +6916,8 @@ async function loadWallets() {
       } catch (_) {}
     }
     const deduped = dedupeNFTs(normalized);
+    showLoading(gatherMsg, "Organizing collections");
+    await yieldToPaint();
     const expanded = expandNFTs(deduped);
     if (DEV) console.log("EXPANDED NFT COUNT", expanded.length);
     const grouped = groupByCollection(expanded);
@@ -7080,7 +6986,7 @@ async function loadWallets() {
       }
     }
     setStatus(`❌ ${userMsg}`);
-    addError(err, "Load Wallets");
+    addError(err, "Load Wallets", { userToast: true });
     showConnectionStatus(false);
   } finally {
     loadWalletsInFlight = false;
@@ -7232,12 +7138,15 @@ function normalizeNFT(nft, chain) {
     (typeof nft.contractMetadata?.name === "string" && nft.contractMetadata.name.trim()) ||
     "Unknown Collection";
   let rawImage = null;
+  let imageCandidates = [];
   try {
-    rawImage = primaryRawArtUrlForNft(nft);
+    imageCandidates = collectNftImageUrlVariants(nft);
+    rawImage = imageCandidates[0] || primaryRawArtUrlForNft(nft);
     rawImage = rawImage ? String(rawImage).trim() : null;
   } catch (err) {
     console.warn("[FlexGrid] normalizeNFT image:", err?.message || err);
     rawImage = null;
+    imageCandidates = [];
   }
   const displayImage = rawImage ? (toProxyUrl(rawImage) || normalizeImageUrl(rawImage) || null) : null;
   return {
@@ -7251,6 +7160,7 @@ function normalizeNFT(nft, chain) {
     collection: nft.collection && typeof nft.collection === "object" ? { ...nft.collection, name: collectionName } : { name: collectionName },
     _rawImageUrl: rawImage,
     _displayImageUrl: displayImage,
+    _imageCandidates: imageCandidates.slice(0, 10),
     image: displayImage || rawImage || (typeof nft.image === "string" ? nft.image : null) || null,
   };
 }
@@ -7277,51 +7187,8 @@ function expandNFTs(nfts) {
 
 /** Image extraction — never blocks render. Caller must wrap with normalizeImageUrl. Never returns the collection OpenSea logo as token art. */
 function getImage(nft) {
-  const logo = extractCollectionLogoRawUrlFromNft(nft);
-  const normLogo = logo ? String(logo).trim() : "";
-  const merged = mergedNFTMetadata(nft);
-  /** Prefer full-size sources; thumbnails first caused sharp early tiles + pixelated exports on Ethereum. */
-  const candidates = [
-    merged.image,
-    merged.image_url,
-    nft?.media?.[0]?.gateway,
-    nft?.media?.[0]?.raw,
-    nft?.media?.[0]?.thumbnail,
-    nft?.raw?.metadata?.image,
-    nft?.raw?.metadata?.image_url,
-    nft?.rawMetadata?.image,
-    nft?.rawMetadata?.image_url,
-    nft?.metadata?.image,
-    nft?.metadata?.image_url,
-    nft?.tokenUri?.gateway,
-    nft?.image?.originalUrl,
-    nft?.image?.cachedUrl,
-    nft?.image?.pngUrl,
-    typeof nft?.image === "string" ? nft.image : "",
-    nft?.image?.thumbnailUrl,
-  ];
-  for (const c of candidates) {
-    if (c == null || c === "") continue;
-    if (typeof c === "object" && c) {
-      const ou =
-        (typeof c.url === "string" && c.url.trim()) ||
-        (typeof c.uri === "string" && c.uri.trim()) ||
-        (typeof c.gateway === "string" && c.gateway.trim()) ||
-        "";
-      if (ou) {
-        const s = repairBrokenImageUrl(String(ou).trim());
-        if (!s) continue;
-        if (normLogo && s === normLogo) continue;
-        return s;
-      }
-      continue;
-    }
-    const s = repairBrokenImageUrl(String(c).trim());
-    if (!s || s === "[object Object]") continue;
-    if (normLogo && s === normLogo) continue;
-    return s;
-  }
-  return "";
+  const variants = collectNftImageUrlVariants(nft);
+  return variants[0] || "";
 }
 
 function groupByCollection(nfts) {
@@ -7395,11 +7262,6 @@ function groupByCollection(nfts) {
 }
 
 // ---------- Export + helpers ----------
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-
-function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 async function loadImageWithRetry(src, tries = 2, timeoutMs = 25000) {
   let lastErr = null;
@@ -8343,9 +8205,20 @@ async function exportGIF() {
     setStatus("⚠️ This may crash your device. MP4 strongly recommended.");
   }
 
-  // Prevent multiple concurrent exports.
   var gifBtn = $("gridGifBtn");
   var pngBtn = $("gridExportBtn");
+
+  try {
+    await loadGifExportLibs();
+  } catch (e) {
+    addError(e, "GIF export", { userToast: true });
+    if (gifBtn) gifBtn.disabled = false;
+    if (pngBtn) pngBtn.disabled = false;
+    syncGridFooterButtons(!hasItemsForBuild(), false);
+    return;
+  }
+
+  // Prevent multiple concurrent exports.
   if (gifBtn) gifBtn.disabled = true;
   if (pngBtn) pngBtn.disabled = true;
 
@@ -8978,6 +8851,8 @@ function toggleStageLayoutSection() {
     renderUI();
   };
 
+  initBootstrapUi();
+
   const chainScreenEl = $("screen-chain");
   const onChainChipPick = (e) => {
     const b = e.target.closest(".flexgrid-chain-btn[data-chain]");
@@ -8990,16 +8865,6 @@ function toggleStageLayoutSection() {
   /* One handler per tap: pointerdown + click both fired on many devices and a debounce blocked real picks. */
   if (chainScreenEl) {
     chainScreenEl.addEventListener("click", onChainChipPick, true);
-  }
-
-  const discOv = $("disclaimerOverlay");
-  if (discOv && !discOv.dataset.flexgridBackdropBound) {
-    discOv.dataset.flexgridBackdropBound = "1";
-    discOv.addEventListener("click", (e) => {
-      if (e.target !== discOv) return;
-      discOv.classList.add("hidden");
-      discOv.setAttribute("aria-hidden", "true");
-    });
   }
 
   if (chainNext) {
@@ -9096,12 +8961,12 @@ async function initializeConfig() {
       const { loadConfig } = await import("./config.js");
       const config = await loadConfig();
 
-      IMG_PROXY = config.workerUrl;
+      setImgProxy(config.workerUrl);
 
       if (!IMG_PROXY) {
         throw new Error("Unable to load configuration. Ensure your Worker supplies workerUrl.");
       }
-      configLoaded = true;
+      setConfigLoaded(true);
 
       if (DEV) console.log("Config loaded");
 
@@ -9128,10 +8993,10 @@ async function initializeConfig() {
         const hint = document.createElement("div");
         hint.style.fontSize = "16px";
         hint.style.opacity = "0.9";
-        hint.innerHTML = "See <strong>docs/FLEX_GRID_SETUP.md</strong> for setup instructions.";
+        hint.textContent = "See docs/FLEX_GRID_SETUP.md in the flexgrid folder for setup instructions.";
         statusEl.appendChild(hint);
       }
-      addError(error, "Config Loading");
+      addError(error, "Config Loading", { userToast: true });
 
       const loadBtn = $("loadBtn");
       const buildBtn = $("gridBuildBtn");

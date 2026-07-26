@@ -3,6 +3,8 @@
  * Image proxy: multi-gateway IPFS, HTTP fetch, timeouts, edge cache, CORS for canvas export.
  */
 
+import { checkRateLimit, rateLimitResponse } from "./worker/rateLimit.js";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -176,7 +178,7 @@ const ORIGIN_FETCH_CF = {
 };
 
 /** Larger collections cold-cache many gateways; premature abort surfaced as widespread client decode failures */
-const IMAGE_FETCH_TIMEOUT_MS = 15000;
+const IMAGE_FETCH_TIMEOUT_MS = 22000;
 const IMAGE_HTTP_RETRY_DELAY_MS = 400;
 const MAX_IMAGE_BYTES = 45 * 1024 * 1024; // safety cap (45MB)
 
@@ -995,6 +997,14 @@ function resolveTokenImageUrl(nft, collectionLogo) {
     if (normLogo && s === normLogo) return null;
     return s;
   };
+  /** Prefer Alchemy / Cloudinary mirrors before on-chain metadata (Quirklings etc. use slow S3 originals). */
+  const imgObj = nft?.image;
+  if (imgObj != null && typeof imgObj === "object") {
+    for (const k of ["cachedUrl", "pngUrl", "thumbnailUrl", "originalUrl"]) {
+      const s = tryStr(imgObj[k]);
+      if (s) return s;
+    }
+  }
   const rawCandidates = [
     merged.image,
     merged.image_url,
@@ -1014,14 +1024,9 @@ function resolveTokenImageUrl(nft, collectionLogo) {
     const s = tryStr(c);
     if (s) return s;
   }
-  const img = nft?.image;
-  if (img != null) {
-    const u =
-      typeof img === "string"
-        ? img
-        : img?.cachedUrl || img?.pngUrl || img?.thumbnailUrl || img?.originalUrl || "";
-    const s = String(u).trim();
-    if (s && (!normLogo || s !== normLogo)) return s;
+  if (typeof imgObj === "string") {
+    const s = tryStr(imgObj);
+    if (s) return s;
   }
   return null;
 }
@@ -1723,12 +1728,26 @@ export default {
     }
 
     if (url.pathname === "/img" && request.method === "GET") {
+      const rl = checkRateLimit("img", request, env);
+      if (rl.limited) return rateLimitResponse(rl.retryAfterSec, CORS);
       return handleImageProxy(request, env, ctx);
     }
 
     // Allow Solana-only deployments (Helius without Alchemy/Moralis).
     if (!hasMainKey && !hasMoralisKey && !hasHeliusKey) {
       return corsResponse(JSON.stringify({ error: "Server configuration error. Contact site owner." }), 503);
+    }
+
+    const isExpensiveApi =
+      request.method === "GET" &&
+      (url.pathname === "/api/solana-nfts" ||
+        url.pathname === "/api/nfts" ||
+        url.pathname === "/api/nft-metadata" ||
+        url.pathname === "/api/contract-metadata");
+
+    if (isExpensiveApi) {
+      const rl = checkRateLimit("api", request, env);
+      if (rl.limited) return rateLimitResponse(rl.retryAfterSec, CORS);
     }
 
     if (url.pathname === "/api/solana-nfts" && request.method === "GET") {

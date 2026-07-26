@@ -1,17 +1,25 @@
-# Flex Grid Worker (legacy folder)
+# Legacy Worker folder
 
-The main Worker is at **project root**: `worker.js`
+**Do not add Worker code here.**
 
-Deploy from project root:
-```bash
-npx wrangler deploy
+The production Cloudflare Worker is at the FlexGrid project root:
+
+```text
+flexgrid/worker.js
 ```
 
-Set the Alchemy API key (required):
+Deploy from `flexgrid/`:
+
+```bash
+npm run deploy
+```
+
+Configure secrets via Wrangler (never commit keys):
+
 ```bash
 npx wrangler secret put ALCHEMY_API_KEY
+npx wrangler secret put MORALIS_API_KEY
+npx wrangler secret put HELIUS_API_KEY
 ```
 
-## Routes
-- **GET /api/config/flex-grid** — Returns `{ workerUrl, network }` (no API key exposed)
-- **GET /img?url=...** — Proxies images with IPFS multi-gateway fallback
+See [docs/FLEX_GRID_SETUP.md](../docs/FLEX_GRID_SETUP.md) and [docs/SECURITY.md](../docs/SECURITY.md).
