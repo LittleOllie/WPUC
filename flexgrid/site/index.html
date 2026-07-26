@@ -19,6 +19,15 @@
     }
   })();
 </script>
+<script>
+  window.flexgridDismissDisclaimer = function () {
+    var o = document.getElementById("disclaimerOverlay");
+    if (!o) return;
+    o.classList.add("hidden");
+    o.setAttribute("aria-hidden", "true");
+    try { sessionStorage.setItem("flexgrid_disclaimer_dismissed_v1", "1"); } catch (_) {}
+  };
+</script>
 
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
@@ -63,6 +72,7 @@
 
   <!-- iOS web app -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FlexGrid">
 
@@ -87,7 +97,7 @@
           <a href="https://instagram.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Instagram">📷 Instagram</a>
           <a href="https://x.com/littleollienft" target="_blank" rel="noopener noreferrer" class="disclaimer-link" aria-label="Twitter / X">🐦 Twitter</a>
         </div>
-        <button id="disclaimerContinue" class="btn disclaimer-continue" type="button">Continue</button>
+        <button id="disclaimerContinue" class="btn disclaimer-continue" type="button" onclick="window.flexgridDismissDisclaimer()">Continue</button>
       </div>
     </div>
   </div>
@@ -95,11 +105,9 @@
     (function () {
       var KEY = "flexgrid_disclaimer_dismissed_v1";
       function dismissDisclaimer() {
-        var overlay = document.getElementById("disclaimerOverlay");
-        if (!overlay) return;
-        overlay.classList.add("hidden");
-        overlay.setAttribute("aria-hidden", "true");
-        try { sessionStorage.setItem(KEY, "1"); } catch (_) {}
+        if (typeof window.flexgridDismissDisclaimer === "function") {
+          window.flexgridDismissDisclaimer();
+        }
       }
       function bootDisclaimer() {
         var overlay = document.getElementById("disclaimerOverlay");

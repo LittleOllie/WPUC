@@ -88,7 +88,8 @@ This runs `npm run build` then `wrangler deploy`. Static assets come from `site/
 
 - **Config error on load** — Worker missing secrets or not running; check Wrangler logs.
 - **429 errors** — Rate limit hit; wait for `Retry-After` seconds.
-- **Missing `dist/app.js`** — Run `npm run build`.
+- **Missing `dist/app.js`** — Run `npm run build`. For **littleollielabs.com** (static GitHub/host deploy), commit `site/dist/app.js` with the site — it is not generated on the server.
+- **Continue button does nothing** — Usually `dist/app.js` 404 on production; rebuild, commit `site/dist/app.js`, redeploy. The welcome overlay also has an inline `onclick` fallback on Continue.
 - **Disclaimer every session** — Expected; dismissed via `sessionStorage` per tab. Force with `?disclaimer=1`.
 
 ## Security
