@@ -3050,6 +3050,7 @@ body.dark .tile[data-kind="empty"]{
     position:fixed;
     inset:0;
     z-index:99999;
+    pointer-events:none;
     background:rgba(11,18,32,.82);
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
@@ -3059,6 +3060,7 @@ body.dark .tile[data-kind="empty"]{
   }
   #loadingOverlay.visible{
     display:flex;
+    pointer-events:auto;
   }
   #loadingOverlay .loading-overlay-inner{
     display:flex;
@@ -3160,7 +3162,7 @@ body.dark .tile[data-kind="empty"]{
 .disclaimer-overlay{
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 100001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3258,6 +3260,10 @@ body.dark .tile[data-kind="empty"]{
   color: var(--btnText);
   border: 2px solid rgba(0,0,0,.15);
   box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  cursor: pointer;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 1;
 }
 .disclaimer-continue:hover{
   filter: brightness(1.05);

@@ -2,6 +2,11 @@
 
 import { $ } from "../core/dom.js";
 
+function isDisclaimerBlocking() {
+  const overlay = document.getElementById("disclaimerOverlay");
+  return overlay && !overlay.classList.contains("hidden");
+}
+
 export function setStatus(msg) {
   const el = $("status");
   if (el) el.textContent = msg || "";
@@ -24,6 +29,7 @@ function restartLoadingSpinner(overlay) {
 }
 
 export function showLoading(message = "Loading…", progress = "") {
+  if (isDisclaimerBlocking()) return;
   const overlay = $("loadingOverlay");
   const wasVisible = overlay?.classList.contains("visible");
   if (overlay) {

@@ -91,6 +91,45 @@
       </div>
     </div>
   </div>
+  <script>
+    (function () {
+      var KEY = "flexgrid_disclaimer_dismissed_v1";
+      function dismissDisclaimer() {
+        var overlay = document.getElementById("disclaimerOverlay");
+        if (!overlay) return;
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+        try { sessionStorage.setItem(KEY, "1"); } catch (_) {}
+      }
+      function bootDisclaimer() {
+        var overlay = document.getElementById("disclaimerOverlay");
+        var btn = document.getElementById("disclaimerContinue");
+        if (!overlay) return;
+        var forceShow = /[?&]disclaimer=1(?:&|$)/.test(location.search);
+        if (!forceShow) {
+          try {
+            if (sessionStorage.getItem(KEY) === "1") {
+              overlay.classList.add("hidden");
+              overlay.setAttribute("aria-hidden", "true");
+              return;
+            }
+          } catch (_) {}
+        }
+        overlay.classList.remove("hidden");
+        overlay.setAttribute("aria-hidden", "false");
+        if (btn) btn.addEventListener("click", dismissDisclaimer);
+        overlay.addEventListener("click", function (e) {
+          if (e.target === overlay) dismissDisclaimer();
+        });
+        overlay.dataset.disclaimerBound = "1";
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootDisclaimer);
+      } else {
+        bootDisclaimer();
+      }
+    })();
+  </script>
 
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-overlay-inner" aria-busy="true">

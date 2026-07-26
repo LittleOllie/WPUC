@@ -4,11 +4,18 @@
  */
 
 const SESSION_KEY = "flexgrid_disclaimer_dismissed_v1";
+let disclaimerBound = false;
 
 export function initDisclaimer() {
+  if (disclaimerBound) return;
   const overlay = document.getElementById("disclaimerOverlay");
   const btn = document.getElementById("disclaimerContinue");
   if (!overlay) return;
+  if (overlay.dataset.disclaimerBound === "1") {
+    disclaimerBound = true;
+    return;
+  }
+  disclaimerBound = true;
 
   const forceShow =
     typeof window !== "undefined" &&
@@ -41,4 +48,5 @@ export function initDisclaimer() {
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) dismissDisclaimer();
   });
+  overlay.dataset.disclaimerBound = "1";
 }
