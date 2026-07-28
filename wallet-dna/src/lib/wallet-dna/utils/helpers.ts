@@ -1,0 +1,98 @@
+import type { SupportedChain } from "@/lib/wallet-dna/types";
+
+export function normaliseAddress(addr: string): string {
+  return addr.trim().toLowerCase();
+}
+
+export function isLikelyEns(input: string): boolean {
+  const t = input.trim().toLowerCase();
+  return t.endsWith(".eth") && t.length > 4 && !t.startsWith("0x");
+}
+
+export function isValidEthAddress(input: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(input.trim());
+}
+
+export function shortenAddress(addr: string): string {
+  const a = normaliseAddress(addr);
+  if (!isValidEthAddress(a)) return addr;
+  return `${a.slice(0, 6)}…${a.slice(-4)}`;
+}
+
+export function normaliseTokenId(raw: unknown): string {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  if (s.startsWith("0x")) {
+    try {
+      return BigInt(s).toString();
+    } catch {
+      return s.toLowerCase();
+    }
+  }
+  return s;
+}
+
+export function createTokenKey(
+  chain: SupportedChain,
+  contractAddress: string,
+  tokenId: string,
+): string {
+  return `${chain}:${normaliseAddress(contractAddress)}:${normaliseTokenId(tokenId)}`;
+}
+
+export function clampScore(n: number): number {
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+export function daysBetween(from: Date, to: Date): number {
+  return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function stableHash(input: string): number {
+  let h = 5381;
+  for (let i = 0; i < input.length; i++) {
+    h = (h << 5) + h + input.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+export function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1]! + sorted[mid]!) / 2;
+  }
+  return sorted[mid]!;
+}
+
+export function formatStatDate(iso: string | null): string {
+  if (!iso) return "Not enough history available";
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "Not enough history available";
+  }
+}
+
+export function formatRelativeAcquisition(iso: string): string {
+  const ms = Math.max(0, Date.now() - new Date(iso).getTime());
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "Added just now";
+  if (minutes < 60) {
+    return minutes === 1 ? "Added 1 minute ago" : `Added ${minutes} minutes ago`;
+  }
+  const hours = Math.floor(ms / 3600000);
+  if (hours < 24) {
+    return hours === 1 ? "Added 1 hour ago" : `Added ${hours} hours ago`;
+  }
+  const days = Math.floor(ms / 86400000);
+  if (days === 1) return "Added 1 day ago";
+  return `Added ${days} days ago`;
+}

@@ -1,4 +1,5 @@
 node_modules/
 .wrangler/
 .dev.vars
-site/dist/
+# Source maps only — app.js is committed for littleollielabs.com static hosting
+site/dist/*.map

@@ -1,0 +1,13 @@
+{
+  "name": "wallet-dna-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build:handler": "npm run build:worker --prefix ../wallet-dna",
+    "deploy": "npm run build:handler && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.54.0"
+  }
+}

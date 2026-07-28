@@ -204,12 +204,14 @@
             <p style="margin:0 0 12px; font-weight:800; color: rgba(255,255,255,0.9);">Choose your chain to get started</p>
 
             <div class="flexgrid-chain-grid" role="group" aria-label="Choose chain">
-              <button type="button" class="flexgrid-chain-btn" data-chain="eth" aria-pressed="false">Ethereum</button>
-              <button type="button" class="flexgrid-chain-btn" data-chain="base" aria-pressed="false">Base</button>
-              <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false">ApeChain</button>
-              <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false">Polygon</button>
-              <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false">Solana (Beta)</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="eth" aria-pressed="false" onclick="window.flexgridSelectChain&&window.flexgridSelectChain('eth')">Ethereum</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="base" aria-pressed="false" onclick="window.flexgridSelectChain&&window.flexgridSelectChain('base')">Base</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="apechain" aria-pressed="false" onclick="window.flexgridSelectChain&&window.flexgridSelectChain('apechain')">ApeChain</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="polygon" aria-pressed="false" onclick="window.flexgridSelectChain&&window.flexgridSelectChain('polygon')">Polygon</button>
+              <button type="button" class="flexgrid-chain-btn" data-chain="solana" aria-pressed="false" onclick="window.flexgridSelectChain&&window.flexgridSelectChain('solana')">Solana (Beta)</button>
             </div>
+
+            <p class="flexgrid-chain-hint">Tap a chain, then press Next.</p>
 
             <button id="chainNextBtn" class="btn walletFlowLoadBtn" type="button" disabled>Next</button>
           </div>
@@ -228,6 +230,13 @@
           <div class="walletSectionContent">
           <div class="walletFlowStack">
             <h2 class="walletFlowTitle">Wallet</h2>
+            <div class="walletFlowSelectedChain" id="walletFlowSelectedChain">
+              <div class="walletFlowSelectedChainMeta">
+                <span class="walletFlowSelectedChainLabel">Chain</span>
+                <span id="walletFlowSelectedChainName" class="walletFlowSelectedChainName">Not selected</span>
+              </div>
+              <button type="button" id="walletFlowChangeChainBtn" class="btn btnSmall btnGhostSmall">Change chain</button>
+            </div>
             <p class="walletFlowSubHint">Add multiple wallets with a comma, space, or new line (max 12).</p>
             <div class="walletInputRow">
               <div class="walletInputOverlayWrap">

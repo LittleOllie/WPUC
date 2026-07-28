@@ -60,9 +60,12 @@ import {
 } from "./wallets/walletValidation.js";
 import { isIOS, sleep } from "./platform/ios.js";
 import { initThemeToggle } from "./ui/theme.js";
-import { initDisclaimer } from "./wizard/disclaimer.js";
-import { initCollectionSearch } from "./collections/collectionSearch.js";
 import { initBootstrapUi } from "./bootstrap.js";
+import {
+  getSelectedChain,
+  initChainStep,
+  syncChainStepUi,
+} from "./wizard/chainStep.js";
 import { loadGifExportLibs } from "./export/gifLazyLoad.js";
 
 hydrateImageLoaderFromSession();
@@ -214,6 +217,7 @@ function renderUI({ scrollTop = false } = {}) {
   try {
     document.body.dataset.flexgridStep = String(uiState.step ?? 1);
   } catch (_) {}
+  syncChainStepUi(uiState.chain || "");
   /* Never leave the global loading veil up on early steps (it would block taps). */
   if (currentStep === 0) {
     try {
@@ -985,11 +989,15 @@ function applyChainSelectionFromDom() {
   if (!raw) return;
   if (raw === "solana") {
     state.chain = "solana";
+    uiState.chain = "solana";
+    syncChainStepUi("solana");
     return;
   }
   if (raw === "apechain") {
     state.chain = "apechain";
     state.host = null;
+    uiState.chain = "apechain";
+    syncChainStepUi("apechain");
     console.log("[FlexGrid] Chain UI synced to state:", state.chain, "(NFTs via Moralis on Worker)");
     return;
   }
@@ -997,6 +1005,8 @@ function applyChainSelectionFromDom() {
   if (!host) return;
   state.chain = raw;
   state.host = host;
+  uiState.chain = raw;
+  syncChainStepUi(raw);
   console.log("[FlexGrid] Chain UI synced to state:", state.chain);
 }
 
@@ -8812,68 +8822,35 @@ function toggleStageLayoutSection() {
     });
   });
 
-  // Chain selection step (delegated clicks: survives late DOM / avoids stale NodeList if markup moves)
-  const chainNext = $("chainNextBtn");
-  const chainSelectEl = $("chainSelect");
-  let selectedChain = "";
-
-  const setChain = (c) => {
-    selectedChain = String(c || "").trim().toLowerCase();
-    document.querySelectorAll(".flexgrid-chain-btn[data-chain]").forEach((b) => {
-      const on = b.dataset.chain === selectedChain;
-      b.classList.toggle("isSelected", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-    if (chainNext) chainNext.disabled = !selectedChain;
-    uiState.chain = selectedChain || null;
-    if (selectedChain === "custom") {
-      state.chain = "custom";
-      state.host = null;
-      uiState.wallet = null;
-      renderUI();
-      return;
-    }
-    if (
-      chainSelectEl &&
-      (selectedChain === "eth" ||
-        selectedChain === "base" ||
-        selectedChain === "apechain" ||
-        selectedChain === "solana" ||
-        selectedChain === "polygon")
-    ) {
-      chainSelectEl.value = selectedChain;
-      try {
-        chainSelectEl.dispatchEvent(new Event("change", { bubbles: true }));
-      } catch (_) {
-        applyChainSelectionFromDom();
+  // Chain selection step
+  initChainStep({
+    onSelected: (chain) => {
+      uiState.chain = chain || null;
+      if (chain === "custom") {
+        state.chain = "custom";
+        state.host = null;
+        uiState.wallet = null;
+        renderUI();
+        return;
       }
-    }
-    renderUI();
-  };
-
-  initBootstrapUi();
-
-  const chainScreenEl = $("screen-chain");
-  const onChainChipPick = (e) => {
-    const b = e.target.closest(".flexgrid-chain-btn[data-chain]");
-    if (!b || b.disabled) return;
-    if (b.classList.contains("flexgrid-chain-btn--disabled")) return;
-    const raw = b.getAttribute("data-chain");
-    if (!raw) return;
-    setChain(raw);
-  };
-  /* One handler per tap: pointerdown + click both fired on many devices and a debounce blocked real picks. */
-  if (chainScreenEl) {
-    chainScreenEl.addEventListener("click", onChainChipPick, true);
-  }
-
-  if (chainNext) {
-    chainNext.addEventListener("click", () => {
-      if (!selectedChain) return;
+      const sel = $("chainSelect");
+      if (sel) sel.value = chain;
+      applyChainSelectionFromDom();
+      syncWalletEntryUiForSelectedChain();
+      renderUI();
+    },
+    onGoToWalletStep: () => {
+      if (!getSelectedChain()) return;
       uiState.step = 2;
       renderUI({ scrollTop: true });
-    });
-  }
+    },
+    onGoToChainStep: () => {
+      uiState.step = 1;
+      renderUI({ scrollTop: true });
+    },
+  });
+
+  initBootstrapUi();
 
   const retryBtn = $("retryBtn");
   if (retryBtn && typeof retryMissingTiles === "function") {

@@ -1699,6 +1699,47 @@ body.dark .walletFlowStack select.input.wallet-flow-field {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+.flexgrid-chain-hint {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.walletFlowSelectedChain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 221, 85, 0.28);
+  background: rgba(255, 221, 85, 0.08);
+}
+
+.walletFlowSelectedChainMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.walletFlowSelectedChainLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.walletFlowSelectedChainName {
+  font-family: Fredoka, "Baloo 2", system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--lo-yellow, #ffdd55);
+}
+
 /* Wallet step: chain is chosen in Step 1, so hide dropdown but keep in DOM for logic. */
 #walletFlowChainRow{
   display: none;
