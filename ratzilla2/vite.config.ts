@@ -1,4 +1,5 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Connect, type ViteDevServer } from "vite";
+import type { ServerResponse } from "node:http";
 import react from "@vitejs/plugin-react";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,14 +19,16 @@ export default defineConfig(({ command }) => ({
     react(),
     command === "serve" && {
       name: "dev-html-entry",
-      configureServer(server) {
-        server.middlewares.use((req, _res, next) => {
+      configureServer(server: ViteDevServer) {
+        server.middlewares.use(
+          (req: Connect.IncomingMessage, _res: ServerResponse, next: Connect.NextFunction) => {
           const path = req.url?.split("?")[0];
           if (path === "/" || path === "/index.html") {
             req.url = "/index.vite.html";
           }
           next();
-        });
+        },
+        );
       },
     },
   ].filter(Boolean),

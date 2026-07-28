@@ -77,11 +77,17 @@ export default function Transmission() {
         </header>
 
         <footer className="rz2-bottom">
-          <div className="rz-infect-entry rz-infect-entry--landing">
-            <Link to="/infection" className="rz-infect-btn">
+          <nav className="bw-landing-actions" aria-label="Blackwater experiences">
+            <Link to="/infection" className="bw-landing-actions__btn bw-landing-actions__btn--infect">
               🦠 INFECT ME
             </Link>
-          </div>
+            <Link to="/containment" className="bw-landing-actions__btn bw-landing-actions__btn--game">
+              ▶ PLAY CONTAINMENT PROTOCOL
+            </Link>
+            <Link to="/whitelist" className="bw-landing-actions__btn bw-landing-actions__btn--wl">
+              ✓ CHECK YOUR WHITELIST
+            </Link>
+          </nav>
 
           <p className="rz2-soon" aria-live="polite">
             <span className="rz2-soon__text" id="rz2Soon" />

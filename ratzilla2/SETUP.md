@@ -38,7 +38,7 @@ VITE_BASE_PATH=/blackwaterinfection/ npm run publish
 
 ## SPA routes
 
-`404.html` is a copy of `index.html` so `/infection` works after refresh on GitHub Pages.
+`404.html` is a copy of `index.html` so `/infection` and `/containment` work after refresh on GitHub Pages.
 
 ## X share
 

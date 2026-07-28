@@ -40,6 +40,9 @@ export function useRatzilla2Boot() {
 
     if (!stage || !soonEl) return;
 
+    const stageEl = stage;
+    const soonText = soonEl;
+
     let phraseIdx = -1;
     let typingStop = false;
 
@@ -65,7 +68,7 @@ export function useRatzilla2Boot() {
     async function erase(text: string) {
       for (let i = text.length; i >= 0; i--) {
         if (typingStop) return;
-        soonEl.textContent = text.slice(0, i);
+        soonText.textContent = text.slice(0, i);
         await delay(rand(24, 52));
         if (Math.random() < 0.04) textGlitch();
       }
@@ -75,7 +78,7 @@ export function useRatzilla2Boot() {
       cursorEl?.classList.remove("is-off");
       for (let i = 0; i <= text.length; i++) {
         if (typingStop) return;
-        soonEl.textContent = text.slice(0, i);
+        soonText.textContent = text.slice(0, i);
         const ch = text[i - 1] || "";
         let wait = rand(48, 105);
         if (ch === "." || ch === "/") wait = rand(220, 480);
@@ -103,7 +106,7 @@ export function useRatzilla2Boot() {
       window.setTimeout(() => triggerFlicker(), 900);
 
       window.setTimeout(() => {
-        stage.classList.add("is-live");
+        stageEl.classList.add("is-live");
       }, 200);
 
       window.setTimeout(() => {

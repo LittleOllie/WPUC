@@ -639,7 +639,7 @@ body {
   z-index: 14;
   left: 0;
   right: 0;
-  bottom: clamp(6%, 10vh, 14%);
+  bottom: clamp(4%, 8vh, 12%);
   width: min(94vw, 640px);
   margin-inline: auto;
   text-align: center;
@@ -649,11 +649,81 @@ body {
   justify-content: center;
   gap: clamp(0.65rem, 2vh, 1.1rem);
   opacity: 0;
-  transition: opacity 1.8s ease 4s;
+  transition: opacity 1.2s ease 0.6s;
 }
 
 .rz2-stage.is-live .rz2-bottom {
   opacity: 1;
+}
+
+/* Landing action buttons — always readable, stacked */
+.bw-landing-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: min(100%, 22rem);
+  margin-inline: auto;
+  z-index: 20;
+}
+
+.bw-landing-actions__btn {
+  display: block;
+  width: 100%;
+  padding: 0.62rem 1rem;
+  border: 1px solid rgba(196, 32, 40, 0.55);
+  border-radius: 2px;
+  background: rgba(12, 6, 8, 0.88);
+  color: rgba(228, 220, 210, 0.94);
+  font: inherit;
+  font-size: clamp(0.68rem, 2.8vw, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow:
+    0 0 14px rgba(160, 24, 32, 0.28),
+    inset 0 0 10px rgba(80, 12, 18, 0.12);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.bw-landing-actions__btn:hover,
+.bw-landing-actions__btn:focus-visible {
+  border-color: rgba(255, 60, 50, 0.75);
+  background: rgba(28, 10, 12, 0.95);
+  box-shadow: 0 0 18px rgba(196, 32, 40, 0.4);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.bw-landing-actions__btn--infect {
+  color: rgba(230, 120, 120, 0.98);
+  animation: rz-infect-pulse 3.2s ease-in-out infinite;
+}
+
+.bw-landing-actions__btn--game {
+  border-color: rgba(200, 144, 32, 0.55);
+  color: rgba(240, 210, 160, 0.96);
+}
+
+.bw-landing-actions__btn--game:hover,
+.bw-landing-actions__btn--game:focus-visible {
+  border-color: rgba(240, 190, 80, 0.8);
+}
+
+.bw-landing-actions__btn--wl {
+  border-color: rgba(58, 128, 80, 0.55);
+  color: rgba(180, 230, 195, 0.96);
+}
+
+.bw-landing-actions__btn--wl:hover,
+.bw-landing-actions__btn--wl:focus-visible {
+  border-color: rgba(90, 180, 110, 0.8);
 }
 
 .rz2-soon {
@@ -1192,7 +1262,16 @@ body {
   }
 
   .rz2-bottom {
-    bottom: clamp(5%, 8vh, 12%);
+    bottom: clamp(3%, 6vh, 10%);
+  }
+
+  .bw-landing-actions {
+    width: min(100%, 18rem);
+  }
+
+  .bw-landing-actions__btn {
+    font-size: clamp(0.62rem, 3.2vw, 0.74rem);
+    padding: 0.55rem 0.75rem;
   }
 
   .rz2-logo--blackwater {
