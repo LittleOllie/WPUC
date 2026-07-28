@@ -1,4 +1,6 @@
 node_modules
 dist
+# FlexGrid static bundle for littleollielabs.com (GitHub Pages has no build step)
+!flexgrid/site/dist/
+!flexgrid/site/dist/app.js
 .DS_Store
-ratzilla2-deploy-tmp/
