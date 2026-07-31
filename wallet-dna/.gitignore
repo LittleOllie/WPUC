@@ -4,3 +4,5 @@ out/
 dist-worker/
 .publish-api-backup/
 .env.local
+.env.development.local
+.env*.local

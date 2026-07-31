@@ -1292,11 +1292,25 @@ async function fetchAlchemyNftsForOwner(env, ownerVal, chain, contractAddresses,
   const minimal = opts && opts.minimal === true;
   const thumbOnly = opts && opts.thumbOnly === true;
   let pageKey = opts && typeof opts.pageKey === "string" && opts.pageKey.trim() ? opts.pageKey.trim() : null;
+  /** Cloudflare caps subrequests per invocation (~50). One-shot mode must not paginate unbounded. */
+  const MAX_ALCHEMY_PAGES_ONE_SHOT = 40;
+  let pagesFetched = 0;
 
   console.log("[FlexGrid Worker] NFT fetch (Alchemy)", { chain, host, owner: ownerVal });
 
   try {
     do {
+      pagesFetched += 1;
+      if (!pageOnly && pagesFetched > MAX_ALCHEMY_PAGES_ONE_SHOT) {
+        return corsResponse(
+          JSON.stringify({
+            error:
+              "Wallet has too many NFTs for one request. Reload the app — the browser should fetch pages incrementally (pageOnly=1).",
+            pageKey: pageKey || null,
+          }),
+          502
+        );
+      }
       const params = new URLSearchParams({
         owner: ownerVal,
         withMetadata: minimal ? "false" : "true",

@@ -348,10 +348,9 @@ export async function fetchNFTsFromWorker(opts = {}) {
     const mod = await import("./solanaService.js");
     return mod.fetchSolanaNFTsFromWorker({ wallet: opts.wallet });
   }
-  if (chainParam === "apechain") {
-    return fetchNFTsInBatches(opts);
-  }
-  return fetchNFTsFromWorkerAlchemyOnce(opts);
+  // Paged Worker calls (pageOnly=1) avoid Cloudflare's per-invocation subrequest cap when
+  // Alchemy/Moralis return many pages for large wallets.
+  return fetchNFTsInBatches(opts);
 }
 
 /** Explicit cache-first entry (same behavior as `fetchNFTsFromWorker`). */
@@ -397,10 +396,11 @@ export async function fetchNFTsInBatches(opts = {}) {
   const chainParam = String(opts.chain || "eth").trim().toLowerCase();
   const contractFilter = String(opts.contractAddresses || "").trim();
   const minimal = opts.minimal === true;
+  const thumbOnly = opts.thumbOnly === true;
   const bypassCache = opts.bypassCache === true;
   if (!wallet) return [];
 
-  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal);
+  const cacheKey = getNftFetchCacheKey(wallet, chainParam, contractFilter, minimal, thumbOnly);
   const cachedHit = tryReadNftCaches(cacheKey, bypassCache);
   if (cachedHit) {
     console.log("[FlexGrid] Using cached NFTs (paged path)", { cacheKey, count: cachedHit.length });
@@ -438,6 +438,7 @@ export async function fetchNFTsInBatches(opts = {}) {
           pageKey: cursorSent || undefined,
           pageOnly: true,
           minimal,
+          thumbOnly,
         });
         const rows = Array.isArray(pack?.nfts) ? pack.nfts : [];
         for (const r of rows) all.push(r);

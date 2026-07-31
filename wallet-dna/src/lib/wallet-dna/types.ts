@@ -2,6 +2,54 @@ export type SupportedChain = "ethereum" | "base";
 
 export type ScoreConfidence = "high" | "medium" | "limited";
 
+export type DiamondHandsComponentScores = {
+  holdingDuration: number;
+  longTermRetention: number;
+  sellBehaviour: number;
+  transferBehaviour: number;
+  holdingStreak: number;
+};
+
+export type DiamondHandsDiagnostics = {
+  finalScore: number;
+  averageHoldingDays: number;
+  medianHoldingDays: number;
+  oldestCurrentHoldingDays: number;
+  currentAssetsOver180DaysPercent: number;
+  currentAssetsOver365DaysPercent: number;
+  currentAssetsOver730DaysPercent: number;
+  historicalAssetsSold: number;
+  historicalAssetsTransferredOut: number;
+  recentSales: number;
+  recentTransfersOut: number;
+  walletAgeDays: number;
+  analysedAssetCount: number;
+  unknownAcquisitionDateCount: number;
+  componentScores: DiamondHandsComponentScores;
+  penalties: string[];
+  warnings: string[];
+  rawMedianHoldingDays: number | null;
+  reconciledMedianHoldingDays: number | null;
+  retentionRate: number | null;
+  shortTermOutboundRate: number | null;
+  outboundToInboundRatio: number | null;
+  transferHistoryCapped: boolean;
+  inboundTransfersComplete: boolean;
+};
+
+export type DiamondHandsTokenSample = {
+  tokenKey: string;
+  rawAcquiredAt: string | null;
+  reconciledHoldStartedAt: string | null;
+  holdDays: number | null;
+  everOutbound: boolean;
+};
+
+export type WalletDNAScoreDebug = {
+  diamondHands: DiamondHandsDiagnostics;
+  tokenSamples?: DiamondHandsTokenSample[];
+};
+
 export type WalletDNAScore = {
   value: number;
   confidence: ScoreConfidence;
@@ -13,7 +61,7 @@ export type WalletDNAScores = {
   collector: WalletDNAScore;
   diamondHands: WalletDNAScore;
   explorer: WalletDNAScore;
-  mintEnergy: WalletDNAScore;
+  discovery: WalletDNAScore;
   loyalty: WalletDNAScore;
 };
 
@@ -126,6 +174,8 @@ export type WalletDNAResult = {
   narrative: string;
   warnings: string[];
   visuals: WalletDNAVisuals;
+  /** Development-only score breakdown — never returned in production unless explicitly enabled */
+  scoreDebug?: WalletDNAScoreDebug;
 };
 
 export type NFTValuationEvidence =
@@ -309,6 +359,8 @@ export type WalletDNAErrorCode =
   | "PROVIDER_UNAVAILABLE"
   | "ANALYSIS_TIMEOUT"
   | "HISTORY_PARTIAL"
+  | "MISSING_ALCHEMY_CONFIG"
+  | "METHOD_NOT_ALLOWED"
   | "INTERNAL_ERROR";
 
 export type AnalysisContext = {

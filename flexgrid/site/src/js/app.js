@@ -1286,7 +1286,7 @@ function enableButtons() {
   const ch = getWalletParseChain();
   const polyContractRaw = String($("polygonContractInput")?.value || "").trim().toLowerCase();
   const polygonContractOk = ch !== "polygon" || isValidPolygonEvmAddress(polyContractRaw);
-  if (loadBtn) loadBtn.disabled = !hasWallets || !polygonContractOk;
+  if (loadBtn) loadBtn.disabled = loadWalletsInFlight || !hasWallets || !polygonContractOk;
   const polySave = $("polygonSaveCollectionBtn");
   if (polySave) {
     polySave.disabled = !(ch === "polygon" && hasWallets && polygonContractOk);
@@ -6740,8 +6740,9 @@ function loadWallet({ wallet, chain, contract: polygonContractOpt } = {}) {
   if (c === "polygon" && pci && typeof polygonContractOpt === "string" && polygonContractOpt.trim()) {
     pci.value = polygonContractOpt.trim();
   }
-  // Kick off the existing load flow (debounced + overlap guard).
-  triggerLoadWallets();
+  // Kick off the existing load flow (overlap guard; show spinner immediately).
+  beginWalletLookupUi("Starting lookup…");
+  triggerLoadWallets({ immediate: true });
 }
 
 // ---------- Large load guard (UX + crash prevention) ----------
@@ -6763,13 +6764,51 @@ function confirmLargeImageLoadIfNeeded(nftTileCount) {
 let loadWalletsInFlight = false;
 let loadWalletsDebounceTimer = null;
 
+function setLoadBtnLoading(loading) {
+  const btn = $("loadBtn");
+  if (!btn) return;
+  btn.classList.toggle("is-loading", loading);
+  if (loading) btn.setAttribute("aria-busy", "true");
+  else btn.removeAttribute("aria-busy");
+}
+
+function beginWalletLookupUi(subtitle = "Looking up wallet…") {
+  showLoading("Gathering your NFTs", subtitle);
+  setLoadBtnLoading(true);
+}
+
+function endWalletLookupUi() {
+  hideLoading();
+  setLoadBtnLoading(false);
+}
+
+function walletLookupProgressSubtitle(info = {}) {
+  const total = Number(info.total) || 0;
+  const page = Number(info.page) || 0;
+  if (page > 0 && total > 0) {
+    return info.hasMore ? `${total} NFTs found so far (page ${page})…` : `${total} NFTs found`;
+  }
+  return "Looking up wallet…";
+}
+
+function makeWalletNftProgressHandler(gatherMsg) {
+  return (info) => {
+    showLoading(gatherMsg, walletLookupProgressSubtitle(info));
+  };
+}
+
 /** Debounced load so rapid clicks / key repeats do not stack multiple Worker runs (saves Alchemy / Moralis CU). */
-function triggerLoadWallets() {
+function triggerLoadWallets(opts = {}) {
   clearTimeout(loadWalletsDebounceTimer);
-  loadWalletsDebounceTimer = setTimeout(() => {
+  const run = () => {
     loadWalletsDebounceTimer = null;
     void loadWallets();
-  }, 500);
+  };
+  if (opts?.immediate) {
+    run();
+    return;
+  }
+  loadWalletsDebounceTimer = setTimeout(run, 500);
 }
 
 async function loadWallets() {
@@ -6778,6 +6817,7 @@ async function loadWallets() {
   const chain = String($("chainSelect")?.value || state.chain || "eth").trim().toLowerCase();
 
   if (!state.wallets.length) {
+    endWalletLookupUi();
     if (chain === "solana") {
       return setStatus("👋 Enter at least one valid Solana wallet (base58). Separate several with a comma, space, or new line.");
     }
@@ -6785,6 +6825,7 @@ async function loadWallets() {
   }
 
   if (!configLoaded) {
+    endWalletLookupUi();
     return setStatus(
       "⚠️ Configuration not loaded. " +
         "Ensure the Worker config is available at " + getWorkerBase() + "/api/config/flex-grid"
@@ -6792,11 +6833,15 @@ async function loadWallets() {
   }
 
   const host = ALCHEMY_HOST[chain];
-  if (chain !== "apechain" && chain !== "solana" && !host) return setStatus("Chain not configured.");
+  if (chain !== "apechain" && chain !== "solana" && !host) {
+    endWalletLookupUi();
+    return setStatus("Chain not configured.");
+  }
 
   if (chain === "polygon") {
     const pc = normalizePolygonContract(String($("polygonContractInput")?.value || "").trim());
     if (!pc) {
+      endWalletLookupUi();
       return setStatus(
         "Polygon: paste the NFT collection contract (0x + 40 hex). Only NFTs you own from that contract are loaded — not your full wallet."
       );
@@ -6827,9 +6872,10 @@ async function loadWallets() {
     state.contractLogoInflight.clear();
 
     const gatherMsg = "Gathering your NFTs";
-    showLoading(gatherMsg, "");
+    beginWalletLookupUi(`Checking ${state.wallets.length} wallet${state.wallets.length === 1 ? "" : "s"}…`);
     await yieldToPaint();
     setStatus(`Loading NFTs… (${state.wallets.length} wallet(s))`);
+    const onNftPageProgress = makeWalletNftProgressHandler(gatherMsg);
 
     const allNfts = [];
     console.log("[LOAD WALLET]", state.wallets.join(", "), chain);
@@ -6840,7 +6886,12 @@ async function loadWallets() {
         wi++;
         showLoading(gatherMsg, "");
         setStatus(`Gathering NFTs… wallet ${wi}/${state.wallets.length} (ApeChain — one Moralis sequence at a time).`);
-        const nfts = await loadWalletSafe({ wallet: w, chain });
+        showLoading(gatherMsg, `Wallet ${wi}/${state.wallets.length}…`);
+        const nfts = await loadWalletSafe({
+          wallet: w,
+          chain,
+          onProgress: onNftPageProgress,
+        });
         allNfts.push(...(nfts || []));
       }
     } else if (chain === "polygon") {
@@ -6883,6 +6934,7 @@ async function loadWallets() {
             fetchNFTsFromWorker({
               wallet: w,
               chain,
+              onProgress: onNftPageProgress,
             })
           )
         );
@@ -6969,9 +7021,9 @@ async function loadWallets() {
     renderPolygonSavedStrip();
 
     await new Promise((r) => setTimeout(r, 400));
-    hideLoading();
+    endWalletLookupUi();
   } catch (err) {
-    hideLoading();
+    endWalletLookupUi();
     const raw = (err?.message || "Error loading NFTs.").toLowerCase();
     let userMsg = "Something went wrong loading your NFTs. Please check your wallet addresses and try again.";
     if (raw.includes("upstream connect error")) {
@@ -7000,6 +7052,7 @@ async function loadWallets() {
     showConnectionStatus(false);
   } finally {
     loadWalletsInFlight = false;
+    enableButtons();
   }
 }
 
@@ -8548,12 +8601,15 @@ function toggleStageLayoutSection() {
     walletInput.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        // UX: submitting wallet is what triggers the existing wallet load.
         const value = String(walletInput.value || "").trim();
         if (!value) return;
+        syncWalletsFromInput();
         uiState.wallet = value;
         uiState.step = 3;
-        triggerLoadWallets();
+        beginWalletLookupUi("Starting lookup…");
+        void yieldToPaint().then(() => {
+          triggerLoadWallets({ immediate: true });
+        });
         renderUI({ scrollTop: true });
       }
     });
@@ -8716,9 +8772,13 @@ function toggleStageLayoutSection() {
       // Step 2 submit: set UI-only wallet, then trigger existing wallet/NFT load logic.
       const value = String(($("walletInput")?.value || "")).trim();
       if (!value) return;
+      syncWalletsFromInput();
       uiState.wallet = value;
       uiState.step = 3;
-      triggerLoadWallets();
+      beginWalletLookupUi("Starting lookup…");
+      void yieldToPaint().then(() => {
+        triggerLoadWallets({ immediate: true });
+      });
       renderUI({ scrollTop: true });
     });
   const gridBuildBtn = $("gridBuildBtn");

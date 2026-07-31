@@ -52,7 +52,7 @@ function buildTraitCombo(result: WalletDNAResult): string | null {
   }
 
   const personalityPrimary: Partial<Record<string, keyof typeof SCORE_LABELS>> = {
-    "mint-hunter": "mintEnergy",
+    "genesis-seeker": "discovery",
     "art-wanderer": "explorer",
     "base-explorer": "explorer",
     "multi-chain-explorer": "explorer",

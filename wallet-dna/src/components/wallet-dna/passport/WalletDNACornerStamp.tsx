@@ -1,4 +1,4 @@
-import { getDnaAnalysedStampSrc } from "@/lib/wallet-dna/passport/ollie-assets";
+import { getDnaAnalysedStampExportSrc, getDnaAnalysedStampSrc } from "@/lib/wallet-dna/passport/ollie-assets";
 
 type Props = {
   visible: boolean;
@@ -13,6 +13,7 @@ export function WalletDNACornerStamp({ visible }: Props) {
       <img
         className="wdna-dna-card__corner-stamp-img"
         src={getDnaAnalysedStampSrc()}
+        data-export-src={getDnaAnalysedStampExportSrc()}
         alt=""
         draggable={false}
       />

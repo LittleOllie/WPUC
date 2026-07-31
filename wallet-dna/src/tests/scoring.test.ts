@@ -3,7 +3,43 @@ import { calculateScores } from "@/lib/wallet-dna/analysis/scores";
 import { runAnalysisFromData } from "@/lib/wallet-dna/analysis/run-analysis";
 import { buildFixtureData } from "@/lib/wallet-dna/providers/fixture-data";
 import { FIXTURE_WALLETS } from "@/lib/wallet-dna/providers/fixtures";
-import type { AnalysisContext, NormalizedNFT, NormalizedNFTTransfer } from "@/lib/wallet-dna/types";
+import type { AnalysisContext, NormalizedNFT, NormalizedNFTTransfer, WalletCollectionSummary, WalletDNAStats } from "@/lib/wallet-dna/types";
+
+function mockStats(overrides: Partial<WalletDNAStats> = {}): WalletDNAStats {
+  return {
+    nftsCurrentlyHeld: 0,
+    uniqueCurrentCollections: 0,
+    chainsUsed: [],
+    firstKnownActivity: null,
+    longestCurrentHoldDays: null,
+    medianCurrentHoldDays: null,
+    identifiedMints: 0,
+    inboundTransfers: 0,
+    outboundTransfers: 0,
+    mostHeldCollection: null,
+    ethereumNftCount: 0,
+    baseNftCount: 0,
+    spamExcluded: 0,
+    rawNftCount: 0,
+    ...overrides,
+  };
+}
+
+function collectionFromNft(n: NormalizedNFT): WalletCollectionSummary {
+  return {
+    chain: n.chain,
+    contractAddress: n.contractAddress,
+    collectionName: n.collectionName ?? n.title ?? "Unknown collection",
+    currentQuantity: n.balance,
+    totalInbound: 1,
+    totalOutbound: 0,
+    firstInteractionAt: n.acquiredAt,
+    latestInteractionAt: n.acquiredAt,
+    currentOldestHoldDays: n.acquiredAt
+      ? Math.floor((Date.now() - new Date(n.acquiredAt).getTime()) / 86400000)
+      : null,
+  };
+}
 
 describe("fixture scoring", () => {
   it("produces diamond collector personality for diamond fixture", () => {
@@ -75,18 +111,17 @@ describe("fixture scoring", () => {
       walletAddress: wallet,
       nfts,
       transfers,
-      collections: nfts.map((n) => ({
-        chain: n.chain,
-        contractAddress: n.contractAddress,
-        collectionName: n.collectionName,
-        currentQuantity: 1,
-        totalInbound: 1,
-        totalOutbound: 0,
-        firstInteractionAt: n.acquiredAt,
-        latestInteractionAt: n.acquiredAt,
-        currentOldestHoldDays: 400,
-      })),
-      stats: { firstKnownActivity: transfers[0]!.timestamp, longestCurrentHoldDays: 400 },
+      collections: nfts.map(collectionFromNft),
+      stats: mockStats({
+        firstKnownActivity: transfers[0]!.timestamp,
+        longestCurrentHoldDays: 400,
+        nftsCurrentlyHeld: nfts.length,
+        uniqueCurrentCollections: nfts.length,
+        chainsUsed: ["ethereum"],
+        ethereumNftCount: nfts.length,
+        inboundTransfers: transfers.length,
+        identifiedMints: transfers.length,
+      }),
       coverage: {
         ethereum: {
           ownershipComplete: true,
@@ -164,7 +199,15 @@ describe("fixture scoring", () => {
       nfts: nfts.slice(1),
       transfers,
       collections: [],
-      stats: {},
+      stats: mockStats({
+        nftsCurrentlyHeld: nfts.slice(1).length,
+        uniqueCurrentCollections: nfts.slice(1).length,
+        chainsUsed: ["ethereum"],
+        ethereumNftCount: nfts.slice(1).length,
+        inboundTransfers: transfers.filter((t) => t.direction === "inbound").length,
+        outboundTransfers: 1,
+        identifiedMints: transfers.filter((t) => t.isMint).length,
+      }),
       coverage: {
         ethereum: {
           ownershipComplete: true,

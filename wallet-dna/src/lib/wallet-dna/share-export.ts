@@ -208,7 +208,8 @@ export async function prepareShareCardForExport(
 
   await Promise.all(
     cloneImgs.map(async (cloneImg, index) => {
-      const src = cloneImg.getAttribute("src");
+      const exportSrc = cloneImg.getAttribute("data-export-src");
+      const src = exportSrc ?? cloneImg.getAttribute("src");
       if (!src || src.startsWith("data:")) return;
 
       const ok = await inlineCloneImage(cloneImg, liveImgs[index], src);

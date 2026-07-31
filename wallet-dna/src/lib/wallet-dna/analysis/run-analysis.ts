@@ -10,7 +10,10 @@ import type {
 import { filterIncludedNfts } from "@/lib/wallet-dna/analysis/spam";
 import { groupCollections } from "@/lib/wallet-dna/analysis/normalise";
 import { calculateScores } from "@/lib/wallet-dna/analysis/scores";
-import { selectPersonality } from "@/lib/wallet-dna/analysis/personalities";
+import { selectPersonality, enrichPersonalityCopy } from "@/lib/wallet-dna/analysis/personalities";
+import {
+  buildScoreDebug,
+} from "@/lib/wallet-dna/analysis/diamond-hands-diagnostics";
 import { evaluateBadges } from "@/lib/wallet-dna/analysis/badges";
 import { generateNarrative } from "@/lib/wallet-dna/analysis/narrative";
 import { buildWalletVisuals } from "@/lib/wallet-dna/analysis/visuals";
@@ -65,6 +68,7 @@ export function runAnalysisFromData(
   nfts: NormalizedNFT[],
   transfers: NormalizedNFTTransfer[],
   coverage: AnalysisCoverage,
+  options?: { scoreDebug?: boolean },
 ): { result: WalletDNAResult; includedNfts: NormalizedNFT[] } {
   const { included, excludedSpam, rawCount } = filterIncludedNfts(nfts);
 
@@ -89,7 +93,7 @@ export function runAnalysisFromData(
   };
 
   const scores = calculateScores(ctx);
-  const personality = selectPersonality(ctx, scores);
+  const personality = enrichPersonalityCopy(selectPersonality(ctx, scores), scores);
   const badges = evaluateBadges(ctx, scores, walletAddress);
 
   const warnings: string[] = [
@@ -125,7 +129,17 @@ export function runAnalysisFromData(
   };
 
   partialResult.narrative = generateNarrative(partialResult);
+  if (options?.scoreDebug) {
+    partialResult.scoreDebug = buildScoreDebug(ctx);
+  }
   return { result: partialResult, includedNfts: included };
+}
+
+export function stripScoreDebug(result: WalletDNAResult): WalletDNAResult {
+  if (!result.scoreDebug) return result;
+  const stripped = { ...result };
+  delete stripped.scoreDebug;
+  return stripped;
 }
 
 export async function runWalletDNAAnalysisFull(
@@ -140,7 +154,7 @@ export async function runWalletDNAAnalysisFull(
   const { address, ensName } = await resolveWalletInput(input);
 
   if (env.useFixtures && FIXTURE_WALLETS[address.toLowerCase()]) {
-    const out = await getFixtureResult(address, FIXTURE_WALLETS[address.toLowerCase()]!);
+    const out = await getFixtureResult(address, FIXTURE_WALLETS[address.toLowerCase()]!, env);
     return out!;
   }
 
@@ -148,7 +162,7 @@ export async function runWalletDNAAnalysisFull(
     throw new Error("PROVIDER_UNAVAILABLE");
   }
 
-  return analyseWithProvider(address, ensName, env.alchemyApiKey, env.maxTransfersPerChain);
+  return analyseWithProvider(address, ensName, env.alchemyApiKey, env.maxTransfersPerChain, env);
 }
 
 export async function runWalletDNAAnalysis(

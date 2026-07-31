@@ -32,6 +32,14 @@ export function mapErrorToResponse(err: unknown): {
       retryable: false,
     };
   }
+  if (msg === "MISSING_ALCHEMY_CONFIG") {
+    return {
+      code: "MISSING_ALCHEMY_CONFIG",
+      message: "Wallet DNA analysis is not configured on the server. The Alchemy API key is missing.",
+      status: 503,
+      retryable: false,
+    };
+  }
   if (msg.includes("PROVIDER_RATE_LIMIT")) {
     return {
       code: "PROVIDER_RATE_LIMIT",

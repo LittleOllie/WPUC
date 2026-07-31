@@ -13,7 +13,7 @@ import { SCORE_DESCRIPTIONS, SCORE_LABELS } from "@/lib/wallet-dna/constants";
 import { accentForPersonality, EXPLORER_URLS } from "@/lib/wallet-dna/theme";
 import { collectionKey } from "@/lib/wallet-dna/utils/collection-key";
 import { shortenAddress, formatStatDate } from "@/lib/wallet-dna/utils/helpers";
-import { getOllieHeroClassName, getOllieImageSrc } from "@/lib/wallet-dna/ollie-images";
+import { getOllieHeroClassName, getOllieImageExportSrc, getOllieImageSrc } from "@/lib/wallet-dna/ollie-images";
 import {
   createWalletPassportNumber,
   createWalletPassportSeed,
@@ -138,6 +138,14 @@ export function WalletDNAResultView({ result, onRerun, onAnalyseNew }: Props) {
         </details>
       </header>
 
+      {result.warnings.length > 0 ? (
+        <aside className="wdna-warnings" role="status">
+          {result.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </aside>
+      ) : null}
+
       {/* Personality hero */}
       <section
         className="wdna-hero"
@@ -148,6 +156,7 @@ export function WalletDNAResultView({ result, onRerun, onAnalyseNew }: Props) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={getOllieImageSrc(result.personality.id)}
+              data-export-src={getOllieImageExportSrc(result.personality.id)}
               alt="Little Ollie"
               width={220}
               height={280}
@@ -512,6 +521,9 @@ function ScoreSection({ scores }: { scores: WalletDNAScores }) {
         <article key={k} className="wdna-score-card">
           <div className="wdna-score-card__value">{scores[k].value}</div>
           <h4>{SCORE_LABELS[k]}</h4>
+          {scores[k].confidence !== "high" ? (
+            <p className="wdna-score-card__confidence">{scores[k].confidence} confidence</p>
+          ) : null}
           <div className="wdna-score-bar">
             <div
               className="wdna-score-fill"

@@ -1,5 +1,5 @@
 export const SCHEMA_VERSION = 2;
-export const SCORING_VERSION = "1.0";
+export const SCORING_VERSION = "2.1";
 /** Bump when highlight / acquisition logic changes (invalidates cached analyses). */
 export const HIGHLIGHTS_VERSION = "2";
 
@@ -35,7 +35,7 @@ export const LOADING_OLLIE_LINES = [
   "Hmm… interesting collector signals in here.",
   "No rush — big wallets have big stories.",
   "Still reading. Ollie hasn't napped yet.",
-  "Mint hunter or diamond hands? Finding out…",
+  "Genesis seeker or diamond hands? Finding out…",
   "Ethereum checked. Base is next on the list.",
   "Filtering spam so your profile stays clean.",
   "Your personality badge is almost ready…",
@@ -53,7 +53,7 @@ export const LOADING_TIPS = [
 
 export const LOADING_PERSONALITY_TEASES = [
   "Diamond Collector",
-  "Mint Hunter",
+  "Genesis Seeker",
   "Base Explorer",
   "Collection Loyalist",
   "Art Wanderer",
@@ -77,7 +77,7 @@ export const SCORE_LABELS = {
   collector: "Collector",
   diamondHands: "Diamond Hands",
   explorer: "Explorer",
-  mintEnergy: "Mint Energy",
+  discovery: "Discovery",
   loyalty: "Loyalty",
 } as const;
 
@@ -86,7 +86,7 @@ export const LOADING_DNA_SCORES = [
   { letter: "C", label: SCORE_LABELS.collector },
   { letter: "D", label: SCORE_LABELS.diamondHands },
   { letter: "E", label: SCORE_LABELS.explorer },
-  { letter: "M", label: SCORE_LABELS.mintEnergy },
+  { letter: "G", label: SCORE_LABELS.discovery },
   { letter: "L", label: SCORE_LABELS.loyalty },
 ] as const;
 
@@ -94,7 +94,8 @@ export const SCORE_DESCRIPTIONS = {
   collector: "How broad and deep your current NFT collection is.",
   diamondHands: "How long your NFTs tend to remain in the wallet.",
   explorer: "How widely the wallet explores chains and collections.",
-  mintEnergy: "How often NFTs appear to have been minted directly.",
+  discovery:
+    "How often you find and participate in projects early — through mints, early secondary buys, and exploring newer collections.",
   loyalty: "How committed the wallet is to holding — low selling, retention, and staying power.",
 } as const;
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SCORING_VERSION } from "@/lib/wallet-dna/constants";
 import { SCORE_DESCRIPTIONS, SCORE_LABELS } from "@/lib/wallet-dna/constants";
+import { BADGE_RULES, PERSONALITY_RULES } from "@/lib/wallet-dna/methodology-content";
 
 export default function MethodologyPage() {
   return (
@@ -20,7 +21,8 @@ export default function MethodologyPage() {
           Scoring model version <strong>{SCORING_VERSION}</strong>. Outbound NFT transfers are{" "}
           <em>not</em> automatically labelled as sales.
         </p>
-        <h2>Scores</h2>
+
+        <h2 id="scores">Scores</h2>
         <ul>
           {(Object.keys(SCORE_LABELS) as Array<keyof typeof SCORE_LABELS>).map((k) => (
             <li key={k}>
@@ -28,6 +30,35 @@ export default function MethodologyPage() {
             </li>
           ))}
         </ul>
+        <p>
+          Each score includes a <strong>How calculated</strong> breakdown on your result. Scores
+          marked with limited confidence may reflect incomplete transfer history on very active
+          wallets.
+        </p>
+
+        <h2 id="personalities">Personalities</h2>
+        <p>
+          Your personality is chosen from the rules below, checked <em>in order</em> — the first
+          match wins. Scores influence the outcome but are not the only factor.
+        </p>
+        <ol className="wdna-methodology-list">
+          {PERSONALITY_RULES.map((p) => (
+            <li key={p.name}>
+              <strong>{p.name}</strong> — {p.criteria}
+            </li>
+          ))}
+        </ol>
+
+        <h2 id="badges">Achievement badges</h2>
+        <p>Badges are independent of your personality — you can unlock several at once.</p>
+        <ul>
+          {BADGE_RULES.map((b) => (
+            <li key={b.name}>
+              <strong>{b.name}</strong> — {b.criteria}
+            </li>
+          ))}
+        </ul>
+
         <p>
           Obvious spam and malformed NFT records are excluded where identifiable. Historical analysis
           may be capped for extremely active wallets.

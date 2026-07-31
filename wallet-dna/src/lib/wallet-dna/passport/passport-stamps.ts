@@ -220,7 +220,7 @@ function pickChainStamps(
 function personalityStampId(personalityId: string): string | null {
   const map: Record<string, string> = {
     "diamond-collector": "diamond-hands",
-    "mint-hunter": "mint-machine",
+    "genesis-seeker": "mint-machine",
     "collection-loyalist": "loyal-holder",
     "vault-keeper": "vault-keeper",
     "multi-chain-explorer": "collection-explorer",

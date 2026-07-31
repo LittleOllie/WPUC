@@ -12,6 +12,7 @@ export type WalletDNAEnv = {
   maxTransfersPerChain: number;
   useFixtures: boolean;
   nodeEnv: string;
+  scoreDebug: boolean;
 };
 
 export function getWalletDNAEnv(env: Record<string, string | undefined> = process.env): WalletDNAEnv {
@@ -33,6 +34,11 @@ export function getWalletDNAEnv(env: Record<string, string | undefined> = proces
     maxTransfersPerChain,
     useFixtures,
     nodeEnv: env.NODE_ENV ?? "development",
+    scoreDebug:
+      env.WALLET_DNA_SCORE_DEBUG === "true" ||
+      env.NODE_ENV === "development" ||
+      env.NODE_ENV === "test" ||
+      env.VITEST === "true",
   };
 }
 

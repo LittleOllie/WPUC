@@ -6,19 +6,18 @@ import type {
   WalletDNAScore,
   WalletDNAScores,
 } from "@/lib/wallet-dna/types";
+import { computeDiscoveryMetrics } from "@/lib/wallet-dna/analysis/discovery";
+import { computeDiamondHandsDiagnostics } from "@/lib/wallet-dna/analysis/diamond-hands-diagnostics";
 import { clampScore, createTokenKey, median } from "@/lib/wallet-dna/utils/helpers";
+import {
+  enrichNftsWithHoldPeriods,
+  hasEverOutboundFromWallet,
+} from "@/lib/wallet-dna/utils/holdings";
 
 function confidenceFromCoverage(partial: boolean, activity: number): ScoreConfidence {
   if (partial || activity < 3) return "limited";
   if (activity < 10) return "medium";
   return "high";
-}
-
-function scoreFromThresholds(value: number, thresholds: [number, number][]): number {
-  for (const [max, score] of thresholds) {
-    if (value <= max) return score;
-  }
-  return thresholds[thresholds.length - 1]?.[1] ?? 0;
 }
 
 function nftCountScore(n: number): number {
@@ -43,17 +42,6 @@ function uniqueCollectionScore(n: number): number {
   return 100;
 }
 
-function medianHoldScore(days: number | null): number {
-  if (days == null) return 45;
-  if (days < 7) return 10;
-  if (days < 30) return 25;
-  if (days < 90) return 45;
-  if (days < 180) return 60;
-  if (days < 365) return 75;
-  if (days < 730) return 90;
-  return 100;
-}
-
 function longestHoldScore(days: number | null): number {
   if (days == null) return 25;
   if (days < 30) return 10;
@@ -61,17 +49,6 @@ function longestHoldScore(days: number | null): number {
   if (days < 180) return 45;
   if (days < 365) return 65;
   if (days < 730) return 85;
-  return 100;
-}
-
-function mintLifetimeScore(n: number): number {
-  if (n === 0) return 0;
-  if (n === 1) return 20;
-  if (n <= 4) return 35;
-  if (n <= 9) return 50;
-  if (n <= 24) return 68;
-  if (n <= 49) return 82;
-  if (n <= 99) return 92;
   return 100;
 }
 
@@ -98,6 +75,7 @@ function loyaltyDepthScore(largestCollectionQty: number): number {
 }
 
 function computeCurrentHoldLoyalty(
+  wallet: string,
   nfts: NormalizedNFT[],
   transfers: NormalizedNFTTransfer[],
 ): number | null {
@@ -107,14 +85,11 @@ function computeCurrentHoldLoyalty(
   for (const n of nfts) {
     if (n.isSpam) continue;
     held += n.balance;
-    const key = createTokenKey(n.chain, n.contractAddress, n.tokenId);
-    const sentOut = transfers.some(
-      (t) =>
-        t.direction === "outbound" &&
-        t.tokenId != null &&
-        createTokenKey(t.chain, t.contractAddress, t.tokenId) === key,
-    );
-    if (!sentOut) neverSentOut += n.balance;
+    if (
+      !hasEverOutboundFromWallet(wallet, n.chain, n.contractAddress, n.tokenId, transfers)
+    ) {
+      neverSentOut += n.balance;
+    }
   }
 
   return held ? neverSentOut / held : null;
@@ -130,24 +105,35 @@ export function computeHoldMetrics(
   retentionRate: number | null;
   shortTermOutboundRate: number | null;
 } {
-  const now = Date.now();
+  const enriched = enrichNftsWithHoldPeriods(wallet, nfts, transfers);
   const holdDays: number[] = [];
-  for (const n of nfts) {
+  for (const n of enriched) {
     if (n.isSpam) continue;
+    if (n.currentHoldDays != null) {
+      for (let i = 0; i < n.balance; i++) holdDays.push(n.currentHoldDays);
+      continue;
+    }
     const ts = n.acquiredAt ? new Date(n.acquiredAt).getTime() : null;
-    if (ts && ts <= now) holdDays.push(Math.floor((now - ts) / (1000 * 60 * 60 * 24)));
+    if (ts && ts <= Date.now()) {
+      const days = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+      for (let i = 0; i < n.balance; i++) holdDays.push(days);
+    }
   }
 
   const inboundKeys = new Set<string>();
   const outboundKeys = new Set<string>();
-  const acquiredAtByKey = new Map<string, number>();
+  const earliestInboundByKey = new Map<string, number>();
 
   for (const t of transfers) {
     if (!t.tokenId) continue;
     const key = createTokenKey(t.chain, t.contractAddress, t.tokenId);
     if (t.direction === "inbound") {
       inboundKeys.add(key);
-      if (t.timestamp) acquiredAtByKey.set(key, new Date(t.timestamp).getTime());
+      if (t.timestamp) {
+        const ts = new Date(t.timestamp).getTime();
+        const prev = earliestInboundByKey.get(key);
+        if (prev === undefined || ts < prev) earliestInboundByKey.set(key, ts);
+      }
     } else {
       outboundKeys.add(key);
     }
@@ -162,7 +148,7 @@ export function computeHoldMetrics(
       (n) => !n.isSpam && createTokenKey(n.chain, n.contractAddress, n.tokenId) === key,
     );
     if (current && !outboundKeys.has(key)) retained++;
-    const acq = acquiredAtByKey.get(key);
+    const acq = earliestInboundByKey.get(key);
     if (acq && outboundKeys.has(key)) {
       const outTs = transfers.find(
         (t) =>
@@ -215,18 +201,11 @@ export function calculateScores(ctx: AnalysisContext): WalletDNAScores {
   );
 
   const holds = computeHoldMetrics(nfts, ctx.transfers, ctx.walletAddress);
-  const retentionScore = holds.retentionRate != null ? clampScore(holds.retentionRate * 100) : 45;
-  const shortTermScore =
-    holds.shortTermOutboundRate != null
-      ? clampScore(100 - holds.shortTermOutboundRate * 100)
-      : 50;
+  const diamondDiagnostics = computeDiamondHandsDiagnostics(ctx);
+  const retentionScore =
+    holds.retentionRate != null ? clampScore(holds.retentionRate * 100) : 45;
 
-  const diamondValue = clampScore(
-    medianHoldScore(holds.medianHoldDays) * 0.35 +
-      longestHoldScore(holds.longestHoldDays) * 0.2 +
-      retentionScore * 0.25 +
-      shortTermScore * 0.2,
-  );
+  const diamondValue = diamondDiagnostics.finalScore;
 
   const interactedCollections = ctx.collections.length;
   const largestShare =
@@ -242,18 +221,8 @@ export function calculateScores(ctx: AnalysisContext): WalletDNAScores {
       clampScore(Math.min(100, uniqueCollections * 4)) * 0.15,
   );
 
-  const mints = ctx.transfers.filter((t) => t.isMint && t.direction === "inbound");
-  const mintContracts = new Set(mints.map((m) => `${m.chain}:${m.contractAddress}`));
-  const recentMints = mints.filter((m) => {
-    if (!m.timestamp) return false;
-    return Date.now() - new Date(m.timestamp).getTime() < 90 * 86400000;
-  }).length;
-
-  const mintValue = clampScore(
-    mintLifetimeScore(mints.length) * 0.6 +
-      uniqueCollectionScore(mintContracts.size) * 0.25 +
-      clampScore(Math.min(100, recentMints * 15)) * 0.15,
-  );
+  const discoveryMetrics = computeDiscoveryMetrics(ctx);
+  const discoveryValue = discoveryMetrics.discoveryValue;
 
   const largestCollectionQty = collections.size ? Math.max(...collections.values()) : 0;
   const depthScore = loyaltyDepthScore(largestCollectionQty);
@@ -262,7 +231,7 @@ export function calculateScores(ctx: AnalysisContext): WalletDNAScores {
   const inboundCount = ctx.transfers.filter((t) => t.direction === "inbound").length;
   const outboundRatio = inboundCount ? outboundCount / inboundCount : 0;
   const stickinessScore = loyaltyStickinessScore(outboundCount, inboundCount);
-  const currentHoldLoyalty = computeCurrentHoldLoyalty(nfts, ctx.transfers);
+  const currentHoldLoyalty = computeCurrentHoldLoyalty(ctx.walletAddress, nfts, ctx.transfers);
   const currentHoldScore =
     currentHoldLoyalty != null ? clampScore(currentHoldLoyalty * 100) : retentionScore;
 
@@ -289,18 +258,58 @@ export function calculateScores(ctx: AnalysisContext): WalletDNAScores {
       { label: "Current NFTs", value: String(nftCount) },
       { label: "Unique collections", value: String(uniqueCollections) },
     ]),
-    diamondHands: mk(diamondValue, "Holding duration and retention behaviour.", [
-      { label: "Median hold (days)", value: holds.medianHoldDays?.toFixed(0) ?? "Unknown" },
-      { label: "Longest hold (days)", value: holds.longestHoldDays?.toFixed(0) ?? "Unknown" },
+    diamondHands: mk(diamondValue, diamondDiagnostics.warnings[0] ?? "Holding duration and retention behaviour.", [
+      {
+        label: "Median hold (days)",
+        value:
+          diamondDiagnostics.reconciledMedianHoldingDays?.toFixed(0) ??
+          holds.medianHoldDays?.toFixed(0) ??
+          "Unknown",
+      },
+      {
+        label: "Longest hold (days)",
+        value: String(
+          diamondDiagnostics.oldestCurrentHoldingDays ??
+            holds.longestHoldDays?.toFixed(0) ??
+            "Unknown",
+        ),
+      },
+      {
+        label: "Held 365+ days",
+        value: `${diamondDiagnostics.currentAssetsOver365DaysPercent}% of current assets`,
+      },
+      {
+        label: "Retention rate",
+        value:
+          holds.retentionRate != null ? `${Math.round(holds.retentionRate * 100)}%` : "Unknown",
+      },
     ]),
     explorer: mk(explorerValue, "Variety across chains and collections.", [
       { label: "Collections interacted", value: String(interactedCollections) },
       { label: "Multi-chain", value: ethCount > 0 && baseCount > 0 ? "Yes" : "Single chain" },
     ]),
-    mintEnergy: mk(mintValue, "Direct mint activity from zero-address transfers.", [
-      { label: "Identified mints", value: String(mints.length) },
-      { label: "Minted contracts", value: String(mintContracts.size) },
-    ]),
+    discovery: mk(
+      discoveryValue,
+      "Early participation across mints, early buys, and newer collections.",
+      [
+        {
+          label: "Mint share of inbound",
+          value: `${Math.round(discoveryMetrics.mintShare * 100)}%`,
+        },
+        {
+          label: "Early participation collections",
+          value: String(discoveryMetrics.earlyParticipationCollections),
+        },
+        {
+          label: "Purchases within 7 days",
+          value: String(discoveryMetrics.purchasesWithin7d),
+        },
+        {
+          label: "Newer collections (180d)",
+          value: String(discoveryMetrics.newerCollections),
+        },
+      ],
+    ),
     loyalty: mk(
       loyaltyValue,
       "Commitment to holding — low selling, strong retention, and staying power.",

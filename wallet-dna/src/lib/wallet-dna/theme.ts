@@ -13,7 +13,7 @@ export const personalityAccents: Record<string, { accent: string; glow: string }
   "multi-chain-explorer": { accent: "#38bdf8", glow: "rgba(56, 189, 248, 0.25)" },
   "diamond-collector": { accent: "#67e8f9", glow: "rgba(103, 232, 249, 0.22)" },
   "collection-loyalist": { accent: "#fbbf24", glow: "rgba(251, 191, 36, 0.22)" },
-  "mint-hunter": { accent: "#fb923c", glow: "rgba(251, 146, 60, 0.22)" },
+  "genesis-seeker": { accent: "#fb923c", glow: "rgba(251, 146, 60, 0.22)" },
   "base-explorer": { accent: "#3b82f6", glow: "rgba(59, 130, 246, 0.25)" },
   "base-pioneer": { accent: "#2563eb", glow: "rgba(37, 99, 235, 0.25)" },
   "vault-keeper": { accent: "#a78bfa", glow: "rgba(167, 139, 250, 0.22)" },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyseRequestSchema } from "@/lib/wallet-dna/schemas";
-import { runWalletDNAAnalysisFull } from "@/lib/wallet-dna/analysis/run-analysis";
+import { runWalletDNAAnalysisFull, stripScoreDebug } from "@/lib/wallet-dna/analysis/run-analysis";
 import { getWalletDNAEnv, cacheKeyForWallet } from "@/lib/wallet-dna/env";
 import { getCachedResult, setCachedResult } from "@/lib/wallet-dna/cache";
 import { checkRateLimit } from "@/lib/wallet-dna/rate-limit";
@@ -71,8 +71,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { result, includedNfts } = await runWalletDNAAnalysisFull(parsed.data.wallet, env);
-    setCachedResult(cacheKey, result, includedNfts, env.cacheTtlSeconds);
-    return NextResponse.json({ success: true, data: result, cacheHit: false });
+    const payload = env.scoreDebug ? result : stripScoreDebug(result);
+    setCachedResult(cacheKey, stripScoreDebug(result), includedNfts, env.cacheTtlSeconds);
+    return NextResponse.json({ success: true, data: payload, cacheHit: false });
   } catch (err) {
     const mapped = mapErrorToResponse(err);
     return NextResponse.json(

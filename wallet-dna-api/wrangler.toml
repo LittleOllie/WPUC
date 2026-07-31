@@ -4,5 +4,12 @@ compatibility_date = "2025-09-27"
 
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+DEPLOYMENT_VERSION = "2.1.0"
+
 [observability]
 enabled = true
+
+# Deploy: cd wallet-dna-api && npm run deploy
+# URL: https://lowalletdna.littleollienft.workers.dev
+# Secret: npx wrangler secret put ALCHEMY_API_KEY_WALLET_DNA

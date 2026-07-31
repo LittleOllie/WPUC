@@ -253,6 +253,52 @@ main:has(.wdna-result) {
   line-height: 1.55;
 }
 
+.wdna-card h2 {
+  font-family: Fredoka, sans-serif;
+  font-size: 1.25rem;
+  margin: 24px 0 10px;
+}
+
+.wdna-card h2:first-of-type {
+  margin-top: 8px;
+}
+
+.wdna-methodology-list {
+  margin: 0 0 16px;
+  padding-left: 1.25rem;
+  line-height: 1.55;
+}
+
+.wdna-methodology-list li {
+  margin-bottom: 8px;
+}
+
+.wdna-warnings {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 221, 85, 0.35);
+  background: rgba(255, 221, 85, 0.08);
+}
+
+.wdna-warnings p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.wdna-warnings p + p {
+  margin-top: 6px;
+}
+
+.wdna-score-card__confidence {
+  margin: -4px 0 8px;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.02em;
+}
+
 .wdna-btn {
   display: inline-flex;
   align-items: center;
@@ -1917,6 +1963,19 @@ main:has(.wdna-result) {
   white-space: nowrap;
 }
 
+.wdna-share-card--export .wdna-dna-card__badge,
+.wdna-share-card--export .wdna-dna-card__marker {
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.wdna-share-card--export .wdna-dna-card__badges,
+.wdna-share-card--export .wdna-dna-card__markers-list {
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
 .wdna-share-card {
   position: relative;
   box-sizing: border-box;
@@ -2829,7 +2888,7 @@ main:has(.wdna-result) {
 .wdna-dna-card__wordmark {
   margin: 0;
   font-family: Fredoka, sans-serif;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1;
   color: #fff;
@@ -2840,9 +2899,9 @@ main:has(.wdna-result) {
 }
 
 .wdna-dna-card__brand--compact .wdna-dna-card__wordmark {
-  font-size: 34px;
+  font-size: 51px;
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .wdna-dna-card__wordmark-accent {
@@ -3172,19 +3231,23 @@ main:has(.wdna-result) {
 .wdna-dna-card__badges {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
 .wdna-dna-card__badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   padding: 5px 11px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1;
+  white-space: nowrap;
   background: rgba(255, 221, 85, 0.1);
   border: 1px solid rgba(255, 221, 85, 0.18);
   color: rgba(255, 233, 134, 0.92);
-  max-width: 100%;
 }
 
 .wdna-dna-card__markers {
@@ -3212,10 +3275,14 @@ main:has(.wdna-result) {
 .wdna-dna-card__markers-list {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
 .wdna-dna-card__marker {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   font-family: Fredoka, sans-serif;
   font-size: 10px;
   font-weight: 600;
@@ -3225,8 +3292,8 @@ main:has(.wdna-result) {
   background: color-mix(in srgb, var(--marker-color) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--marker-color) 28%, transparent);
   color: color-mix(in srgb, var(--marker-color) 88%, white);
-  line-height: 1.2;
-  max-width: 100%;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .wdna-dna-card--square,

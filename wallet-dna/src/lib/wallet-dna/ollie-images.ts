@@ -1,6 +1,5 @@
-import { basePath } from "@/lib/wallet-dna/client";
+import { getOllieDisplaySrc, getOllieExportSrc } from "@/lib/wallet-dna/ollie-image-url";
 
-/** Personalities that use the LOCollector artwork */
 export const COLLECTOR_PERSONALITY_IDS = new Set(["new-collector"]);
 
 /** Personalities that use the LOBalanced artwork */
@@ -15,8 +14,11 @@ export const EXPLORER_PERSONALITY_IDS = new Set(["base-explorer", "multi-chain-e
 /** Personalities that use the LOArtWanderer artwork */
 export const ART_WANDERER_PERSONALITY_IDS = new Set(["art-wanderer"]);
 
-/** Personalities that use the LOMintEnergy artwork */
-export const MINT_PERSONALITY_IDS = new Set(["mint-hunter"]);
+/** Personalities that use the LOMintEnergy artwork (Discovery / Genesis Seeker) */
+export const DISCOVERY_PERSONALITY_IDS = new Set(["genesis-seeker"]);
+
+/** @deprecated Use DISCOVERY_PERSONALITY_IDS */
+export const MINT_PERSONALITY_IDS = DISCOVERY_PERSONALITY_IDS;
 
 /** Personalities that use the LOActiveMover artwork */
 export const ACTIVE_MOVER_PERSONALITY_IDS = new Set(["active-mover"]);
@@ -39,8 +41,13 @@ export function isExplorerPersonality(personalityId: string): boolean {
   return EXPLORER_PERSONALITY_IDS.has(personalityId);
 }
 
+export function isDiscoveryPersonality(personalityId: string): boolean {
+  return DISCOVERY_PERSONALITY_IDS.has(personalityId);
+}
+
+/** @deprecated Use isDiscoveryPersonality */
 export function isMintPersonality(personalityId: string): boolean {
-  return MINT_PERSONALITY_IDS.has(personalityId);
+  return isDiscoveryPersonality(personalityId);
 }
 
 export function isActiveMoverPersonality(personalityId: string): boolean {
@@ -67,7 +74,7 @@ export function getOllieHeroClassName(personalityId: string): string {
   if (isDiamondPersonality(personalityId)) return " wdna-hero__ollie--diamond";
   if (isArtWandererPersonality(personalityId)) return " wdna-hero__ollie--art-wanderer";
   if (isExplorerPersonality(personalityId)) return " wdna-hero__ollie--explorer";
-  if (isMintPersonality(personalityId)) return " wdna-hero__ollie--mint";
+  if (isDiscoveryPersonality(personalityId)) return " wdna-hero__ollie--mint";
   if (isActiveMoverPersonality(personalityId)) return " wdna-hero__ollie--active-mover";
   if (isLoyalistPersonality(personalityId)) return " wdna-hero__ollie--loyalist";
   if (isVaultKeeperPersonality(personalityId)) return " wdna-hero__ollie--vault-keeper";
@@ -77,41 +84,32 @@ export function getOllieHeroClassName(personalityId: string): string {
 }
 
 export function getOllieImageSrc(personalityId: string): string {
-  if (isDiamondPersonality(personalityId)) {
-    return `${basePath}/ollie/LODiamondHand.png`;
-  }
-  if (isExplorerPersonality(personalityId)) {
-    return `${basePath}/ollie/LOExplorer.png`;
-  }
-  if (isArtWandererPersonality(personalityId)) {
-    return `${basePath}/ollie/LOArtWanderer.png`;
-  }
-  if (isMintPersonality(personalityId)) {
-    return `${basePath}/ollie/LOMintEnergy.png`;
-  }
-  if (isActiveMoverPersonality(personalityId)) {
-    return `${basePath}/ollie/LOActiveMover.png`;
-  }
-  if (isLoyalistPersonality(personalityId)) {
-    return `${basePath}/ollie/LOCollectionLoyalist.png`;
-  }
-  if (isVaultKeeperPersonality(personalityId)) {
-    return `${basePath}/ollie/LOVaultKeeper.png`;
-  }
-  if (isBalancedCollectorPersonality(personalityId)) {
-    return `${basePath}/ollie/LOBalanced.png`;
-  }
-  if (isCollectorPersonality(personalityId)) {
-    return `${basePath}/ollie/LOCollector.png`;
-  }
-  return `${basePath}/ollie/default.png`;
+  return getOllieDisplaySrc(getOlliePngFilename(personalityId));
+}
+
+/** Full PNG path for export / rasterisation */
+export function getOllieImageExportSrc(personalityId: string): string {
+  return getOllieExportSrc(getOlliePngFilename(personalityId));
+}
+
+function getOlliePngFilename(personalityId: string): string {
+  if (isDiamondPersonality(personalityId)) return "LODiamondHand.png";
+  if (isExplorerPersonality(personalityId)) return "LOExplorer.png";
+  if (isArtWandererPersonality(personalityId)) return "LOArtWanderer.png";
+  if (isDiscoveryPersonality(personalityId)) return "LOMintEnergy.png";
+  if (isActiveMoverPersonality(personalityId)) return "LOActiveMover.png";
+  if (isLoyalistPersonality(personalityId)) return "LOCollectionLoyalist.png";
+  if (isVaultKeeperPersonality(personalityId)) return "LOVaultKeeper.png";
+  if (isBalancedCollectorPersonality(personalityId)) return "LOBalanced.png";
+  if (isCollectorPersonality(personalityId)) return "LOCollector.png";
+  return "default.png";
 }
 
 export function getOllieVariantForPersonality(personalityId: string, ollieVariant: string): string {
   if (isDiamondPersonality(personalityId)) return "diamond";
   if (isExplorerPersonality(personalityId)) return "explorer";
   if (isArtWandererPersonality(personalityId)) return "art-wanderer";
-  if (isMintPersonality(personalityId)) return "mint";
+  if (isDiscoveryPersonality(personalityId)) return "mint";
   if (isActiveMoverPersonality(personalityId)) return "active-mover";
   if (isLoyalistPersonality(personalityId)) return "loyalty";
   if (isVaultKeeperPersonality(personalityId)) return "vault";

@@ -1,6 +1,25 @@
 import type { AnalysisContext, WalletDNAScores, WalletPersonality } from "@/lib/wallet-dna/types";
 import { getTopScoreKey } from "@/lib/wallet-dna/analysis/scores";
 
+const GENESIS_SEEKER_DESCRIPTION =
+  "You enjoy discovering projects before they become widely recognised. Your wallet consistently shows curiosity, early participation and a willingness to explore new collections before most collectors.";
+
+export function getGenesisSeekerTierCopy(discoveryScore: number): string {
+  if (discoveryScore >= 95) {
+    return "A true Genesis Seeker. You're almost always there before the crowd.";
+  }
+  if (discoveryScore >= 80) {
+    return "You regularly discover projects early and enjoy exploring what's next.";
+  }
+  if (discoveryScore >= 60) {
+    return "You like mixing established collections with newer discoveries.";
+  }
+  if (discoveryScore >= 40) {
+    return "You occasionally participate early but generally wait for stronger signals.";
+  }
+  return "You prefer proven collections over chasing the newest launches.";
+}
+
 export const PERSONALITIES: Record<string, WalletPersonality> = {
   "new-collector": {
     id: "new-collector",
@@ -8,7 +27,7 @@ export const PERSONALITIES: Record<string, WalletPersonality> = {
     shortDescription:
       "Your wallet is just getting started on its collecting journey. Every great collection begins with a first piece.",
     shareSummary: "You're just getting started — every great collection begins somewhere.",
-    themeKey: "starter",
+    themeKey: "mint",
     ollieVariant: "default",
     shareSubtitle: "Just getting started",
   },
@@ -52,15 +71,14 @@ export const PERSONALITIES: Record<string, WalletPersonality> = {
     ollieVariant: "default",
     shareSubtitle: "Depth over breadth",
   },
-  "mint-hunter": {
-    id: "mint-hunter",
-    name: "Mint Hunter",
-    shortDescription:
-      "You show up at the source. A meaningful share of your inbound NFT activity comes from direct mints.",
-    shareSummary: "You show up at the source and love being early when something new mints.",
+  "genesis-seeker": {
+    id: "genesis-seeker",
+    name: "Genesis Seeker",
+    shortDescription: GENESIS_SEEKER_DESCRIPTION,
+    shareSummary: "You show up early and love discovering what's next before the crowd.",
     themeKey: "mint",
     ollieVariant: "default",
-    shareSubtitle: "Mint-forward",
+    shareSubtitle: "Early discovery",
   },
   "active-mover": {
     id: "active-mover",
@@ -104,6 +122,18 @@ export const PERSONALITIES: Record<string, WalletPersonality> = {
   },
 };
 
+export function enrichPersonalityCopy(
+  personality: WalletPersonality,
+  scores: WalletDNAScores,
+): WalletPersonality {
+  if (personality.id !== "genesis-seeker") return personality;
+  const tierCopy = getGenesisSeekerTierCopy(scores.discovery.value);
+  return {
+    ...personality,
+    shareSummary: tierCopy,
+  };
+}
+
 export function selectPersonality(ctx: AnalysisContext, scores: WalletDNAScores): WalletPersonality {
   const nfts = ctx.nfts.filter((n) => !n.isSpam);
   const nftCount = nfts.reduce((s, n) => s + n.balance, 0);
@@ -115,8 +145,6 @@ export function selectPersonality(ctx: AnalysisContext, scores: WalletDNAScores)
   const outbound = ctx.transfers.filter((t) => t.direction === "outbound").length;
   const inbound = ctx.transfers.filter((t) => t.direction === "inbound").length;
   const outboundRate = inbound ? outbound / inbound : 0;
-  const mints = ctx.transfers.filter((t) => t.isMint).length;
-  const mintShare = inbound ? mints / inbound : 0;
 
   const top = getTopScoreKey(scores);
   const sorted = Object.values(scores).map((s) => s.value).sort((a, b) => b - a);
@@ -140,8 +168,8 @@ export function selectPersonality(ctx: AnalysisContext, scores: WalletDNAScores)
     return PERSONALITIES["collection-loyalist"]!;
   }
 
-  if (scores.mintEnergy.value >= 78 && mintShare >= 0.25 && top === "mintEnergy") {
-    return PERSONALITIES["mint-hunter"]!;
+  if (scores.discovery.value >= 78 && top === "discovery") {
+    return enrichPersonalityCopy(PERSONALITIES["genesis-seeker"]!, scores);
   }
 
   if (outboundRate >= 0.45 && transfers >= 15) {
@@ -151,7 +179,7 @@ export function selectPersonality(ctx: AnalysisContext, scores: WalletDNAScores)
   if (
     scores.explorer.value >= 72 &&
     scores.loyalty.value < 70 &&
-    scores.mintEnergy.value < 85 &&
+    scores.discovery.value < 85 &&
     scores.diamondHands.value < 80
   ) {
     return PERSONALITIES["art-wanderer"]!;

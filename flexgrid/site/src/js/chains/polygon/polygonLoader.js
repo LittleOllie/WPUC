@@ -1,10 +1,8 @@
 /**
  * Polygon collection-scoped NFT loading (owner + contract only).
  *
- * Uses the same **one-shot** Worker path as ETH/Base (`fetchNFTsFromWorker`): the Worker
- * paginates Alchemy internally in one browser → Worker round-trip. The previous
- * `fetchNFTsInBatches` (pageOnly) path added extra HTTP hops + 150ms pauses per page,
- * which made even ~85 NFTs feel sluggish.
+ * Uses paged Worker fetches (`fetchNFTsFromWorker` → `pageOnly=1`) so large wallets
+ * stay under Cloudflare Worker subrequest limits. Contract-scoped loads are usually 1–2 pages.
  */
 
 import { fetchNFTsFromWorker } from "../../api.js";

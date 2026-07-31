@@ -1,4 +1,4 @@
-import { basePath } from "@/lib/wallet-dna/client";
+import { getOllieDisplaySrc, getOllieExportSrc } from "@/lib/wallet-dna/ollie-image-url";
 
 const PASSPORT_VARIANT_FILES: Record<string, string> = {
   default: "ollie-default.png",
@@ -23,22 +23,37 @@ const PUBLIC_OLLIE_FILES: Record<string, string> = {
   balanced: "LOBalanced.png",
 };
 
-/** Resolve passport Ollie artwork — falls back to default site Ollie if variant missing. */
+/** Resolve passport Ollie artwork — WebP for display. */
 export function getPassportOllieSrc(variant: string): string {
+  const png = getPassportOlliePngFilename(variant);
+  return getOllieDisplaySrc(png);
+}
+
+export function getPassportOllieExportSrc(variant: string): string {
+  return getOllieExportSrc(getPassportOlliePngFilename(variant));
+}
+
+function getPassportOlliePngFilename(variant: string): string {
   const publicFile = PUBLIC_OLLIE_FILES[variant];
-  if (publicFile) {
-    return `${basePath}/ollie/${publicFile}`;
-  }
+  if (publicFile) return publicFile;
   const file = PASSPORT_VARIANT_FILES[variant] ?? PASSPORT_VARIANT_FILES.default!;
-  return `${basePath}/passport/${file}`;
+  return file;
 }
 
 export function getPassportOllieFallbackSrc(): string {
-  return `${basePath}/ollie/default.png`;
+  return getOllieDisplaySrc("default.png");
+}
+
+export function getPassportOllieFallbackExportSrc(): string {
+  return getOllieExportSrc("default.png");
 }
 
 export function getDnaAnalysedStampSrc(): string {
-  return `${basePath}/ollie/LODNAAnalysed.png`;
+  return getOllieDisplaySrc("LODNAAnalysed.png");
+}
+
+export function getDnaAnalysedStampExportSrc(): string {
+  return getOllieExportSrc("LODNAAnalysed.png");
 }
 
 export const PASSPORT_OLLIE_ASSETS = [
@@ -65,7 +80,7 @@ export const PASSPORT_OLLIE_ASSETS = [
   {
     key: "mint",
     path: "public/ollie/LOMintEnergy.png",
-    description: "Mint Hunter personality artwork",
+    description: "Genesis Seeker personality artwork (Discovery score)",
   },
   {
     key: "active-mover",

@@ -1758,6 +1758,24 @@ body.dark .walletFlowChainLbl {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 14px 16px;
+  position: relative;
+}
+.walletFlowLoadBtn.is-loading {
+  pointer-events: none;
+  opacity: 0.92;
+}
+.walletFlowLoadBtn.is-loading::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.22);
+  border-top-color: #ffdd55;
+  animation: flexgridLoadingRingSpin 0.85s linear infinite;
 }
 
 /* Wallet validation hint */

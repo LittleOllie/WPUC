@@ -40,7 +40,7 @@ export const walletDNAResultSchema = z.object({
     collector: walletDNAScoreSchema,
     diamondHands: walletDNAScoreSchema,
     explorer: walletDNAScoreSchema,
-    mintEnergy: walletDNAScoreSchema,
+    discovery: walletDNAScoreSchema,
     loyalty: walletDNAScoreSchema,
   }),
   narrative: z.string(),

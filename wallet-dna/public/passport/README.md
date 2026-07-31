@@ -7,7 +7,7 @@ Optional PNG assets with transparent backgrounds. If missing, Wallet DNA falls b
 | `ollie-default.png` | Default collector pose |
 | `ollie-diamond.png` | Diamond Collector |
 | `ollie-explorer.png` | Explorer / Base personalities |
-| `ollie-mint.png` | Mint Hunter |
+| `ollie-mint.png` | Genesis Seeker (Discovery) |
 | `ollie-loyalty.png` | Collection Loyalist |
 | `ollie-vault.png` | Vault Keeper |
 

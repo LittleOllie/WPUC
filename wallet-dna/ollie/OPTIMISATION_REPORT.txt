@@ -1,0 +1,20 @@
+Wallet DNA Ollie asset optimisation
+Generated: 2026-07-31T13:37:21.503Z
+
+LOActiveMover.png: 3.08 MB → LOActiveMover.webp: 645.4 KB (79.5% smaller) | 1024x1536 alpha=true
+LOArtWanderer.png: 2.58 MB → LOArtWanderer.webp: 375.6 KB (85.8% smaller) | 1024x1536 alpha=true
+LOBalanced.png: 2.53 MB → LOBalanced.webp: 255.7 KB (90.1% smaller) | 1024x1536 alpha=true
+LOCollectionLoyalist.png: 3.05 MB → LOCollectionLoyalist.webp: 668.6 KB (78.6% smaller) | 1024x1536 alpha=true
+LOCollector.png: 3.12 MB → LOCollector.webp: 669.8 KB (79.1% smaller) | 1024x1536 alpha=true
+LODNAAnalysed.png: 2.79 MB → LODNAAnalysed.webp: 504.8 KB (82.3% smaller) | 1024x1536 alpha=true
+LODiamondHand.png: 3.09 MB → LODiamondHand.webp: 645.2 KB (79.6% smaller) | 1024x1536 alpha=true
+LOExplorer.png: 3.17 MB → LOExplorer.webp: 674.0 KB (79.2% smaller) | 1024x1536 alpha=true
+LOLabCoat.png: 2.61 MB → LOLabCoat.webp: 446.1 KB (83.3% smaller) | 1024x1536 alpha=true
+LOMintEnergy.png: 3.02 MB → LOMintEnergy.webp: 621.3 KB (79.9% smaller) | 1024x1536 alpha=true
+LOVaultKeeper.png: 2.50 MB → LOVaultKeeper.webp: 405.2 KB (84.2% smaller) | 1024x1306 alpha=true
+default.png: 1.12 MB → default.webp: 165.6 KB (85.5% smaller) | 2048x2048 alpha=true
+
+PNG total (kept for export): 32.66 MB
+WebP total (display): 5.93 MB
+Combined on disk: 38.60 MB
+Display bandwidth saved vs PNG-only: 26.73 MB (81.8%)

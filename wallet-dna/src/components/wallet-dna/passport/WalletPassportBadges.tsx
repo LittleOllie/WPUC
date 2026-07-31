@@ -6,10 +6,20 @@ type Props = {
 };
 
 function badgeLabel(name: string): string {
-  return name
-    .replace(/^Collection Explorer$/, "Explorer")
-    .replace(/^One Collection Crew$/, "1-Collection Crew")
-    .replace(/^NFT Veteran$/, "Veteran");
+  const labels: Record<string, string> = {
+    "Collection Explorer": "Explorer",
+    "One Collection Crew": "1-Collection Crew",
+    "NFT Veteran": "Veteran",
+    "Diamond Hands": "Diamond Hands",
+    "Deep Freeze": "Deep Freeze",
+    "Base Explorer": "Base Explorer",
+    "World Traveller": "Traveller",
+    "Loyal Holder": "Loyal Holder",
+    "Vault Keeper": "Vault Keeper",
+    "Base Native": "Base Native",
+    "Mint Machine": "Mint Machine",
+  };
+  return labels[name] ?? name;
 }
 
 export function WalletPassportBadges({ badges, visible }: Props) {

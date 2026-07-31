@@ -1,5 +1,5 @@
 import type { NormalizedNFT, WalletDNAResult } from "@/lib/wallet-dna/types";
-import { SCHEMA_VERSION, SCORING_VERSION } from "@/lib/wallet-dna/constants";
+import type { WalletDNAEnv } from "@/lib/wallet-dna/env";
 import { runAnalysisFromData } from "@/lib/wallet-dna/analysis/run-analysis";
 import { fetchWalletChainData } from "@/lib/wallet-dna/providers/alchemy";
 
@@ -15,6 +15,7 @@ export const FIXTURE_WALLETS: Record<string, string> = {
 export async function getFixtureResult(
   address: string,
   kind: string,
+  env?: Pick<WalletDNAEnv, "scoreDebug">,
 ): Promise<{ result: WalletDNAResult; includedNfts: NormalizedNFT[] } | null> {
   if (kind === "empty") {
     throw new Error("NO_NFT_ACTIVITY");
@@ -22,7 +23,9 @@ export async function getFixtureResult(
 
   const { buildFixtureData } = await import("@/lib/wallet-dna/providers/fixture-data");
   const data = buildFixtureData(kind, address);
-  return runAnalysisFromData(address, null, data.nfts, data.transfers, data.coverage);
+  return runAnalysisFromData(address, null, data.nfts, data.transfers, data.coverage, {
+    scoreDebug: env?.scoreDebug,
+  });
 }
 
 export async function analyseWithProvider(
@@ -30,11 +33,14 @@ export async function analyseWithProvider(
   ensName: string | null,
   apiKey: string,
   maxTransfers: number,
+  env?: Pick<WalletDNAEnv, "scoreDebug">,
 ): Promise<{ result: WalletDNAResult; includedNfts: NormalizedNFT[] }> {
   const { nfts, transfers, coverage } = await fetchWalletChainData(
     address,
     apiKey,
     maxTransfers,
   );
-  return runAnalysisFromData(address, ensName, nfts, transfers, coverage);
+  return runAnalysisFromData(address, ensName, nfts, transfers, coverage, {
+    scoreDebug: env?.scoreDebug,
+  });
 }

@@ -10,9 +10,9 @@ const TEMPLATES: Record<string, string[]> = {
     "You are a {personality}. Base plays a leading role in your collecting, with {baseCount} current NFTs there across {baseCollections} collections.",
     "Your {personality} profile shows meaningful Base activity — {baseCount} NFTs on Base shape how your wallet DNA reads today.",
   ],
-  "mint-hunter": [
-    "You are a {personality}. With {mints} identified mint events, a meaningful share of your inbound activity starts at the source.",
-    "As a {personality}, direct mints feature prominently — {mints} mint events appear in your public history.",
+  "genesis-seeker": [
+    "You are a {personality}. Your wallet shows strong early-discovery patterns — {earlyCollections} collections with early participation and a Discovery score of {discovery}.",
+    "As a {personality}, you tend to find projects before the crowd. {mints} identified mint events and {earlyCollections} early-touch collections shape how your wallet reads today.",
   ],
   "collection-loyalist": [
     "You are a {personality}. Your deepest relationship is with {topCollection}, where you currently hold {topQty} NFTs.",
@@ -62,6 +62,15 @@ export function generateNarrative(result: Pick<
     "{medianHold}": medianHold,
     "{fHold}": fHold,
     "{mints}": String(result.stats.identifiedMints),
+    "{discovery}": String(result.scores.discovery.value),
+    "{earlyCollections}": String(
+      result.topCollections.filter((c) => {
+        if (!c.firstInteractionAt) return false;
+        const ageDays =
+          (Date.now() - new Date(c.firstInteractionAt).getTime()) / (1000 * 60 * 60 * 24);
+        return ageDays <= 365;
+      }).length || 1,
+    ),
     "{baseCount}": String(result.stats.baseNftCount),
     "{baseCollections}": String(
       result.topCollections.filter((c) => c.chain === "base").length || 1,
