@@ -1192,6 +1192,42 @@ button.home-btn {
   object-position: center 22%;
 }
 
+.lo-labs-tools__heading {
+  margin: 1.25rem 0 0.75rem;
+  font-family: Fredoka, var(--lo-font-body, "Nunito", sans-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(23, 52, 95, 0.78);
+}
+
+.journey-cards__track--nft-tools {
+  margin-top: 0;
+}
+
+.journey-cards__track--nft-tools .journey-card__icon img {
+  object-fit: contain;
+  object-position: center;
+  padding: 0.35rem;
+}
+
+.journey-card__sticker--inline {
+  position: static;
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.62rem;
+  vertical-align: middle;
+  transform: none;
+}
+
+@media (min-width: 900px) {
+  .lo-stage--labs .journey-cards__track--nft-tools {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 /* ——— Our Story (homepage section) ——— */
 
 .our-story {
