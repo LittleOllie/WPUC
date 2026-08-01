@@ -24,6 +24,7 @@ import { NFTImage } from "@/components/wallet-dna/NFTImage";
 import { WalletShareStudio } from "@/components/wallet-dna/WalletShareStudio";
 import { WalletCollapsibleSection } from "@/components/wallet-dna/WalletCollapsibleSection";
 import { AchievementBadge } from "@/components/wallet-dna/AchievementBadge";
+import { ScoreInfoGuide } from "@/components/wallet-dna/ScoreInfoGuide";
 
 type Props = {
   result: WalletDNAResult;
@@ -204,6 +205,7 @@ export function WalletDNAResultView({ result, onRerun, onAnalyseNew }: Props) {
             dnaIdSeed={dnaIdSeed}
             onPassportRefresh={refreshPassportIdentity}
           />
+          <ScoreInfoGuide />
         </WalletCollapsibleSection>
       </div>
 
@@ -270,7 +272,13 @@ export function WalletDNAResultView({ result, onRerun, onAnalyseNew }: Props) {
       </WalletCollapsibleSection>
 
       {/* Scores */}
-      <WalletCollapsibleSection title="Wallet DNA Scores" titleAccent="DNA" defaultOpen={false}>
+      <WalletCollapsibleSection
+        title="Wallet DNA Scores"
+        titleAccent="DNA"
+        lead="Five traits scored 0–100 from your public NFT activity. Expand the guide for what each number means."
+        defaultOpen={false}
+      >
+        <ScoreInfoGuide defaultOpen />
         <ScoreSection scores={result.scores} />
       </WalletCollapsibleSection>
 
@@ -520,7 +528,10 @@ function ScoreSection({ scores }: { scores: WalletDNAScores }) {
       {keys.map((k) => (
         <article key={k} className="wdna-score-card">
           <div className="wdna-score-card__value">{scores[k].value}</div>
-          <h4>{SCORE_LABELS[k]}</h4>
+          <h4>
+            {SCORE_LABELS[k]}
+            <span className="wdna-score-card__range">0–100</span>
+          </h4>
           {scores[k].confidence !== "high" ? (
             <p className="wdna-score-card__confidence">{scores[k].confidence} confidence</p>
           ) : null}

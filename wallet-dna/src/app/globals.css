@@ -299,6 +299,99 @@ main:has(.wdna-result) {
   letter-spacing: 0.02em;
 }
 
+.wdna-score-info {
+  margin-bottom: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 221, 85, 0.28);
+  background: rgba(255, 221, 85, 0.06);
+  overflow: hidden;
+}
+
+.wdna-score-info__summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-family: Fredoka, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  list-style: none;
+  user-select: none;
+}
+
+.wdna-score-info__summary::-webkit-details-marker {
+  display: none;
+}
+
+.wdna-score-info__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 221, 85, 0.65);
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-style: italic;
+  color: #ffdd55;
+  flex-shrink: 0;
+}
+
+.wdna-score-info__body {
+  padding: 0 16px 16px;
+}
+
+.wdna-score-info__lead,
+.wdna-score-info__note,
+.wdna-score-info__link {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.wdna-score-info__list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.wdna-score-info__list li {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(22, 32, 56, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wdna-score-info__list strong {
+  display: block;
+  font-family: Fredoka, sans-serif;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+  color: #ffdd55;
+}
+
+.wdna-score-info__desc {
+  display: block;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.wdna-score-info__link a {
+  color: #ffdd55;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wdna-score-info__link a:hover {
+  text-decoration: underline;
+}
+
 .wdna-btn {
   display: inline-flex;
   align-items: center;
@@ -1528,6 +1621,18 @@ main:has(.wdna-result) {
 .wdna-score-card h4 {
   margin: 0 0 10px;
   font-family: Fredoka, sans-serif;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wdna-score-card__range {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .wdna-score-card p {
