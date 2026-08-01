@@ -28,6 +28,8 @@ export function WalletPassportLandscape({ data, prefs, placedStamps, siteUrl }: 
     >
       <WalletPassportBackground siteUrl={siteUrl} />
 
+      <WalletDNACornerStamp visible={prefs.showStamps} />
+
       <header className="wdna-dna-card__topbar">
         <WalletPassportHeader compact />
       </header>
@@ -72,8 +74,6 @@ export function WalletPassportLandscape({ data, prefs, placedStamps, siteUrl }: 
           )}
         </div>
       </div>
-
-      <WalletDNACornerStamp visible={prefs.showStamps} />
     </div>
   );
 }

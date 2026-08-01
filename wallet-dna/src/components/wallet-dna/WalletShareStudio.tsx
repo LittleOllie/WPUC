@@ -34,7 +34,7 @@ export function WalletShareStudio({
   const cardRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [exportState, setExportState] = useState<ExportState>("idle");
-  const [previewScale, setPreviewScale] = useState(0.55);
+  const [previewScale, setPreviewScale] = useState(0.72);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://littleollielabs.com";
   const passportData = useMemo(
@@ -47,10 +47,10 @@ export function WalletShareStudio({
     const viewport = viewportRef.current;
     if (!viewport) return;
     const { w, h } = EXPORT_SIZE;
-    const available = viewport.clientWidth - 24;
+    const available = viewport.clientWidth - 8;
     const scaleW = available / w;
-    const scaleH = (window.innerHeight * 0.5) / h;
-    setPreviewScale(Math.min(0.85, Math.max(0.32, Math.min(scaleW, scaleH))));
+    const scaleH = (window.innerHeight * 0.72) / h;
+    setPreviewScale(Math.min(1, Math.max(0.45, Math.min(scaleW, scaleH))));
   }, []);
 
   useEffect(() => {

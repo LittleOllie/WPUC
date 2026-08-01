@@ -2006,7 +2006,7 @@ main:has(.wdna-result) {
 .wdna-share-preview-viewport {
   width: 100%;
   margin: 16px 0;
-  padding: 16px;
+  padding: 8px;
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2260,6 +2260,7 @@ main:has(.wdna-result) {
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: min(72vh, 920px);
 }
 
 .wdna-share-actions--flagship {
@@ -3440,12 +3441,11 @@ main:has(.wdna-result) {
   max-width: 640px;
 }
 
-/* Corner passport stamp — tucked into panel bottom-right, clear of scores */
-/* Corner passport stamp — sits in card footer margin, clear of panel text */
+/* Wallet DNA analysed stamp — top-right of card */
 .wdna-dna-card__corner-stamp {
   position: absolute;
   right: 48px;
-  bottom: 28px;
+  top: 24px;
   z-index: 5;
   pointer-events: none;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
@@ -3455,16 +3455,16 @@ main:has(.wdna-result) {
   display: block;
   width: 140px;
   height: auto;
-  transform: rotate(10deg);
-  transform-origin: 100% 100%;
+  transform: rotate(-8deg);
+  transform-origin: 100% 0%;
   opacity: 0.92;
   object-fit: contain;
   user-select: none;
 }
 
 .wdna-dna-card--flagship .wdna-dna-card__corner-stamp {
-  right: 128px;
-  bottom: 40px;
+  right: 48px;
+  top: 32px;
 }
 
 .wdna-dna-card--flagship .wdna-dna-card__corner-stamp-img {
