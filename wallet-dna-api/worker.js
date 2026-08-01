@@ -4,9 +4,6 @@
  */
 import handler from "../wallet-dna/dist-worker/handler.mjs";
 
-const SCORING_VERSION = "1.0";
-const SCHEMA_VERSION = 2;
-
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -42,24 +39,6 @@ function jsonError(status, code, message, requestIdValue, retryable = false) {
 
 function alchemyConfigured(env) {
   return Boolean(env.ALCHEMY_API_KEY_WALLET_DNA?.trim() || env.ALCHEMY_API_KEY?.trim());
-}
-
-function handleHealth(env, id) {
-  const configured = alchemyConfigured(env);
-  const body = {
-    success: configured,
-    service: "wallet-dna-api",
-    status: configured ? "ok" : "misconfigured",
-    scoringVersion: SCORING_VERSION,
-    schemaVersion: SCHEMA_VERSION,
-    alchemyConfigured: configured,
-    deploymentVersion: env.DEPLOYMENT_VERSION ?? null,
-    requestId: id,
-  };
-  return Response.json(body, {
-    status: configured ? 200 : 503,
-    headers: { "Content-Type": "application/json", ...CORS },
-  });
 }
 
 async function invokeHandler(request, env, id) {
@@ -103,7 +82,7 @@ export default {
     }
 
     if (request.method === "GET" && path === "/health") {
-      return handleHealth(env, id);
+      return invokeHandler(request, env, id);
     }
 
     if (request.method === "GET" && path === "/api/wallet-dna/nfts") {

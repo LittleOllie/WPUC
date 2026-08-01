@@ -68,6 +68,17 @@ export function median(values: number[]): number | null {
   return sorted[mid]!;
 }
 
+/** Safe max for large arrays — avoids Math.max spread limits in Workers. */
+export function maxOf(values: number[]): number | null {
+  if (!values.length) return null;
+  let max = values[0]!;
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i]!;
+    if (v > max) max = v;
+  }
+  return max;
+}
+
 export function formatStatDate(iso: string | null): string {
   if (!iso) return "Not enough history available";
   try {

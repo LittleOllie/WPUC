@@ -1,7 +1,7 @@
 /**
  * Static export for littleollielabs.com/wallet-dna/
  */
-import { cpSync, existsSync, renameSync, rmSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
@@ -22,15 +22,12 @@ function copyExport() {
     rmSync(join(root, "_next"), { recursive: true, force: true });
     cpSync(outNext, join(root, "_next"), { recursive: true });
   }
-  const meth = join(outDir, "methodology");
-  if (existsSync(meth)) {
-    rmSync(join(root, "methodology"), { recursive: true, force: true });
-    cpSync(meth, join(root, "methodology"), { recursive: true });
-  }
-  const pub = join(outDir, "ollie");
-  if (existsSync(pub)) {
-    rmSync(join(root, "ollie"), { recursive: true, force: true });
-    cpSync(pub, join(root, "ollie"), { recursive: true });
+  for (const name of readdirSync(outDir)) {
+    if (name === "_next" || name === "index.html") continue;
+    const src = join(outDir, name);
+    const dest = join(root, name);
+    rmSync(dest, { recursive: true, force: true });
+    cpSync(src, dest, { recursive: true });
   }
   rmSync(outDir, { recursive: true, force: true });
 }

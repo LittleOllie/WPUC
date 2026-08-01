@@ -8,7 +8,7 @@ import type {
 } from "@/lib/wallet-dna/types";
 import { computeDiscoveryMetrics } from "@/lib/wallet-dna/analysis/discovery";
 import { computeDiamondHandsDiagnostics } from "@/lib/wallet-dna/analysis/diamond-hands-diagnostics";
-import { clampScore, createTokenKey, median } from "@/lib/wallet-dna/utils/helpers";
+import { clampScore, createTokenKey, maxOf, median } from "@/lib/wallet-dna/utils/helpers";
 import {
   enrichNftsWithHoldPeriods,
   hasEverOutboundFromWallet,
@@ -165,7 +165,7 @@ export function computeHoldMetrics(
 
   return {
     medianHoldDays: median(holdDays),
-    longestHoldDays: holdDays.length ? Math.max(...holdDays) : null,
+    longestHoldDays: maxOf(holdDays),
     retentionRate: inboundCount ? retained / inboundCount : null,
     shortTermOutboundRate: inboundCount ? shortTermOut / inboundCount : null,
   };

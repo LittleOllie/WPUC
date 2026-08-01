@@ -97,6 +97,7 @@ export async function handleAnalyseRequest(
     setCachedResult(cacheKey, stripScoreDebug(result), includedNfts, env.cacheTtlSeconds);
     return jsonWithRequestId({ success: true, data: payload, cacheHit: false }, 200, requestId);
   } catch (err) {
+    console.error("[wallet-dna] analyse failed", requestId, err instanceof Error ? err.message : err);
     const mapped = mapErrorToResponse(err);
     return jsonWithRequestId(
       {

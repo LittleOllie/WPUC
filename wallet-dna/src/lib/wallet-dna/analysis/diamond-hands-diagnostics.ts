@@ -5,7 +5,7 @@ import type {
   NormalizedNFTTransfer,
   WalletDNAScoreDebug,
 } from "@/lib/wallet-dna/types";
-import { createTokenKey, median } from "@/lib/wallet-dna/utils/helpers";
+import { createTokenKey, maxOf, median } from "@/lib/wallet-dna/utils/helpers";
 import {
   enrichNftsWithHoldPeriods,
   hasEverOutboundFromWallet,
@@ -169,11 +169,8 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
     : rawHoldDays.length
       ? Math.round((rawHoldDays.reduce((a, b) => a + b, 0) / rawHoldDays.length) * 10) / 10
       : 0;
-  const oldestCurrentHoldingDays = reconciledHoldDays.length
-    ? Math.max(...reconciledHoldDays)
-    : rawHoldDays.length
-      ? Math.max(...rawHoldDays)
-      : 0;
+  const oldestCurrentHoldingDays =
+    maxOf(reconciledHoldDays) ?? maxOf(rawHoldDays) ?? 0;
 
   const holdDaysForBuckets = reconciledHoldDays.length ? reconciledHoldDays : rawHoldDays;
 
@@ -186,11 +183,7 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
 
   const holdingDurationScore = medianHoldScore(reconciledMedian ?? rawMedian);
   const longTermRetentionScore = longestHoldScore(
-    reconciledHoldDays.length
-      ? Math.max(...reconciledHoldDays)
-      : rawHoldDays.length
-        ? Math.max(...rawHoldDays)
-        : null,
+    maxOf(reconciledHoldDays) ?? maxOf(rawHoldDays),
   );
   const streak = computeCurrentHoldStreakScore(wallet, nfts, transfers);
 

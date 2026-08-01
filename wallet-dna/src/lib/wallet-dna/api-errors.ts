@@ -73,6 +73,18 @@ export function mapErrorToResponse(err: unknown): {
       retryable: true,
     };
   }
+  if (
+    err instanceof RangeError ||
+    msg.includes("Maximum call stack") ||
+    msg.includes("too many function arguments")
+  ) {
+    return {
+      code: "ANALYSIS_TIMEOUT",
+      message: "This wallet has too much activity to analyse in one pass. Try again later.",
+      status: 504,
+      retryable: true,
+    };
+  }
 
   return {
     code: "INTERNAL_ERROR",

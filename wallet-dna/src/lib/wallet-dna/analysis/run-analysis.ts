@@ -17,7 +17,7 @@ import {
 import { evaluateBadges } from "@/lib/wallet-dna/analysis/badges";
 import { generateNarrative } from "@/lib/wallet-dna/analysis/narrative";
 import { buildWalletVisuals } from "@/lib/wallet-dna/analysis/visuals";
-import { median } from "@/lib/wallet-dna/utils/helpers";
+import { median, maxOf } from "@/lib/wallet-dna/utils/helpers";
 
 function buildStats(
   included: NormalizedNFT[],
@@ -49,7 +49,7 @@ function buildStats(
     uniqueCurrentCollections: new Set(included.map((n) => `${n.chain}:${n.contractAddress}`)).size,
     chainsUsed: chains,
     firstKnownActivity: timestamps[0] ?? null,
-    longestCurrentHoldDays: holdDays.length ? Math.max(...holdDays) : null,
+    longestCurrentHoldDays: maxOf(holdDays),
     medianCurrentHoldDays: median(holdDays),
     identifiedMints: transfers.filter((t) => t.isMint).length,
     inboundTransfers: transfers.filter((t) => t.direction === "inbound").length,
