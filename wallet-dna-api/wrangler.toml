@@ -5,7 +5,8 @@ compatibility_date = "2025-09-27"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-DEPLOYMENT_VERSION = "2.1.0"
+DEPLOYMENT_VERSION = "2.1.1"
+WALLET_DNA_MAX_TRANSFERS_PER_CHAIN = "2500"
 
 [observability]
 enabled = true

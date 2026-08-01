@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { WalletDNAResult } from "@/lib/wallet-dna/types";
-import { APP_COPY, analyseWallet, basePath } from "@/lib/wallet-dna/client";
+import { APP_COPY, analyseWallet } from "@/lib/wallet-dna/client";
 import { validateWalletInput } from "@/lib/wallet-dna/utils/ens";
 import { shortenAddress } from "@/lib/wallet-dna/utils/helpers";
 import { WalletDNAResultView } from "@/components/wallet-dna/WalletDNAResultView";
@@ -262,7 +262,7 @@ export function WalletDNAClient() {
       )}
 
       <footer className="wdna-footer">
-        <Link href={`${basePath}/methodology/`}>How scoring works</Link>
+        <Link href="/methodology/">How scoring works</Link>
         <p>{APP_COPY.disclaimer}</p>
       </footer>
     </main>

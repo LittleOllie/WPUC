@@ -8,8 +8,9 @@ import type {
 } from "@/lib/wallet-dna/types";
 import { computeDiscoveryMetrics } from "@/lib/wallet-dna/analysis/discovery";
 import { computeDiamondHandsDiagnostics } from "@/lib/wallet-dna/analysis/diamond-hands-diagnostics";
-import { clampScore, createTokenKey, maxOf, median } from "@/lib/wallet-dna/utils/helpers";
+import { clampScore, createTokenKey, maxOf, median, weightedMedian, type WeightedValue } from "@/lib/wallet-dna/utils/helpers";
 import {
+  buildTransferIndex,
   enrichNftsWithHoldPeriods,
   hasEverOutboundFromWallet,
 } from "@/lib/wallet-dna/utils/holdings";
@@ -79,6 +80,7 @@ function computeCurrentHoldLoyalty(
   nfts: NormalizedNFT[],
   transfers: NormalizedNFTTransfer[],
 ): number | null {
+  const transferIndex = buildTransferIndex(transfers);
   let held = 0;
   let neverSentOut = 0;
 
@@ -86,13 +88,36 @@ function computeCurrentHoldLoyalty(
     if (n.isSpam) continue;
     held += n.balance;
     if (
-      !hasEverOutboundFromWallet(wallet, n.chain, n.contractAddress, n.tokenId, transfers)
+      !hasEverOutboundFromWallet(
+        wallet,
+        n.chain,
+        n.contractAddress,
+        n.tokenId,
+        transfers,
+        transferIndex,
+      )
     ) {
       neverSentOut += n.balance;
     }
   }
 
   return held ? neverSentOut / held : null;
+}
+
+function holdWeightsFromNfts(enriched: ReturnType<typeof enrichNftsWithHoldPeriods>): WeightedValue[] {
+  const items: WeightedValue[] = [];
+  const now = Date.now();
+  for (const n of enriched) {
+    if (n.isSpam || n.balance <= 0) continue;
+    let days: number | null = null;
+    if (n.currentHoldDays != null) days = n.currentHoldDays;
+    else if (n.acquiredAt) {
+      const ts = new Date(n.acquiredAt).getTime();
+      if (ts <= now) days = Math.floor((now - ts) / (1000 * 60 * 60 * 24));
+    }
+    if (days != null) items.push({ value: days, weight: n.balance });
+  }
+  return items;
 }
 
 export function computeHoldMetrics(
@@ -106,23 +131,12 @@ export function computeHoldMetrics(
   shortTermOutboundRate: number | null;
 } {
   const enriched = enrichNftsWithHoldPeriods(wallet, nfts, transfers);
-  const holdDays: number[] = [];
-  for (const n of enriched) {
-    if (n.isSpam) continue;
-    if (n.currentHoldDays != null) {
-      for (let i = 0; i < n.balance; i++) holdDays.push(n.currentHoldDays);
-      continue;
-    }
-    const ts = n.acquiredAt ? new Date(n.acquiredAt).getTime() : null;
-    if (ts && ts <= Date.now()) {
-      const days = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
-      for (let i = 0; i < n.balance; i++) holdDays.push(days);
-    }
-  }
+  const holdWeights = holdWeightsFromNfts(enriched);
 
   const inboundKeys = new Set<string>();
   const outboundKeys = new Set<string>();
   const earliestInboundByKey = new Map<string, number>();
+  const firstOutboundByKey = new Map<string, number>();
 
   for (const t of transfers) {
     if (!t.tokenId) continue;
@@ -136,7 +150,18 @@ export function computeHoldMetrics(
       }
     } else {
       outboundKeys.add(key);
+      if (t.timestamp) {
+        const ts = new Date(t.timestamp).getTime();
+        const prev = firstOutboundByKey.get(key);
+        if (prev === undefined || ts < prev) firstOutboundByKey.set(key, ts);
+      }
     }
+  }
+
+  const currentKeys = new Set<string>();
+  for (const n of nfts) {
+    if (n.isSpam) continue;
+    currentKeys.add(createTokenKey(n.chain, n.contractAddress, n.tokenId));
   }
 
   let retained = 0;
@@ -144,28 +169,20 @@ export function computeHoldMetrics(
   let shortTermOut = 0;
   for (const key of inboundKeys) {
     inboundCount++;
-    const current = nfts.some(
-      (n) => !n.isSpam && createTokenKey(n.chain, n.contractAddress, n.tokenId) === key,
-    );
-    if (current && !outboundKeys.has(key)) retained++;
+    if (currentKeys.has(key) && !outboundKeys.has(key)) retained++;
     const acq = earliestInboundByKey.get(key);
-    if (acq && outboundKeys.has(key)) {
-      const outTs = transfers.find(
-        (t) =>
-          t.direction === "outbound" &&
-          createTokenKey(t.chain, t.contractAddress, t.tokenId ?? "") === key &&
-          t.timestamp,
-      )?.timestamp;
-      if (outTs) {
-        const days = (new Date(outTs).getTime() - acq) / (1000 * 60 * 60 * 24);
-        if (days <= 30) shortTermOut++;
-      }
+    const outTs = firstOutboundByKey.get(key);
+    if (acq != null && outTs != null) {
+      const days = (outTs - acq) / (1000 * 60 * 60 * 24);
+      if (days <= 30) shortTermOut++;
     }
   }
 
+  const holdValues = holdWeights.map((h) => h.value);
+
   return {
-    medianHoldDays: median(holdDays),
-    longestHoldDays: maxOf(holdDays),
+    medianHoldDays: weightedMedian(holdWeights),
+    longestHoldDays: maxOf(holdValues),
     retentionRate: inboundCount ? retained / inboundCount : null,
     shortTermOutboundRate: inboundCount ? shortTermOut / inboundCount : null,
   };

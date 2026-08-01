@@ -23,6 +23,10 @@ export async function analyseWallet(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ wallet, refresh: options?.refresh === true }),
     signal,
+  }).catch(() => {
+    throw new Error(
+      "Could not reach Wallet DNA. The analysis service may be temporarily unavailable — please try again.",
+    );
   });
 
   let json: { success?: boolean; data?: WalletDNAResult; error?: { message?: string } };
@@ -32,7 +36,9 @@ export async function analyseWallet(
     throw new Error(
       res.ok
         ? "Wallet DNA returned an invalid response. Please try again."
-        : `Analysis request failed (${res.status}). Check your connection and try again.`,
+        : res.status === 503
+          ? "Wallet DNA is temporarily overloaded. Please try again in a moment."
+          : `Analysis request failed (${res.status}). Check your connection and try again.`,
     );
   }
 

@@ -79,6 +79,39 @@ export function maxOf(values: number[]): number | null {
   return max;
 }
 
+export type WeightedValue = { value: number; weight: number };
+
+/** Median weighted by NFT balance — avoids expanding large ERC-1155 balances. */
+export function weightedMedian(items: WeightedValue[]): number | null {
+  const filtered = items.filter((i) => i.weight > 0);
+  if (!filtered.length) return null;
+  const sorted = [...filtered].sort((a, b) => a.value - b.value);
+  const total = sorted.reduce((s, i) => s + i.weight, 0);
+  let cumulative = 0;
+  for (const item of sorted) {
+    cumulative += item.weight;
+    if (cumulative >= total / 2) return item.value;
+  }
+  return sorted[sorted.length - 1]!.value;
+}
+
+export function weightedAverage(items: WeightedValue[]): number | null {
+  const filtered = items.filter((i) => i.weight > 0);
+  if (!filtered.length) return null;
+  const totalWeight = filtered.reduce((s, i) => s + i.weight, 0);
+  const sum = filtered.reduce((s, i) => s + i.value * i.weight, 0);
+  return sum / totalWeight;
+}
+
+export function weightedPercentOverThreshold(items: WeightedValue[], threshold: number): number {
+  const totalWeight = items.reduce((s, i) => s + i.weight, 0);
+  if (!totalWeight) return 0;
+  const over = items
+    .filter((i) => i.value >= threshold)
+    .reduce((s, i) => s + i.weight, 0);
+  return Math.round((over / totalWeight) * 1000) / 10;
+}
+
 export function formatStatDate(iso: string | null): string {
   if (!iso) return "Not enough history available";
   try {

@@ -6,6 +6,29 @@ export type EnrichedNFT = NormalizedNFT & {
   currentHoldDays: number | null;
 };
 
+export type TransferIndex = Map<string, NormalizedNFTTransfer[]>;
+
+export function buildTransferIndex(transfers: NormalizedNFTTransfer[]): TransferIndex {
+  const index: TransferIndex = new Map();
+  for (const t of transfers) {
+    if (t.tokenId == null) continue;
+    const key = createTokenKey(t.chain, t.contractAddress, t.tokenId);
+    const bucket = index.get(key);
+    if (bucket) bucket.push(t);
+    else index.set(key, [t]);
+  }
+  return index;
+}
+
+function transfersForToken(
+  chain: NormalizedNFT["chain"],
+  contractAddress: string,
+  tokenId: string,
+  index: TransferIndex,
+): NormalizedNFTTransfer[] {
+  return index.get(createTokenKey(chain, contractAddress, tokenId)) ?? [];
+}
+
 function sortTransfers(transfers: NormalizedNFTTransfer[]): NormalizedNFTTransfer[] {
   return [...transfers].sort((a, b) => {
     const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
@@ -15,18 +38,6 @@ function sortTransfers(transfers: NormalizedNFTTransfer[]): NormalizedNFTTransfe
   });
 }
 
-function tokenTransfers(
-  chain: NormalizedNFT["chain"],
-  contractAddress: string,
-  tokenId: string,
-  transfers: NormalizedNFTTransfer[],
-): NormalizedNFTTransfer[] {
-  const key = createTokenKey(chain, contractAddress, tokenId);
-  return transfers.filter(
-    (t) => t.tokenId != null && createTokenKey(t.chain, t.contractAddress, t.tokenId) === key,
-  );
-}
-
 /** Latest inbound transfer to this wallet for a token (within fetched history). */
 export function latestInboundToWallet(
   wallet: string,
@@ -34,11 +45,13 @@ export function latestInboundToWallet(
   contractAddress: string,
   tokenId: string,
   transfers: NormalizedNFTTransfer[],
+  index?: TransferIndex,
 ): string | null {
+  const idx = index ?? buildTransferIndex(transfers);
   const walletNorm = normaliseAddress(wallet);
   let latest: string | null = null;
 
-  for (const t of tokenTransfers(chain, contractAddress, tokenId, transfers)) {
+  for (const t of transfersForToken(chain, contractAddress, tokenId, idx)) {
     if (t.direction !== "inbound") continue;
     if (normaliseAddress(t.to) !== walletNorm) continue;
     const ts = parseValidTimestamp(t.timestamp);
@@ -56,11 +69,13 @@ export function earliestInboundToWallet(
   contractAddress: string,
   tokenId: string,
   transfers: NormalizedNFTTransfer[],
+  index?: TransferIndex,
 ): string | null {
+  const idx = index ?? buildTransferIndex(transfers);
   const walletNorm = normaliseAddress(wallet);
   let earliest: string | null = null;
 
-  for (const t of tokenTransfers(chain, contractAddress, tokenId, transfers)) {
+  for (const t of transfersForToken(chain, contractAddress, tokenId, idx)) {
     if (t.direction !== "inbound") continue;
     if (normaliseAddress(t.to) !== walletNorm) continue;
     const ts = parseValidTimestamp(t.timestamp);
@@ -77,9 +92,11 @@ export function hasEverOutboundFromWallet(
   contractAddress: string,
   tokenId: string,
   transfers: NormalizedNFTTransfer[],
+  index?: TransferIndex,
 ): boolean {
+  const idx = index ?? buildTransferIndex(transfers);
   const walletNorm = normaliseAddress(wallet);
-  return tokenTransfers(chain, contractAddress, tokenId, transfers).some(
+  return transfersForToken(chain, contractAddress, tokenId, idx).some(
     (t) => t.direction === "outbound" && normaliseAddress(t.from) === walletNorm,
   );
 }
@@ -89,13 +106,13 @@ function hasOutboundFromWalletAfter(
   chain: NormalizedNFT["chain"],
   contractAddress: string,
   tokenId: string,
-  transfers: NormalizedNFTTransfer[],
+  index: TransferIndex,
   afterIso: string,
 ): boolean {
   const walletNorm = normaliseAddress(wallet);
   const afterMs = new Date(afterIso).getTime();
 
-  for (const t of tokenTransfers(chain, contractAddress, tokenId, transfers)) {
+  for (const t of transfersForToken(chain, contractAddress, tokenId, index)) {
     if (t.direction !== "outbound") continue;
     if (normaliseAddress(t.from) !== walletNorm) continue;
     const ts = parseValidTimestamp(t.timestamp);
@@ -109,7 +126,7 @@ function hasOutboundFromWalletAfter(
 function mergeProviderWithStreakStart(
   wallet: string,
   nft: NormalizedNFT,
-  transfers: NormalizedNFTTransfer[],
+  index: TransferIndex,
   streakStart: string,
   fromProvider: string,
 ): string {
@@ -130,7 +147,7 @@ function mergeProviderWithStreakStart(
         nft.chain,
         nft.contractAddress,
         nft.tokenId,
-        transfers,
+        index,
         streakStart,
       ) ||
       gapDays >= 45
@@ -148,14 +165,17 @@ export function resolveCurrentHoldStartedAt(
   wallet: string,
   nft: NormalizedNFT,
   transfers: NormalizedNFTTransfer[],
+  index?: TransferIndex,
 ): string | null {
-  const fromWalk = currentHoldStartedAt(wallet, nft.chain, nft.contractAddress, nft.tokenId, transfers);
+  const idx = index ?? buildTransferIndex(transfers);
+  const fromWalk = currentHoldStartedAt(wallet, nft.chain, nft.contractAddress, nft.tokenId, idx);
   const fromLatestInbound = latestInboundToWallet(
     wallet,
     nft.chain,
     nft.contractAddress,
     nft.tokenId,
     transfers,
+    idx,
   );
   const fromProvider = parseValidTimestamp(nft.acquiredAt);
   const everOutbound = hasEverOutboundFromWallet(
@@ -164,19 +184,20 @@ export function resolveCurrentHoldStartedAt(
     nft.contractAddress,
     nft.tokenId,
     transfers,
+    idx,
   );
 
   const streakStart = fromWalk ?? fromLatestInbound;
 
   if (!everOutbound) {
     if (streakStart && fromProvider) {
-      return mergeProviderWithStreakStart(wallet, nft, transfers, streakStart, fromProvider);
+      return mergeProviderWithStreakStart(wallet, nft, idx, streakStart, fromProvider);
     }
     return streakStart ?? fromProvider ?? null;
   }
 
   if (streakStart && fromProvider) {
-    return mergeProviderWithStreakStart(wallet, nft, transfers, streakStart, fromProvider);
+    return mergeProviderWithStreakStart(wallet, nft, idx, streakStart, fromProvider);
   }
 
   return streakStart ?? fromProvider ?? null;
@@ -200,12 +221,12 @@ function inboundTimestampsToWallet(
   chain: NormalizedNFT["chain"],
   contractAddress: string,
   tokenId: string,
-  transfers: NormalizedNFTTransfer[],
+  index: TransferIndex,
 ): string[] {
   const walletNorm = normaliseAddress(wallet);
   const out: string[] = [];
 
-  for (const t of tokenTransfers(chain, contractAddress, tokenId, transfers)) {
+  for (const t of transfersForToken(chain, contractAddress, tokenId, index)) {
     if (t.direction !== "inbound") continue;
     if (normaliseAddress(t.to) !== walletNorm) continue;
     const ts = parseValidTimestamp(t.timestamp);
@@ -235,13 +256,14 @@ export function oldestHighlightTimestamp(
   nft: NormalizedNFT,
   transfers: NormalizedNFTTransfer[],
 ): string | null {
+  const index = buildTransferIndex(transfers);
   const provider = parseValidTimestamp(nft.acquiredAt);
   const inbounds = inboundTimestampsToWallet(
     wallet,
     nft.chain,
     nft.contractAddress,
     nft.tokenId,
-    transfers,
+    index,
   );
   const everOutbound = hasEverOutboundFromWallet(
     wallet,
@@ -249,12 +271,13 @@ export function oldestHighlightTimestamp(
     nft.contractAddress,
     nft.tokenId,
     transfers,
+    index,
   );
 
   if (everOutbound) {
     return (
-      resolveCurrentHoldStartedAt(wallet, nft, transfers) ??
-      latestInboundToWallet(wallet, nft.chain, nft.contractAddress, nft.tokenId, transfers) ??
+      resolveCurrentHoldStartedAt(wallet, nft, transfers, index) ??
+      latestInboundToWallet(wallet, nft.chain, nft.contractAddress, nft.tokenId, transfers, index) ??
       provider
     );
   }
@@ -268,13 +291,14 @@ export function newestHighlightTimestamp(
   nft: NormalizedNFT,
   transfers: NormalizedNFTTransfer[],
 ): string | null {
+  const index = buildTransferIndex(transfers);
   const provider = parseValidTimestamp(nft.acquiredAt);
   const inbounds = inboundTimestampsToWallet(
     wallet,
     nft.chain,
     nft.contractAddress,
     nft.tokenId,
-    transfers,
+    index,
   );
   const everOutbound = hasEverOutboundFromWallet(
     wallet,
@@ -282,12 +306,13 @@ export function newestHighlightTimestamp(
     nft.contractAddress,
     nft.tokenId,
     transfers,
+    index,
   );
 
   if (everOutbound) {
     return (
-      resolveCurrentHoldStartedAt(wallet, nft, transfers) ??
-      latestInboundToWallet(wallet, nft.chain, nft.contractAddress, nft.tokenId, transfers) ??
+      resolveCurrentHoldStartedAt(wallet, nft, transfers, index) ??
+      latestInboundToWallet(wallet, nft.chain, nft.contractAddress, nft.tokenId, transfers, index) ??
       provider
     );
   }
@@ -310,10 +335,13 @@ export function currentHoldStartedAt(
   chain: NormalizedNFT["chain"],
   contractAddress: string,
   tokenId: string,
-  transfers: NormalizedNFTTransfer[],
+  transfersOrIndex: NormalizedNFTTransfer[] | TransferIndex,
 ): string | null {
+  const index = Array.isArray(transfersOrIndex)
+    ? buildTransferIndex(transfersOrIndex)
+    : transfersOrIndex;
   const walletNorm = normaliseAddress(wallet);
-  const relevant = tokenTransfers(chain, contractAddress, tokenId, transfers);
+  const relevant = transfersForToken(chain, contractAddress, tokenId, index);
   if (!relevant.length) return null;
 
   let owned = false;
@@ -344,14 +372,13 @@ export function enrichNftsWithHoldPeriods(
   nfts: NormalizedNFT[],
   transfers: NormalizedNFTTransfer[],
 ): EnrichedNFT[] {
+  const index = buildTransferIndex(transfers);
   const now = Date.now();
   return nfts.map((n) => {
-    const started = resolveCurrentHoldStartedAt(wallet, n, transfers);
+    const started = resolveCurrentHoldStartedAt(wallet, n, transfers, index);
     const startedMs = started ? new Date(started).getTime() : null;
     const days =
-      startedMs != null
-        ? Math.max(0, Math.floor((now - startedMs) / 86400000))
-        : null;
+      startedMs != null ? Math.max(0, Math.floor((now - startedMs) / 86400000)) : null;
     return {
       ...n,
       currentHoldStartedAt: started,

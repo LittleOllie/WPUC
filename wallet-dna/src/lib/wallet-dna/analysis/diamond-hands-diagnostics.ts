@@ -5,8 +5,16 @@ import type {
   NormalizedNFTTransfer,
   WalletDNAScoreDebug,
 } from "@/lib/wallet-dna/types";
-import { createTokenKey, maxOf, median } from "@/lib/wallet-dna/utils/helpers";
 import {
+  createTokenKey,
+  maxOf,
+  weightedAverage,
+  weightedMedian,
+  weightedPercentOverThreshold,
+  type WeightedValue,
+} from "@/lib/wallet-dna/utils/helpers";
+import {
+  buildTransferIndex,
   enrichNftsWithHoldPeriods,
   hasEverOutboundFromWallet,
   resolveCurrentHoldStartedAt,
@@ -40,10 +48,31 @@ function holdDaysFromIso(iso: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS));
 }
 
-function percentOverThreshold(holdDays: number[], threshold: number): number {
-  if (!holdDays.length) return 0;
-  const count = holdDays.filter((d) => d >= threshold).length;
-  return Math.round((count / holdDays.length) * 1000) / 10;
+function collectHoldWeights(
+  enriched: ReturnType<typeof enrichNftsWithHoldPeriods>,
+  preferReconciled: boolean,
+): { weights: WeightedValue[]; unknownCount: number } {
+  const weights: WeightedValue[] = [];
+  let unknownCount = 0;
+  const now = Date.now();
+
+  for (const n of enriched) {
+    if (n.isSpam || n.balance <= 0) continue;
+    let days: number | null = null;
+    if (preferReconciled && n.currentHoldDays != null) {
+      days = n.currentHoldDays;
+    } else if (n.acquiredAt) {
+      const ts = new Date(n.acquiredAt).getTime();
+      if (ts <= now) days = Math.floor((now - ts) / DAY_MS);
+    }
+    if (days == null) {
+      unknownCount += n.balance;
+      continue;
+    }
+    weights.push({ value: days, weight: n.balance });
+  }
+
+  return { weights, unknownCount };
 }
 
 function computeRetentionMetrics(
@@ -57,6 +86,7 @@ function computeRetentionMetrics(
   const inboundKeys = new Set<string>();
   const outboundKeys = new Set<string>();
   const earliestInboundByKey = new Map<string, number>();
+  const firstOutboundByKey = new Map<string, number>();
 
   for (const t of transfers) {
     if (!t.tokenId) continue;
@@ -70,6 +100,11 @@ function computeRetentionMetrics(
       }
     } else {
       outboundKeys.add(key);
+      if (t.timestamp) {
+        const ts = new Date(t.timestamp).getTime();
+        const prev = firstOutboundByKey.get(key);
+        if (prev === undefined || ts < prev) firstOutboundByKey.set(key, ts);
+      }
     }
   }
 
@@ -85,17 +120,10 @@ function computeRetentionMetrics(
     if (current && !outboundKeys.has(key)) retained++;
 
     const acq = earliestInboundByKey.get(key);
-    if (acq && outboundKeys.has(key)) {
-      const outTs = transfers.find(
-        (t) =>
-          t.direction === "outbound" &&
-          createTokenKey(t.chain, t.contractAddress, t.tokenId ?? "") === key &&
-          t.timestamp,
-      )?.timestamp;
-      if (outTs) {
-        const days = (new Date(outTs).getTime() - acq) / DAY_MS;
-        if (days <= 30) shortTermOut++;
-      }
+    const outTs = firstOutboundByKey.get(key);
+    if (acq != null && outTs != null) {
+      const days = (outTs - acq) / DAY_MS;
+      if (days <= 30) shortTermOut++;
     }
   }
 
@@ -111,6 +139,7 @@ function computeCurrentHoldStreakScore(
   nfts: NormalizedNFT[],
   transfers: NormalizedNFTTransfer[],
 ): { score: number; neverSentOutPercent: number | null } {
+  const transferIndex = buildTransferIndex(transfers);
   let held = 0;
   let neverSentOut = 0;
 
@@ -118,7 +147,14 @@ function computeCurrentHoldStreakScore(
     if (n.isSpam) continue;
     held += n.balance;
     if (
-      !hasEverOutboundFromWallet(wallet, n.chain, n.contractAddress, n.tokenId, transfers)
+      !hasEverOutboundFromWallet(
+        wallet,
+        n.chain,
+        n.contractAddress,
+        n.tokenId,
+        transfers,
+        transferIndex,
+      )
     ) {
       neverSentOut += n.balance;
     }
@@ -137,42 +173,21 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
 
   const analysedAssetCount = nfts.reduce((s, n) => s + n.balance, 0);
 
-  const rawHoldDays: number[] = [];
-  let unknownAcquisitionDateCount = 0;
-
-  for (const n of nfts) {
-    for (let i = 0; i < n.balance; i++) {
-      if (!n.acquiredAt) {
-        unknownAcquisitionDateCount++;
-        continue;
-      }
-      const ts = new Date(n.acquiredAt).getTime();
-      if (ts <= now) rawHoldDays.push(Math.floor((now - ts) / DAY_MS));
-    }
-  }
-
   const enriched = enrichNftsWithHoldPeriods(wallet, nfts, transfers);
-  const reconciledHoldDays: number[] = [];
-  for (const n of enriched) {
-    for (let i = 0; i < n.balance; i++) {
-      if (n.currentHoldDays != null) reconciledHoldDays.push(n.currentHoldDays);
-    }
-  }
+  const rawHold = collectHoldWeights(enriched, false);
+  const reconciledHold = collectHoldWeights(enriched, true);
+  const unknownAcquisitionDateCount = rawHold.unknownCount;
 
-  const rawMedian = rawHoldDays.length ? median(rawHoldDays) : null;
-  const reconciledMedian = reconciledHoldDays.length ? median(reconciledHoldDays) : null;
+  const rawMedian = weightedMedian(rawHold.weights);
+  const reconciledMedian = weightedMedian(reconciledHold.weights);
   const medianHoldingDays = reconciledMedian ?? rawMedian ?? 0;
-  const averageHoldingDays = reconciledHoldDays.length
-    ? Math.round(
-        (reconciledHoldDays.reduce((a, b) => a + b, 0) / reconciledHoldDays.length) * 10,
-      ) / 10
-    : rawHoldDays.length
-      ? Math.round((rawHoldDays.reduce((a, b) => a + b, 0) / rawHoldDays.length) * 10) / 10
-      : 0;
+  const bucketWeights =
+    reconciledHold.weights.length > 0 ? reconciledHold.weights : rawHold.weights;
+  const averageHoldingDays = weightedAverage(bucketWeights);
+  const averageRounded =
+    averageHoldingDays != null ? Math.round(averageHoldingDays * 10) / 10 : 0;
   const oldestCurrentHoldingDays =
-    maxOf(reconciledHoldDays) ?? maxOf(rawHoldDays) ?? 0;
-
-  const holdDaysForBuckets = reconciledHoldDays.length ? reconciledHoldDays : rawHoldDays;
+    maxOf(bucketWeights.map((w) => w.value)) ?? maxOf(rawHold.weights.map((w) => w.value)) ?? 0;
 
   const { retentionRate, shortTermOutboundRate } = computeRetentionMetrics(nfts, transfers);
   const retentionScore = retentionRate != null ? Math.round(retentionRate * 100) : 45;
@@ -183,7 +198,7 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
 
   const holdingDurationScore = medianHoldScore(reconciledMedian ?? rawMedian);
   const longTermRetentionScore = longestHoldScore(
-    maxOf(reconciledHoldDays) ?? maxOf(rawHoldDays),
+    maxOf(bucketWeights.map((w) => w.value)) ?? maxOf(rawHold.weights.map((w) => w.value)),
   );
   const streak = computeCurrentHoldStreakScore(wallet, nfts, transfers);
 
@@ -205,11 +220,7 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
   const recentSales = recentTransfersOut;
 
   const currentlyHeldKeys = new Set(
-    nfts.flatMap((n) =>
-      Array.from({ length: n.balance }, () =>
-        createTokenKey(n.chain, n.contractAddress, n.tokenId),
-      ),
-    ),
+    nfts.map((n) => createTokenKey(n.chain, n.contractAddress, n.tokenId)),
   );
 
   let historicalAssetsTransferredOut = 0;
@@ -266,7 +277,7 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
     );
   }
 
-  if (reconciledHoldDays.length === 0 && rawHoldDays.length === 0) {
+  if (reconciledHold.weights.length === 0 && rawHold.weights.length === 0) {
     penalties.push(
       "No credible hold-duration signal — median and longest hold defaulted to conservative scores (45 / 25).",
     );
@@ -280,12 +291,12 @@ export function computeDiamondHandsDiagnostics(ctx: AnalysisContext): DiamondHan
 
   return {
     finalScore,
-    averageHoldingDays,
+    averageHoldingDays: averageRounded,
     medianHoldingDays,
     oldestCurrentHoldingDays,
-    currentAssetsOver180DaysPercent: percentOverThreshold(holdDaysForBuckets, 180),
-    currentAssetsOver365DaysPercent: percentOverThreshold(holdDaysForBuckets, 365),
-    currentAssetsOver730DaysPercent: percentOverThreshold(holdDaysForBuckets, 730),
+    currentAssetsOver180DaysPercent: weightedPercentOverThreshold(bucketWeights, 180),
+    currentAssetsOver365DaysPercent: weightedPercentOverThreshold(bucketWeights, 365),
+    currentAssetsOver730DaysPercent: weightedPercentOverThreshold(bucketWeights, 730),
     historicalAssetsSold: historicalAssetsTransferredOut,
     historicalAssetsTransferredOut,
     recentSales,
