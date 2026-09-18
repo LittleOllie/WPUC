@@ -4,3 +4,6 @@ dist
 !flexgrid/site/dist/
 !flexgrid/site/dist/app.js
 .DS_Store
+
+# Little Ollie Labs — local Formspree endpoint (copy from labs-form.config.example.js)
+labs-new/labs-form.config.js
