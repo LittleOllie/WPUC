@@ -1066,6 +1066,12 @@ html:has(.labs-site) body {
   object-position: bottom left;
 }
 
+@media (min-width: 768px) {
+  .labs-work__characters img {
+    max-height: clamp(20rem, calc(var(--labs-section-h) - 3.5rem), 40rem);
+  }
+}
+
 #work .labs-section__content {
   overflow: visible;
   overscroll-behavior: auto;
@@ -1087,7 +1093,7 @@ html:has(.labs-site) body {
 @media (min-width: 768px) {
   .labs-work__layout {
     display: grid;
-    grid-template-columns: minmax(8.5rem, 14rem) minmax(0, 1fr);
+    grid-template-columns: minmax(12rem, 22vw) minmax(0, 1fr);
     gap: clamp(0.75rem, 1.5vw, 1.5rem);
     align-items: end;
     margin-top: clamp(0.75rem, 1.5vh, 1.25rem);
@@ -1096,7 +1102,7 @@ html:has(.labs-site) body {
   .labs-work__characters {
     align-self: end;
     width: 100%;
-    max-width: 14rem;
+    max-width: min(22rem, 28vw);
   }
 
   .labs-work-carousel {
@@ -1106,29 +1112,25 @@ html:has(.labs-site) body {
 
 @media (min-width: 1400px) {
   .labs-work__layout {
-    grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);
-    gap: 1.75rem;
+    grid-template-columns: minmax(14rem, 24rem) minmax(0, 1fr);
+    gap: 2rem;
   }
 
-  #work .labs-work-card[data-carousel-state="prev"] {
-    transform: translate(calc(-50% - 11rem), -50%) scale(0.84) rotateY(12deg) translateZ(0);
+  .labs-work__characters {
+    max-width: 24rem;
   }
 
-  #work .labs-work-card[data-carousel-state="next"] {
-    transform: translate(calc(-50% + 11rem), -50%) scale(0.84) rotateY(-12deg) translateZ(0);
-  }
-
-  #work .labs-work-card[data-carousel-state="active"] {
-    transform: translate(-50%, -50%) scale(1) rotateY(0deg) translateZ(12px);
+  .labs-work__characters img {
+    max-height: clamp(24rem, calc(var(--labs-section-h) - 2rem), 46rem);
   }
 }
 
 .labs-work-carousel__stage {
   position: relative;
   height: clamp(22rem, calc(100svh - var(--labs-header-h) - 11rem), 31rem);
-  perspective: 1400px;
-  overflow: visible;
-  isolation: isolate;
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  overflow: hidden;
 }
 
 .labs-work-carousel__track {
@@ -1212,30 +1214,30 @@ html:has(.labs-site) body {
 
 #work .labs-work-card[data-carousel-state="active"] {
   opacity: 1;
-  z-index: 5;
+  z-index: 10;
   pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1) rotateY(0deg);
+  transform: translate3d(-50%, -50%, 48px) scale(1) rotateY(0deg);
   box-shadow: 0 20px 44px rgba(17, 17, 17, 0.12);
   border-color: rgba(17, 17, 17, 0.18);
 }
 
 #work .labs-work-card[data-carousel-state="prev"] {
-  opacity: 0.78;
-  z-index: 3;
+  opacity: 0.9;
+  z-index: 1;
   pointer-events: auto;
   cursor: pointer;
-  transform: translate(calc(-50% - clamp(9rem, 12vw, 12rem)), -50%) scale(0.84) rotateY(12deg);
-  filter: brightness(0.95);
+  transform: translate3d(calc(-50% - clamp(10rem, 13vw, 13.5rem)), -50%, -72px) scale(0.8) rotateY(14deg);
+  filter: brightness(0.98);
   box-shadow: 0 10px 24px rgba(17, 17, 17, 0.08);
 }
 
 #work .labs-work-card[data-carousel-state="next"] {
-  opacity: 0.78;
-  z-index: 3;
+  opacity: 0.9;
+  z-index: 1;
   pointer-events: auto;
   cursor: pointer;
-  transform: translate(calc(-50% + clamp(9rem, 12vw, 12rem)), -50%) scale(0.84) rotateY(-12deg);
-  filter: brightness(0.95);
+  transform: translate3d(calc(-50% + clamp(10rem, 13vw, 13.5rem)), -50%, -72px) scale(0.8) rotateY(-14deg);
+  filter: brightness(0.98);
   box-shadow: 0 10px 24px rgba(17, 17, 17, 0.08);
 }
 
@@ -1248,7 +1250,7 @@ html:has(.labs-site) body {
 
 #work .labs-work-card[data-carousel-state="prev"]:hover,
 #work .labs-work-card[data-carousel-state="next"]:hover {
-  opacity: 0.92;
+  opacity: 0.96;
   filter: brightness(1);
 }
 
