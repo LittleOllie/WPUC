@@ -547,10 +547,37 @@ html.club-closed [data-club-link] {
     0 4px 10px rgba(17, 52, 89, 0.12);
 }
 
+.home-nav__actions {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .home-nav__cta--desktop {
   display: none;
-  margin-left: 0.35rem;
   flex-shrink: 0;
+}
+
+.home-nav__cta--labs {
+  background: transparent;
+  color: var(--lo-deep-blue);
+  border: 2px solid rgba(17, 52, 89, 0.18);
+  box-shadow: none;
+}
+
+.home-nav__cta--labs:hover,
+.home-nav__cta--labs:focus-visible {
+  background: rgba(111, 211, 242, 0.22);
+  border-color: rgba(79, 186, 224, 0.55);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.home-nav__cta--labs:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .home-nav__cta--mobile {
@@ -626,6 +653,10 @@ html.club-closed [data-club-link] {
   .home-page .home-nav__logo {
     height: 38px;
     max-height: 38px;
+  }
+
+  .home-nav__actions {
+    display: flex;
   }
 
   .home-nav__cta--desktop {
