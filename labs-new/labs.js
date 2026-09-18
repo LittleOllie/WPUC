@@ -331,6 +331,7 @@
             throw new Error(result.data && result.data.error ? result.data.error : "Submission failed");
           }
           submissionSucceeded = true;
+          form.reset();
           form.hidden = true;
           hideFormStatus();
           if (formSuccess) {
