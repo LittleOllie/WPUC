@@ -2,12 +2,709 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Redirecting to Little Ollie Labs</title>
-  <meta http-equiv="refresh" content="0; url=/" />
-  <link rel="canonical" href="https://littleollielabs.com/" />
-  <script>location.replace("/");</script>
+  <title>Little Ollie Labs — Websites, Apps, Brands &amp; Ideas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Little Ollie Labs — we help turn ideas into websites, apps and digital experiences that people actually love." />
+  <link rel="canonical" href="https://littleollielabs.com/labs-new/" />
+  <meta property="og:url" content="https://littleollielabs.com/labs-new/" />
+  <meta property="og:title" content="Little Ollie Labs" />
+  <meta property="og:description" content="We help turn ideas into websites, apps and digital experiences that people actually love." />
+  <link rel="icon" href="../flexgrid/site/src/assets/images/LO.png" type="image/png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Fredoka:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="labs.css" />
+  <link rel="stylesheet" href="labs-draw.css" />
 </head>
-<body>
-  <p><a href="/">Continue to Little Ollie Labs</a></p>
+<body class="labs-site">
+  <!-- LabsHeader -->
+  <header class="labs-header" data-labs-header>
+    <div class="labs-header__inner">
+      <a class="labs-header__logo labs-header__logo--main" href="#top" aria-label="Little Ollie Labs home">
+        <span class="labs-asset" data-labs-asset>
+          <img src="../public/labs/branding/little-ollie-labs-logo-main.png" alt="Little Ollie Labs" width="220" height="64" decoding="async" />
+          <span class="labs-asset__label">Logo: public/labs/branding/little-ollie-labs-logo-main.png</span>
+        </span>
+      </a>
+      <a class="labs-header__logo labs-header__logo--compact" href="#top" aria-label="Little Ollie Labs home">
+        <span class="labs-asset" data-labs-asset>
+          <img src="../public/labs/branding/little-ollie-labs-logo-compact.png" alt="Little Ollie Labs" width="48" height="48" decoding="async" />
+          <span class="labs-asset__label">Logo compact</span>
+        </span>
+      </a>
+
+      <nav class="labs-nav" aria-label="Primary">
+        <a class="labs-nav__link" href="#top" data-labs-nav-link>Home</a>
+        <a class="labs-nav__link" href="#work" data-labs-nav-link>Work</a>
+        <a class="labs-nav__link" href="#what-we-do" data-labs-nav-link>What We Do</a>
+        <a class="labs-nav__link" href="#about" data-labs-nav-link>About</a>
+        <a class="labs-nav__link" href="#contact" data-labs-nav-link>Contact</a>
+      </nav>
+
+      <div class="labs-header__actions">
+        <a class="labs-btn labs-btn--ghost labs-header__world" href="/world/">See the World →</a>
+        <a class="labs-btn labs-header__cta" href="#contact" data-labs-open-form>Let's Build →</a>
+        <button type="button" class="labs-menu-btn" data-labs-menu-btn aria-expanded="false" aria-controls="labs-mobile-menu" aria-label="Open menu" data-labs-menu-label-open="Open menu" data-labs-menu-label-close="Close menu">
+          <span class="labs-menu-btn__bars" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="labs-menu" id="labs-mobile-menu" data-labs-menu hidden aria-label="Mobile">
+    <ul class="labs-menu__list">
+      <li><a class="labs-nav__link" href="#top" data-labs-nav-link>Home</a></li>
+      <li><a class="labs-nav__link" href="#work" data-labs-nav-link>Work</a></li>
+      <li><a class="labs-nav__link" href="#what-we-do" data-labs-nav-link>What We Do</a></li>
+      <li><a class="labs-nav__link" href="#about" data-labs-nav-link>About</a></li>
+      <li><a class="labs-nav__link" href="#contact" data-labs-nav-link>Contact</a></li>
+    </ul>
+    <div class="labs-menu__cta">
+      <a class="labs-btn labs-btn--ghost" href="/world/" style="width:100%">See the World →</a>
+      <a class="labs-btn" href="#contact" data-labs-open-form style="width:100%">Let's Build →</a>
+    </div>
+  </nav>
+
+  <main>
+    <!-- LabsHero -->
+    <section class="labs-hero labs-snap" id="top" aria-labelledby="labs-hero-heading">
+      <div class="labs-hero__copy-wrap">
+        <div class="labs-hero__copy labs-reveal">
+          <p class="labs-hero__eyebrow">Little ideas. Big possibilities.</p>
+          <h1 class="labs-hero__headline" id="labs-hero-heading">
+            <span class="labs-hero__headline-line">We make</span>
+            <span class="labs-hero__headline-line"><span class="labs-rainbow-word"><span>c</span><span>o</span><span>o</span><span>l</span></span> sh<span class="labs-hero__spark" aria-hidden="true">★</span>t.</span>
+          </h1>
+          <p class="labs-hero__services">Websites · Apps · Brands · Games · Ideas</p>
+          <p class="labs-hero__tagline">From a sketch to something real.</p>
+          <p class="labs-hero__body">We help turn ideas into websites, apps and digital experiences that people actually love.</p>
+          <div class="labs-hero__actions">
+            <a class="labs-btn" href="#contact" data-labs-open-form>Start a Project →</a>
+            <a class="labs-btn labs-btn--ghost" href="#about">Watch Our Story</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="labs-hero__art-wrap labs-reveal">
+        <picture class="labs-hero__art labs-asset" data-labs-asset>
+          <source media="(max-width: 767px)" srcset="public/labs/hero/hero-mobile.png" />
+          <img
+            src="../public/labs/hero/hero-desktop.png"
+            alt="Dad and Ollie at a creative workspace with laptop, whiteboard and desk"
+            width="2172"
+            height="724"
+            decoding="async"
+            fetchpriority="high"
+            sizes="(max-width: 767px) 100vw, 100vw"
+          />
+          <span class="labs-asset__label">Hero: public/labs/hero/hero-desktop.png &amp; hero-mobile.png</span>
+        </picture>
+      </div>
+
+      <div class="labs-strip labs-hero__strip" aria-label="Projects we've built">
+        <div class="labs-container labs-strip__bar labs-reveal">
+          <p class="labs-strip__label">Some of the things we've built</p>
+
+          <ul class="labs-strip__logos">
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://blackwater-labs.com/" target="_blank" rel="noopener noreferrer" data-strip-logo="little-ollie-world">
+                <img src="../public/labs/projects/bw-labs.png" alt="Blackwater Labs" width="1448" height="1086" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Little Ollie World</span>
+              </a>
+            </li>
+            <li class="labs-strip__item">
+              <span class="labs-strip__mark" data-strip-logo="layer-forge">
+                <img src="../public/labs/projects/layer-forge-logo.png" alt="Layer Forge" width="1536" height="1024" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Layer Forge</span>
+              </span>
+            </li>
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://neon-underworld-kappa.vercel.app/" target="_blank" rel="noopener noreferrer" data-strip-logo="neon-underworld">
+                <img src="../public/labs/projects/NU-Logo.png" alt="Neon Underworld" width="1774" height="887" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Neon Underworld</span>
+              </a>
+            </li>
+            <li class="labs-strip__item">
+              <span class="labs-strip__mark" data-strip-logo="apex">
+                <img src="../public/labs/projects/apex-logo.png" alt="Apex — Test More Than Fitness" width="1536" height="1024" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Apex</span>
+              </span>
+            </li>
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://www.dyorpod.com/" target="_blank" rel="noopener noreferrer" data-strip-logo="dyor">
+                <img src="../public/labs/projects/dyor-logo.png" alt="DYOR" width="2048" height="753" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">DYOR</span>
+              </a>
+            </li>
+          </ul>
+
+          <p class="labs-strip__more">...and more to come <span class="labs-strip__smile" aria-hidden="true">☺</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- LabsWork -->
+    <section class="labs-section labs-snap labs-work" id="work" aria-labelledby="labs-work-heading">
+      <div class="labs-container labs-section__body">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Our work</p>
+          <h2 class="labs-section__title" id="labs-work-heading">Some things we've <span class="labs-rainbow-word"><span>m</span><span>a</span><span>d</span><span>e</span></span>.</h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-work-carousel" data-labs-work-carousel>
+          <div class="labs-work-carousel__stage">
+          <div class="labs-work-carousel__track" data-labs-work-track>
+          <a class="labs-work-card" href="https://blackwater-labs.com/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="../public/labs/projects/BW-Website.png" alt="Blackwater Labs website preview" width="3022" height="1724" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">BW-Website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Blackwater Labs</h3>
+              <p class="labs-work-card__desc">A bold brand and web presence built for creators who play by their own rules.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Design</li>
+              </ul>
+            </div>
+          </a>
+
+          <article class="labs-work-card">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="../public/labs/projects/Layer-forge-website.png" alt="Layer Forge website preview" width="1515" height="864" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">Layer-forge-website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Layer Forge</h3>
+              <p class="labs-work-card__desc">Tools for creators to build, organise and generate digital collections.</p>
+              <ul class="labs-work-card__tags">
+                <li>Web App</li>
+                <li>Product Design</li>
+                <li>Development</li>
+              </ul>
+            </div>
+          </article>
+
+          <a class="labs-work-card" href="https://neon-underworld-kappa.vercel.app/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="../public/labs/projects/NU_website.png" alt="Neon Underworld website preview" width="3018" height="1722" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">NU_website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Neon Underworld</h3>
+              <p class="labs-work-card__desc">A neon-soaked digital world with attitude, lore and room to grow.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>World Building</li>
+                <li>Brand</li>
+              </ul>
+            </div>
+          </a>
+
+          <article class="labs-work-card">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="../public/labs/projects/Apex-Website.png" alt="Apex website preview" width="1513" height="858" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">Apex-Website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Apex</h3>
+              <p class="labs-work-card__desc">Fitness reimagined — a brand and site built to test more than limits.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Fitness</li>
+              </ul>
+            </div>
+          </article>
+
+          <a class="labs-work-card" href="https://www.dyorpod.com/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="../public/labs/projects/dyor-website.png" alt="DYOR website preview" width="2992" height="1724" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">dyor-website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">DYOR</h3>
+              <p class="labs-work-card__desc">Crypto media built for live conversations — X Spaces, podcasts and a growing content library.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Media</li>
+              </ul>
+            </div>
+          </a>
+          </div>
+          </div>
+          <div class="labs-work-carousel__nav">
+            <button type="button" class="labs-work-carousel__btn" data-labs-work-prev aria-label="Previous project">←</button>
+            <span class="labs-work-carousel__count" data-labs-work-count aria-live="polite">1 / 5</span>
+            <button type="button" class="labs-work-carousel__btn" data-labs-work-next aria-label="Next project">→</button>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <figure class="labs-work__characters" aria-hidden="true">
+        <img
+          src="../public/labs/characters/work-page-characters.png"
+          alt=""
+          width="1122"
+          height="1402"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    </section>
+
+    <!-- LabsServices -->
+    <section class="labs-section labs-snap" id="what-we-do" aria-labelledby="labs-services-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">What we do</p>
+          <img
+            class="labs-services__doodle labs-services__doodle--arrow"
+            src="../public/labs/doodles/marks/mark-01-black-swoop.png"
+            alt=""
+            width="320"
+            height="240"
+            decoding="async"
+            aria-hidden="true"
+          />
+          <h2 class="labs-section__title" id="labs-services-heading">Ideas. Design. <span class="labs-rainbow-word"><span>B</span><span>u</span><span>i</span><span>l</span><span>d</span></span>. <span class="labs-services__repeat">Repeat.<img class="labs-services__doodle labs-services__doodle--underline" src="../public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span></h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-services__stage">
+          <p class="labs-services__note" aria-hidden="true">from idea to reality</p>
+
+          <div class="labs-services__path" aria-hidden="true">
+            <svg class="labs-services__path-svg labs-services__path-svg--desktop" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path
+                class="labs-services__path-ghost"
+                d="M 3 1.5 C 9 8.5 13 12.5 17.5 18.5 S 31.5 16.5 34 20 S 48.5 17.5 51 20.5 S 66 17.5 68.5 20.5 S 83.5 20.5 87 29.5 C 84.5 39.5 73.5 45.5 58.5 49.5 C 38.5 53.5 19.5 56.5 18 66.5 S 34.5 71 50.5 73 S 63 74.5 65 75.5"
+              />
+              <path
+                class="labs-services__path-line"
+                d="M 3 1.5 C 9 8.5 13 12.5 17.5 18.5 S 31.5 16.5 34 20 S 48.5 17.5 51 20.5 S 66 17.5 68.5 20.5 S 83.5 20.5 87 29.5 C 84.5 39.5 73.5 45.5 58.5 49.5 C 38.5 53.5 19.5 56.5 18 66.5 S 34.5 71 50.5 73 S 63 74.5 65 75.5"
+              />
+            </svg>
+            <svg class="labs-services__path-svg labs-services__path-svg--tablet" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path
+                class="labs-services__path-ghost"
+                d="M 4 2 C 10 9 14 13 19 18.5 S 44 16.5 49 19 S 79 21 83.5 29 C 78 38 50 42 49.5 48.5 S 49 58 49 63.5 S 26 70 22 80.5"
+              />
+              <path
+                class="labs-services__path-line"
+                d="M 4 2 C 10 9 14 13 19 18.5 S 44 16.5 49 19 S 79 21 83.5 29 C 78 38 50 42 49.5 48.5 S 49 58 49 63.5 S 26 70 22 80.5"
+              />
+            </svg>
+            <img
+              class="labs-services__path-mark labs-services__path-mark--twinkle"
+              src="../public/labs/doodles/stars/star-spark-05-double-twinkle.png"
+              alt=""
+              width="240"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--hook"
+              src="../public/labs/doodles/marks/mark-09-pink-arrow.png"
+              alt=""
+              width="240"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--drop"
+              src="../public/labs/doodles/marks/mark-14-black-swoosh.png"
+              alt=""
+              width="320"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--finish"
+              src="../public/labs/doodles/stars/star-spark-12-small-star-burst.png"
+              alt=""
+              width="200"
+              height="200"
+              decoding="async"
+            />
+          </div>
+
+        <div class="labs-services__grid">
+          <article class="labs-service">
+            <h3 class="labs-service__title">Strategy</h3>
+            <p class="labs-service__desc">Turn ideas into clear plans.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Design</h3>
+            <p class="labs-service__desc">Create brands and experiences people remember.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Development</h3>
+            <p class="labs-service__desc">Build websites, apps and useful digital products.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Branding</h3>
+            <p class="labs-service__desc">Create identities, stories and visual systems.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Experiments</h3>
+            <p class="labs-service__desc">Explore ideas that don't fit neatly into a box.</p>
+          </article>
+        </div>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LabsAbout -->
+    <section class="labs-section labs-snap" id="about" aria-labelledby="labs-about-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Who's behind this?</p>
+          <h2 class="labs-section__title" id="labs-about-heading">Built by someone who couldn't stop <span class="labs-rainbow-word"><span>b</span><span>u</span><span>i</span><span>l</span><span>d</span><span>i</span><span>n</span><span>g</span></span>.</h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-about__grid">
+          <div class="labs-about__copy">
+            <p><strong>Little Ollie Labs started because we just love building things.</strong></p>
+            <p>Websites, apps, brands, games, random ideas — if something sounds interesting, we want to see if we can make it real.</p>
+            <p>We won't always know the answer on day one. But if there's a way to make it work, we'll figure it out.</p>
+            <p>Good ideas. Good people. Let's build something.</p>
+          </div>
+          <figure class="labs-about__character labs-about__character--solo">
+            <span class="labs-asset" data-labs-asset>
+              <img
+                src="../public/labs/characters/about-page.png"
+                alt="Dad and Ollie, the team behind Little Ollie Labs"
+                width="1145"
+                height="1374"
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="labs-asset__label">public/labs/characters/about-page.png</span>
+            </span>
+          </figure>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LabsContact -->
+    <section class="labs-section labs-contact" id="contact" aria-labelledby="labs-contact-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Got an idea?</p>
+          <img
+            class="labs-contact__doodle labs-contact__doodle--arrow"
+            src="../public/labs/doodles/marks/mark-01-black-swoop.png"
+            alt=""
+            width="320"
+            height="240"
+            decoding="async"
+            aria-hidden="true"
+          />
+          <h2 class="labs-section__title labs-contact__title" id="labs-contact-heading">Tell us about <span class="labs-contact__title-it">it.<img class="labs-contact__doodle labs-contact__doodle--underline" src="../public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span></h2>
+          <p class="labs-section__lead">Big idea, little idea or something you're still trying to explain — give us the rough version and we'll take it from there.</p>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-contact__grid">
+          <div class="labs-contact__main">
+            <div class="labs-contact__channels labs-contact__channels--compact">
+              <div class="labs-contact__block">
+                <p class="labs-contact__label">Email</p>
+                <a class="labs-contact__link" href="mailto:littleollienft@gmail.com">littleollienft@gmail.com</a>
+              </div>
+              <div class="labs-contact__block labs-contact__block--social">
+                <p class="labs-contact__label">Follow along</p>
+                <div class="labs-contact__social">
+                  <a class="labs-contact__social-link" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer">
+                    <img src="../webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
+                    <span>Facebook</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">
+                    <img src="../webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
+                    <span>Instagram</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer">
+                    <img src="../webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
+                    <span>TikTok</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer">
+                    <img src="../webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
+                    <span>X</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="labs-contact__cta">
+              <p class="labs-contact__cta-copy">Got a project in mind? Tell us the rough version — we'll take it from there.</p>
+              <button type="button" class="labs-btn labs-btn--dark" data-labs-open-form>Send the idea →</button>
+            </div>
+          </div>
+
+          <figure class="labs-contact__character">
+            <div class="labs-about__duo">
+              <div class="labs-about__figure labs-about__figure--dad">
+                <span class="labs-asset" data-labs-asset>
+                  <img
+                    src="../public/labs/characters/dad-about2.png"
+                    alt="Dad, builder and founder of Little Ollie Labs"
+                    width="1122"
+                    height="1402"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="labs-asset__label">public/labs/characters/dad-about2.png</span>
+                </span>
+              </div>
+              <div class="labs-about__figure labs-about__figure--ollie">
+                <span class="labs-asset" data-labs-asset>
+                  <img
+                    src="../public/labs/characters/ollie-cta.png"
+                    alt="Ollie, imagination and spark behind Little Ollie"
+                    width="1122"
+                    height="1402"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="labs-asset__label">public/labs/characters/ollie-cta.png</span>
+                </span>
+              </div>
+            </div>
+          </figure>
+        </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Project enquiry modal -->
+  <div class="labs-form-modal" data-labs-form-modal hidden>
+    <div class="labs-form-modal__backdrop" data-labs-form-modal-close tabindex="-1" aria-hidden="true"></div>
+    <div
+      class="labs-form-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="labs-form-modal-title"
+      tabindex="-1"
+    >
+      <button type="button" class="labs-form-modal__close" data-labs-form-modal-close aria-label="Close form">
+        <span aria-hidden="true">×</span>
+      </button>
+
+      <header class="labs-form-modal__head">
+        <p class="labs-section__eyebrow labs-form-modal__eyebrow">Got an idea?</p>
+        <h2 class="labs-form-modal__title" id="labs-form-modal-title">
+          Tell us about <span class="labs-contact__title-it">it.<img class="labs-contact__doodle labs-contact__doodle--underline" src="../public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span>
+        </h2>
+        <p class="labs-form-modal__lead">Big idea, little idea or something you're still trying to explain — give us the rough version and we'll take it from there.</p>
+      </header>
+
+      <div class="labs-form-panel" data-labs-form-panel>
+        <form class="labs-form" id="contact-form" data-labs-enquiry-form novalidate>
+          <input type="hidden" name="_subject" value="New Little Ollie Labs enquiry" />
+          <div class="labs-form__honeypot" aria-hidden="true">
+            <label for="labs-form-botcheck">Leave blank</label>
+            <input type="text" id="labs-form-botcheck" name="_gotcha" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="name">
+              <label for="labs-form-name">Your name <span class="labs-form__req" aria-hidden="true">*</span></label>
+              <input type="text" id="labs-form-name" name="Name" autocomplete="name" required aria-required="true" />
+              <p class="labs-form__error" id="labs-form-error-name" role="alert" hidden></p>
+            </div>
+            <div class="labs-form__field" data-labs-field="email">
+              <label for="labs-form-email">Email <span class="labs-form__req" aria-hidden="true">*</span></label>
+              <input type="email" id="labs-form-email" name="Email" autocomplete="email" inputmode="email" required aria-required="true" />
+              <p class="labs-form__error" id="labs-form-error-email" role="alert" hidden></p>
+            </div>
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="business">
+              <label for="labs-form-business">Business or project name</label>
+              <input type="text" id="labs-form-business" name="Business / Project Name" autocomplete="organization" />
+            </div>
+            <div class="labs-form__field" data-labs-field="social">
+              <label for="labs-form-social">Website or social</label>
+              <input type="text" id="labs-form-social" name="Website / Social" autocomplete="url" inputmode="url" placeholder="https://" />
+            </div>
+          </div>
+
+          <fieldset class="labs-form__field labs-form__fieldset" data-labs-field="project_type">
+            <legend>What can we help you build? <span class="labs-form__req" aria-hidden="true">*</span></legend>
+            <div class="labs-form__checks" role="group" aria-label="What can we help you build?">
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Website" /><span class="labs-form__check-text">Website</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="App / Web App" /><span class="labs-form__check-text">App / Web App</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Brand / Identity" /><span class="labs-form__check-text">Brand / Identity</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Game / Interactive" /><span class="labs-form__check-text">Game / Interactive</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Existing Project Help" /><span class="labs-form__check-text">Existing Project Help</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Something Else" /><span class="labs-form__check-text">Something Else</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Not Sure Yet" /><span class="labs-form__check-text">Not Sure Yet</span></label>
+            </div>
+            <p class="labs-form__error" id="labs-form-error-project-type" role="alert" hidden></p>
+          </fieldset>
+
+          <div class="labs-form__field" data-labs-field="idea">
+            <label for="labs-form-idea">Tell us about the idea <span class="labs-form__req" aria-hidden="true">*</span></label>
+            <textarea id="labs-form-idea" name="Project Description" rows="6" required aria-required="true" placeholder="What are you thinking about building? Don't worry if it's still rough — that's what we're here for."></textarea>
+            <p class="labs-form__error" id="labs-form-error-idea" role="alert" hidden></p>
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="budget">
+              <label for="labs-form-budget">Rough budget</label>
+              <select id="labs-form-budget" name="Budget">
+                <option value="Not sure yet">Not sure yet</option>
+                <option value="Under A$1,000">Under A$1,000</option>
+                <option value="A$1,000–2,500">A$1,000–2,500</option>
+                <option value="A$2,500–5,000">A$2,500–5,000</option>
+                <option value="A$5,000–10,000">A$5,000–10,000</option>
+                <option value="A$10,000+">A$10,000+</option>
+              </select>
+              <p class="labs-form__hint">Helps us understand your approximate project budget — these aren't published Labs prices.</p>
+            </div>
+            <div class="labs-form__field" data-labs-field="timeline">
+              <label for="labs-form-timeline">When are you thinking?</label>
+              <select id="labs-form-timeline" name="Timeline">
+                <option value="ASAP">ASAP</option>
+                <option value="Within a month">Within a month</option>
+                <option value="1–3 months">1–3 months</option>
+                <option value="3+ months">3+ months</option>
+                <option value="Just exploring">Just exploring</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="labs-form__field" data-labs-field="extra">
+            <label for="labs-form-extra">Anything else we should know?</label>
+            <textarea id="labs-form-extra" name="Extra Information" rows="3"></textarea>
+          </div>
+
+          <p class="labs-form__status" data-labs-form-status role="status" aria-live="polite" hidden></p>
+
+          <button type="submit" class="labs-btn labs-btn--dark labs-form__submit" data-labs-form-submit data-labs-form-submit-label="Send the idea →">Send the idea →</button>
+        </form>
+
+        <div class="labs-form-success" data-labs-form-success hidden>
+          <h3 class="labs-form-success__title" tabindex="-1">Got it ✦</h3>
+          <p class="labs-form-success__text">Thanks for reaching out. We'll have a look and get back to you soon.</p>
+        </div>
+      </div>
+
+      <p class="labs-form__privacy">We'll only use your details to respond to your enquiry.</p>
+    </div>
+  </div>
+
+  <!-- LabsFooter -->
+  <footer class="labs-footer">
+    <div class="labs-container labs-footer__grid">
+      <div class="labs-footer__brand">
+        <span class="labs-asset" data-labs-asset>
+          <img src="../public/labs/branding/little-ollie-labs-mark.png" alt="Little Ollie Labs" width="160" height="48" loading="lazy" decoding="async" />
+          <span class="labs-asset__label">Footer mark</span>
+        </span>
+        <p class="labs-footer__tagline">Bringing ideas to life.</p>
+      </div>
+
+      <nav aria-label="Footer">
+        <ul class="labs-footer__nav">
+          <li><a href="#work">Work</a></li>
+          <li><a href="#what-we-do">What We Do</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div>
+        <p class="labs-section__eyebrow" style="margin-bottom:0.75rem">Follow along</p>
+        <div class="labs-footer__social">
+          <a href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <img src="../webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <img src="../webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+            <img src="../webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer" aria-label="X">
+            <img src="../webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="mailto:littleollienft@gmail.com" aria-label="Email">
+            <img src="../webpageassets/email.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="labs-container labs-footer__fine">
+      <p class="labs-footer__built">Built by Little Ollie Labs</p>
+      <div class="labs-footer__fine-links" aria-label="Quick links">
+        <a href="/world/">See the World</a>
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="mailto:littleollienft@gmail.com">Email</a>
+        <a href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </div>
+      <p class="labs-footer__bottom-copy">© <span data-labs-year></span> Little Ollie Labs</p>
+    </div>
+  </footer>
+
+  <!-- LabsDraw — page canvas + floating tools (labs-new only) -->
+  <canvas class="labs-draw__canvas" data-labs-draw-canvas aria-hidden="true"></canvas>
+
+  <div class="labs-draw" data-labs-draw>
+    <div class="labs-draw__dock">
+      <div class="labs-draw__toolbar" id="labs-draw-toolbar" data-labs-draw-toolbar role="toolbar" aria-label="Drawing tools" hidden>
+        <div class="labs-draw__tools" role="group" aria-label="Tool">
+          <button type="button" class="labs-draw__tool labs-draw__tool--draw is-active" data-labs-draw-tool="draw" aria-label="Draw" aria-pressed="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>
+          </button>
+          <button type="button" class="labs-draw__tool labs-draw__tool--eraser" data-labs-draw-tool="eraser" aria-label="Eraser" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 0 1-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l9.19-9.19a4.008 4.008 0 0 1 5.66 0l-.42.59zm-1.41 1.41L12 7.8l-1.83 1.83 2.83 2.83 1.83-1.83-1.41-1.41zM4.22 15.58l3.54 3.54 1.41-1.41-3.54-3.54-1.41 1.41z"/></svg>
+          </button>
+        </div>
+
+        <div class="labs-draw__colors" role="group" aria-label="Colours">
+          <button type="button" class="labs-draw__color is-active" data-labs-draw-color="#f4a8c8" aria-label="Pink" aria-pressed="true" style="--labs-draw-swatch:#f4a8c8"></button>
+          <button type="button" class="labs-draw__color" data-labs-draw-color="#ffd84d" aria-label="Yellow" aria-pressed="false" style="--labs-draw-swatch:#ffd84d"></button>
+          <button type="button" class="labs-draw__color" data-labs-draw-color="#6fd3f2" aria-label="Blue" aria-pressed="false" style="--labs-draw-swatch:#6fd3f2"></button>
+          <button type="button" class="labs-draw__color" data-labs-draw-color="#8fd36c" aria-label="Green" aria-pressed="false" style="--labs-draw-swatch:#8fd36c"></button>
+          <button type="button" class="labs-draw__color" data-labs-draw-color="#c4a8f0" aria-label="Purple" aria-pressed="false" style="--labs-draw-swatch:#c4a8f0"></button>
+        </div>
+
+        <button type="button" class="labs-draw__clear" data-labs-draw-clear aria-label="Clear drawing">Clear</button>
+      </div>
+
+      <button type="button" class="labs-draw__toggle" data-labs-draw-toggle aria-expanded="false" aria-controls="labs-draw-toolbar" aria-label="Draw on the site">
+        <span class="labs-draw__hint" data-labs-draw-hint role="tooltip">Draw on the site</span>
+        <span class="labs-draw__toggle-icon" aria-hidden="true">
+          <svg class="labs-draw__crayon" viewBox="0 0 32 32" width="22" height="22">
+            <path fill="#ffd84d" stroke="#111" stroke-width="1.2" stroke-linejoin="round" d="M6 26l3-14 14-3-3 14-14 3z"/>
+            <path fill="#f4a8c8" stroke="#111" stroke-width="1.2" d="M9 12l14-3 2 8-14 3-2-8z"/>
+            <path fill="#111" d="M7 25.5l2.2-10.2 10.2-2.2L17.2 23.5 7 25.5z"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    document.querySelector("[data-labs-year]").textContent = String(new Date().getFullYear());
+  </script>
+  <script src="./labs-form.config.js"></script>
+  <script src="./labs.js"></script>
+  <script src="./labs-draw.js"></script>
 </body>
 </html>

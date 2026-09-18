@@ -8,6 +8,9 @@
   var menuBtn = root.querySelector("[data-labs-menu-btn]");
   var menuPanel = root.querySelector("[data-labs-menu]");
   var form = root.querySelector("[data-labs-enquiry-form]");
+  var formModal = root.querySelector("[data-labs-form-modal]");
+  var formModalDialog = formModal && formModal.querySelector(".labs-form-modal__dialog");
+  var formModalLastFocus = null;
   var contactSection = root.querySelector("#contact");
 
   /* Match snap math to real header height */
@@ -118,41 +121,93 @@
   /* Smooth anchor scroll (respect reduced motion) */
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function scrollToContact(focusForm) {
-    if (!contactSection) return;
+  var resetEnquiryForm = function () {};
+
+  function openFormModal(trigger) {
+    if (!formModal) return;
     if (menuBtn && menuBtn.getAttribute("aria-expanded") === "true") {
       setMenuOpen(false);
     }
-    contactSection.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
-      block: "start",
-    });
-    history.replaceState(null, "", "#contact");
-    updateActiveNav();
-    if (focusForm && form) {
+    formModalLastFocus = trigger || document.activeElement;
+    formModal.hidden = false;
+    root.classList.add("labs-site--modal-open");
+    if (formModalDialog) formModalDialog.focus();
+    if (form) {
       window.setTimeout(function () {
         var firstField = form.querySelector("#labs-form-name");
         if (firstField) firstField.focus();
-      }, reduceMotion ? 0 : 320);
+      }, 50);
     }
   }
+
+  function closeFormModal() {
+    if (!formModal || formModal.hidden) return;
+    formModal.hidden = true;
+    root.classList.remove("labs-site--modal-open");
+    resetEnquiryForm();
+    if (formModalLastFocus && typeof formModalLastFocus.focus === "function") {
+      formModalLastFocus.focus();
+    }
+  }
+
+  if (formModal) {
+    formModal.querySelectorAll("[data-labs-form-modal-close]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        closeFormModal();
+      });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !formModal.hidden) {
+        closeFormModal();
+      }
+    });
+  }
+
+  function getScrollTarget(id) {
+    if (id === "#contact") {
+      return (
+        root.querySelector("#contact .labs-section__head") ||
+        root.querySelector("#contact")
+      );
+    }
+    return root.querySelector(id);
+  }
+
+  function scrollToSection(target) {
+    if (!target) return;
+    var headerOffset = header ? header.offsetHeight + 8 : 8;
+    var top =
+      window.scrollY + target.getBoundingClientRect().top - headerOffset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }
+
+  root.querySelectorAll("[data-labs-open-form]").forEach(function (trigger) {
+    trigger.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (contactSection && trigger.getAttribute("href") === "#contact") {
+        scrollToSection(getScrollTarget("#contact"));
+        history.replaceState(null, "", "#contact");
+        updateActiveNav();
+      }
+      openFormModal(trigger);
+    });
+  });
 
   root.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener("click", function (e) {
       if (anchor.hasAttribute("data-labs-open-form")) {
-        e.preventDefault();
-        scrollToContact(true);
         return;
       }
       var id = anchor.getAttribute("href");
       if (!id || id === "#") return;
-      var target = root.querySelector(id);
+      var target = getScrollTarget(id);
       if (!target) return;
       e.preventDefault();
-      target.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "start",
-      });
+      scrollToSection(target);
       history.replaceState(null, "", id);
       updateActiveNav();
     });
@@ -210,6 +265,19 @@
       var fieldset = form.querySelector('[data-labs-field="project_type"]');
       if (fieldset) fieldset.removeAttribute("aria-invalid");
     }
+
+    resetEnquiryForm = function () {
+      form.reset();
+      form.hidden = false;
+      clearFieldErrors();
+      hideFormStatus();
+      if (formSuccess) formSuccess.hidden = true;
+      if (formSubmit) {
+        formSubmit.disabled = false;
+        formSubmit.textContent = submitLabel;
+        formSubmit.setAttribute("aria-busy", "false");
+      }
+    };
 
     function setFieldError(fieldKey, message) {
       var errorEl = form.querySelector("#labs-form-error-" + fieldKey.replace(/_/g, "-"));
@@ -366,6 +434,16 @@
   }
 
   /* Gentle section reveal */
+  function revealVisibleInViewport() {
+    var viewportH = window.innerHeight || document.documentElement.clientHeight;
+    root.querySelectorAll(".labs-reveal:not(.labs-reveal--visible)").forEach(function (el) {
+      var rect = el.getBoundingClientRect();
+      if (rect.top < viewportH * 0.94 && rect.bottom > viewportH * 0.06) {
+        el.classList.add("labs-reveal--visible");
+      }
+    });
+  }
+
   if (!reduceMotion && "IntersectionObserver" in window) {
     var revealEls = root.querySelectorAll(".labs-reveal");
     var observer = new IntersectionObserver(
@@ -377,11 +455,17 @@
           }
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
+      { rootMargin: "0px 0px 0px 0px", threshold: 0.01 }
     );
     revealEls.forEach(function (el) {
       observer.observe(el);
     });
+    revealVisibleInViewport();
+    window.addEventListener("load", revealVisibleInViewport, { passive: true });
+    window.addEventListener("scroll", revealVisibleInViewport, { passive: true });
+    if ("onscrollend" in window) {
+      window.addEventListener("scrollend", revealVisibleInViewport, { passive: true });
+    }
   } else {
     root.querySelectorAll(".labs-reveal").forEach(function (el) {
       el.classList.add("labs-reveal--visible");

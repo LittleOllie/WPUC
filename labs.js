@@ -164,14 +164,32 @@
     });
   }
 
+  function getScrollTarget(id) {
+    if (id === "#contact") {
+      return (
+        root.querySelector("#contact .labs-section__head") ||
+        root.querySelector("#contact")
+      );
+    }
+    return root.querySelector(id);
+  }
+
+  function scrollToSection(target) {
+    if (!target) return;
+    var headerOffset = header ? header.offsetHeight + 8 : 8;
+    var top =
+      window.scrollY + target.getBoundingClientRect().top - headerOffset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }
+
   root.querySelectorAll("[data-labs-open-form]").forEach(function (trigger) {
     trigger.addEventListener("click", function (e) {
       e.preventDefault();
       if (contactSection && trigger.getAttribute("href") === "#contact") {
-        contactSection.scrollIntoView({
-          behavior: reduceMotion ? "auto" : "smooth",
-          block: "start",
-        });
+        scrollToSection(getScrollTarget("#contact"));
         history.replaceState(null, "", "#contact");
         updateActiveNav();
       }
@@ -186,13 +204,10 @@
       }
       var id = anchor.getAttribute("href");
       if (!id || id === "#") return;
-      var target = root.querySelector(id);
+      var target = getScrollTarget(id);
       if (!target) return;
       e.preventDefault();
-      target.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "start",
-      });
+      scrollToSection(target);
       history.replaceState(null, "", id);
       updateActiveNav();
     });
@@ -419,6 +434,16 @@
   }
 
   /* Gentle section reveal */
+  function revealVisibleInViewport() {
+    var viewportH = window.innerHeight || document.documentElement.clientHeight;
+    root.querySelectorAll(".labs-reveal:not(.labs-reveal--visible)").forEach(function (el) {
+      var rect = el.getBoundingClientRect();
+      if (rect.top < viewportH * 0.94 && rect.bottom > viewportH * 0.06) {
+        el.classList.add("labs-reveal--visible");
+      }
+    });
+  }
+
   if (!reduceMotion && "IntersectionObserver" in window) {
     var revealEls = root.querySelectorAll(".labs-reveal");
     var observer = new IntersectionObserver(
@@ -430,11 +455,17 @@
           }
         });
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
+      { rootMargin: "0px 0px 0px 0px", threshold: 0.01 }
     );
     revealEls.forEach(function (el) {
       observer.observe(el);
     });
+    revealVisibleInViewport();
+    window.addEventListener("load", revealVisibleInViewport, { passive: true });
+    window.addEventListener("scroll", revealVisibleInViewport, { passive: true });
+    if ("onscrollend" in window) {
+      window.addEventListener("scrollend", revealVisibleInViewport, { passive: true });
+    }
   } else {
     root.querySelectorAll(".labs-reveal").forEach(function (el) {
       el.classList.add("labs-reveal--visible");

@@ -1,0 +1,296 @@
+/* Little Ollie Labs — draw-on-site crayon (labs-new only) */
+
+.labs-draw {
+  --labs-draw-z-canvas: 205;
+  --labs-draw-z-dock: 210;
+  --labs-draw-pink: #f4a8c8;
+  --labs-draw-yellow: #ffd84d;
+  --labs-draw-blue: #6fd3f2;
+  --labs-draw-green: #8fd36c;
+  --labs-draw-purple: #c4a8f0;
+  --labs-draw-shadow: 0 10px 28px rgba(17, 17, 17, 0.14);
+  --labs-draw-ease: cubic-bezier(0.34, 1.2, 0.48, 1);
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--labs-draw-z-dock);
+}
+
+.labs-draw__canvas {
+  position: fixed;
+  inset: 0;
+  z-index: var(--labs-draw-z-canvas);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  touch-action: pan-y pinch-zoom;
+}
+
+.labs-draw.is-open .labs-draw__canvas {
+  touch-action: none;
+}
+
+.labs-draw__dock {
+  position: fixed;
+  right: max(0.85rem, env(safe-area-inset-right));
+  bottom: max(0.85rem, env(safe-area-inset-bottom));
+  z-index: var(--labs-draw-z-dock);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  pointer-events: auto;
+}
+
+.labs-draw__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem 0.55rem;
+  max-width: min(calc(100vw - 1.7rem), 20rem);
+  padding: 0.55rem 0.65rem;
+  border: 2px solid rgba(17, 17, 17, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.96);
+  box-shadow: var(--labs-draw-shadow);
+  backdrop-filter: blur(8px);
+  transform-origin: bottom right;
+  opacity: 0;
+  transform: translateY(0.45rem) scale(0.92);
+  pointer-events: none;
+  transition:
+    opacity 0.22s var(--labs-draw-ease),
+    transform 0.22s var(--labs-draw-ease);
+}
+
+.labs-draw__toolbar[hidden] {
+  display: none;
+}
+
+.labs-draw.is-open .labs-draw__toolbar:not([hidden]) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.labs-draw__tools {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.15rem;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.05);
+}
+
+.labs-draw__tool,
+.labs-draw__clear,
+.labs-draw__toggle {
+  border: 2px solid transparent;
+  background: transparent;
+  color: #111;
+  font-family: "Nunito", system-ui, sans-serif;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.labs-draw__tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+}
+
+.labs-draw__tool:hover,
+.labs-draw__clear:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(17, 17, 17, 0.12);
+}
+
+.labs-draw__tool.is-active {
+  background: #fff;
+  border-color: #111;
+  box-shadow: 0 2px 0 rgba(17, 17, 17, 0.08);
+}
+
+.labs-draw__colors {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.labs-draw__color {
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 17, 17, 0.15);
+  background: var(--labs-draw-swatch);
+  cursor: pointer;
+  box-shadow: inset 0 -2px 0 rgba(17, 17, 17, 0.08);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.labs-draw__color:hover {
+  transform: scale(1.08);
+}
+
+.labs-draw__color.is-active {
+  border-color: #111;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #111;
+  transform: scale(1.05);
+}
+
+.labs-draw__clear {
+  min-height: 2.35rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border-color: rgba(17, 17, 17, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.labs-draw__toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 17, 17, 0.14);
+  background: #fffdf7;
+  box-shadow: var(--labs-draw-shadow);
+}
+
+.labs-draw__toggle:hover {
+  border-color: rgba(17, 17, 17, 0.28);
+  transform: translateY(-1px);
+}
+
+.labs-draw__toggle:focus-visible {
+  outline: 2px solid var(--labs-draw-blue);
+  outline-offset: 3px;
+}
+
+.labs-draw.is-open .labs-draw__toggle {
+  border-color: #111;
+  background: #fff;
+}
+
+.labs-draw.is-open .labs-draw__toggle-icon {
+  transform: rotate(-12deg) scale(1.05);
+}
+
+.labs-draw__toggle-icon {
+  display: inline-flex;
+  transition: transform 0.22s var(--labs-draw-ease);
+}
+
+.labs-draw__hint {
+  position: absolute;
+  right: calc(100% + 0.55rem);
+  bottom: 50%;
+  transform: translateY(50%);
+  white-space: nowrap;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 2px solid rgba(17, 17, 17, 0.12);
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(17, 17, 17, 0.12);
+  font-family: "Caveat", cursive;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.labs-draw__hint.is-hidden {
+  opacity: 0;
+  transform: translateY(50%) translateX(0.35rem);
+}
+
+.labs-draw.is-open .labs-draw__hint {
+  display: none;
+}
+
+.labs-draw.is-clearing .labs-draw__canvas {
+  opacity: 0.35;
+  transition: opacity 0.18s ease;
+}
+
+@media (max-width: 767px) {
+  .labs-draw__dock {
+    right: max(0.65rem, env(safe-area-inset-right));
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+  }
+
+  .labs-draw__toolbar {
+    max-width: calc(100vw - 1.3rem);
+    padding: 0.5rem 0.55rem;
+    border-radius: 18px;
+  }
+
+  .labs-draw__tool {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .labs-draw__color {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .labs-draw__clear {
+    min-height: 2.75rem;
+    padding-inline: 0.85rem;
+    font-size: 0.88rem;
+  }
+
+  .labs-draw__toggle {
+    width: 3.65rem;
+    height: 3.65rem;
+    border-color: rgba(17, 17, 17, 0.22);
+    box-shadow:
+      0 10px 28px rgba(17, 17, 17, 0.16),
+      0 0 0 3px rgba(244, 168, 200, 0.35);
+  }
+
+  .labs-draw__hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-draw__toolbar,
+  .labs-draw__toggle-icon,
+  .labs-draw__hint,
+  .labs-draw__color,
+  .labs-draw__tool,
+  .labs-draw__clear,
+  .labs-draw__toggle {
+    transition: none;
+  }
+
+  .labs-draw__toolbar {
+    transform: none;
+  }
+
+  .labs-draw.is-open .labs-draw__toolbar:not([hidden]) {
+    transform: none;
+  }
+}
