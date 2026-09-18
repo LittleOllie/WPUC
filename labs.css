@@ -2614,7 +2614,7 @@ html:has(.labs-site) body {
   }
 
   .labs-contact__social {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .labs-contact__cta .labs-btn {
@@ -3389,29 +3389,84 @@ html:has(.labs-site) body {
     margin-inline: auto;
   }
 
-  #about,
-  #contact {
+  #about {
     --labs-about-duo-h: clamp(14rem, 56vw, 20rem);
   }
 
-  /* Contact — mobile layout */
+  #contact {
+    --labs-about-duo-h: clamp(11.5rem, 48vw, 16rem);
+  }
+
+  /* Contact — mobile compact layout */
   .labs-contact__doodle--arrow {
     display: none;
   }
 
+  #contact .labs-section__head {
+    margin-bottom: 0.1rem;
+  }
+
+  #contact .labs-section__content {
+    padding-bottom: 0.35rem;
+  }
+
   .labs-contact__grid {
     grid-template-columns: 1fr;
-    margin-top: 0.5rem;
-    gap: 1rem;
+    margin-top: 0.25rem;
+    gap: 0.55rem;
     align-items: stretch;
+  }
+
+  .labs-contact__main {
+    gap: 0.6rem;
+  }
+
+  .labs-contact__channels--compact {
+    gap: 0.5rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 16px;
+  }
+
+  .labs-contact__block:first-child {
+    padding-bottom: 0.05rem;
+  }
+
+  .labs-contact__block {
+    gap: 0.28rem;
+  }
+
+  .labs-contact__label {
+    font-size: 0.72rem;
+  }
+
+  .labs-contact__link {
+    font-size: clamp(0.98rem, 4.2vw, 1.08rem);
+    line-height: 1.2;
+  }
+
+  .labs-contact__social {
+    gap: 0.32rem;
+  }
+
+  .labs-contact__social-link {
+    min-height: 2.75rem;
+    padding: 0.32rem 0.55rem;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+
+  .labs-contact__social-link img {
+    width: 1rem;
+    height: 1rem;
   }
 
   .labs-contact__character {
     display: block;
     order: 3;
     height: auto;
-    width: min(100%, 20rem);
-    margin: 0.25rem auto 0;
+    width: min(100%, 18rem);
+    margin: -0.1rem auto 0;
   }
 
   #contact .labs-contact__character {
@@ -3420,7 +3475,7 @@ html:has(.labs-site) body {
 
   #contact .labs-about__duo {
     width: 100%;
-    height: clamp(11rem, 42vw, 15rem);
+    height: clamp(8.75rem, 34vw, 12rem);
   }
 
   #contact .labs-about__figure--dad {
@@ -3432,35 +3487,34 @@ html:has(.labs-site) body {
   }
 
   .labs-contact__cta {
-    padding: 1.35rem 1.15rem 1.25rem;
+    gap: 0.45rem;
+    padding: 1rem 0.95rem 0.95rem;
+    border-radius: 20px;
     box-shadow: 5px 5px 0 rgba(17, 17, 17, 0.12);
   }
 
+  .labs-contact__cta-eyebrow {
+    font-size: clamp(1.05rem, 4.8vw, 1.2rem);
+  }
+
   .labs-contact__cta-title {
-    font-size: clamp(1.55rem, 6.8vw, 1.85rem);
+    font-size: clamp(1.45rem, 6.2vw, 1.7rem);
     max-width: none;
   }
 
+  .labs-contact__cta-copy {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
   .labs-contact__cta-btn {
-    min-height: 3.35rem;
-    font-size: 1.05rem;
+    min-height: 2.75rem;
+    margin-top: 0.15rem;
+    font-size: 1rem;
   }
 
   .labs-contact__intro {
-    padding: 1rem;
-  }
-
-  .labs-contact__link {
-    font-size: clamp(1rem, 4.5vw, 1.15rem);
-  }
-
-  .labs-contact__social-link {
-    min-height: 2.75rem;
-    font-size: 0.88rem;
-  }
-
-  .labs-contact__cta-copy {
-    font-size: 0.95rem;
+    padding: 0.85rem;
   }
 
   /* Form modal */
