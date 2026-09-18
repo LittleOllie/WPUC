@@ -4,6 +4,26 @@
   var root = document.querySelector(".labs-site");
   if (!root) return;
 
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+
+  function ensurePageTop() {
+    var hash = window.location.hash;
+    if (hash && hash !== "#" && hash !== "#top") return;
+    window.scrollTo(0, 0);
+  }
+
+  ensurePageTop();
+  window.addEventListener("load", ensurePageTop, { passive: true });
+  window.addEventListener(
+    "pageshow",
+    function (e) {
+      if (e.persisted) ensurePageTop();
+    },
+    { passive: true }
+  );
+
   var header = root.querySelector("[data-labs-header]");
   var menuBtn = root.querySelector("[data-labs-menu-btn]");
   var menuPanel = root.querySelector("[data-labs-menu]");
@@ -25,8 +45,12 @@
   /* Sticky header shadow */
   if (header) {
     syncHeaderHeight();
+    ensurePageTop();
     if ("ResizeObserver" in window) {
-      new ResizeObserver(syncHeaderHeight).observe(header);
+      new ResizeObserver(function () {
+        syncHeaderHeight();
+        ensurePageTop();
+      }).observe(header);
     } else {
       window.addEventListener("resize", syncHeaderHeight, { passive: true });
     }

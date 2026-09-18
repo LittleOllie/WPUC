@@ -1,7 +1,43 @@
-/* Little Ollie Labs — draw-on-site crayon (labs-new only) */
+/* Little Ollie Labs — draw-on-site crayon */
+
+body.labs-site {
+  position: relative;
+}
+
+.labs-site.labs-draw-active,
+.labs-site.labs-draw-active * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.labs-site.labs-draw-active img,
+.labs-site.labs-draw-active a {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+.labs-draw__canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 205;
+  width: 100%;
+  pointer-events: none;
+  touch-action: pan-y pinch-zoom;
+}
+
+body.labs-site > .labs-draw__canvas.labs-draw__canvas--interactive {
+  pointer-events: auto;
+}
+
+@media (max-width: 767px) {
+  body.labs-site > .labs-draw__canvas.labs-draw__canvas--interactive {
+    touch-action: none;
+  }
+}
 
 .labs-draw {
-  --labs-draw-z-canvas: 205;
   --labs-draw-z-dock: 210;
   --labs-draw-pink: #f4a8c8;
   --labs-draw-yellow: #ffd84d;
@@ -9,25 +45,12 @@
   --labs-draw-green: #8fd36c;
   --labs-draw-purple: #c4a8f0;
   --labs-draw-shadow: 0 10px 28px rgba(17, 17, 17, 0.14);
+  --labs-draw-glow: 0 0 0 3px rgba(255, 216, 77, 0.62), 0 0 20px rgba(255, 216, 77, 0.48);
   --labs-draw-ease: cubic-bezier(0.34, 1.2, 0.48, 1);
   position: fixed;
-  inset: 0;
+  inset: auto;
   pointer-events: none;
   z-index: var(--labs-draw-z-dock);
-}
-
-.labs-draw__canvas {
-  position: fixed;
-  inset: 0;
-  z-index: var(--labs-draw-z-canvas);
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  touch-action: pan-y pinch-zoom;
-}
-
-.labs-draw.is-open .labs-draw__canvas {
-  touch-action: none;
 }
 
 .labs-draw__dock {
@@ -93,7 +116,8 @@
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .labs-draw__tool {
@@ -170,13 +194,14 @@
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 999px;
-  border: 2px solid rgba(17, 17, 17, 0.14);
+  border: 2px solid rgba(255, 216, 77, 0.55);
   background: #fffdf7;
-  box-shadow: var(--labs-draw-shadow);
+  box-shadow: var(--labs-draw-shadow), var(--labs-draw-glow);
+  animation: labs-draw-toggle-glow 2.4s ease-in-out infinite;
 }
 
 .labs-draw__toggle:hover {
-  border-color: rgba(17, 17, 17, 0.28);
+  border-color: rgba(255, 216, 77, 0.85);
   transform: translateY(-1px);
 }
 
@@ -188,6 +213,8 @@
 .labs-draw.is-open .labs-draw__toggle {
   border-color: #111;
   background: #fff;
+  animation: none;
+  box-shadow: var(--labs-draw-shadow);
 }
 
 .labs-draw.is-open .labs-draw__toggle-icon {
@@ -228,9 +255,26 @@
   display: none;
 }
 
-.labs-draw.is-clearing .labs-draw__canvas {
+.labs-draw__canvas.is-clearing {
   opacity: 0.35;
   transition: opacity 0.18s ease;
+}
+
+@keyframes labs-draw-toggle-glow {
+  0%,
+  100% {
+    box-shadow:
+      var(--labs-draw-shadow),
+      0 0 0 3px rgba(255, 216, 77, 0.55),
+      0 0 16px rgba(255, 216, 77, 0.38);
+  }
+
+  50% {
+    box-shadow:
+      var(--labs-draw-shadow),
+      0 0 0 5px rgba(255, 216, 77, 0.78),
+      0 0 28px rgba(255, 216, 77, 0.62);
+  }
 }
 
 @media (max-width: 767px) {
@@ -264,10 +308,6 @@
   .labs-draw__toggle {
     width: 3.65rem;
     height: 3.65rem;
-    border-color: rgba(17, 17, 17, 0.22);
-    box-shadow:
-      0 10px 28px rgba(17, 17, 17, 0.16),
-      0 0 0 3px rgba(244, 168, 200, 0.35);
   }
 
   .labs-draw__hint {
@@ -292,5 +332,9 @@
 
   .labs-draw.is-open .labs-draw__toolbar:not([hidden]) {
     transform: none;
+  }
+
+  .labs-draw__toggle {
+    animation: none;
   }
 }

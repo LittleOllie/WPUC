@@ -79,6 +79,10 @@ html:has(.labs-site) body {
   min-height: calc(100svh - var(--labs-header-h));
 }
 
+#top.labs-hero.labs-snap {
+  scroll-snap-stop: normal;
+}
+
 .labs-section.labs-snap {
   display: flex;
   flex-direction: column;
@@ -1820,6 +1824,10 @@ html:has(.labs-site) body {
   white-space: nowrap;
 }
 
+.labs-contact__title .labs-rainbow-word > span {
+  -webkit-text-stroke: 0;
+}
+
 .labs-contact__doodle {
   position: absolute;
   pointer-events: none;
@@ -2714,7 +2722,7 @@ html:has(.labs-site) body {
     width: 100%;
     max-width: none;
     padding:
-      var(--labs-page-head-top)
+      clamp(0.65rem, 2.5vw, 0.85rem)
       var(--labs-mobile-pad)
       0.65rem;
     pointer-events: auto;
