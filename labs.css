@@ -1315,6 +1315,14 @@ html:has(.labs-site) body {
   padding-top: clamp(0.65rem, 1.5vh, 1rem);
 }
 
+@media (min-width: 768px) {
+  #what-we-do .labs-services__doodle--arrow,
+  #what-we-do .labs-services__path,
+  #what-we-do .labs-services__note {
+    display: none !important;
+  }
+}
+
 .labs-services__note {
   position: absolute;
   top: 0;
@@ -1769,22 +1777,19 @@ html:has(.labs-site) body {
 .labs-contact {
   background: rgba(111, 211, 242, 0.1);
   border-block: 2px solid rgba(111, 211, 242, 0.25);
-  height: auto;
-  min-height: auto;
-  max-height: none;
-  overflow: visible;
-  scroll-snap-align: none;
+  scroll-snap-align: start;
   scroll-snap-stop: normal;
 }
 
-#contact.labs-section > .labs-container {
-  overflow: visible;
-  height: auto;
+#contact.labs-section.labs-snap > .labs-container {
+  overflow: hidden;
   min-height: 0;
 }
 
 #contact .labs-section__content {
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2766,6 +2771,13 @@ html:has(.labs-site) body {
   .labs-strip__mark[data-strip-logo="apex"] img,
   .labs-strip__mark[data-strip-logo="dyor"] img {
     height: clamp(2rem, 8.5vw, 2.65rem) !important;
+  }
+
+  .labs-strip__mark[data-strip-logo="layer-forge"] img,
+  .labs-strip__mark[data-strip-logo="neon-underworld"] img {
+    mix-blend-mode: normal !important;
+    filter: grayscale(1) contrast(1.12) brightness(0.52) !important;
+    opacity: 0.78 !important;
   }
 
   .labs-strip__more {
