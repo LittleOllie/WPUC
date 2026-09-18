@@ -2709,23 +2709,35 @@ html:has(.labs-site) body {
     padding: 0.75rem 1rem;
   }
 
-  /* Snap sections — allow natural height on phone */
+  /* Snap sections — fill one phone screen, grow when content is taller */
   .labs-section.labs-snap {
     height: auto;
-    min-height: calc(100svh - var(--labs-header-h));
+    min-height: var(--labs-section-h, calc(100svh - var(--labs-header-h)));
     max-height: none;
-    overflow: hidden;
+    padding-block: 0.2rem 0.3rem;
+    overflow: visible;
   }
 
   .labs-section.labs-snap > .labs-container {
-    min-height: calc(100svh - var(--labs-header-h));
-    overflow: hidden;
+    flex: 1 1 auto;
+    min-height: calc(var(--labs-section-h, calc(100svh - var(--labs-header-h))) - 0.5rem);
+    overflow: visible;
+  }
+
+  .labs-section.labs-snap .labs-section__content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+    overscroll-behavior: auto;
+    padding-bottom: 0.25rem;
   }
 
   #what-we-do.labs-section.labs-snap,
   #about.labs-section.labs-snap,
   #contact.labs-section.labs-snap {
-    overflow: clip;
+    overflow: visible;
   }
 
   /* Hero — stacked mobile layout */
@@ -3023,20 +3035,19 @@ html:has(.labs-site) body {
     border-color: rgba(17, 17, 17, 0.18);
   }
 
-  /* What We Do — compact tiles + illustration below */
+  /* What We Do — full-screen phone panel */
   #what-we-do.labs-section.labs-snap,
   #what-we-do.labs-section.labs-snap > .labs-container {
     overflow: visible;
-    min-height: 0;
-    height: auto;
   }
 
   #what-we-do .labs-section__head {
-    margin-bottom: 0.3rem;
+    flex: 0 0 auto;
+    margin-bottom: 0.2rem;
   }
 
   #what-we-do .labs-section__title {
-    font-size: clamp(1.45rem, 7vw, 1.9rem);
+    font-size: clamp(1.55rem, 7.4vw, 2rem);
     line-height: 1.08;
   }
 
@@ -3059,30 +3070,38 @@ html:has(.labs-site) body {
   }
 
   #what-we-do .labs-section__content {
+    flex: 1 1 auto;
     overflow: visible;
   }
 
   #what-we-do .labs-services__stage {
+    flex: 1 1 auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     overflow: visible;
-    padding-top: 0.25rem;
+    padding-top: 0.15rem;
     padding-bottom: 0;
   }
 
   .labs-services__grid {
-    gap: 0.42rem;
-    margin-top: 0.3rem;
+    flex: 1 1 auto;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.45rem, 1.3vh, 0.58rem);
+    margin-top: 0.2rem;
+    min-height: 0;
+    align-content: stretch;
   }
 
   #what-we-do .labs-service {
     aspect-ratio: auto;
+    height: 100%;
     min-height: 0;
-    padding: 0.48rem 0.52rem;
+    padding: clamp(0.5rem, 1.5vh, 0.72rem) 0.58rem;
     border-radius: 14px;
     border-width: 1.5px;
-    gap: 0.12rem;
-    justify-content: flex-start;
+    gap: 0.15rem;
+    justify-content: center;
     transform: none !important;
   }
 
@@ -3092,28 +3111,35 @@ html:has(.labs-site) body {
   }
 
   .labs-service__title {
-    font-size: 0.8rem;
+    font-size: clamp(0.84rem, 2.7vw, 0.94rem);
     line-height: 1.12;
   }
 
   .labs-service__desc {
-    font-size: 0.66rem;
-    line-height: 1.28;
+    font-size: clamp(0.7rem, 2.3vw, 0.76rem);
+    line-height: 1.3;
     -webkit-line-clamp: 2;
   }
 
   .labs-services__characters {
     position: static;
     order: 2;
-    width: min(68%, 14.5rem);
-    margin: 1rem auto 0;
-    padding-top: 0.35rem;
-    flex-shrink: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    margin: clamp(0.3rem, 1vh, 0.45rem) auto 0;
+    padding-top: 0;
+    min-height: clamp(9.5rem, 30vh, 14rem);
+    max-height: 44vh;
   }
 
   .labs-services__characters img {
-    width: 100%;
-    max-height: clamp(8.25rem, 32vw, 11rem);
+    width: auto;
+    height: 100%;
+    max-width: min(80%, 21rem);
+    max-height: 100%;
     object-fit: contain;
     object-position: center bottom;
   }
