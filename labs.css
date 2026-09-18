@@ -1274,33 +1274,31 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   #what-we-do .labs-services__stage {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(9.5rem, 17vw, 19rem);
-    gap: clamp(0.65rem, 1.4vw, 1.1rem);
-    align-items: end;
-    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     overflow: visible;
+    padding-bottom: 0;
   }
 
   .labs-services__grid {
-    grid-column: 1;
+    width: 100%;
     margin-top: 0;
   }
 
   .labs-services__characters {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    width: 100%;
-    z-index: 2;
+    position: static;
+    width: min(20rem, 28%);
+    margin: clamp(0.65rem, 1.5vh, 1rem) auto 0;
+    padding-top: 0.25rem;
+    flex-shrink: 0;
   }
 
   .labs-services__characters img {
-    max-height: clamp(13rem, calc(100svh - var(--labs-header-h) - 9rem), 28rem);
-    object-position: bottom center;
+    width: 100%;
+    max-height: none;
+    object-fit: contain;
+    object-position: center bottom;
   }
 }
 
@@ -1348,7 +1346,7 @@ html:has(.labs-site) body {
 
 #what-we-do .labs-services__stage {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
   padding-top: clamp(0.65rem, 1.5vh, 1rem);
 }
