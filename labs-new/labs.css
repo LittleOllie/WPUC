@@ -1,7 +1,20 @@
 /* Little Ollie Labs V1 — scoped to .labs-site only */
 
 .labs-site {
+  /* Warm document gradient — scroll reveals subtle colour shifts */
+  --labs-bg-solid: #fffdf7;
   --labs-bg: #fffdf7;
+  --labs-site-gradient: linear-gradient(
+    180deg,
+    #fffdf8 0%,
+    #fffdf8 11%,
+    #fff9fb 24%,
+    #fafcff 42%,
+    #fbf9ff 58%,
+    #fffbf4 76%,
+    #fff6e8 92%,
+    #fff3dc 100%
+  );
   --labs-text: #111111;
   --labs-muted: rgba(17, 17, 17, 0.62);
   --labs-border: rgba(17, 17, 17, 0.12);
@@ -25,12 +38,15 @@
   --labs-font-hand: "Caveat", cursive;
 
   margin: 0;
-  min-height: 100vh;
+  min-height: 100%;
   font-family: var(--labs-font-body);
   font-size: 1.0625rem;
   line-height: 1.55;
   color: var(--labs-text);
-  background: var(--labs-bg);
+  background-color: var(--labs-bg-solid);
+  background-image: var(--labs-site-gradient);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -75,6 +91,7 @@
  */
 
 html:has(.labs-site) {
+  min-height: 100%;
   scroll-snap-type: y mandatory;
   scroll-padding-top: var(--labs-header-h);
   -webkit-overflow-scrolling: touch;
@@ -276,6 +293,11 @@ html:has(.labs-site) body {
   object-fit: contain;
 }
 
+.labs-header__logo--main img {
+  height: clamp(2.65rem, 6.8vw, 3.5rem);
+  max-width: min(16.5rem, 46vw);
+}
+
 .labs-header__logo .labs-asset--missing::after {
   content: "Little Ollie Labs";
   position: static;
@@ -439,11 +461,16 @@ html:has(.labs-site) body {
 
 @media (max-width: 767px) {
   .labs-header__logo--main {
-    display: none;
+    display: block;
   }
 
   .labs-header__logo--compact {
-    display: block;
+    display: none;
+  }
+
+  .labs-header__logo--main img {
+    height: clamp(2.3rem, 10.2vw, 2.9rem);
+    max-width: min(15.5rem, 72vw);
   }
 }
 
@@ -702,7 +729,7 @@ html:has(.labs-site) body {
   grid-row: 2;
   border-top: 1px solid var(--labs-border);
   border-bottom: none;
-  background: var(--labs-bg);
+  background: rgba(255, 253, 247, 0.45);
   padding-block: clamp(0.85rem, 2vh, 1.25rem);
 }
 
@@ -1301,31 +1328,43 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   #what-we-do .labs-services__stage {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(11rem, 36%) minmax(0, 1fr);
+    gap: clamp(0.85rem, 2vw, 1.65rem);
     align-items: stretch;
     overflow: visible;
     padding-bottom: 0;
-  }
-
-  .labs-services__grid {
-    width: 100%;
-    margin-top: 0;
+    min-height: clamp(20rem, calc(var(--labs-section-h) - 7rem), 30rem);
   }
 
   .labs-services__characters {
     position: static;
-    width: min(20rem, 28%);
-    margin: clamp(0.65rem, 1.5vh, 1rem) auto 0;
-    padding-top: 0.25rem;
-    flex-shrink: 0;
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    margin: 0;
+    padding-top: 0;
+    align-self: end;
   }
 
   .labs-services__characters img {
-    width: 100%;
-    max-height: none;
+    width: auto;
+    max-width: 100%;
+    max-height: clamp(17rem, calc(var(--labs-section-h) - 7.5rem), 29rem);
     object-fit: contain;
-    object-position: center bottom;
+    object-position: bottom center;
+  }
+
+  .labs-services__grid {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    margin-top: 0;
+    align-self: stretch;
+    height: 100%;
   }
 }
 
@@ -1491,13 +1530,19 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   .labs-services__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(0.55rem, 1vw, 0.75rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.65rem, 1.1vw, 0.9rem);
   }
 
   #what-we-do .labs-service {
-    aspect-ratio: 5 / 4;
-    padding: clamp(0.55rem, 1vw, 0.8rem);
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: clamp(5.25rem, 11vh, 7rem);
+    padding: clamp(0.85rem, 1.35vw, 1.15rem) clamp(0.9rem, 1.4vw, 1.1rem);
+    gap: 0.4rem;
+    border-radius: 20px;
+    justify-content: center;
   }
 }
 
@@ -1574,13 +1619,18 @@ html:has(.labs-site) body {
 }
 
 @media (min-width: 768px) {
-  .labs-service__title {
-    font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+  #what-we-do .labs-service__title {
+    font-size: clamp(1.08rem, 1.35vw, 1.32rem);
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
   }
 
-  .labs-service__desc {
-    font-size: clamp(0.8rem, 0.9vw, 0.88rem);
-    -webkit-line-clamp: 5;
+  #what-we-do .labs-service__desc {
+    font-size: clamp(0.92rem, 1vw, 1.02rem);
+    line-height: 1.42;
+    -webkit-line-clamp: 3;
+    color: rgba(17, 17, 17, 0.58);
   }
 }
 
@@ -1835,10 +1885,10 @@ html:has(.labs-site) body {
 
 .labs-contact {
   background:
-    radial-gradient(circle at 12% 18%, rgba(244, 168, 200, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 72%, rgba(255, 216, 77, 0.18), transparent 38%),
-    linear-gradient(180deg, rgba(111, 211, 242, 0.16), rgba(111, 211, 242, 0.08));
-  border-block: 2px solid rgba(111, 211, 242, 0.35);
+    radial-gradient(circle at 12% 18%, rgba(244, 168, 200, 0.16), transparent 44%),
+    radial-gradient(circle at 88% 72%, rgba(255, 216, 77, 0.14), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(111, 211, 242, 0.1), transparent 52%);
+  border-block: 2px solid rgba(111, 211, 242, 0.28);
 }
 
 #contact.labs-section.labs-snap > .labs-container {
@@ -2694,8 +2744,9 @@ html:has(.labs-site) body {
   }
 
   /* Header / menu */
-  .labs-header__logo img {
-    height: 2.2rem;
+  .labs-header__logo--main img {
+    height: clamp(2.3rem, 10.2vw, 2.9rem);
+    max-width: min(15.5rem, 72vw);
   }
 
   .labs-menu-btn {
