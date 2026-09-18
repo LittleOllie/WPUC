@@ -1763,14 +1763,26 @@ html:has(.labs-site) body {
 .labs-contact {
   background: rgba(111, 211, 242, 0.1);
   border-block: 2px solid rgba(111, 211, 242, 0.25);
+  height: auto;
+  min-height: calc(100svh - var(--labs-header-h));
+  max-height: none;
+  overflow: visible;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+#contact.labs-section > .labs-container {
+  overflow: visible;
+  height: auto;
+  min-height: 0;
 }
 
 #contact .labs-section__content {
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding-bottom: 0;
+  padding-bottom: clamp(1rem, 2vh, 1.5rem);
 }
 
 #contact .labs-section__head {
@@ -1928,13 +1940,27 @@ html:has(.labs-site) body {
   min-width: 0;
 }
 
-#contact .labs-form-panel {
+.labs-contact__cta {
+  display: grid;
+  gap: 0.9rem;
   max-width: 36rem;
   padding: clamp(1.15rem, 2.4vw, 1.5rem);
   border: 2px solid rgba(17, 17, 17, 0.08);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 12px 32px rgba(17, 17, 17, 0.06);
+}
+
+.labs-contact__cta-copy {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--labs-muted);
+}
+
+.labs-contact__cta .labs-btn {
+  justify-self: start;
+  min-height: 3rem;
 }
 
 #contact .labs-contact__character {
@@ -2341,7 +2367,8 @@ html:has(.labs-site) body {
 /* ——— Footer ——— */
 
 .labs-footer {
-  padding-block: clamp(2.5rem, 6vw, 3.5rem) 2rem;
+  scroll-snap-align: none;
+  padding-block: clamp(2rem, 4vw, 2.75rem) 0;
   border-top: 1px solid var(--labs-border);
 }
 
@@ -2420,6 +2447,67 @@ html:has(.labs-site) body {
   border-top: 1px solid var(--labs-border);
   font-size: 0.82rem;
   color: var(--labs-muted);
+}
+
+.labs-footer__fine {
+  margin-top: clamp(1.5rem, 3vw, 2rem);
+  padding-block: 1rem 1.35rem;
+  border-top: 1px solid var(--labs-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  font-size: 0.78rem;
+  color: var(--labs-muted);
+}
+
+.labs-footer__built {
+  margin: 0;
+  font-weight: 700;
+  color: var(--labs-text);
+}
+
+.labs-footer__fine-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.labs-footer__fine-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--labs-border);
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--labs-text);
+  background: rgba(255, 255, 255, 0.72);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.labs-footer__fine-links a:hover {
+  border-color: var(--labs-text);
+  background: #fff;
+}
+
+.labs-footer__bottom-copy {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+@media (min-width: 768px) {
+  .labs-footer__bottom-copy {
+    width: auto;
+    margin-left: auto;
+    text-align: right;
+  }
 }
 
 /* ——— Mobile hardening (≤767px) ——— */

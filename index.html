@@ -2,1166 +2,668 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Little Ollie World | Stories, Characters &amp; Creative Adventures</title>
+  <title>Little Ollie Labs — Websites, Apps, Brands &amp; Ideas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="A growing universe of stories, characters, creativity and big little lessons for kids and families, from Little Ollie World and Little Ollie Labs." />
-  <meta name="theme-color" content="#6fd3f2" />
-  <link rel="icon" href="../webpageassets/favicon.png" type="image/png" sizes="any" />
-  <link rel="shortcut icon" href="../webpageassets/favicon.png" type="image/png" />
-  <link rel="apple-touch-icon" href="../webpageassets/favicon.png" />
-
-  <meta property="og:title" content="Little Ollie World" />
-  <meta property="og:description" content="A little world full of big ideas: stories, characters, creativity and meaningful adventures for kids and families." />
-  <meta property="og:image" content="https://littleollielabs.com/world/preview.jpg" />
-  <meta property="og:url" content="https://littleollielabs.com/world/" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Little Ollie World" />
-  <meta name="twitter:description" content="A little world full of big ideas for kids and families." />
-  <meta name="twitter:image" content="https://littleollielabs.com/world/preview.jpg" />
+  <meta name="description" content="Little Ollie Labs — we help turn ideas into websites, apps and digital experiences that people actually love." />
+  <link rel="canonical" href="https://littleollielabs.com/" />
+  <meta property="og:url" content="https://littleollielabs.com/" />
+  <meta property="og:title" content="Little Ollie Labs" />
+  <meta property="og:description" content="We help turn ideas into websites, apps and digital experiences that people actually love." />
+  <link rel="icon" href="flexgrid/site/src/assets/images/LO.png" type="image/png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../home.css" />
-  <script src="../scripts/club-access.js"></script>
-</head>
-<body class="home-page">
-  <a class="home-skip" href="#home">Skip to content</a>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Fredoka:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
-  <header class="home-nav" id="site-nav">
-    <div class="home-nav__inner">
-      <a class="home-nav__brand" href="#home" aria-label="Little Ollie World home">
-        <img src="../webpageassets/logo-nav.webp" alt="" class="home-nav__logo" width="140" height="40" decoding="async" />
+  <link rel="stylesheet" href="labs.css" />
+</head>
+<body class="labs-site">
+  <!-- LabsHeader -->
+  <header class="labs-header" data-labs-header>
+    <div class="labs-header__inner">
+      <a class="labs-header__logo labs-header__logo--main" href="#top" aria-label="Little Ollie Labs home">
+        <span class="labs-asset" data-labs-asset>
+          <img src="public/labs/branding/little-ollie-labs-logo-main.png" alt="Little Ollie Labs" width="220" height="64" decoding="async" />
+          <span class="labs-asset__label">Logo: public/labs/branding/little-ollie-labs-logo-main.png</span>
+        </span>
+      </a>
+      <a class="labs-header__logo labs-header__logo--compact" href="#top" aria-label="Little Ollie Labs home">
+        <span class="labs-asset" data-labs-asset>
+          <img src="public/labs/branding/little-ollie-labs-logo-compact.png" alt="Little Ollie Labs" width="48" height="48" decoding="async" />
+          <span class="labs-asset__label">Logo compact</span>
+        </span>
       </a>
 
-      <nav class="home-nav__links" id="nav-links" aria-label="Main navigation">
-        <a href="#home" class="home-nav__link">Home</a>
-        <a href="#family" class="home-nav__link">Meet the Family</a>
-        <a href="#stories" class="home-nav__link">Stories</a>
-        <a href="#book" class="home-nav__link">Books</a>
-        <a href="#labs" class="home-nav__link">Little Ollie Labs</a>
-        <a href="#our-story" class="home-nav__link">Our Story</a>
-        <a href="#journey" class="home-nav__link">Our Journey</a>
-        <a href="../little-ollie-club/" class="home-nav__cta home-nav__cta--mobile" data-club-link>Little Ollie Club</a>
+      <nav class="labs-nav" aria-label="Primary">
+        <a class="labs-nav__link" href="#top" data-labs-nav-link>Home</a>
+        <a class="labs-nav__link" href="#work" data-labs-nav-link>Work</a>
+        <a class="labs-nav__link" href="#what-we-do" data-labs-nav-link>What We Do</a>
+        <a class="labs-nav__link" href="#about" data-labs-nav-link>About</a>
+        <a class="labs-nav__link" href="#contact" data-labs-nav-link>Contact</a>
       </nav>
 
-      <a href="../little-ollie-club/" class="home-nav__cta home-nav__cta--desktop" data-club-link>Little Ollie Club</a>
-
-      <button type="button" class="home-nav__toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
-        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
-        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
-        <span class="home-nav__toggle-bar" aria-hidden="true"></span>
-      </button>
+      <div class="labs-header__actions">
+        <a class="labs-btn labs-btn--ghost labs-header__world" href="/world/">See the World →</a>
+        <a class="labs-btn labs-header__cta" href="#contact" data-labs-open-form>Let's Build →</a>
+        <button type="button" class="labs-menu-btn" data-labs-menu-btn aria-expanded="false" aria-controls="labs-mobile-menu" aria-label="Open menu" data-labs-menu-label-open="Open menu" data-labs-menu-label-close="Close menu">
+          <span class="labs-menu-btn__bars" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <div class="home-nav-backdrop" id="nav-backdrop" hidden aria-hidden="true"></div>
+  <nav class="labs-menu" id="labs-mobile-menu" data-labs-menu hidden aria-label="Mobile">
+    <ul class="labs-menu__list">
+      <li><a class="labs-nav__link" href="#top" data-labs-nav-link>Home</a></li>
+      <li><a class="labs-nav__link" href="#work" data-labs-nav-link>Work</a></li>
+      <li><a class="labs-nav__link" href="#what-we-do" data-labs-nav-link>What We Do</a></li>
+      <li><a class="labs-nav__link" href="#about" data-labs-nav-link>About</a></li>
+      <li><a class="labs-nav__link" href="#contact" data-labs-nav-link>Contact</a></li>
+    </ul>
+    <div class="labs-menu__cta">
+      <a class="labs-btn labs-btn--ghost" href="/world/" style="width:100%">See the World →</a>
+      <a class="labs-btn" href="#contact" data-labs-open-form style="width:100%">Let's Build →</a>
+    </div>
+  </nav>
 
-  <main id="main-content">
-    <div class="lo-stage lo-stage--home" id="home" data-stage="home">
-      <div class="lo-stage__world">
-        <div class="lo-stage__frame">
+  <main>
+    <!-- LabsHero -->
+    <section class="labs-hero labs-snap" id="top" aria-labelledby="labs-hero-heading">
+      <div class="labs-hero__copy-wrap">
+        <div class="labs-hero__copy labs-reveal">
+          <p class="labs-hero__eyebrow">Little ideas. Big possibilities.</p>
+          <h1 class="labs-hero__headline" id="labs-hero-heading">
+            <span class="labs-hero__headline-line">We make</span>
+            <span class="labs-hero__headline-line"><span class="labs-rainbow-word"><span>c</span><span>o</span><span>o</span><span>l</span></span> sh<span class="labs-hero__spark" aria-hidden="true">★</span>t.</span>
+          </h1>
+          <p class="labs-hero__services">Websites · Apps · Brands · Games · Ideas</p>
+          <p class="labs-hero__tagline">From a sketch to something real.</p>
+          <p class="labs-hero__body">We help turn ideas into websites, apps and digital experiences that people actually love.</p>
+          <div class="labs-hero__actions">
+            <a class="labs-btn" href="#contact" data-labs-open-form>Start a Project →</a>
+            <a class="labs-btn labs-btn--ghost" href="#about">Watch Our Story</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="labs-hero__art-wrap labs-reveal">
+        <picture class="labs-hero__art labs-asset" data-labs-asset>
+          <source media="(max-width: 767px)" srcset="public/labs/hero/hero-mobile.png" />
           <img
-            class="lo-stage__bg lo-stage__bg--flip"
-            data-stage-layer="bg"
-            alt=""
-            width="1536"
-            height="1024"
-            sizes="100vw"
+            src="public/labs/hero/hero-desktop.png"
+            alt="Dad and Ollie at a creative workspace with laptop, whiteboard and desk"
+            width="2172"
+            height="724"
             decoding="async"
             fetchpriority="high"
-            hidden
+            sizes="(max-width: 767px) 100vw, 100vw"
           />
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt="Dad and Little Ollie standing together and smiling"
-            width="1024"
-            height="1536"
-            sizes="28vw"
-            decoding="async"
-            fetchpriority="high"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add home-bg.png and home-chars.png</span>
-          </div>
-        </div>
+          <span class="labs-asset__label">Hero: public/labs/hero/hero-desktop.png &amp; hero-mobile.png</span>
+        </picture>
       </div>
 
-      <section class="lo-stage__panel" aria-labelledby="hero-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Welcome to Little Ollie World</p>
-            <div class="home-hero__head">
-              <h1 class="home-hero__title" id="hero-heading">
-                A Little World<br />
-                Full of <span class="home-hero__title-accent">Big&nbsp;Ideas</span>
-              </h1>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-home" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-home">
-              <p class="home-hero__desc">Stories to share, friends to meet, and creative adventures for kids and the grown-ups who join them.</p>
-              <p class="home-hero__desc">A growing place for books, characters and playful ideas, built step by step by a dad and his son who love making things together.</p>
-              <div class="home-hero__actions">
-                <a href="#family" class="home-btn home-btn--primary">Meet the Family</a>
-                <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
-              </div>
-            </div>
-          </div>
-          <div class="lo-stage__spacer" aria-hidden="true"></div>
-        </div>
-      </section>
+      <div class="labs-strip labs-hero__strip" aria-label="Projects we've built">
+        <div class="labs-container labs-strip__bar labs-reveal">
+          <p class="labs-strip__label">Some of the things we've built</p>
 
-      <nav class="journey-cards lo-stage__cards" aria-label="Start your Little Ollie journey">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--family" href="#family">
-                <span class="journey-card__icon" data-card-icon="family">
-                  <img data-hero-asset="cardFamily" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">♥</span> Meet the Family</span>
-                  <span class="journey-card__desc">Get to know Ollie, his family and friends.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
+          <ul class="labs-strip__logos">
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://blackwater-labs.com/" target="_blank" rel="noopener noreferrer" data-strip-logo="little-ollie-world">
+                <img src="public/labs/projects/bw-labs.png" alt="Blackwater Labs" width="1448" height="1086" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Little Ollie World</span>
               </a>
             </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--school" href="#stories">
-                <span class="journey-card__icon" data-card-icon="school">
-                  <img data-hero-asset="cardSchool" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📚</span> Visit the Library</span>
-                  <span class="journey-card__desc">Browse big little lessons in the library.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <a class="journey-card journey-card--stories" href="#book">
-                <span class="journey-card__icon" data-card-icon="stories">
-                  <img data-hero-asset="cardStories" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">📘</span> Read the Stories</span>
-                  <span class="journey-card__desc">Magical stories with big little lessons.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--labs" href="#labs">
-                <span class="journey-card__icon" data-card-icon="labs">
-                  <img data-hero-asset="cardLabs" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">💡</span> Explore the Labs</span>
-                  <span class="journey-card__desc">Fun tools, games and creative experiments.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--adventure" href="#journey">
-                <span class="journey-card__icon" data-card-icon="adventure">
-                  <img data-hero-asset="cardAdventure" alt="" width="96" height="96" decoding="async" loading="lazy" hidden />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title"><span class="journey-card__badge" aria-hidden="true">✩</span> Join the Adventure</span>
-                  <span class="journey-card__desc">Be part of a growing world of imagination.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <div class="lo-stage lo-stage--family" id="family" data-stage="family">
-      <div class="lo-stage__world" aria-hidden="true">
-        <div class="lo-stage__frame">
-          <img
-            class="lo-stage__bg"
-            data-stage-layer="bg"
-            alt=""
-            width="1600"
-            height="1000"
-            sizes="100vw"
-            decoding="async"
-            hidden
-          />
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt="The Little Ollie family together"
-            width="1024"
-            height="1536"
-            sizes="28vw"
-            decoding="async"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add family-bg.png and meet-the-family.png</span>
-          </div>
-        </div>
-      </div>
-
-      <section class="lo-stage__panel" aria-labelledby="family-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">The Heart of Little Ollie World</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="family-heading">
-                Come Meet<br />
-                the <span class="home-hero__title-accent">Family</span>
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-family" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-family">
-              <p class="home-hero__desc">They’re the heart of every story, adventure and big little lesson, the family who make Little Ollie World feel warm, funny and full of heart.</p>
-              <p class="home-hero__desc">Tap a character below to meet them. Each one brings their own spark to the stories we’re creating together as a family.</p>
-              <p class="home-hero__desc">Dad, Mum, Ollie, Lily and Jack are inspired by real family moments, the funny ones, the messy ones and the ones that turn into the best stories.</p>
-              <p class="home-hero__desc">Each character brings something different to the page. Together they help turn everyday childhood experiences into stories kids can laugh at, learn from and see themselves in.</p>
-              <div class="home-hero__actions">
-                <a href="#stories" class="home-btn home-btn--primary">Explore Their Stories</a>
-                <a href="#book" class="home-btn home-btn--secondary">Discover Our Books</a>
-              </div>
-            </div>
-          </div>
-          <aside class="family-bio" data-family-bio hidden aria-live="polite">
-            <p class="family-bio__eyebrow">Meet</p>
-            <p class="family-bio__name" data-family-bio-name></p>
-            <div class="family-bio__body" data-family-bio-body></div>
-          </aside>
-        </div>
-      </section>
-
-      <nav class="journey-cards lo-stage__cards" aria-label="Meet each family member">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--ollie" href="#family">
-                <span class="journey-card__icon is-loaded" data-card-icon="ollie">
-                  <picture>
-                    <source srcset="webpageassets/locharacter.webp" type="image/webp" />
-                    <img src="../webpageassets/locharacter.PNG" alt="" width="1024" height="1536" decoding="async" loading="eager" />
-                  </picture>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Ollie</span>
-                  <span class="journey-card__desc">Curious, creative and always ready for the next adventure.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-                <div class="family-bio__source" hidden>
-                  <p class="family-bio__intro">Ollie is a curious and energetic kid who is always ready to explore a new idea.</p>
-                  <ul class="family-bio__points">
-                    <li><strong>Personality:</strong> Creative, kind, adventurous and sometimes a little mischievous</li>
-                    <li><strong>Loves:</strong> Sport, drawing, building things and asking lots of questions</li>
-                    <li><strong>Strengths:</strong> Courage, curiosity and helping others feel included</li>
-                    <li><strong>Still learning:</strong> That mistakes are part of growing</li>
-                    <li><strong>Special role:</strong> Ollie helps children discover the little spark inside themselves</li>
-                  </ul>
-                </div>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--dad" href="#family">
-                <span class="journey-card__icon is-loaded" data-card-icon="dad">
-                  <picture>
-                    <source srcset="webpageassets/dadcharacter.webp" type="image/webp" />
-                    <img src="../webpageassets/dadcharacter.png" alt="" width="1024" height="1536" decoding="async" loading="eager" />
-                  </picture>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Dad</span>
-                  <span class="journey-card__desc">Ollie’s biggest teammate, builder of ideas and keeper of the adventure.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-                <div class="family-bio__source" hidden>
-                  <p class="family-bio__intro">Dad is the steady hand behind many of Little Ollie’s biggest ideas, and Ollie’s favourite partner in crime.</p>
-                  <ul class="family-bio__points">
-                    <li><strong>Role in the family:</strong> Supportive dad, idea-shaper and adventure starter</li>
-                    <li><strong>Personality:</strong> Patient, playful and quietly determined</li>
-                    <li><strong>Loves:</strong> Storytelling, problem-solving and seeing Ollie’s ideas come to life</li>
-                    <li><strong>Strengths:</strong> Encouragement, creativity and turning “what if?” into “let’s try”</li>
-                    <li><strong>Still learning:</strong> To slow down and enjoy the small wins along the way</li>
-                  </ul>
-                  <p class="family-bio__closing">He and Ollie are building Little Ollie World one story at a time.</p>
-                </div>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <a class="journey-card journey-card--mum" href="#family">
-                <span class="journey-card__icon is-loaded" data-card-icon="mum">
-                  <img src="../webpageassets/mum.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Mum</span>
-                  <span class="journey-card__desc">Warm, caring and the glue that keeps everyone grounded.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-                <div class="family-bio__source" hidden>
-                  <p class="family-bio__intro">Mum brings warmth and wisdom to every corner of Little Ollie World.</p>
-                  <ul class="family-bio__points">
-                    <li><strong>Role in the family:</strong> The heart of home, kind, calm and always listening</li>
-                    <li><strong>Personality:</strong> Gentle, thoughtful and quietly strong</li>
-                    <li><strong>Loves:</strong> Family time, cosy moments and helping everyone find their way</li>
-                    <li><strong>Strengths:</strong> Empathy, patience and believing in every idea</li>
-                    <li><strong>What she brings:</strong> A sense of care that makes every story feel safe and real</li>
-                  </ul>
-                </div>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--lily" href="#family">
-                <span class="journey-card__icon is-loaded" data-card-icon="lily">
-                  <img src="../webpageassets/lily.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Lily</span>
-                  <span class="journey-card__desc">Bright, thoughtful and full of imagination.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-                <div class="family-bio__source" hidden>
-                  <p class="family-bio__intro">Lily notices the little details others miss, and turns them into something wonderful.</p>
-                  <ul class="family-bio__points">
-                    <li><strong>Personality:</strong> Imaginative, observant and quietly clever</li>
-                    <li><strong>Loves:</strong> Drawing, reading, daydreaming and making up stories</li>
-                    <li><strong>Strengths:</strong> Creativity, kindness and seeing beauty in small things</li>
-                    <li><strong>Favourite things:</strong> Art supplies, notebooks and a good adventure book</li>
-                    <li><strong>What she brings:</strong> Ideas that spark the family’s next big moment</li>
-                  </ul>
-                </div>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--jack" href="#family">
-                <span class="journey-card__icon is-loaded" data-card-icon="jack">
-                  <img src="../webpageassets/jack.webp" alt="" width="400" height="400" decoding="async" loading="eager" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Jack</span>
-                  <span class="journey-card__desc">The youngest adventurer, full of energy, mischief and surprise discoveries.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-                <div class="family-bio__source" hidden>
-                  <p class="family-bio__intro">Jack is the littlest member of the family, but he brings some of the biggest energy.</p>
-                  <ul class="family-bio__points">
-                    <li><strong>Personality:</strong> Playful, bold and wonderfully unpredictable</li>
-                    <li><strong>Loves:</strong> Dinosaurs, running around, silly games and making everyone laugh</li>
-                    <li><strong>Strengths:</strong> Enthusiasm, bravery and finding fun in ordinary days</li>
-                    <li><strong>Still learning:</strong> That sharing and listening are superpowers too</li>
-                    <li><strong>What he brings:</strong> Joy, chaos and the reminder that adventure can be tiny</li>
-                  </ul>
-                </div>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <div class="lo-stage lo-stage--stories" id="stories" data-stage="stories">
-      <div class="lo-stage__world" aria-hidden="true">
-        <div class="lo-stage__frame">
-          <img
-            class="lo-stage__bg"
-            data-stage-layer="bg"
-            alt=""
-            width="1600"
-            height="1000"
-            sizes="100vw"
-            decoding="async"
-            hidden
-          />
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt="Ollie and Lily reading a book together"
-            width="1536"
-            height="1024"
-            sizes="42vw"
-            decoding="async"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add library.png and library-ollie-lily.png</span>
-          </div>
-        </div>
-      </div>
-
-      <section class="lo-stage__panel" aria-labelledby="stories-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Stories with a little more inside</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="stories-heading">
-                Big Little<br />
-                <span class="home-hero__title-accent">Lessons</span>
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-stories" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-stories">
-              <p class="home-hero__desc">Little Ollie stories are made to be fun, colourful and full of imagination, but each adventure also carries a meaningful little lesson.</p>
-              <p class="home-hero__desc">Through everyday moments at home, at school and with friends, we explore kindness, courage, empathy, resilience and friendship in relatable adventures.</p>
-              <p class="home-hero__desc">The lessons are woven naturally into the story, never heavy or forced, so children can enjoy them and talk about them with the grown-ups in their lives.</p>
-              <p class="home-hero__desc">Our hope is that every book leaves children with a smile, a question to think about, or one small idea they can carry into their day.</p>
-              <div class="home-hero__actions">
-                <a href="#book" class="home-btn home-btn--primary">Discover Our Books</a>
-                <a href="#family" class="home-btn home-btn--secondary">Meet the Family</a>
-              </div>
-            </div>
-          </div>
-          <div class="lo-stage__spacer" aria-hidden="true"></div>
-        </div>
-      </section>
-
-      <nav class="journey-cards lo-stage__cards" aria-label="Story themes">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--stories" href="#book">
-                <span class="journey-card__icon is-loaded" data-card-icon="stories">
-                  <img src="../webpageassets/Courage.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Courage</span>
-                  <span class="journey-card__desc">Being brave in small, wonderful ways.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--family" href="#book">
-                <span class="journey-card__icon is-loaded" data-card-icon="family">
-                  <img src="../webpageassets/Kindness.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Kindness</span>
-                  <span class="journey-card__desc">Choosing care, empathy and gentle hearts.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <a class="journey-card journey-card--school" href="#book">
-                <span class="journey-card__icon is-loaded" data-card-icon="school">
-                  <img src="../webpageassets/Friendship.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Friendship</span>
-                  <span class="journey-card__desc">Finding connection and belonging.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--labs" href="#book">
-                <span class="journey-card__icon is-loaded" data-card-icon="labs">
-                  <img src="../webpageassets/Creativity.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Creativity</span>
-                  <span class="journey-card__desc">Making, imagining and trying new ideas.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--adventure" href="#book">
-                <span class="journey-card__icon is-loaded" data-card-icon="adventure">
-                  <img src="../webpageassets/Resilience.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Resilience</span>
-                  <span class="journey-card__desc">Getting back up with a spark still glowing.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <div class="lo-stage lo-stage--book" id="book" data-stage="book">
-      <div class="lo-stage__world" aria-hidden="true">
-        <div class="lo-stage__frame">
-          <img
-            class="lo-stage__bg"
-            data-stage-layer="bg"
-            alt=""
-            width="1600"
-            height="1000"
-            sizes="100vw"
-            decoding="async"
-            hidden
-          />
-          <div class="lo-stage__magic lo-stage__magic--book" aria-hidden="true">
-            <span class="lo-stage__glow lo-stage__glow--core"></span>
-            <span class="lo-stage__glow lo-stage__glow--halo"></span>
-            <span class="lo-stage__glow lo-stage__glow--ring"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__spark"></span>
-            <span class="lo-stage__star"></span>
-            <span class="lo-stage__star"></span>
-            <span class="lo-stage__star"></span>
-            <span class="lo-stage__star"></span>
-            <span class="lo-stage__star"></span>
-            <span class="lo-stage__twinkle"></span>
-            <span class="lo-stage__twinkle"></span>
-            <span class="lo-stage__twinkle"></span>
-            <span class="lo-stage__twinkle"></span>
-            <span class="lo-stage__twinkle"></span>
-            <span class="lo-stage__twinkle"></span>
-          </div>
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt="Little Ollie holding The Spark Inside book"
-            width="1024"
-            height="1536"
-            sizes="28vw"
-            decoding="async"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add books-bg.png and lobookhold.png</span>
-          </div>
-        </div>
-      </div>
-
-      <section class="lo-stage__panel" aria-labelledby="book-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Our first story</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="book-heading">
-                Little Ollie:<br />
-                The <span class="home-hero__title-accent">Spark</span> Inside
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-book" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-book">
-              <p class="home-hero__desc">A rhyming story about curiosity, courage, creativity and believing in the little spark inside you.</p>
-              <p class="home-hero__desc">Our first picture book is where Little Ollie’s world began on the page, shaped together, line by line, as dad and son.</p>
-              <p class="home-hero__desc">It’s a gentle adventure for reading aloud at home, in the classroom, or anywhere a little inspiration is welcome.</p>
-              <div class="home-hero__actions">
-                <a href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Buy on Amazon</a>
-                <a href="#stories" class="home-btn home-btn--secondary">More Stories</a>
-              </div>
-            </div>
-          </div>
-          <div class="lo-stage__spacer" aria-hidden="true"></div>
-        </div>
-      </section>
-
-      <nav class="journey-cards lo-stage__cards" aria-label="Books and reading paths">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--stories" href="https://www.amazon.com.au/Little-Ollie-Spark-Inside-Creativity/dp/B0H7MPSM1N">
-                <span class="journey-card__icon is-loaded" data-card-icon="stories">
-                  <img src="../webpageassets/BookCover.jpg" alt="" width="400" height="400" decoding="async" loading="lazy" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">The Spark Inside</span>
-                  <span class="journey-card__desc">Our first picture book for ages 3 to 8.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <span class="journey-card journey-card--family journey-card--soon" aria-disabled="true">
-                <span class="journey-card__icon" data-card-icon="family"></span>
-                <span class="journey-card__sticker" aria-hidden="true">Coming Soon</span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Coming Soon</span>
-                  <span class="journey-card__desc">A new adventure is on the way.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
+            <li class="labs-strip__item">
+              <span class="labs-strip__mark" data-strip-logo="layer-forge">
+                <img src="public/labs/projects/layer-forge-logo.png" alt="Layer Forge" width="1536" height="1024" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Layer Forge</span>
               </span>
             </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <span class="journey-card journey-card--school journey-card--soon" aria-disabled="true">
-                <span class="journey-card__icon" data-card-icon="school"></span>
-                <span class="journey-card__sticker" aria-hidden="true">Coming Soon</span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Read Aloud</span>
-                  <span class="journey-card__desc">Perfect for bedtime and classrooms.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </span>
-            </li>
-            <li class="journey-cards__item reveal">
-              <span class="journey-card journey-card--labs journey-card--soon" aria-disabled="true">
-                <span class="journey-card__icon" data-card-icon="labs"></span>
-                <span class="journey-card__sticker" aria-hidden="true">Coming Soon</span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Activities</span>
-                  <span class="journey-card__desc">Creative prompts inspired by the story.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </span>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <span class="journey-card journey-card--adventure journey-card--soon" aria-disabled="true">
-                <span class="journey-card__icon" data-card-icon="adventure"></span>
-                <span class="journey-card__sticker" aria-hidden="true">Coming Soon</span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Collection</span>
-                  <span class="journey-card__desc">More Little Ollie books coming soon.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </span>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <div class="lo-stage lo-stage--labs" id="labs" data-stage="labs">
-      <div class="lo-stage__world" aria-hidden="true">
-        <div class="lo-stage__frame">
-          <img
-            class="lo-stage__bg"
-            data-stage-layer="bg"
-            alt=""
-            width="1600"
-            height="1000"
-            sizes="100vw"
-            decoding="async"
-            fetchpriority="low"
-            hidden
-          />
-          <div class="lo-stage__magic lo-stage__magic--labs" aria-hidden="true">
-            <span class="lo-stage__blast lo-stage__blast--core"></span>
-            <span class="lo-stage__blast lo-stage__blast--wave"></span>
-            <span class="lo-stage__blast lo-stage__blast--ring"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__shard"></span>
-            <span class="lo-stage__orb"></span>
-            <span class="lo-stage__orb"></span>
-            <span class="lo-stage__orb"></span>
-            <span class="lo-stage__orb"></span>
-            <span class="lo-stage__orb"></span>
-            <span class="lo-stage__orb"></span>
-          </div>
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt="Dad, Ollie and Sam in lab coats"
-            width="1024"
-            height="1536"
-            sizes="42vw"
-            decoding="async"
-            fetchpriority="low"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder hidden>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add labplayground.png and dadolliesamlab.png</span>
-          </div>
-        </div>
-      </div>
-
-      <section class="lo-stage__panel" aria-labelledby="labs-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Little Ollie Labs</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="labs-heading">
-                Where Ideas<br />
-                Get to <span class="home-hero__title-accent">Play</span>
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-labs" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-labs">
-              <p class="home-hero__desc">Little Ollie Labs is where playful ideas come to life — for kids, families, and anyone who loves making and exploring.</p>
-              <p class="home-hero__desc">Play games in the Games Lab, try NFT tools like FlexGrid and Wallet DNA, or visit Creative Lab for free downloadable coloring pages you can print at home.</p>
-              <p class="home-hero__desc">Loads more games, activities and surprises are on the way, all built with the same heart as our books and stories.</p>
-              <p class="home-hero__desc">This is our little workshop for testing ideas and stretching Little Ollie World beyond the page.</p>
-              <div class="home-hero__actions">
-                <a href="/" class="home-btn home-btn--primary">Enter the Labs</a>
-                <a href="#journey" class="home-btn home-btn--secondary">Our Journey</a>
-              </div>
-            </div>
-          </div>
-          <div class="lo-stage__spacer" aria-hidden="true"></div>
-        </div>
-      </section>
-
-      <nav class="journey-cards lo-stage__cards" aria-label="Labs and playful tools">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track journey-cards__track--labs4">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--stories" href="../links/#games">
-                <span class="journey-card__icon is-loaded" data-card-icon="games" aria-hidden="true">
-                  <img src="../webpageassets/games-lab.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Games Lab</span>
-                  <span class="journey-card__desc">Play, guess and explore.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://neon-underworld-kappa.vercel.app/" target="_blank" rel="noopener noreferrer" data-strip-logo="neon-underworld">
+                <img src="public/labs/projects/NU-Logo.png" alt="Neon Underworld" width="1774" height="887" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Neon Underworld</span>
               </a>
             </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--adventure" href="../links/#nft">
-                <span class="journey-card__icon is-loaded" data-card-icon="nft" aria-hidden="true">
-                  <img src="../webpageassets/nft-tools-lab.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">NFT Tools Lab</span>
-                  <span class="journey-card__desc">Collect, compare and discover.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <a class="journey-card journey-card--stories journey-card--labs-blue" href="../links/#creative">
-                <span class="journey-card__icon is-loaded" data-card-icon="creative" aria-hidden="true">
-                  <img src="../webpageassets/creative-lab.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Creative Lab</span>
-                  <span class="journey-card__desc">Coloring pages, printables and downloads.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <span class="journey-card journey-card--family journey-card--soon" aria-disabled="true">
-                <span class="journey-card__icon is-loaded" data-card-icon="soon" aria-hidden="true">
-                  <img src="../webpageassets/coming-soon-lab.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Coming Soon!</span>
-                  <span class="journey-card__desc">More labs are on the way.</span>
-                </span>
+            <li class="labs-strip__item">
+              <span class="labs-strip__mark" data-strip-logo="apex">
+                <img src="public/labs/projects/apex-logo.png" alt="Apex — Test More Than Fitness" width="1536" height="1024" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">Apex</span>
               </span>
             </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <section class="our-story lo-stage" id="our-story" aria-labelledby="our-story-heading" data-story-section>
-      <div class="our-story__world" aria-hidden="true">
-        <img
-          class="our-story__bg"
-          src="../webpageassets/stage-our-story-landscape.png"
-          alt=""
-          width="1600"
-          height="1000"
-          decoding="async"
-          fetchpriority="low"
-        />
-      </div>
-
-      <div class="lo-stage__panel our-story__panel">
-        <div class="home-container lo-stage__grid our-story__grid">
-          <div class="home-hero__copy our-story__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Where it all began</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="our-story-heading">
-                A Dad, His Son and<br />
-                One Little <span class="home-hero__title-accent">Idea</span>
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-story" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-story">
-              <p class="home-hero__desc">
-                Little Ollie began with a simple dream shared between a father and his son, and grew into a world of stories, books, tools and adventures.
-              </p>
-              <p class="home-hero__desc">
-                What started as a small creative project between us has become something we genuinely love building together, learning as we go.
-              </p>
-              <div class="home-hero__actions">
-                <button type="button" class="home-btn home-btn--primary" id="our-story-play" data-story-play>
-                  Read our Story
-                </button>
-                <a href="#journey" class="home-btn home-btn--secondary">Stay Connected</a>
-              </div>
-            </div>
-          </div>
-          <aside class="our-story__invite" data-story-invite aria-label="Explore our story">
-            <p class="our-story__invite-emoji" aria-hidden="true">🌱</p>
-            <h3 class="our-story__invite-title">How a little idea grew</h3>
-            <p class="our-story__invite-copy">What you see today started with bedtime sketches, late night brainstorming and a dad and son who kept asking what if.</p>
-            <p class="our-story__invite-copy">Little Ollie was never meant to be just one character or one book. It was always about building something we could learn from and enjoy together.</p>
-            <p class="our-story__invite-copy">Pick a chapter below or press Read our Story to walk through five moments that shaped our world so far.</p>
-            <div class="our-story__invite-actions">
-              <button type="button" class="home-btn home-btn--primary" data-story-play>
-                Read our Story
-              </button>
-            </div>
-          </aside>
-          <aside class="our-story__stage-content" id="our-story-stage-panel" data-story-stage-content hidden role="tabpanel" aria-labelledby="">
-            <div class="our-story__stage-content-inner" data-story-stage-inner aria-live="polite">
-              <p class="our-story__stage-emoji" data-story-stage-emoji aria-hidden="true"></p>
-              <p class="our-story__stage-num" data-story-stage-num></p>
-              <h3 class="our-story__stage-title" data-story-stage-title></h3>
-              <div class="our-story__stage-copy" data-story-stage-copy></div>
-            </div>
-            <div class="our-story__stage-nav" data-story-stage-nav hidden>
-              <button type="button" class="our-story__stage-arrow" data-story-prev aria-label="Previous chapter">
-                <span aria-hidden="true">←</span>
-              </button>
-              <span class="our-story__stage-progress" data-story-progress aria-live="polite">Chapter 1 of 5</span>
-              <button type="button" class="our-story__stage-arrow" data-story-next aria-label="Next chapter">
-                <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </aside>
-        </div>
-      </div>
-
-      <nav class="journey-cards lo-stage__cards our-story__cards" aria-label="Our story chapters">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track journey-cards__track--labs4 our-story__chapters" id="our-story-chapters" data-story-chapters role="tablist" aria-label="Little Ollie story chapters">
-            <li class="journey-cards__item reveal" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                class="journey-card journey-card--family our-story__card"
-                id="our-story-tab-1"
-                data-story-chapter="beginning"
-                data-story-num="Chapter 1"
-                data-story-title="A Little Idea"
-                data-story-copy="Little Ollie began with a simple idea shared between a dad and his son. We did not know exactly where it would lead. We only knew we wanted to create something meaningful together.|||What started as a small creative project soon became a world full of characters, stories and possibilities."
-                aria-selected="false"
-                aria-controls="our-story-stage-panel"
-              >
-                <span class="journey-card__icon is-loaded" aria-hidden="true">
-                  <span class="our-story__emoji">🧢</span>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">A Little Idea</span>
-                </span>
-              </button>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                class="journey-card journey-card--stories our-story__card"
-                id="our-story-tab-2"
-                data-story-chapter="learning"
-                data-story-num="Chapter 2"
-                data-story-title="Learning Together"
-                data-story-copy="Neither of us began with all the answers.|||We have learned about art, storytelling, technology, books and building a brand by experimenting, making mistakes and helping each other along the way.|||That process of learning together has become one of the most important parts of Little Ollie."
-                aria-selected="false"
-                aria-controls="our-story-stage-panel"
-              >
-                <span class="journey-card__icon is-loaded" aria-hidden="true">
-                  <span class="our-story__emoji">✏️</span>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Learning Together</span>
-                </span>
-              </button>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                class="journey-card journey-card--adventure our-story__card"
-                id="our-story-tab-3"
-                data-story-chapter="community"
-                data-story-num="Chapter 3"
-                data-story-title="Finding Our Community"
-                data-story-copy="As we shared Little Ollie online, we began meeting artists, builders, collectors, parents and creators from around the world.|||Their encouragement helped the idea grow and reminded us that even the smallest project can bring people together.|||Our community will always be an important part of the story."
-                aria-selected="false"
-                aria-controls="our-story-stage-panel"
-              >
-                <span class="journey-card__icon is-loaded" aria-hidden="true">
-                  <span class="our-story__emoji">🌎</span>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Finding Our Community</span>
-                </span>
-              </button>
-            </li>
-            <li class="journey-cards__item reveal" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                class="journey-card journey-card--labs our-story__card"
-                id="our-story-tab-4"
-                data-story-chapter="books"
-                data-story-num="Chapter 4"
-                data-story-title="Building the World"
-                data-story-copy="Little Ollie gradually became much more than a single character.|||We began developing a family, friends, schools, locations, books and lessons inspired by real childhood experiences.|||The world continues to grow as we explore stories about kindness, courage, creativity, friendship and believing in yourself."
-                aria-selected="false"
-                aria-controls="our-story-stage-panel"
-              >
-                <span class="journey-card__icon is-loaded" aria-hidden="true">
-                  <span class="our-story__emoji">✨</span>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Building the World</span>
-                </span>
-              </button>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay" role="presentation">
-              <button
-                type="button"
-                role="tab"
-                class="journey-card journey-card--school our-story__card"
-                id="our-story-tab-5"
-                data-story-chapter="future"
-                data-story-num="Chapter 5"
-                data-story-title="The Adventure Ahead"
-                data-story-copy="We are still near the beginning of the journey.|||There are more books to create, more characters to meet, more ideas to explore and plenty more for us to learn together.|||We may not know exactly where the adventure will take us, but that is part of what makes it exciting."
-                aria-selected="false"
-                aria-controls="our-story-stage-panel"
-              >
-                <span class="journey-card__icon is-loaded" aria-hidden="true">
-                  <span class="our-story__emoji">🚀</span>
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">The Adventure Ahead</span>
-                </span>
-              </button>
+            <li class="labs-strip__item">
+              <a class="labs-strip__mark" href="https://www.dyorpod.com/" target="_blank" rel="noopener noreferrer" data-strip-logo="dyor">
+                <img src="public/labs/projects/dyor-logo.png" alt="DYOR" width="2048" height="753" loading="eager" decoding="async" />
+                <span class="labs-strip__fallback">DYOR</span>
+              </a>
             </li>
           </ul>
+
+          <p class="labs-strip__more">...and more to come <span class="labs-strip__smile" aria-hidden="true">☺</span></p>
         </div>
-      </nav>
+      </div>
     </section>
 
-    <div class="lo-stage lo-stage--journey" id="journey" data-stage="journey">
-      <div class="lo-stage__world" aria-hidden="true">
-        <div class="lo-stage__frame">
-          <img
-            class="lo-stage__bg"
-            data-stage-layer="bg"
-            alt=""
-            width="1600"
-            height="1000"
-            sizes="100vw"
-            decoding="async"
-            hidden
-          />
-          <img
-            class="lo-stage__chars"
-            data-stage-layer="chars"
-            alt=""
-            width="1024"
-            height="1536"
-            sizes="28vw"
-            decoding="async"
-            hidden
-          />
-          <div class="lo-stage__placeholder" data-stage-placeholder hidden>
-            <span class="lo-stage__placeholder-label">Artwork coming soon</span>
-            <span class="lo-stage__placeholder-detail">Add BrowserJourney.jpg</span>
+    <!-- LabsWork -->
+    <section class="labs-section labs-snap labs-work" id="work" aria-labelledby="labs-work-heading">
+      <div class="labs-container labs-section__body">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Our work</p>
+          <h2 class="labs-section__title" id="labs-work-heading">Some things we've <span class="labs-rainbow-word"><span>m</span><span>a</span><span>d</span><span>e</span></span>.</h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-work-carousel" data-labs-work-carousel>
+          <div class="labs-work-carousel__stage">
+          <div class="labs-work-carousel__track" data-labs-work-track>
+          <a class="labs-work-card" href="https://blackwater-labs.com/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="public/labs/projects/BW-Website.png" alt="Blackwater Labs website preview" width="3022" height="1724" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">BW-Website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Blackwater Labs</h3>
+              <p class="labs-work-card__desc">A bold brand and web presence built for creators who play by their own rules.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Design</li>
+              </ul>
+            </div>
+          </a>
+
+          <article class="labs-work-card">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="public/labs/projects/Layer-forge-website.png" alt="Layer Forge website preview" width="1515" height="864" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">Layer-forge-website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Layer Forge</h3>
+              <p class="labs-work-card__desc">Tools for creators to build, organise and generate digital collections.</p>
+              <ul class="labs-work-card__tags">
+                <li>Web App</li>
+                <li>Product Design</li>
+                <li>Development</li>
+              </ul>
+            </div>
+          </article>
+
+          <a class="labs-work-card" href="https://neon-underworld-kappa.vercel.app/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="public/labs/projects/NU_website.png" alt="Neon Underworld website preview" width="3018" height="1722" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">NU_website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Neon Underworld</h3>
+              <p class="labs-work-card__desc">A neon-soaked digital world with attitude, lore and room to grow.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>World Building</li>
+                <li>Brand</li>
+              </ul>
+            </div>
+          </a>
+
+          <article class="labs-work-card">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="public/labs/projects/Apex-Website.png" alt="Apex website preview" width="1513" height="858" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">Apex-Website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">Apex</h3>
+              <p class="labs-work-card__desc">Fitness reimagined — a brand and site built to test more than limits.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Fitness</li>
+              </ul>
+            </div>
+          </article>
+
+          <a class="labs-work-card" href="https://www.dyorpod.com/" target="_blank" rel="noopener noreferrer">
+            <div class="labs-work-card__visual labs-asset" data-labs-asset>
+              <img src="public/labs/projects/dyor-website.png" alt="DYOR website preview" width="2992" height="1724" loading="lazy" decoding="async" />
+              <span class="labs-asset__label">dyor-website.png</span>
+            </div>
+            <div class="labs-work-card__body">
+              <h3 class="labs-work-card__title">DYOR</h3>
+              <p class="labs-work-card__desc">Crypto media built for live conversations — X Spaces, podcasts and a growing content library.</p>
+              <ul class="labs-work-card__tags">
+                <li>Website</li>
+                <li>Brand</li>
+                <li>Media</li>
+              </ul>
+            </div>
+          </a>
           </div>
+          </div>
+          <div class="labs-work-carousel__nav">
+            <button type="button" class="labs-work-carousel__btn" data-labs-work-prev aria-label="Previous project">←</button>
+            <span class="labs-work-carousel__count" data-labs-work-count aria-live="polite">1 / 5</span>
+            <button type="button" class="labs-work-carousel__btn" data-labs-work-next aria-label="Next project">→</button>
+          </div>
+        </div>
         </div>
       </div>
 
-      <section class="lo-stage__panel" aria-labelledby="journey-heading">
-        <div class="home-container lo-stage__grid">
-          <div class="home-hero__copy reveal" data-copy-panel>
-            <p class="home-eyebrow">Stay connected</p>
-            <div class="home-hero__head">
-              <h2 class="home-hero__title" id="journey-heading">
-                Continue the<br />
-                <span class="home-hero__title-accent">Journey</span>
-              </h2>
-              <button type="button" class="home-hero__expand" aria-expanded="false" aria-controls="copy-body-journey" aria-label="Show more about this section">
-                <span class="home-hero__expand-icon" aria-hidden="true"></span>
-              </button>
-            </div>
-            <div class="home-hero__body" id="copy-body-journey">
-              <p class="home-hero__desc">Follow along, stay connected and see what we create next.</p>
-              <p class="home-hero__desc">We love sharing little updates, behind-the-scenes moments and new adventures as Little Ollie World grows.</p>
-              <p class="home-hero__desc">Whether you’re a parent, teacher, creator or simply curious, we’d love to have you along for the ride.</p>
-              <div class="home-hero__actions">
-                <a href="https://www.instagram.com/littleollie.world" class="home-btn home-btn--primary" target="_blank" rel="noopener noreferrer">Follow Along</a>
-                <a href="mailto:littleollienft@gmail.com" class="home-btn home-btn--secondary">Say Hello</a>
+      <figure class="labs-work__characters" aria-hidden="true">
+        <img
+          src="public/labs/characters/work-page-characters.png"
+          alt=""
+          width="1122"
+          height="1402"
+          loading="lazy"
+          decoding="async"
+        />
+      </figure>
+    </section>
+
+    <!-- LabsServices -->
+    <section class="labs-section labs-snap" id="what-we-do" aria-labelledby="labs-services-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">What we do</p>
+          <img
+            class="labs-services__doodle labs-services__doodle--arrow"
+            src="public/labs/doodles/marks/mark-01-black-swoop.png"
+            alt=""
+            width="320"
+            height="240"
+            decoding="async"
+            aria-hidden="true"
+          />
+          <h2 class="labs-section__title" id="labs-services-heading">Ideas. Design. <span class="labs-rainbow-word"><span>B</span><span>u</span><span>i</span><span>l</span><span>d</span></span>. <span class="labs-services__repeat">Repeat.<img class="labs-services__doodle labs-services__doodle--underline" src="public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span></h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-services__stage">
+          <p class="labs-services__note" aria-hidden="true">from idea to reality</p>
+
+          <div class="labs-services__path" aria-hidden="true">
+            <svg class="labs-services__path-svg labs-services__path-svg--desktop" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path
+                class="labs-services__path-ghost"
+                d="M 3 1.5 C 9 8.5 13 12.5 17.5 18.5 S 31.5 16.5 34 20 S 48.5 17.5 51 20.5 S 66 17.5 68.5 20.5 S 83.5 20.5 87 29.5 C 84.5 39.5 73.5 45.5 58.5 49.5 C 38.5 53.5 19.5 56.5 18 66.5 S 34.5 71 50.5 73 S 63 74.5 65 75.5"
+              />
+              <path
+                class="labs-services__path-line"
+                d="M 3 1.5 C 9 8.5 13 12.5 17.5 18.5 S 31.5 16.5 34 20 S 48.5 17.5 51 20.5 S 66 17.5 68.5 20.5 S 83.5 20.5 87 29.5 C 84.5 39.5 73.5 45.5 58.5 49.5 C 38.5 53.5 19.5 56.5 18 66.5 S 34.5 71 50.5 73 S 63 74.5 65 75.5"
+              />
+            </svg>
+            <svg class="labs-services__path-svg labs-services__path-svg--tablet" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path
+                class="labs-services__path-ghost"
+                d="M 4 2 C 10 9 14 13 19 18.5 S 44 16.5 49 19 S 79 21 83.5 29 C 78 38 50 42 49.5 48.5 S 49 58 49 63.5 S 26 70 22 80.5"
+              />
+              <path
+                class="labs-services__path-line"
+                d="M 4 2 C 10 9 14 13 19 18.5 S 44 16.5 49 19 S 79 21 83.5 29 C 78 38 50 42 49.5 48.5 S 49 58 49 63.5 S 26 70 22 80.5"
+              />
+            </svg>
+            <img
+              class="labs-services__path-mark labs-services__path-mark--twinkle"
+              src="public/labs/doodles/stars/star-spark-05-double-twinkle.png"
+              alt=""
+              width="240"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--hook"
+              src="public/labs/doodles/marks/mark-09-pink-arrow.png"
+              alt=""
+              width="240"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--drop"
+              src="public/labs/doodles/marks/mark-14-black-swoosh.png"
+              alt=""
+              width="320"
+              height="240"
+              decoding="async"
+            />
+            <img
+              class="labs-services__path-mark labs-services__path-mark--finish"
+              src="public/labs/doodles/stars/star-spark-12-small-star-burst.png"
+              alt=""
+              width="200"
+              height="200"
+              decoding="async"
+            />
+          </div>
+
+        <div class="labs-services__grid">
+          <article class="labs-service">
+            <h3 class="labs-service__title">Strategy</h3>
+            <p class="labs-service__desc">Turn ideas into clear plans.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Design</h3>
+            <p class="labs-service__desc">Create brands and experiences people remember.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Development</h3>
+            <p class="labs-service__desc">Build websites, apps and useful digital products.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Branding</h3>
+            <p class="labs-service__desc">Create identities, stories and visual systems.</p>
+          </article>
+          <article class="labs-service">
+            <h3 class="labs-service__title">Experiments</h3>
+            <p class="labs-service__desc">Explore ideas that don't fit neatly into a box.</p>
+          </article>
+        </div>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LabsAbout -->
+    <section class="labs-section labs-snap" id="about" aria-labelledby="labs-about-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Who's behind this?</p>
+          <h2 class="labs-section__title" id="labs-about-heading">Built by someone who couldn't stop <span class="labs-rainbow-word"><span>b</span><span>u</span><span>i</span><span>l</span><span>d</span><span>i</span><span>n</span><span>g</span></span>.</h2>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-about__grid">
+          <div class="labs-about__copy">
+            <p><strong>Little Ollie Labs started because we just love building things.</strong></p>
+            <p>Websites, apps, brands, games, random ideas — if something sounds interesting, we want to see if we can make it real.</p>
+            <p>We won't always know the answer on day one. But if there's a way to make it work, we'll figure it out.</p>
+            <p>Good ideas. Good people. Let's build something.</p>
+          </div>
+          <figure class="labs-about__character labs-about__character--solo">
+            <span class="labs-asset" data-labs-asset>
+              <img
+                src="public/labs/characters/about-page.png"
+                alt="Dad and Ollie, the team behind Little Ollie Labs"
+                width="1145"
+                height="1374"
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="labs-asset__label">public/labs/characters/about-page.png</span>
+            </span>
+          </figure>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LabsContact -->
+    <section class="labs-section labs-contact" id="contact" aria-labelledby="labs-contact-heading">
+      <div class="labs-container">
+        <div class="labs-section__head labs-reveal">
+          <p class="labs-section__eyebrow">Got an idea?</p>
+          <img
+            class="labs-contact__doodle labs-contact__doodle--arrow"
+            src="public/labs/doodles/marks/mark-01-black-swoop.png"
+            alt=""
+            width="320"
+            height="240"
+            decoding="async"
+            aria-hidden="true"
+          />
+          <h2 class="labs-section__title labs-contact__title" id="labs-contact-heading">Tell us about <span class="labs-contact__title-it">it.<img class="labs-contact__doodle labs-contact__doodle--underline" src="public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span></h2>
+          <p class="labs-section__lead">Big idea, little idea or something you're still trying to explain — give us the rough version and we'll take it from there.</p>
+        </div>
+
+        <div class="labs-section__content labs-reveal">
+        <div class="labs-contact__grid">
+          <div class="labs-contact__main">
+            <div class="labs-contact__channels labs-contact__channels--compact">
+              <div class="labs-contact__block">
+                <p class="labs-contact__label">Email</p>
+                <a class="labs-contact__link" href="mailto:littleollienft@gmail.com">littleollienft@gmail.com</a>
+              </div>
+              <div class="labs-contact__block labs-contact__block--social">
+                <p class="labs-contact__label">Follow along</p>
+                <div class="labs-contact__social">
+                  <a class="labs-contact__social-link" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer">
+                    <img src="webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
+                    <span>Facebook</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">
+                    <img src="webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
+                    <span>Instagram</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer">
+                    <img src="webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
+                    <span>TikTok</span>
+                  </a>
+                  <a class="labs-contact__social-link" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer">
+                    <img src="webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
+                    <span>X</span>
+                  </a>
+                </div>
               </div>
             </div>
+
+            <div class="labs-contact__cta">
+              <p class="labs-contact__cta-copy">Got a project in mind? Tell us the rough version — we'll take it from there.</p>
+              <button type="button" class="labs-btn labs-btn--dark" data-labs-open-form>Send the idea →</button>
+            </div>
           </div>
-          <div class="lo-stage__spacer" aria-hidden="true"></div>
+
+          <figure class="labs-contact__character">
+            <div class="labs-about__duo">
+              <div class="labs-about__figure labs-about__figure--dad">
+                <span class="labs-asset" data-labs-asset>
+                  <img
+                    src="public/labs/characters/dad-about2.png"
+                    alt="Dad, builder and founder of Little Ollie Labs"
+                    width="1122"
+                    height="1402"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="labs-asset__label">public/labs/characters/dad-about2.png</span>
+                </span>
+              </div>
+              <div class="labs-about__figure labs-about__figure--ollie">
+                <span class="labs-asset" data-labs-asset>
+                  <img
+                    src="public/labs/characters/ollie-cta.png"
+                    alt="Ollie, imagination and spark behind Little Ollie"
+                    width="1122"
+                    height="1402"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="labs-asset__label">public/labs/characters/ollie-cta.png</span>
+                </span>
+              </div>
+            </div>
+          </figure>
         </div>
-      </section>
-
-      <nav class="journey-cards lo-stage__cards" aria-label="Follow Little Ollie on social">
-        <div class="home-container journey-cards__inner">
-          <ul class="journey-cards__track">
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--family journey-card--facebook" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer">
-                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
-                  <img src="../webpageassets/facebook.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Facebook</span>
-                  <span class="journey-card__desc">Family updates and behind the scenes.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--stories journey-card--instagram" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">
-                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
-                  <img src="../webpageassets/instagram.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Instagram</span>
-                  <span class="journey-card__desc">Stories, art and little moments.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay-2">
-              <a class="journey-card journey-card--labs journey-card--tiktok" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer">
-                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
-                  <img src="../webpageassets/tiktok.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">TikTok</span>
-                  <span class="journey-card__desc">Fun clips from Little Ollie World.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal">
-              <a class="journey-card journey-card--school journey-card--email" href="mailto:littleollienft@gmail.com">
-                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
-                  <img src="../webpageassets/email.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">Email</span>
-                  <span class="journey-card__desc">littleollienft@gmail.com</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-            <li class="journey-cards__item reveal reveal--delay">
-              <a class="journey-card journey-card--adventure journey-card--x" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer">
-                <span class="journey-card__icon journey-card__icon--social is-loaded" aria-hidden="true">
-                  <img src="../webpageassets/x-twitter.png" alt="" width="512" height="512" decoding="async" />
-                </span>
-                <span class="journey-card__text">
-                  <span class="journey-card__title">X / Twitter</span>
-                  <span class="journey-card__desc">Quick updates and new adventures.</span>
-                </span>
-                <span class="journey-card__arrow" aria-hidden="true">→</span>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </div>
-
-    <footer class="home-footer" aria-label="Site footer">
-      <div class="home-footer__blend" aria-hidden="true"></div>
-      <div class="home-footer__stars" aria-hidden="true"></div>
-      <div class="home-footer__sparkles" aria-hidden="true"></div>
-      <div class="home-footer__hills" aria-hidden="true">
-        <div class="home-footer__trees"></div>
-      </div>
-
-      <div class="home-container home-footer__inner">
-        <div class="home-footer__brand">
-          <p class="home-footer__eyebrow">The adventure continues</p>
-          <img src="../webpageassets/logo-footer.webp" alt="Little Ollie World" class="home-footer__logo" width="180" height="54" decoding="async" />
-          <p class="home-footer__tagline">Where little ideas grow into big adventures.</p>
-          <p class="home-footer__credit">Made with imagination by a dad and his little mate.</p>
-        </div>
-
-        <div class="home-footer__links">
-          <div class="home-footer__col">
-            <p class="home-footer__col-title">Explore</p>
-            <nav class="home-footer__nav" aria-label="Explore">
-              <a href="#home">Home</a>
-              <a href="#family">Meet the Family</a>
-              <a href="#stories">Stories</a>
-              <a href="#book">Books</a>
-              <a href="../little-ollie-club/" data-club-link>Little Ollie Club</a>
-            </nav>
-          </div>
-          <div class="home-footer__col">
-            <p class="home-footer__col-title">More</p>
-            <nav class="home-footer__nav" aria-label="More">
-              <a href="/">Little Ollie Labs</a>
-              <a href="#our-story">Our Story</a>
-              <a href="#journey">Our Journey</a>
-              <a href="mailto:littleollienft@gmail.com">Contact</a>
-            </nav>
-          </div>
-        </div>
-
-        <div class="home-footer__meta">
-          <div class="home-footer__social" aria-label="Social links">
-            <a class="home-footer__social-link" href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <img src="../webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
-            </a>
-            <a class="home-footer__social-link" href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <img src="../webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
-            </a>
-            <a class="home-footer__social-link" href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
-              <img src="../webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
-            </a>
-            <a class="home-footer__social-link" href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer" aria-label="X">
-              <img src="../webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
-            </a>
-            <a class="home-footer__social-link" href="mailto:littleollienft@gmail.com" aria-label="Email">
-              <img src="../webpageassets/email.png" alt="" width="32" height="32" decoding="async" />
-            </a>
-          </div>
-          <div class="home-footer__legal">
-            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Privacy</a>
-            <span class="home-footer__dot" aria-hidden="true"></span>
-            <a href="#" class="is-disabled" aria-disabled="true" tabindex="-1">Terms</a>
-          </div>
-          <p class="home-footer__copy">&copy; <span id="footer-year"></span> Little Ollie Labs. All rights reserved.</p>
         </div>
       </div>
-    </footer>
-
+    </section>
   </main>
 
-  <script src="home.js" defer></script>
+  <!-- Project enquiry modal -->
+  <div class="labs-form-modal" data-labs-form-modal hidden>
+    <div class="labs-form-modal__backdrop" data-labs-form-modal-close tabindex="-1" aria-hidden="true"></div>
+    <div
+      class="labs-form-modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="labs-form-modal-title"
+      tabindex="-1"
+    >
+      <button type="button" class="labs-form-modal__close" data-labs-form-modal-close aria-label="Close form">
+        <span aria-hidden="true">×</span>
+      </button>
+
+      <header class="labs-form-modal__head">
+        <p class="labs-section__eyebrow labs-form-modal__eyebrow">Got an idea?</p>
+        <h2 class="labs-form-modal__title" id="labs-form-modal-title">
+          Tell us about <span class="labs-contact__title-it">it.<img class="labs-contact__doodle labs-contact__doodle--underline" src="public/labs/doodles/marks/mark-10-pink-wavy-line.png" alt="" width="480" height="120" decoding="async" aria-hidden="true" /></span>
+        </h2>
+        <p class="labs-form-modal__lead">Big idea, little idea or something you're still trying to explain — give us the rough version and we'll take it from there.</p>
+      </header>
+
+      <div class="labs-form-panel" data-labs-form-panel>
+        <form class="labs-form" id="contact-form" data-labs-enquiry-form novalidate>
+          <input type="hidden" name="_subject" value="New Little Ollie Labs enquiry" />
+          <div class="labs-form__honeypot" aria-hidden="true">
+            <label for="labs-form-botcheck">Leave blank</label>
+            <input type="text" id="labs-form-botcheck" name="_gotcha" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="name">
+              <label for="labs-form-name">Your name <span class="labs-form__req" aria-hidden="true">*</span></label>
+              <input type="text" id="labs-form-name" name="Name" autocomplete="name" required aria-required="true" />
+              <p class="labs-form__error" id="labs-form-error-name" role="alert" hidden></p>
+            </div>
+            <div class="labs-form__field" data-labs-field="email">
+              <label for="labs-form-email">Email <span class="labs-form__req" aria-hidden="true">*</span></label>
+              <input type="email" id="labs-form-email" name="Email" autocomplete="email" inputmode="email" required aria-required="true" />
+              <p class="labs-form__error" id="labs-form-error-email" role="alert" hidden></p>
+            </div>
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="business">
+              <label for="labs-form-business">Business or project name</label>
+              <input type="text" id="labs-form-business" name="Business / Project Name" autocomplete="organization" />
+            </div>
+            <div class="labs-form__field" data-labs-field="social">
+              <label for="labs-form-social">Website or social</label>
+              <input type="text" id="labs-form-social" name="Website / Social" autocomplete="url" inputmode="url" placeholder="https://" />
+            </div>
+          </div>
+
+          <fieldset class="labs-form__field labs-form__fieldset" data-labs-field="project_type">
+            <legend>What can we help you build? <span class="labs-form__req" aria-hidden="true">*</span></legend>
+            <div class="labs-form__checks" role="group" aria-label="What can we help you build?">
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Website" /><span class="labs-form__check-text">Website</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="App / Web App" /><span class="labs-form__check-text">App / Web App</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Brand / Identity" /><span class="labs-form__check-text">Brand / Identity</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Game / Interactive" /><span class="labs-form__check-text">Game / Interactive</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Existing Project Help" /><span class="labs-form__check-text">Existing Project Help</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Something Else" /><span class="labs-form__check-text">Something Else</span></label>
+              <label class="labs-form__check"><input type="checkbox" name="Services Selected" value="Not Sure Yet" /><span class="labs-form__check-text">Not Sure Yet</span></label>
+            </div>
+            <p class="labs-form__error" id="labs-form-error-project-type" role="alert" hidden></p>
+          </fieldset>
+
+          <div class="labs-form__field" data-labs-field="idea">
+            <label for="labs-form-idea">Tell us about the idea <span class="labs-form__req" aria-hidden="true">*</span></label>
+            <textarea id="labs-form-idea" name="Project Description" rows="6" required aria-required="true" placeholder="What are you thinking about building? Don't worry if it's still rough — that's what we're here for."></textarea>
+            <p class="labs-form__error" id="labs-form-error-idea" role="alert" hidden></p>
+          </div>
+
+          <div class="labs-form__row labs-form__row--2">
+            <div class="labs-form__field" data-labs-field="budget">
+              <label for="labs-form-budget">Rough budget</label>
+              <select id="labs-form-budget" name="Budget">
+                <option value="Not sure yet">Not sure yet</option>
+                <option value="Under A$1,000">Under A$1,000</option>
+                <option value="A$1,000–2,500">A$1,000–2,500</option>
+                <option value="A$2,500–5,000">A$2,500–5,000</option>
+                <option value="A$5,000–10,000">A$5,000–10,000</option>
+                <option value="A$10,000+">A$10,000+</option>
+              </select>
+              <p class="labs-form__hint">Helps us understand your approximate project budget — these aren't published Labs prices.</p>
+            </div>
+            <div class="labs-form__field" data-labs-field="timeline">
+              <label for="labs-form-timeline">When are you thinking?</label>
+              <select id="labs-form-timeline" name="Timeline">
+                <option value="ASAP">ASAP</option>
+                <option value="Within a month">Within a month</option>
+                <option value="1–3 months">1–3 months</option>
+                <option value="3+ months">3+ months</option>
+                <option value="Just exploring">Just exploring</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="labs-form__field" data-labs-field="extra">
+            <label for="labs-form-extra">Anything else we should know?</label>
+            <textarea id="labs-form-extra" name="Extra Information" rows="3"></textarea>
+          </div>
+
+          <p class="labs-form__status" data-labs-form-status role="status" aria-live="polite" hidden></p>
+
+          <button type="submit" class="labs-btn labs-btn--dark labs-form__submit" data-labs-form-submit data-labs-form-submit-label="Send the idea →">Send the idea →</button>
+        </form>
+
+        <div class="labs-form-success" data-labs-form-success hidden>
+          <h3 class="labs-form-success__title" tabindex="-1">Got it ✦</h3>
+          <p class="labs-form-success__text">Thanks for reaching out. We'll have a look and get back to you soon.</p>
+        </div>
+      </div>
+
+      <p class="labs-form__privacy">We'll only use your details to respond to your enquiry.</p>
+    </div>
+  </div>
+
+  <!-- LabsFooter -->
+  <footer class="labs-footer">
+    <div class="labs-container labs-footer__grid">
+      <div class="labs-footer__brand">
+        <span class="labs-asset" data-labs-asset>
+          <img src="public/labs/branding/little-ollie-labs-mark.png" alt="Little Ollie Labs" width="160" height="48" loading="lazy" decoding="async" />
+          <span class="labs-asset__label">Footer mark</span>
+        </span>
+        <p class="labs-footer__tagline">Bringing ideas to life.</p>
+      </div>
+
+      <nav aria-label="Footer">
+        <ul class="labs-footer__nav">
+          <li><a href="#work">Work</a></li>
+          <li><a href="#what-we-do">What We Do</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div>
+        <p class="labs-section__eyebrow" style="margin-bottom:0.75rem">Follow along</p>
+        <div class="labs-footer__social">
+          <a href="https://www.facebook.com/profile.php?id=61591527820172" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <img src="webpageassets/facebook.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <img src="webpageassets/instagram.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://www.tiktok.com/@littleollieworld" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+            <img src="webpageassets/tiktok.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="https://x.com/LittleOllieNFT" target="_blank" rel="noopener noreferrer" aria-label="X">
+            <img src="webpageassets/x-twitter.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+          <a href="mailto:littleollienft@gmail.com" aria-label="Email">
+            <img src="webpageassets/email.png" alt="" width="32" height="32" decoding="async" />
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="labs-container labs-footer__fine">
+      <p class="labs-footer__built">Built by Little Ollie Labs</p>
+      <div class="labs-footer__fine-links" aria-label="Quick links">
+        <a href="/world/">See the World</a>
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="mailto:littleollienft@gmail.com">Email</a>
+        <a href="https://www.instagram.com/littleollie.world" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </div>
+      <p class="labs-footer__bottom-copy">© <span data-labs-year></span> Little Ollie Labs</p>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelector("[data-labs-year]").textContent = String(new Date().getFullYear());
+  </script>
+  <script src="./labs-form.config.js"></script>
+  <script src="./labs.js"></script>
 </body>
 </html>

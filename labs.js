@@ -8,6 +8,9 @@
   var menuBtn = root.querySelector("[data-labs-menu-btn]");
   var menuPanel = root.querySelector("[data-labs-menu]");
   var form = root.querySelector("[data-labs-enquiry-form]");
+  var formModal = root.querySelector("[data-labs-form-modal]");
+  var formModalDialog = formModal && formModal.querySelector(".labs-form-modal__dialog");
+  var formModalLastFocus = null;
   var contactSection = root.querySelector("#contact");
 
   /* Match snap math to real header height */
@@ -118,30 +121,67 @@
   /* Smooth anchor scroll (respect reduced motion) */
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function scrollToContact(focusForm) {
-    if (!contactSection) return;
+  var resetEnquiryForm = function () {};
+
+  function openFormModal(trigger) {
+    if (!formModal) return;
     if (menuBtn && menuBtn.getAttribute("aria-expanded") === "true") {
       setMenuOpen(false);
     }
-    contactSection.scrollIntoView({
-      behavior: reduceMotion ? "auto" : "smooth",
-      block: "start",
-    });
-    history.replaceState(null, "", "#contact");
-    updateActiveNav();
-    if (focusForm && form) {
+    formModalLastFocus = trigger || document.activeElement;
+    formModal.hidden = false;
+    root.classList.add("labs-site--modal-open");
+    if (formModalDialog) formModalDialog.focus();
+    if (form) {
       window.setTimeout(function () {
         var firstField = form.querySelector("#labs-form-name");
         if (firstField) firstField.focus();
-      }, reduceMotion ? 0 : 320);
+      }, 50);
     }
   }
+
+  function closeFormModal() {
+    if (!formModal || formModal.hidden) return;
+    formModal.hidden = true;
+    root.classList.remove("labs-site--modal-open");
+    resetEnquiryForm();
+    if (formModalLastFocus && typeof formModalLastFocus.focus === "function") {
+      formModalLastFocus.focus();
+    }
+  }
+
+  if (formModal) {
+    formModal.querySelectorAll("[data-labs-form-modal-close]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        closeFormModal();
+      });
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !formModal.hidden) {
+        closeFormModal();
+      }
+    });
+  }
+
+  root.querySelectorAll("[data-labs-open-form]").forEach(function (trigger) {
+    trigger.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (contactSection && trigger.getAttribute("href") === "#contact") {
+        contactSection.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
+        history.replaceState(null, "", "#contact");
+        updateActiveNav();
+      }
+      openFormModal(trigger);
+    });
+  });
 
   root.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener("click", function (e) {
       if (anchor.hasAttribute("data-labs-open-form")) {
-        e.preventDefault();
-        scrollToContact(true);
         return;
       }
       var id = anchor.getAttribute("href");
@@ -210,6 +250,19 @@
       var fieldset = form.querySelector('[data-labs-field="project_type"]');
       if (fieldset) fieldset.removeAttribute("aria-invalid");
     }
+
+    resetEnquiryForm = function () {
+      form.reset();
+      form.hidden = false;
+      clearFieldErrors();
+      hideFormStatus();
+      if (formSuccess) formSuccess.hidden = true;
+      if (formSubmit) {
+        formSubmit.disabled = false;
+        formSubmit.textContent = submitLabel;
+        formSubmit.setAttribute("aria-busy", "false");
+      }
+    };
 
     function setFieldError(fieldKey, message) {
       var errorEl = form.querySelector("#labs-form-error-" + fieldKey.replace(/_/g, "-"));
