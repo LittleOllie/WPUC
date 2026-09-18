@@ -8,9 +8,7 @@
   var menuBtn = root.querySelector("[data-labs-menu-btn]");
   var menuPanel = root.querySelector("[data-labs-menu]");
   var form = root.querySelector("[data-labs-enquiry-form]");
-  var formModal = root.querySelector("[data-labs-form-modal]");
-  var formModalDialog = formModal && formModal.querySelector(".labs-form-modal__dialog");
-  var formModalLastFocus = null;
+  var contactSection = root.querySelector("#contact");
 
   /* Match snap math to real header height */
   function syncHeaderHeight() {
@@ -119,11 +117,31 @@
 
   /* Smooth anchor scroll (respect reduced motion) */
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function scrollToContact(focusForm) {
+    if (!contactSection) return;
+    if (menuBtn && menuBtn.getAttribute("aria-expanded") === "true") {
+      setMenuOpen(false);
+    }
+    contactSection.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    history.replaceState(null, "", "#contact");
+    updateActiveNav();
+    if (focusForm && form) {
+      window.setTimeout(function () {
+        var firstField = form.querySelector("#labs-form-name");
+        if (firstField) firstField.focus();
+      }, reduceMotion ? 0 : 320);
+    }
+  }
+
   root.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener("click", function (e) {
       if (anchor.hasAttribute("data-labs-open-form")) {
         e.preventDefault();
-        openFormModal(anchor);
+        scrollToContact(true);
         return;
       }
       var id = anchor.getAttribute("href");
@@ -140,58 +158,6 @@
     });
   });
 
-  var resetEnquiryForm = function () {};
-
-  function openFormModal(trigger) {
-    if (!formModal) return;
-    if (menuBtn && menuBtn.getAttribute("aria-expanded") === "true") {
-      setMenuOpen(false);
-    }
-    formModalLastFocus = trigger || document.activeElement;
-    formModal.hidden = false;
-    root.classList.add("labs-site--modal-open");
-    if (formModalDialog) formModalDialog.focus();
-    if (form) {
-      var firstField = form.querySelector("#labs-form-name");
-      if (firstField) {
-        window.setTimeout(function () {
-          firstField.focus();
-        }, 50);
-      }
-    }
-  }
-
-  function closeFormModal() {
-    if (!formModal || formModal.hidden) return;
-    formModal.hidden = true;
-    root.classList.remove("labs-site--modal-open");
-    resetEnquiryForm();
-    if (formModalLastFocus && typeof formModalLastFocus.focus === "function") {
-      formModalLastFocus.focus();
-    }
-  }
-
-  if (formModal) {
-    formModal.querySelectorAll("[data-labs-form-modal-close]").forEach(function (el) {
-      el.addEventListener("click", function () {
-        closeFormModal();
-      });
-    });
-
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !formModal.hidden) {
-        closeFormModal();
-      }
-    });
-  }
-
-  root.querySelectorAll("[data-labs-open-form]").forEach(function (trigger) {
-    if (trigger.matches('a[href^="#"]')) return;
-    trigger.addEventListener("click", function () {
-      openFormModal(trigger);
-    });
-  });
-
   /* Contact enquiry form — Formspree-ready (no secrets in repo) */
   var LABS_FORM_ENDPOINT = "";
   if (window.LABS_FORM_CONFIG && window.LABS_FORM_CONFIG.endpoint) {
@@ -199,15 +165,17 @@
   }
 
   if (form) {
-    var formPanel = root.querySelector("[data-labs-form-panel]");
     var formSuccess = root.querySelector("[data-labs-form-success]");
     var formStatus = root.querySelector("[data-labs-form-status]");
     var formSubmit = form.querySelector("[data-labs-form-submit]");
-    var honeypot = form.querySelector('input[name="website"]');
+    var submitLabel =
+      (formSubmit && formSubmit.getAttribute("data-labs-form-submit-label")) ||
+      "Send the idea →";
+    var honeypot = form.querySelector('input[name="_gotcha"]');
     var nameInput = form.querySelector("#labs-form-name");
     var emailInput = form.querySelector("#labs-form-email");
     var ideaInput = form.querySelector("#labs-form-idea");
-    var projectChecks = form.querySelectorAll('input[name="project_type"]');
+    var projectChecks = form.querySelectorAll('input[name="Services Selected"]');
 
     function hideFormStatus() {
       if (!formStatus) return;
@@ -224,6 +192,13 @@
       formStatus.classList.add(type === "error" ? "labs-form__status--error" : "labs-form__status--pending");
     }
 
+    function setSubmitting(isSubmitting) {
+      if (!formSubmit) return;
+      formSubmit.disabled = isSubmitting;
+      formSubmit.textContent = isSubmitting ? "Sending..." : submitLabel;
+      formSubmit.setAttribute("aria-busy", isSubmitting ? "true" : "false");
+    }
+
     function clearFieldErrors() {
       form.querySelectorAll(".labs-form__error").forEach(function (el) {
         el.hidden = true;
@@ -235,15 +210,6 @@
       var fieldset = form.querySelector('[data-labs-field="project_type"]');
       if (fieldset) fieldset.removeAttribute("aria-invalid");
     }
-
-    resetEnquiryForm = function () {
-      form.reset();
-      form.hidden = false;
-      clearFieldErrors();
-      hideFormStatus();
-      if (formSuccess) formSuccess.hidden = true;
-      if (formSubmit) formSubmit.disabled = false;
-    };
 
     function setFieldError(fieldKey, message) {
       var errorEl = form.querySelector("#labs-form-error-" + fieldKey.replace(/_/g, "-"));
@@ -333,14 +299,11 @@
       }
 
       if (!LABS_FORM_ENDPOINT) {
-        showFormStatus(
-          "error",
-          "Something didn't quite work. Please try again, or email us directly at littleollienft@gmail.com."
-        );
+        showFormStatus("error", "Email delivery still needs to be connected.");
         return;
       }
 
-      if (formSubmit) formSubmit.disabled = true;
+      setSubmitting(true);
       showFormStatus("pending", "Sending your idea…");
 
       var formData = new FormData(form);
@@ -382,7 +345,7 @@
           );
         })
         .finally(function () {
-          if (formSubmit && !submissionSucceeded) formSubmit.disabled = false;
+          if (!submissionSucceeded) setSubmitting(false);
         });
     });
 

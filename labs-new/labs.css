@@ -1831,20 +1831,21 @@ html:has(.labs-site) body {
 
 .labs-contact__main {
   position: relative;
+  display: grid;
+  gap: clamp(1rem, 2vh, 1.35rem);
   max-width: none;
   min-width: 0;
   align-self: center;
 }
 
-.labs-contact__intro {
+.labs-contact__channels--compact {
   display: grid;
-  gap: clamp(1rem, 2vh, 1.35rem);
+  gap: clamp(0.85rem, 1.8vh, 1.1rem);
   max-width: 36rem;
-  padding: clamp(1.15rem, 2.4vw, 1.5rem);
+  padding: clamp(0.95rem, 2vw, 1.2rem);
   border: 2px solid rgba(17, 17, 17, 0.08);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 12px 32px rgba(17, 17, 17, 0.06);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .labs-contact__channels {
@@ -1919,22 +1920,13 @@ html:has(.labs-site) body {
   min-width: 0;
 }
 
-.labs-contact__cta {
-  display: grid;
-  gap: 0.9rem;
-  padding-top: clamp(1rem, 2vh, 1.2rem);
-  border-top: 2px dashed rgba(17, 17, 17, 0.1);
-}
-
-.labs-contact__cta-copy {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--labs-muted);
-}
-
-.labs-contact__cta .labs-btn {
-  justify-self: start;
+#contact .labs-form-panel {
+  max-width: 36rem;
+  padding: clamp(1.15rem, 2.4vw, 1.5rem);
+  border: 2px solid rgba(17, 17, 17, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 32px rgba(17, 17, 17, 0.06);
 }
 
 #contact .labs-contact__character {
@@ -2170,6 +2162,18 @@ html:has(.labs-site) body {
   box-shadow: 0 0 0 1px rgba(232, 120, 168, 0.35);
 }
 
+.labs-form__check:has(input:checked) .labs-form__check-text {
+  font-weight: 800;
+}
+
+.labs-form__check:has(input:checked)::after {
+  content: "✓";
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--labs-text);
+}
+
 .labs-form__check:has(input:focus-visible) {
   outline: 2px solid var(--labs-blue);
   outline-offset: 2px;
@@ -2227,7 +2231,10 @@ html:has(.labs-site) body {
 .labs-form__submit {
   justify-self: start;
   min-height: 3rem;
+  min-width: min(100%, 16rem);
   margin-top: 0.15rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .labs-form__submit:disabled {
