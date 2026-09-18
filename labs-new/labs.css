@@ -11,7 +11,11 @@
   --labs-blue: #6fd3f2;
   --labs-green: #8fd36c;
   --labs-purple: #c4a8f0;
-  --labs-header-h: clamp(4.25rem, 10vw, 5.5rem);
+  /* Measured by JS (ResizeObserver); fallbacks until first paint */
+  --labs-header-height: clamp(4.25rem, 10vw, 5.5rem);
+  --labs-header-h: var(--labs-header-height);
+  --labs-vh: 100svh;
+  --labs-section-h: calc(var(--labs-vh) - var(--labs-header-h));
   --labs-container: min(1320px, calc(100% - 2rem));
   --labs-container-wide: var(--labs-container);
   --labs-page-head-top: clamp(0.45rem, 1.2vh, 0.85rem);
@@ -28,6 +32,12 @@
   color: var(--labs-text);
   background: var(--labs-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+@supports (height: 100dvh) {
+  .labs-site {
+    --labs-vh: 100dvh;
+  }
 }
 
 .labs-site *,
@@ -56,13 +66,30 @@
   overflow: hidden;
 }
 
-/* ——— Scroll snap (full-page sections) ——— */
+/* ——— Scroll snap (full-page sections) ———
+ * Scroll owner: html (document). Header is sticky; --labs-header-h is synced
+ * from the real header via labs.js. Each .labs-snap is one page panel:
+ * min-height fills the viewport below the header; taller sections grow and
+ * scroll naturally (no nested scroll boxes). scroll-padding-top +
+ * scroll-padding-top on html keeps headings below the sticky header.
+ */
+
+html:has(.labs-site) {
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: var(--labs-header-h);
+  -webkit-overflow-scrolling: touch;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   html:has(.labs-site) {
-    scroll-snap-type: y mandatory;
-    scroll-padding-top: var(--labs-header-h);
     scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.labs-site) {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
   }
 }
 
@@ -74,8 +101,14 @@ html:has(.labs-site) body {
 .labs-snap {
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  scroll-margin-top: var(--labs-header-h);
-  min-height: calc(100svh - var(--labs-header-h));
+  scroll-margin-top: 0;
+  min-height: var(--labs-section-h);
+}
+
+/* Tall panels — snap to start, then allow free scroll through content */
+.labs-hero.labs-snap,
+#contact.labs-snap {
+  scroll-snap-stop: normal;
 }
 
 .labs-section.labs-snap {
@@ -83,7 +116,8 @@ html:has(.labs-site) body {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  min-height: calc(100svh - var(--labs-header-h));
+  min-height: var(--labs-section-h);
+  margin-block: 0;
   padding-block: clamp(0.35rem, 1vh, 0.75rem) clamp(0.75rem, 2vh, 1.25rem);
   overflow: visible;
   border-bottom: 1px solid rgba(17, 17, 17, 0.07);
@@ -91,18 +125,12 @@ html:has(.labs-site) body {
 
 .labs-section.labs-snap > .labs-container {
   flex: 1 1 auto;
-  min-height: calc(100svh - var(--labs-header-h) - clamp(1rem, 3vh, 2rem));
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   padding-top: var(--labs-page-head-top);
   overflow: visible;
-}
-
-#contact.labs-section.labs-snap,
-#what-we-do.labs-section.labs-snap,
-#about.labs-section.labs-snap {
-  scroll-snap-stop: normal;
 }
 
 .labs-section__head {
@@ -113,24 +141,13 @@ html:has(.labs-site) body {
 .labs-section__content {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: clip;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
+  overscroll-behavior: auto;
   padding-bottom: clamp(1rem, 2vh, 1.5rem);
 }
 
 #about .labs-section__content {
-  overflow: visible;
-  overscroll-behavior: auto;
   padding-bottom: clamp(0.75rem, 2vh, 1.25rem);
-}
-
-@media (min-width: 768px) {
-  #about .labs-section__content {
-    overflow: hidden;
-    overscroll-behavior: none;
-    padding-bottom: 0;
-  }
 }
 
 .labs-section__head .labs-section__title {
@@ -523,7 +540,7 @@ html:has(.labs-site) body {
   isolation: isolate;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  min-height: calc(100svh - var(--labs-header-h));
+  min-height: var(--labs-section-h);
   overflow: hidden;
   border-bottom: 1px solid rgba(17, 17, 17, 0.07);
 }
@@ -992,7 +1009,6 @@ html:has(.labs-site) body {
 
 #work {
   position: relative;
-  scroll-margin-top: var(--labs-header-h);
 }
 
 .labs-work__characters {
@@ -1170,7 +1186,6 @@ html:has(.labs-site) body {
 
   #work.labs-section.labs-snap > .labs-container {
     overflow: visible;
-    min-height: 0;
   }
 }
 
@@ -1227,7 +1242,7 @@ html:has(.labs-site) body {
 }
 
 .labs-work-card__tags {
-  display: flex;
+  display: none;
   flex-wrap: wrap;
   gap: 0.4rem;
   list-style: none;
@@ -1257,7 +1272,6 @@ html:has(.labs-site) body {
 
 #what-we-do {
   position: relative;
-  scroll-margin-top: var(--labs-header-h);
 }
 
 #what-we-do.labs-section.labs-snap {
@@ -1287,20 +1301,33 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   #what-we-do .labs-services__stage {
-    padding-bottom: clamp(8rem, 16vh, 11rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(9.5rem, 17vw, 19rem);
+    gap: clamp(0.65rem, 1.4vw, 1.1rem);
+    align-items: end;
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  .labs-services__grid {
+    grid-column: 1;
+    margin-top: 0;
   }
 
   .labs-services__characters {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: clamp(12rem, 21vw, 22rem);
+    position: relative;
+    right: auto;
+    bottom: auto;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    width: 100%;
     z-index: 2;
   }
 
   .labs-services__characters img {
-    max-height: clamp(14rem, calc(100svh - var(--labs-header-h) - 7.5rem), 31rem);
-    object-position: bottom right;
+    max-height: clamp(13rem, calc(100svh - var(--labs-header-h) - 9rem), 28rem);
+    object-position: bottom center;
   }
 }
 
@@ -1458,25 +1485,31 @@ html:has(.labs-site) body {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: clamp(1rem, 2vh, 1.35rem);
-  margin-top: clamp(1rem, 2.5vh, 1.5rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.55rem, 1.5vw, 0.75rem);
+  margin-top: clamp(0.65rem, 1.5vh, 1rem);
   min-width: 0;
 }
 
 @media (min-width: 768px) {
   .labs-services__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1100px) {
-  .labs-services__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.55rem, 1vw, 0.75rem);
+  }
+
+  #what-we-do .labs-service {
+    aspect-ratio: 5 / 4;
+    padding: clamp(0.55rem, 1vw, 0.8rem);
   }
 }
 
 #what-we-do .labs-service {
-  padding: clamp(1rem, 2vh, 1.35rem) 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: clamp(0.65rem, 1.4vw, 0.95rem);
   border: 2px solid var(--labs-border);
   border-radius: 18px;
   background: #fff;
@@ -1508,6 +1541,11 @@ html:has(.labs-site) body {
 }
 
 #what-we-do .labs-service:nth-child(5) {
+  background: rgba(255, 196, 140, 0.18);
+  border-color: rgba(255, 170, 90, 0.42);
+}
+
+#what-we-do .labs-service:nth-child(6) {
   background: rgba(196, 168, 240, 0.14);
   border-color: rgba(196, 168, 240, 0.42);
 }
@@ -1519,50 +1557,36 @@ html:has(.labs-site) body {
 }
 
 .labs-service__title {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-family: var(--labs-font-display);
-  font-size: 1.15rem;
+  font-size: clamp(0.92rem, 2.8vw, 1.08rem);
   font-weight: 700;
+  line-height: 1.15;
 }
 
 .labs-service__desc {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+  line-height: 1.35;
   color: var(--labs-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .labs-service__title {
+    font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+  }
+
+  .labs-service__desc {
+    font-size: clamp(0.8rem, 0.9vw, 0.88rem);
+    -webkit-line-clamp: 5;
+  }
 }
 
 @media (min-width: 1100px) {
-  .labs-services__grid .labs-service:last-child {
-    grid-column: span 1;
-  }
-
-  #what-we-do .labs-service:nth-child(1) {
-    transform: rotate(-0.45deg);
-  }
-
-  #what-we-do .labs-service:nth-child(2) {
-    transform: rotate(0.35deg) translateY(-3px);
-  }
-
-  #what-we-do .labs-service:nth-child(3) {
-    transform: rotate(-0.25deg) translateY(-1px);
-  }
-
-  #what-we-do .labs-service:nth-child(4) {
-    transform: rotate(0.4deg);
-  }
-
-  #what-we-do .labs-service:nth-child(5) {
-    transform: rotate(-0.3deg) translateY(-2px);
-  }
-
-  #what-we-do .labs-service:nth-child(1):hover,
-  #what-we-do .labs-service:nth-child(2):hover,
-  #what-we-do .labs-service:nth-child(3):hover,
-  #what-we-do .labs-service:nth-child(4):hover,
-  #what-we-do .labs-service:nth-child(5):hover {
-    transform: translateY(-3px) rotate(0deg);
-  }
 
   .labs-services__path-mark--twinkle {
     top: 5%;
@@ -1671,7 +1695,6 @@ html:has(.labs-site) body {
 #about,
 #contact {
   --labs-about-duo-h: clamp(18rem, calc(100svh - var(--labs-header-h) - 13rem), 34rem);
-  scroll-margin-top: var(--labs-header-h);
 }
 
 .labs-about__grid {
@@ -1818,13 +1841,11 @@ html:has(.labs-site) body {
     radial-gradient(circle at 88% 72%, rgba(255, 216, 77, 0.18), transparent 38%),
     linear-gradient(180deg, rgba(111, 211, 242, 0.16), rgba(111, 211, 242, 0.08));
   border-block: 2px solid rgba(111, 211, 242, 0.35);
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
 }
 
 #contact.labs-section.labs-snap > .labs-container {
   overflow: visible;
-  min-height: calc(100svh - var(--labs-header-h));
+  min-height: 0;
 }
 
 #contact .labs-section__content {
@@ -1857,7 +1878,8 @@ html:has(.labs-site) body {
   white-space: nowrap;
 }
 
-.labs-contact__title .labs-rainbow-word > span {
+.labs-contact__title .labs-rainbow-word > span,
+.labs-form__field label .labs-rainbow-word > span {
   -webkit-text-stroke: 0;
 }
 
@@ -2499,9 +2521,8 @@ html:has(.labs-site) body {
 /* ——— Footer ——— */
 
 .labs-footer {
-  scroll-snap-align: end;
-  scroll-snap-stop: normal;
-  scroll-margin-bottom: 0;
+  scroll-snap-align: none;
+  margin-block: 0;
   padding-block: clamp(2rem, 4vw, 2.75rem) 0;
   border-top: 1px solid var(--labs-border);
 }
@@ -2649,7 +2670,8 @@ html:has(.labs-site) body {
 @media (max-width: 767px) {
   .labs-site {
     --labs-mobile-pad: clamp(1rem, 4.5vw, 1.25rem);
-    --labs-header-h: 3.625rem;
+    --labs-header-height: 3.625rem;
+    --labs-header-h: var(--labs-header-height);
     font-size: 1rem;
   }
 
@@ -2714,12 +2736,11 @@ html:has(.labs-site) body {
 
   /* Snap sections — min-height panels, natural growth when taller */
   .labs-section.labs-snap {
-    min-height: calc(100svh - var(--labs-header-h));
+    min-height: var(--labs-section-h);
     overflow: visible;
   }
 
   .labs-section.labs-snap > .labs-container {
-    min-height: calc(100svh - var(--labs-header-h));
     overflow: visible;
   }
 
@@ -2732,7 +2753,7 @@ html:has(.labs-site) body {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: calc(100svh - var(--labs-header-h));
+    min-height: var(--labs-section-h);
     max-height: none;
     overflow: hidden;
   }
@@ -3015,8 +3036,24 @@ html:has(.labs-site) body {
     border-color: rgba(17, 17, 17, 0.18);
   }
 
-  /* What We Do — square tiles + illustration below */
-  #what-we-do .labs-services__doodle--arrow {
+  /* What We Do — compact tiles + illustration below */
+  #what-we-do.labs-section.labs-snap,
+  #what-we-do.labs-section.labs-snap > .labs-container {
+    overflow: visible;
+  }
+
+  #what-we-do .labs-section__head {
+    margin-bottom: 0.3rem;
+  }
+
+  #what-we-do .labs-section__title {
+    font-size: clamp(1.45rem, 7vw, 1.9rem);
+    line-height: 1.08;
+  }
+
+  #what-we-do .labs-services__doodle--arrow,
+  .labs-services__path,
+  .labs-services__note {
     display: none;
   }
 
@@ -3032,36 +3069,32 @@ html:has(.labs-site) body {
     width: calc(100% + 0.1em);
   }
 
-  .labs-services__path,
-  .labs-services__note {
-    display: none;
+  #what-we-do .labs-section__content {
+    overflow: visible;
   }
 
   #what-we-do .labs-services__stage {
+    display: flex;
+    flex-direction: column;
     overflow: visible;
-    padding-top: 0.35rem;
+    padding-top: 0.25rem;
     padding-bottom: 0;
   }
 
   .labs-services__grid {
-    margin-top: 0.5rem;
-    gap: 0.6rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.42rem;
+    margin-top: 0.3rem;
   }
 
   #what-we-do .labs-service {
-    aspect-ratio: 1 / 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 0.35rem;
-    padding: 0.7rem 0.75rem;
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 0.48rem 0.52rem;
+    border-radius: 14px;
+    border-width: 1.5px;
+    gap: 0.12rem;
+    justify-content: flex-start;
     transform: none !important;
-  }
-
-  #what-we-do .labs-service:nth-child(5) {
-    grid-column: 1;
   }
 
   #what-we-do .labs-service:hover {
@@ -3070,28 +3103,29 @@ html:has(.labs-site) body {
   }
 
   .labs-service__title {
-    font-size: 0.98rem;
-    line-height: 1.15;
+    font-size: 0.8rem;
+    line-height: 1.12;
   }
 
   .labs-service__desc {
-    font-size: 0.82rem;
-    line-height: 1.35;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 0.66rem;
+    line-height: 1.28;
+    -webkit-line-clamp: 2;
   }
 
   .labs-services__characters {
     position: static;
-    width: min(88%, 22rem);
-    margin: 0.85rem auto 0;
+    order: 2;
+    width: min(68%, 14.5rem);
+    margin: 1rem auto 0;
+    padding-top: 0.35rem;
+    flex-shrink: 0;
   }
 
   .labs-services__characters img {
     width: 100%;
-    max-height: none;
+    max-height: clamp(8.25rem, 32vw, 11rem);
+    object-fit: contain;
     object-position: center bottom;
   }
 
@@ -3313,11 +3347,6 @@ html:has(.labs-site) body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:has(.labs-site) {
-    scroll-snap-type: none;
-    scroll-behavior: auto;
-  }
-
   .labs-reveal {
     opacity: 1;
     transform: none;
