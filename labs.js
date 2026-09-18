@@ -33,26 +33,34 @@
   var formModalLastFocus = null;
   var contactSection = root.querySelector("#contact");
 
-  /* Match snap math to real header height */
+  /* Match snap math to real header + viewport (Safari toolbar) */
   function syncHeaderHeight() {
     if (!header) return;
-    document.documentElement.style.setProperty(
-      "--labs-header-h",
-      header.offsetHeight + "px"
-    );
+    var h = header.offsetHeight + "px";
+    document.documentElement.style.setProperty("--labs-header-height", h);
+    document.documentElement.style.setProperty("--labs-header-h", h);
+  }
+
+  function syncViewportHeight() {
+    var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    if (h > 0) {
+      document.documentElement.style.setProperty("--labs-vh", h + "px");
+    }
   }
 
   /* Sticky header shadow */
   if (header) {
     syncHeaderHeight();
-    ensurePageTop();
+    syncViewportHeight();
     if ("ResizeObserver" in window) {
-      new ResizeObserver(function () {
-        syncHeaderHeight();
-        ensurePageTop();
-      }).observe(header);
+      new ResizeObserver(syncHeaderHeight).observe(header);
     } else {
       window.addEventListener("resize", syncHeaderHeight, { passive: true });
+    }
+    window.addEventListener("resize", syncViewportHeight, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncViewportHeight, { passive: true });
+      window.visualViewport.addEventListener("scroll", syncViewportHeight, { passive: true });
     }
 
     var onScroll = function () {
@@ -65,21 +73,6 @@
   /* Active section nav highlight */
   var navLinks = root.querySelectorAll("[data-labs-nav-link]");
   var navSectionIds = ["top", "work", "what-we-do", "about", "contact"];
-
-  function getActiveSectionId() {
-    var headerOffset = header ? header.offsetHeight + Math.min(window.innerHeight * 0.32, 220) : 120;
-    var activeId = navSectionIds[0];
-
-    navSectionIds.forEach(function (id) {
-      var section = root.querySelector("#" + id);
-      if (!section) return;
-      if (section.getBoundingClientRect().top <= headerOffset) {
-        activeId = id;
-      }
-    });
-
-    return activeId;
-  }
 
   function setActiveNav(sectionId) {
     navLinks.forEach(function (link) {
@@ -95,6 +88,24 @@
     });
   }
 
+  function getActiveSectionId() {
+    var headerOffset = header ? header.offsetHeight + 12 : 12;
+    var activeId = navSectionIds[0];
+    var bestTop = -Infinity;
+
+    navSectionIds.forEach(function (id) {
+      var section = root.querySelector("#" + id);
+      if (!section) return;
+      var top = section.getBoundingClientRect().top;
+      if (top <= headerOffset + 2 && top > bestTop) {
+        bestTop = top;
+        activeId = id;
+      }
+    });
+
+    return activeId;
+  }
+
   function updateActiveNav() {
     setActiveNav(getActiveSectionId());
   }
@@ -103,6 +114,9 @@
   window.addEventListener("scroll", updateActiveNav, { passive: true });
   window.addEventListener("resize", updateActiveNav, { passive: true });
   window.addEventListener("hashchange", updateActiveNav);
+  if ("onscrollend" in window) {
+    window.addEventListener("scrollend", updateActiveNav, { passive: true });
+  }
 
   /* Mobile menu */
   function setMenuOpen(open) {
@@ -189,25 +203,39 @@
   }
 
   function getScrollTarget(id) {
-    if (id === "#contact") {
-      return (
-        root.querySelector("#contact .labs-section__head") ||
-        root.querySelector("#contact")
-      );
+    if (id === "#top") {
+      return root.querySelector("#top") || root.querySelector(".labs-hero");
     }
     return root.querySelector(id);
   }
 
   function scrollToSection(target) {
     if (!target) return;
-    var headerOffset = header ? header.offsetHeight + 8 : 8;
-    var top =
-      window.scrollY + target.getBoundingClientRect().top - headerOffset;
+    syncHeaderHeight();
+    syncViewportHeight();
+    var offset = header ? header.offsetHeight : 0;
+    var top = window.scrollY + target.getBoundingClientRect().top - offset;
     window.scrollTo({
       top: Math.max(0, top),
       behavior: reduceMotion ? "auto" : "smooth",
     });
   }
+
+  function scrollToHashOnLoad() {
+    var hash = window.location.hash;
+    if (!hash || hash === "#" || hash === "#top") return;
+    var target = getScrollTarget(hash);
+    if (!target) return;
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        scrollToSection(target);
+        updateActiveNav();
+      });
+    });
+  }
+
+  window.addEventListener("load", scrollToHashOnLoad, { passive: true });
+  window.addEventListener("pageshow", scrollToHashOnLoad, { passive: true });
 
   root.querySelectorAll("[data-labs-open-form]").forEach(function (trigger) {
     trigger.addEventListener("click", function (e) {

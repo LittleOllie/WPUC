@@ -1,7 +1,20 @@
 /* Little Ollie Labs V1 — scoped to .labs-site only */
 
 .labs-site {
+  /* Warm document gradient — scroll reveals subtle colour shifts */
+  --labs-bg-solid: #fffdf7;
   --labs-bg: #fffdf7;
+  --labs-site-gradient: linear-gradient(
+    180deg,
+    #fffdf8 0%,
+    #fffdf8 11%,
+    #fff9fb 24%,
+    #fafcff 42%,
+    #fbf9ff 58%,
+    #fffbf4 76%,
+    #fff6e8 92%,
+    #fff3dc 100%
+  );
   --labs-text: #111111;
   --labs-muted: rgba(17, 17, 17, 0.62);
   --labs-border: rgba(17, 17, 17, 0.12);
@@ -11,7 +24,11 @@
   --labs-blue: #6fd3f2;
   --labs-green: #8fd36c;
   --labs-purple: #c4a8f0;
-  --labs-header-h: clamp(4.25rem, 10vw, 5.5rem);
+  /* Measured by JS (ResizeObserver); fallbacks until first paint */
+  --labs-header-height: clamp(4.25rem, 10vw, 5.5rem);
+  --labs-header-h: var(--labs-header-height);
+  --labs-vh: 100svh;
+  --labs-section-h: calc(var(--labs-vh) - var(--labs-header-h));
   --labs-container: min(1320px, calc(100% - 2rem));
   --labs-container-wide: var(--labs-container);
   --labs-page-head-top: clamp(0.45rem, 1.2vh, 0.85rem);
@@ -21,13 +38,22 @@
   --labs-font-hand: "Caveat", cursive;
 
   margin: 0;
-  min-height: 100vh;
+  min-height: 100%;
   font-family: var(--labs-font-body);
   font-size: 1.0625rem;
   line-height: 1.55;
   color: var(--labs-text);
-  background: var(--labs-bg);
+  background-color: var(--labs-bg-solid);
+  background-image: var(--labs-site-gradient);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   -webkit-font-smoothing: antialiased;
+}
+
+@supports (height: 100dvh) {
+  .labs-site {
+    --labs-vh: 100dvh;
+  }
 }
 
 .labs-site *,
@@ -56,13 +82,37 @@
   overflow: hidden;
 }
 
-/* ——— Scroll snap (full-page sections) ——— */
+/* ——— Scroll snap (full-page sections) ———
+ * Scroll owner: html (document). Header is sticky; --labs-header-h is synced
+ * from the real header via labs.js. Each .labs-snap is one page panel:
+ * min-height fills the viewport below the header; taller sections grow and
+ * scroll naturally (no nested scroll boxes). scroll-padding-top +
+ * scroll-padding-top on html keeps headings below the sticky header.
+ */
+
+html:has(.labs-site) {
+  min-height: 100%;
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: var(--labs-header-h);
+  -webkit-overflow-scrolling: touch;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   html:has(.labs-site) {
-    scroll-snap-type: y proximity;
-    scroll-padding-top: var(--labs-header-h);
     scroll-behavior: smooth;
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  html:has(.labs-site) {
+    scroll-snap-type: y proximity;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.labs-site) {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
   }
 }
 
@@ -73,9 +123,16 @@ html:has(.labs-site) body {
 
 .labs-snap {
   scroll-snap-align: start;
+  scroll-snap-stop: always;
+  scroll-margin-top: 0;
+  min-height: var(--labs-section-h);
+}
+
+/* Tall panels — snap to start, then allow free scroll through content */
+.labs-hero.labs-snap,
+#about.labs-snap,
+#contact.labs-snap {
   scroll-snap-stop: normal;
-  scroll-margin-top: var(--labs-header-h);
-  min-height: calc(100svh - var(--labs-header-h));
 }
 
 .labs-section.labs-snap {
@@ -83,21 +140,21 @@ html:has(.labs-site) body {
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  height: calc(100svh - var(--labs-header-h));
-  min-height: calc(100svh - var(--labs-header-h));
-  max-height: calc(100svh - var(--labs-header-h));
-  padding-block: 0;
-  overflow: hidden;
+  min-height: var(--labs-section-h);
+  margin-block: 0;
+  padding-block: clamp(0.35rem, 1vh, 0.75rem) clamp(0.75rem, 2vh, 1.25rem);
+  overflow: visible;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.07);
 }
 
 .labs-section.labs-snap > .labs-container {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   padding-top: var(--labs-page-head-top);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .labs-section__head {
@@ -108,17 +165,13 @@ html:has(.labs-site) body {
 .labs-section__content {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-x: clip;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
+  overscroll-behavior: auto;
   padding-bottom: clamp(1rem, 2vh, 1.5rem);
 }
 
-#what-we-do .labs-section__content,
 #about .labs-section__content {
-  overflow: hidden;
-  overscroll-behavior: none;
-  padding-bottom: 0;
+  padding-bottom: clamp(0.75rem, 2vh, 1.25rem);
 }
 
 .labs-section__head .labs-section__title {
@@ -245,6 +298,11 @@ html:has(.labs-site) body {
   width: auto;
   height: clamp(2rem, 5vw, 2.65rem);
   object-fit: contain;
+}
+
+.labs-header__logo--main img {
+  height: clamp(2.65rem, 6.8vw, 3.5rem);
+  max-width: min(16.5rem, 46vw);
 }
 
 .labs-header__logo .labs-asset--missing::after {
@@ -410,11 +468,16 @@ html:has(.labs-site) body {
 
 @media (max-width: 767px) {
   .labs-header__logo--main {
-    display: none;
+    display: block;
   }
 
   .labs-header__logo--compact {
-    display: block;
+    display: none;
+  }
+
+  .labs-header__logo--main img {
+    height: clamp(2.3rem, 10.2vw, 2.9rem);
+    max-width: min(15.5rem, 72vw);
   }
 }
 
@@ -511,10 +574,9 @@ html:has(.labs-site) body {
   isolation: isolate;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100svh - var(--labs-header-h));
-  min-height: calc(100svh - var(--labs-header-h));
-  max-height: calc(100svh - var(--labs-header-h));
+  min-height: var(--labs-section-h);
   overflow: hidden;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.07);
 }
 
 .labs-hero__copy-wrap {
@@ -674,7 +736,7 @@ html:has(.labs-site) body {
   grid-row: 2;
   border-top: 1px solid var(--labs-border);
   border-bottom: none;
-  background: var(--labs-bg);
+  background: rgba(255, 253, 247, 0.45);
   padding-block: clamp(0.85rem, 2vh, 1.25rem);
 }
 
@@ -981,18 +1043,17 @@ html:has(.labs-site) body {
 
 #work {
   position: relative;
-  scroll-margin-top: var(--labs-header-h);
+}
+
+.labs-work__layout {
+  display: block;
+  min-width: 0;
 }
 
 .labs-work__characters {
-  position: absolute;
-  left: var(--labs-page-head-x);
-  bottom: 0;
-  width: clamp(13rem, 22vw, 24rem);
   margin: 0;
   pointer-events: none;
   user-select: none;
-  z-index: 2;
   line-height: 0;
 }
 
@@ -1009,7 +1070,7 @@ html:has(.labs-site) body {
   overflow: visible;
   overscroll-behavior: auto;
   position: relative;
-  z-index: 3;
+  min-width: 0;
 }
 
 .labs-work-carousel {
@@ -1018,6 +1079,48 @@ html:has(.labs-site) body {
   gap: clamp(0.85rem, 1.8vh, 1.25rem);
   margin-top: clamp(0.75rem, 1.5vh, 1.25rem);
   min-height: 0;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .labs-work__layout {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 14rem) minmax(0, 1fr);
+    gap: clamp(0.75rem, 1.5vw, 1.5rem);
+    align-items: end;
+    margin-top: clamp(0.75rem, 1.5vh, 1.25rem);
+  }
+
+  .labs-work__characters {
+    align-self: end;
+    width: 100%;
+    max-width: 14rem;
+  }
+
+  .labs-work-carousel {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1400px) {
+  .labs-work__layout {
+    grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);
+    gap: 1.75rem;
+  }
+
+  #work .labs-work-card[data-carousel-state="prev"] {
+    transform: translate(calc(-50% - 11rem), -50%) scale(0.84) rotateY(12deg) translateZ(0);
+  }
+
+  #work .labs-work-card[data-carousel-state="next"] {
+    transform: translate(calc(-50% + 11rem), -50%) scale(0.84) rotateY(-12deg) translateZ(0);
+  }
+
+  #work .labs-work-card[data-carousel-state="active"] {
+    transform: translate(-50%, -50%) scale(1) rotateY(0deg) translateZ(12px);
+  }
 }
 
 .labs-work-carousel__stage {
@@ -1025,6 +1128,7 @@ html:has(.labs-site) body {
   height: clamp(22rem, calc(100svh - var(--labs-header-h) - 11rem), 31rem);
   perspective: 1400px;
   overflow: visible;
+  isolation: isolate;
 }
 
 .labs-work-carousel__track {
@@ -1120,7 +1224,7 @@ html:has(.labs-site) body {
   z-index: 3;
   pointer-events: auto;
   cursor: pointer;
-  transform: translate(calc(-50% - clamp(10.5rem, 27vw, 15.5rem)), -50%) scale(0.84) rotateY(12deg);
+  transform: translate(calc(-50% - clamp(9rem, 12vw, 12rem)), -50%) scale(0.84) rotateY(12deg);
   filter: brightness(0.95);
   box-shadow: 0 10px 24px rgba(17, 17, 17, 0.08);
 }
@@ -1130,7 +1234,7 @@ html:has(.labs-site) body {
   z-index: 3;
   pointer-events: auto;
   cursor: pointer;
-  transform: translate(calc(-50% + clamp(10.5rem, 27vw, 15.5rem)), -50%) scale(0.84) rotateY(-12deg);
+  transform: translate(calc(-50% + clamp(9rem, 12vw, 12rem)), -50%) scale(0.84) rotateY(-12deg);
   filter: brightness(0.95);
   box-shadow: 0 10px 24px rgba(17, 17, 17, 0.08);
 }
@@ -1159,7 +1263,6 @@ html:has(.labs-site) body {
 
   #work.labs-section.labs-snap > .labs-container {
     overflow: visible;
-    min-height: 0;
   }
 }
 
@@ -1246,16 +1349,17 @@ html:has(.labs-site) body {
 
 #what-we-do {
   position: relative;
-  scroll-margin-top: var(--labs-header-h);
 }
 
 #what-we-do.labs-section.labs-snap {
-  overflow: clip;
+  overflow: visible;
 }
 
 #what-we-do .labs-section__content {
   position: relative;
   z-index: 3;
+  overflow: visible;
+  overscroll-behavior: auto;
 }
 
 .labs-services__characters {
@@ -1274,31 +1378,43 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   #what-we-do .labs-services__stage {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(11rem, 36%) minmax(0, 1fr);
+    gap: clamp(0.85rem, 2vw, 1.65rem);
     align-items: stretch;
     overflow: visible;
     padding-bottom: 0;
-  }
-
-  .labs-services__grid {
-    width: 100%;
-    margin-top: 0;
+    min-height: clamp(20rem, calc(var(--labs-section-h) - 7rem), 30rem);
   }
 
   .labs-services__characters {
     position: static;
-    width: min(20rem, 28%);
-    margin: clamp(0.65rem, 1.5vh, 1rem) auto 0;
-    padding-top: 0.25rem;
-    flex-shrink: 0;
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    margin: 0;
+    padding-top: 0;
+    align-self: end;
   }
 
   .labs-services__characters img {
-    width: 100%;
-    max-height: none;
+    width: auto;
+    max-width: 100%;
+    max-height: clamp(17rem, calc(var(--labs-section-h) - 7.5rem), 29rem);
     object-fit: contain;
-    object-position: center bottom;
+    object-position: bottom center;
+  }
+
+  .labs-services__grid {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    margin-top: 0;
+    align-self: stretch;
+    height: 100%;
   }
 }
 
@@ -1464,13 +1580,19 @@ html:has(.labs-site) body {
 
 @media (min-width: 768px) {
   .labs-services__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(0.55rem, 1vw, 0.75rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.65rem, 1.1vw, 0.9rem);
   }
 
   #what-we-do .labs-service {
-    aspect-ratio: 5 / 4;
-    padding: clamp(0.55rem, 1vw, 0.8rem);
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: clamp(5.25rem, 11vh, 7rem);
+    padding: clamp(0.85rem, 1.35vw, 1.15rem) clamp(0.9rem, 1.4vw, 1.1rem);
+    gap: 0.4rem;
+    border-radius: 20px;
+    justify-content: center;
   }
 }
 
@@ -1547,13 +1669,18 @@ html:has(.labs-site) body {
 }
 
 @media (min-width: 768px) {
-  .labs-service__title {
-    font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+  #what-we-do .labs-service__title {
+    font-size: clamp(1.08rem, 1.35vw, 1.32rem);
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
   }
 
-  .labs-service__desc {
-    font-size: clamp(0.8rem, 0.9vw, 0.88rem);
-    -webkit-line-clamp: 5;
+  #what-we-do .labs-service__desc {
+    font-size: clamp(0.92rem, 1vw, 1.02rem);
+    line-height: 1.42;
+    -webkit-line-clamp: 3;
+    color: rgba(17, 17, 17, 0.58);
   }
 }
 
@@ -1666,7 +1793,6 @@ html:has(.labs-site) body {
 #about,
 #contact {
   --labs-about-duo-h: clamp(18rem, calc(100svh - var(--labs-header-h) - 13rem), 34rem);
-  scroll-margin-top: var(--labs-header-h);
 }
 
 .labs-about__grid {
@@ -1809,23 +1935,20 @@ html:has(.labs-site) body {
 
 .labs-contact {
   background:
-    radial-gradient(circle at 12% 18%, rgba(244, 168, 200, 0.22), transparent 42%),
-    radial-gradient(circle at 88% 72%, rgba(255, 216, 77, 0.18), transparent 38%),
-    linear-gradient(180deg, rgba(111, 211, 242, 0.16), rgba(111, 211, 242, 0.08));
-  border-block: 2px solid rgba(111, 211, 242, 0.35);
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
+    radial-gradient(circle at 12% 18%, rgba(244, 168, 200, 0.16), transparent 44%),
+    radial-gradient(circle at 88% 72%, rgba(255, 216, 77, 0.14), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(111, 211, 242, 0.1), transparent 52%);
+  border-block: 2px solid rgba(111, 211, 242, 0.28);
 }
 
 #contact.labs-section.labs-snap > .labs-container {
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
 }
 
 #contact .labs-section__content {
-  overflow-x: clip;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
+  overscroll-behavior: auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2499,6 +2622,7 @@ html:has(.labs-site) body {
   scroll-snap-align: end;
   scroll-snap-stop: normal;
   scroll-margin-bottom: 0;
+  margin-block: 0;
   padding-block: clamp(2rem, 4vw, 2.75rem) 0;
   border-top: 1px solid var(--labs-border);
 }
@@ -2646,7 +2770,8 @@ html:has(.labs-site) body {
 @media (max-width: 767px) {
   .labs-site {
     --labs-mobile-pad: clamp(1rem, 4.5vw, 1.25rem);
-    --labs-header-h: 3.625rem;
+    --labs-header-height: 3.625rem;
+    --labs-header-h: var(--labs-header-height);
     font-size: 1rem;
   }
 
@@ -2671,8 +2796,9 @@ html:has(.labs-site) body {
   }
 
   /* Header / menu */
-  .labs-header__logo img {
-    height: 2.2rem;
+  .labs-header__logo--main img {
+    height: clamp(2.3rem, 10.2vw, 2.9rem);
+    max-width: min(15.5rem, 72vw);
   }
 
   .labs-menu-btn {
@@ -2711,16 +2837,14 @@ html:has(.labs-site) body {
 
   /* Snap sections — fill one phone screen, grow when content is taller */
   .labs-section.labs-snap {
-    height: auto;
-    min-height: var(--labs-section-h, calc(100svh - var(--labs-header-h)));
-    max-height: none;
+    min-height: var(--labs-section-h);
     padding-block: 0.2rem 0.3rem;
     overflow: visible;
   }
 
   .labs-section.labs-snap > .labs-container {
     flex: 1 1 auto;
-    min-height: calc(var(--labs-section-h, calc(100svh - var(--labs-header-h))) - 0.5rem);
+    min-height: calc(var(--labs-section-h) - 0.5rem);
     overflow: visible;
   }
 
@@ -2729,14 +2853,10 @@ html:has(.labs-site) body {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: visible;
-    overscroll-behavior: auto;
     padding-bottom: 0.25rem;
   }
 
-  #what-we-do.labs-section.labs-snap,
-  #about.labs-section.labs-snap,
-  #contact.labs-section.labs-snap {
+  #about.labs-section.labs-snap {
     overflow: visible;
   }
 
@@ -2745,7 +2865,7 @@ html:has(.labs-site) body {
     display: flex;
     flex-direction: column;
     height: auto;
-    min-height: calc(100svh - var(--labs-header-h));
+    min-height: var(--labs-section-h);
     max-height: none;
     overflow: hidden;
   }
@@ -2914,64 +3034,53 @@ html:has(.labs-site) body {
     font-size: 0.95rem;
   }
 
-  /* Work carousel — card + character on phone */
+  /* Work — single clean card on phone */
   #work {
     display: flex;
     flex-direction: column;
-    padding-bottom: clamp(1.5rem, 5vw, 2.5rem);
   }
 
   .labs-work__characters {
-    display: block;
-    position: absolute;
-    left: max(-0.15rem, calc(var(--labs-mobile-pad) - 0.65rem));
-    bottom: clamp(3.75rem, 14vw, 5.25rem);
-    width: clamp(10.5rem, 46vw, 14.5rem);
-    z-index: 6;
-    opacity: 1;
-    pointer-events: none;
-  }
-
-  .labs-work__characters img {
-    max-height: clamp(13.5rem, 52vw, 18.5rem);
-    object-position: bottom left;
+    display: none;
   }
 
   .labs-work-carousel {
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.75rem;
   }
 
   .labs-work-carousel__stage {
     height: auto;
     min-height: 0;
     perspective: none;
+    overflow: hidden;
   }
 
   .labs-work-carousel__track {
     position: relative;
     height: auto;
     display: block;
+    min-height: 1px;
   }
 
   #work .labs-work-card {
     position: relative;
     left: auto;
     top: auto;
-    width: calc(100% - clamp(4.25rem, 20vw, 5.75rem));
+    width: 100%;
     max-height: none;
-    margin-left: clamp(4.25rem, 20vw, 5.75rem);
+    margin: 0;
     transform: none;
   }
 
   #work .labs-work-card:not([data-carousel-state="active"]) {
     position: absolute;
-    inset: 0 auto auto 0;
-    width: calc(100% - clamp(4.25rem, 20vw, 5.75rem));
-    margin-left: clamp(4.25rem, 20vw, 5.75rem);
+    inset: 0;
+    width: 100%;
+    margin: 0;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -2990,17 +3099,27 @@ html:has(.labs-site) body {
     visibility: visible;
     pointer-events: auto;
     transform: none;
-    box-shadow: 0 14px 32px rgba(17, 17, 17, 0.1);
+    box-shadow: 0 8px 24px rgba(17, 17, 17, 0.08);
   }
 
   #work .labs-work-card[data-carousel-state="active"] .labs-work-card__body {
     opacity: 1;
     max-height: none;
-    padding: 0.9rem 1rem 1rem;
+    padding: 0.85rem 0.95rem 1rem;
   }
 
   .labs-work-card__visual {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
+  }
+
+  .labs-work-card__visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .labs-work-card__tags {
+    display: none;
   }
 
   .labs-work-carousel__btn {
@@ -3010,23 +3129,17 @@ html:has(.labs-site) body {
   }
 
   .labs-work-card__title {
-    font-size: 1.28rem;
+    font-size: 1.22rem;
     line-height: 1.15;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
   }
 
   .labs-work-card__desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: block;
     font-size: 0.92rem;
-    line-height: 1.4;
-    margin-bottom: 0.65rem;
-  }
-
-  .labs-work-card__tags li {
-    font-size: 0.72rem;
+    line-height: 1.45;
+    margin-bottom: 0;
+    color: var(--labs-muted);
   }
 
   .labs-work-card:hover,
@@ -3339,38 +3452,8 @@ html:has(.labs-site) body {
     width: min(24rem, 72vw);
   }
 
-  .labs-work__characters {
-    width: clamp(11rem, 18vw, 15rem);
-  }
-
   .labs-work__characters img {
     max-height: clamp(12rem, 28vh, 18rem);
-  }
-}
-
-/* ——— Desktop scroll — let the page wheel/trackpad scroll naturally ——— */
-
-@media (min-width: 768px) {
-  .labs-section.labs-snap {
-    height: auto;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .labs-section.labs-snap > .labs-container {
-    overflow: visible;
-    min-height: calc(100svh - var(--labs-header-h));
-  }
-
-  .labs-section__content {
-    overflow: visible;
-    overscroll-behavior: auto;
-  }
-
-  #what-we-do .labs-section__content,
-  #about .labs-section__content {
-    overflow: visible;
-    overscroll-behavior: auto;
   }
 }
 
@@ -3388,11 +3471,6 @@ html:has(.labs-site) body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:has(.labs-site) {
-    scroll-snap-type: none;
-    scroll-behavior: auto;
-  }
-
   .labs-reveal {
     opacity: 1;
     transform: none;
