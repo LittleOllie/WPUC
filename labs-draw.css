@@ -280,7 +280,7 @@ body.labs-site > .labs-draw__canvas.labs-draw__canvas--interactive {
 @media (max-width: 767px) {
   .labs-draw__dock {
     right: max(0.65rem, env(safe-area-inset-right));
-    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px) + 2.75rem);
   }
 
   .labs-draw__toolbar {
