@@ -21,21 +21,17 @@
   var activeColor = "#f4a8c8";
   var lastPoint = null;
   var activePointerId = null;
-  var pendingPointer = null;
   var strokes = [];
   var currentStroke = null;
   var strokeWidth = 11;
   var eraserWidth = 26;
-  var drawThreshold = 6;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var hintKey = "labs-draw-hint-seen";
-  var isMobile =
-    window.matchMedia("(max-width: 767px)").matches ||
-    window.matchMedia("(pointer: coarse)").matches;
+  var resizeFrame = null;
 
   function getSiteSize() {
     return {
-      width: Math.max(siteRoot.scrollWidth, siteRoot.offsetWidth),
+      width: Math.max(siteRoot.scrollWidth, siteRoot.offsetWidth, document.documentElement.clientWidth),
       height: Math.max(siteRoot.scrollHeight, siteRoot.offsetHeight),
     };
   }
@@ -71,6 +67,14 @@
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     redrawAll();
+  }
+
+  function scheduleResize() {
+    if (resizeFrame) return;
+    resizeFrame = window.requestAnimationFrame(function () {
+      resizeFrame = null;
+      resizeCanvas();
+    });
   }
 
   function clearBitmap() {
@@ -156,77 +160,35 @@
     isDrawing = false;
     lastPoint = null;
     activePointerId = null;
-    if (isMobile) setCanvasInteractive(false);
   }
 
-  function beginPointerStroke(e, startClientX, startClientY) {
+  function beginPointerStroke(e) {
     activePointerId = e.pointerId;
-    setCanvasInteractive(true);
     try {
       canvas.setPointerCapture(e.pointerId);
     } catch (err) {
       /* ignore */
     }
-    startStroke(getDocPointFromClient(startClientX, startClientY));
+    startStroke(getDocPoint(e));
   }
 
   function onPointerDown(e) {
     if (!isOpen || e.button > 0) return;
     if (isUiTarget(e.target)) return;
 
-    if (isMobile) {
-      pendingPointer = {
-        id: e.pointerId,
-        x: e.clientX,
-        y: e.clientY,
-        started: false,
-      };
-      return;
-    }
-
-    beginPointerStroke(e, e.clientX, e.clientY);
+    beginPointerStroke(e);
     e.preventDefault();
   }
 
   function onPointerMove(e) {
-    if (!isOpen) return;
-
-    if (isMobile && pendingPointer && pendingPointer.id === e.pointerId && !pendingPointer.started) {
-      var dx = e.clientX - pendingPointer.x;
-      var dy = e.clientY - pendingPointer.y;
-      if (dx * dx + dy * dy >= drawThreshold * drawThreshold) {
-        if (Math.abs(dy) > Math.abs(dx) * 1.35) {
-          pendingPointer = null;
-          return;
-        }
-        pendingPointer.started = true;
-        beginPointerStroke(e, pendingPointer.x, pendingPointer.y);
-      }
-      return;
-    }
-
-    if (!isDrawing || e.pointerId !== activePointerId) return;
+    if (!isOpen || !isDrawing || e.pointerId !== activePointerId) return;
 
     extendStroke(getDocPoint(e));
-
-    if (e.pointerType === "touch") {
-      e.preventDefault();
-    }
+    e.preventDefault();
   }
 
   function onPointerUp(e) {
-    if (!isOpen) return;
-
-    if (isMobile && pendingPointer && pendingPointer.id === e.pointerId) {
-      if (!pendingPointer.started) {
-        beginPointerStroke(e, pendingPointer.x, pendingPointer.y);
-        finishStroke();
-      }
-      pendingPointer = null;
-      return;
-    }
-
-    if (e.pointerId !== activePointerId) return;
+    if (!isOpen || e.pointerId !== activePointerId) return;
 
     try {
       canvas.releasePointerCapture(e.pointerId);
@@ -235,9 +197,13 @@
     }
 
     finishStroke();
-    if (e.pointerType === "touch") {
-      e.preventDefault();
-    }
+    e.preventDefault();
+  }
+
+  function preventTouchScrollWhileOpen(e) {
+    if (!isOpen) return;
+    if (isUiTarget(e.target)) return;
+    e.preventDefault();
   }
 
   function setTool(tool) {
@@ -275,7 +241,6 @@
     isDrawing = false;
     lastPoint = null;
     activePointerId = null;
-    pendingPointer = null;
     clearBitmap();
   }
 
@@ -287,13 +252,12 @@
     toggleBtn.setAttribute("aria-label", "Close drawing mode");
     toolbar.hidden = false;
     hideHint();
-    resizeCanvas();
-    if (!isMobile) setCanvasInteractive(true);
+    scheduleResize();
+    setCanvasInteractive(true);
   }
 
   function closeDraw() {
     isOpen = false;
-    pendingPointer = null;
     if (isDrawing) finishStroke();
     drawUi.classList.remove("is-open");
     canvas.classList.remove("is-clearing");
@@ -302,7 +266,6 @@
     toggleBtn.setAttribute("aria-label", "Draw on the site");
     toolbar.hidden = true;
     setCanvasInteractive(false);
-    clearAllStrokes();
   }
 
   function toggleDraw() {
@@ -333,9 +296,11 @@
     }
   });
 
-  clearBtn.addEventListener("click", function () {
-    runClear();
-  });
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      runClear();
+    });
+  }
 
   toolBtns.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -349,34 +314,25 @@
     });
   });
 
-  var pointerTarget = isMobile ? document : canvas;
-  pointerTarget.addEventListener("pointerdown", onPointerDown, { passive: false, capture: isMobile });
-  pointerTarget.addEventListener("pointermove", onPointerMove, { passive: false, capture: isMobile });
-  pointerTarget.addEventListener("pointerup", onPointerUp, { passive: false, capture: isMobile });
-  pointerTarget.addEventListener("pointercancel", onPointerUp, { passive: false, capture: isMobile });
+  canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
+  canvas.addEventListener("pointermove", onPointerMove, { passive: false });
+  canvas.addEventListener("pointerup", onPointerUp, { passive: false });
+  canvas.addEventListener("pointercancel", onPointerUp, { passive: false });
 
-  window.addEventListener(
-    "resize",
-    function () {
-      if (isOpen) resizeCanvas();
-    },
-    { passive: true }
-  );
+  document.addEventListener("touchmove", preventTouchScrollWhileOpen, { passive: false, capture: true });
+
+  window.addEventListener("resize", scheduleResize, { passive: true });
 
   window.addEventListener(
     "orientationchange",
     function () {
-      window.setTimeout(function () {
-        if (isOpen) resizeCanvas();
-      }, 120);
+      window.setTimeout(scheduleResize, 120);
     },
     { passive: true }
   );
 
   if ("ResizeObserver" in window) {
-    var resizeObserver = new ResizeObserver(function () {
-      if (isOpen) resizeCanvas();
-    });
+    var resizeObserver = new ResizeObserver(scheduleResize);
     resizeObserver.observe(siteRoot);
   }
 
@@ -421,5 +377,5 @@
     window.setTimeout(hideHint, 4500);
   }
 
-  resizeCanvas();
+  scheduleResize();
 })();
